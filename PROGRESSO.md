@@ -49,6 +49,12 @@ Atualizado em 2026-10-20 por Atlas.
 - Entregas originais (referência): Cada novo lutador precisa de folhas de sprite geradas pelo dono (mesmo pipeline da F2) — risco de calendário.
 - Em aberto para o dono depois das propostas: aprovar nacionalidades/estilos/poderes dos 4 novos e do chefão; aprovar a paleta do logo; ordem de desbloqueio.
 
+## Hospedagem de teste — GitHub Pages TEMPORÁRIO (decisão do dono em 2026-10-20)
+- Site público de teste em `https://innovarecode.github.io/InnoFighters/`, atualizado a cada push na `main` por `.github/workflows/pages.yml` (`npm run build -- --base=/InnoFighters/`). Repositório e site são PÚBLICOS.
+- É SÓ ENQUANTO TESTAMOS. Destino final (D6, detalhado): servidor **EasyPanel** da infraestrutura própria. Quando o EasyPanel entrar no ar: apagar `pages.yml` e desligar o Pages (GitHub > Settings > Pages) para tirar o site do ar.
+- Pré-requisito manual do dono: Settings > Pages > Source = "GitHub Actions" (sem isso o 1º deploy falha; dá para rodar de novo em Actions > pages > Run workflow).
+- Provado localmente: build com o caminho do Pages carrega 12 imagens, 0 falhas, sem `__inno`. NÃO provado: o deploy real no GitHub.
+
 ## Próximos passos (ordem do plano)
 1. F1 Porte fiel (Vega + Lyra) em paralelo com F2 Pipeline de sprites (Vega + Apolo). Contratos C1–C4 em `PLANO.md` seção 4.3.
 2. F3 Arte nova no jogo, F4 celular/PWA, F5 balanceamento/QA, F6 segurança e deploy, F7 documentação.

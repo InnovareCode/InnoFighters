@@ -1,11 +1,14 @@
 import { deflateSync } from 'node:zlib';
 import { expect, test, type Page } from '@playwright/test';
 
+// a página agora baixa ~6 MB de arte antes de ficar pronta; com vários navegadores em paralelo isso passa de 30 s
+test.describe.configure({ timeout: 90_000 });
+
 async function abrir(page: Page): Promise<string[]> {
   const erros: string[] = [];
   page.on('pageerror', (e) => erros.push(e.message));
   await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   return erros;
 }
 

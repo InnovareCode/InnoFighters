@@ -30,10 +30,24 @@ Atualizado em 2026-10-20 por Atlas.
   - Vega: `src/fight/` (fighter, game, cpu, colisão, comandos, projétil) e `src/audio/` (AudioSys, eventos), com testes de fidelidade rodando partes puras do protótipo como gabarito.
   - Lyra: `src/render/` (pose, rastro do golpe, hud, lutador, mundo) e e2e `fidelidade-prototipo.spec.ts` (render novo x protótipo, pixel a pixel).
   - ATENÇÃO: os relatórios finais dos dois agentes NÃO chegaram ao Atlas (só os avisos de conclusão). Não sei, por eles, o que cada um declarou provado. Só vale o que o Atlas rodou. Íris deve confirmar a cobertura real dos testes de fidelidade.
-- **Falta da F1:** `src/ui/` (cenas, MenuList), o loop em `main.ts` ligando entrada -> fight -> render/audio (hoje `main.ts` ainda desenha só o placeholder) e a comparação da Íris. O jogo ainda não roda de ponta a ponta.
+- **F1c concluída em código** (2026-10-20, conferida pelo Atlas: typecheck, 201 unit, build, 58 e2e verdes rodados sozinhos): `src/ui/` (cenas + MenuList) e o loop em `main.ts`. O jogo roda de ponta a ponta (título, menu, seleção, dificuldade, VS, luta, pausa, resultado, Arcade, continuar, como jogar, opções). Handoff completo em `docs/handoff-lyra-f1c.md`.
+- **Logo, paleta A (Ouro Forjado) aplicado** (2026-10-20, escolha do dono; conferido pelo Atlas: 205 unit, 59 e2e, build verdes; logo visto no navegador). `PALETA_MARCA` e `marca` em `src/ui/logo.ts`, desacoplados do elenco (emblema/brasas não leem lutadores). Testes de fidelidade desligam o logo dos DOIS lados; `logo.spec.ts` mede o logo à parte. Handoff: `docs/handoff-lyra-logo.md`. Não medido: brilho em movimento e cenários cn/kr; fonte Impact (fallback Arial Black).
+- Teste manual: servidor de dev do dono na porta 5174 (`.claude/launch.json`: `innofighters-dev` local; `innofighters-celular` com `--host 0.0.0.0`, IP da máquina 192.168.0.105, rede Wi-Fi marcada Pública no Windows — o firewall pode bloquear). Playwright usa a 5173.
+- Armadilha de teste: NUNCA rodar dois `npm run test:e2e` ao mesmo tempo (nem com um `vite` na 5173 aberto): colidem na porta 5173 e na pasta `test-results/` e dão falso negativo (ERR_CONNECTION_REFUSED, ENOENT).
+- Desvios da F1c a decidir: `?seed=N` também vale em produção; tecla H (debug) alterna `game.debug` mas não desenha caixas de colisão; fonte Impact/Segoe UI do sistema (muda em Linux/macOS).
+- **Falta da F1:** só a revisão da Íris (jogar o Arcade inteiro, celular de verdade, persistência). Som, gamepad real e iOS/Safari NÃO foram provados.
 - Atlas extraídos do protótipo têm nomes de quadro LEGADOS (guard, punch, kick...) e 3600 px de largura (acima do limite iOS de 2048): só a arte nova da F2/F3 resolve.
 - Pendência: `sharp` não está instalado; conversão de cenários/atlas para WebP e redimensionamento ficam para a F2 (pedir autorização antes de instalar).
 - Sugestão da Vega: script `"extrair": "node ferramentas/extrair-prototipo.mjs"` no `package.json`.
+
+## Expansão — pedido do dono em 2026-10-20 (depois da F1c; ainda em planejamento)
+- Melhorar as cores do logo "INNO FIGHTERS": hoje há 3 paletas competindo (INNO prata-azulado frio, FIGHTERS laranja-vermelho quente, anel multicolorido). É decisão visual nova, não porte fiel — Apolo propõe, Lyra aplica em `src/ui/logo.ts` só depois da F1c.
+- +4 personagens novos, SEMPRE com características, habilidades, poderes e nacionalidades diferentes entre si e dos atuais (HAYATO-Japão, WEI LONG-China, MIN-JI-Coreia, CAIO-Brasil). Roster final: 8 + chefão.
+- Chefão no fim do Arcade. DECIDIDO: jogável após derrotá-lo (luta final mais forte e maior; vira personagem liberável).
+- Gamificação de desbloqueio. DECIDIDO: por progresso no Arcade. Começam liberados os 4 atuais; zerar o Arcade libera o próximo da fila; derrotar o chefão libera o chefão. Exige estender o storage (C4) com os desbloqueados, com migração.
+- ENTREGUES em 2026-10-20: `docs/proposta-expansao.md` (Apolo: 3 paletas de logo, recomendada A "Ouro Forjado"; AMINU-Nigéria/dambe, CENTELLA-México/lucha libre, CAMILLE-França/savate, NILA-Índia/kalaripayattu; chefão BAATAR-Mongólia/bökh, escala 1.28, vida 150, jogável depois com vida 118; ordem de desbloqueio AMINU, CENTELLA, CAMILLE, NILA, depois BAATAR) e `docs/plano-expansao.md` (Nova: fases E1-E8; carga sob demanda dos atlas vira pré-requisito; storage v2 em CHAVE NOVA `inno-fighters-v2`; ED1-ED12 para o dono). Aguardam aprovação do dono — nada implementado.
+- Entregas originais (referência): Cada novo lutador precisa de folhas de sprite geradas pelo dono (mesmo pipeline da F2) — risco de calendário.
+- Em aberto para o dono depois das propostas: aprovar nacionalidades/estilos/poderes dos 4 novos e do chefão; aprovar a paleta do logo; ordem de desbloqueio.
 
 ## Próximos passos (ordem do plano)
 1. F1 Porte fiel (Vega + Lyra) em paralelo com F2 Pipeline de sprites (Vega + Apolo). Contratos C1–C4 em `PLANO.md` seção 4.3.

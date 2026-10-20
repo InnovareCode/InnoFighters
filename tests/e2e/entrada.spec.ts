@@ -1,5 +1,8 @@
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
 
+// a página agora baixa ~6 MB de arte antes de ficar pronta; com vários navegadores em paralelo isso passa de 30 s
+test.describe.configure({ timeout: 90_000 });
+
 type Quadro = Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'hp' | 'lk' | 'hk' | 'sp', boolean>;
 type Hook = { entrada: { lerP1(): Quadro; lerP2(): Quadro; lerMesclado(): Quadro; fimDoTick(): void; temToque: boolean } };
 
@@ -7,8 +10,8 @@ async function abrir(page: Page, viewport?: { width: number; height: number }): 
   const erros: string[] = [];
   page.on('pageerror', (e) => erros.push(e.message));
   if (viewport) await page.setViewportSize(viewport);
-  await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
+  await page.goto('/?manual=1'); // sem laço em tempo real: o teste controla os ticks
+  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   return erros;
 }
 

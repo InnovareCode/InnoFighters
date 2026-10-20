@@ -1,1 +1,2 @@
 - [Curadoria de sprites](project_curadoria_sprites.md) — WEI LONG canônico proposto; medir fundo por pixel; .jfif precisa cópia .jpg; FX à parte
+- [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

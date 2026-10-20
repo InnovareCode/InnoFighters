@@ -1,2 +1,3 @@
 - [Arquitetura do MVP](project_arquitetura-mvp.md) — Vite+TS+Canvas 2D (porte), Pixi como plano B; decisões D1–D9 pendentes em PLANO.md
+- [Plano da expansão](project_plano-expansao.md) — chave storage -v2 (rollback), lista explícita de desbloqueados, chefão por bloco `chefe`, carga sob demanda
 - [Armadilhas da arte e do protótipo](project_armadilhas-arte.md) — linha 320 de 9 MB, tipX já escalado, chave magenta, FX rosa MIN-JI

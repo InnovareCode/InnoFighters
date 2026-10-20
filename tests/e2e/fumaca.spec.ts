@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 
+// a página agora baixa ~6 MB de arte antes de ficar pronta; com vários navegadores em paralelo isso passa de 30 s
+test.describe.configure({ timeout: 90_000 });
+
 test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e escala sem distorcer', async ({ page }) => {
   const erros: string[] = [];
   page.on('pageerror', (e) => erros.push(e.message));
@@ -9,7 +12,7 @@ test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e
 
   await page.goto('/');
   await expect(page).toHaveTitle('InnoFighters');
-  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 
   const canvas = page.locator('canvas#jogo');
   await expect(canvas).toHaveAttribute('width', '1920');
@@ -25,13 +28,20 @@ test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e
   expect(caixa.width).toBeLessThanOrEqual(janela.width);
   expect(caixa.height).toBeLessThanOrEqual(janela.height);
 
-  // o placeholder foi realmente desenhado (pixel central nao e o fundo #111 do CSS)
+  // a abertura (tela de carregamento / "clique ou pressione") foi realmente desenhada: o canto superior
+  // esquerdo tem o degradê roxo do boot (#1a0b33 no topo), não o fundo #000 do CSS, e há muitas cores
   const desenhou = await canvas.evaluate((el) => {
     const c = el as HTMLCanvasElement;
-    const px = c.getContext('2d')?.getImageData(5, 5, 1, 1).data;
-    return px ? px[0] === 0x1a && px[1] === 0x1a && px[2] === 0x2e : false;
+    const g = c.getContext('2d')!;
+    const px = g.getImageData(5, 5, 1, 1).data;
+    const d = g.getImageData(0, 0, c.width, c.height).data;
+    const cores = new Set<number>();
+    for (let i = 0; i < d.length; i += 4 * 997) cores.add((d[i]! << 16) | (d[i + 1]! << 8) | d[i + 2]!);
+    return { topo: [px[0], px[1], px[2]], cores: cores.size };
   });
-  expect(desenhou).toBe(true);
+  expect(Math.abs((desenhou.topo[0] ?? 0) - 0x1a)).toBeLessThanOrEqual(4);
+  expect(Math.abs((desenhou.topo[2] ?? 0) - 0x33)).toBeLessThanOrEqual(6);
+  expect(desenhou.cores).toBeGreaterThan(20);
 
   expect(erros).toEqual([]);
 });

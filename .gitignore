@@ -1,0 +1,15 @@
+.missao-atual
+.missoes-quadro.json
+.env*
+node_modules/
+
+# D5: arte bruta fora do git (backup em nuvem). sprites/ vira arte-fonte/ na F0.
+sprites/
+arte-fonte/
+dist/
+
+# Fase 0: artefatos de teste/build
+playwright-report/
+test-results/
+coverage/
+*.tsbuildinfo

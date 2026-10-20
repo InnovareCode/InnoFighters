@@ -1,0 +1,2 @@
+- [Arquitetura do MVP](project_arquitetura-mvp.md) — Vite+TS+Canvas 2D (porte), Pixi como plano B; decisões D1–D9 pendentes em PLANO.md
+- [Armadilhas da arte e do protótipo](project_armadilhas-arte.md) — linha 320 de 9 MB, tipX já escalado, chave magenta, FX rosa MIN-JI

@@ -1,0 +1,1 @@
+- [Curadoria de sprites](project_curadoria_sprites.md) — WEI LONG canônico proposto; medir fundo por pixel; .jfif precisa cópia .jpg; FX à parte

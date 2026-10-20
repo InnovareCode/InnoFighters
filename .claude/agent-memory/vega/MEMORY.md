@@ -1,0 +1,2 @@
+- [Porte Fase 1a](project_porte_fase1a.md) — tipX/tipY->ponta, ids f1..f4, teste de fidelidade contra o protótipo, armadilhas
+- [Porte Fase 1b](project_porte_fase1b.md) — fight/audio: prova lock-step contra o protótipo, quirks preservados, eventos de setup

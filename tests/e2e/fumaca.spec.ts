@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('a pagina sobe, o canvas e 960x540 e escala sem distorcer', async ({ page }) => {
+test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e escala sem distorcer', async ({ page }) => {
   const erros: string[] = [];
   page.on('pageerror', (e) => erros.push(e.message));
   page.on('console', (m) => {
@@ -12,8 +12,8 @@ test('a pagina sobe, o canvas e 960x540 e escala sem distorcer', async ({ page }
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
 
   const canvas = page.locator('canvas#jogo');
-  await expect(canvas).toHaveAttribute('width', '960');
-  await expect(canvas).toHaveAttribute('height', '540');
+  await expect(canvas).toHaveAttribute('width', '1920');
+  await expect(canvas).toHaveAttribute('height', '1080');
 
   // medido no navegador: proporcao 16:9 e dentro da janela
   const caixa = await canvas.boundingBox();

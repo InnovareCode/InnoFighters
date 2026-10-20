@@ -1,0 +1,38 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RNG: mesma semente -> mesma luta; semente diferente -> outra > CPU x CPU de 6000 ticks com semente 42 tem resultado fixo (regressão) 1`] = `
+{
+  "contagem": {
+    "block": 71,
+    "dust": 192,
+    "hit": 22,
+    "jump": 20,
+    "ko": 2,
+    "land": 32,
+    "projectile": 20,
+    "round": 6,
+    "special": 35,
+    "swing": 119,
+    "throw": 4,
+  },
+  "fase": "matchend",
+  "hp": [
+    20.7,
+    0,
+  ],
+  "round": 2,
+  "score": [
+    33688,
+    12250,
+  ],
+  "tick": 5724,
+  "wins": [
+    2,
+    0,
+  ],
+  "x": [
+    143.261,
+    150,
+  ],
+}
+`;

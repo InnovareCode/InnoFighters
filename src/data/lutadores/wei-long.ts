@@ -1,0 +1,51 @@
+import type { LutadorDef } from '../tipos';
+
+/** WEI LONG (f2 no protótipo): kung fu, lento e pesado. Força bruta. */
+export const WEI_LONG: LutadorDef = {
+  id: 'wei-long',
+  idPrototipo: 'f2',
+  country: 'CHINA',
+  stage: 'cn',
+  stageName: 'Templo da Montanha, China',
+  name: 'WEI LONG',
+  title: 'O Dragão de Ferro',
+  pitch: 0.82,
+  desc: 'Mestre de kung fu. Lento, porém devastador: cada palma pesa.',
+  fire: ['#d58bff', '#fff3ff', '#7a2de0'],
+  accent: '#b46bff',
+  pow: 1.14,
+  spd: 0.9,
+  hp: 108,
+  jump: 0.94,
+  scale: 1.04,
+  stride: 15,
+  bars: [5, 2, 4, 3],
+  mods: {
+    lp: { S: 4, dmg: 5 },
+    lk: { S: 6, dmg: 6.5 },
+    hp: { S: 9, A: 5, R: 17, dmg: 13, kb: 10, adv: 18 },
+    hk: { S: 12, A: 5, R: 22, dmg: 17, kb: 13, adv: 20 },
+    clp: { dmg: 5 },
+    chp: { S: 7, dmg: 13 },
+    chk: { S: 9, dmg: 12 },
+    jhp: { dmg: 11 },
+    jhk: { dmg: 13 },
+  },
+  especiais: {
+    sFire: {
+      name: 'LONG ZHANG', info: 'Palma do Dragão: onda de chi ENORME e lenta. Muito dano, derruba.', pose: 'special', type: 'fire', kind: 'fire',
+      S: 20, A: 3, R: 22, cost: 45, rank: 9,
+      proj: { dmg: 20, sp: 6.2, kb: 12, hs: 30, kd: true, style: 'orb', sc: 1.7, life: 210 },
+    },
+    sDown: {
+      name: 'ZHEN DI', info: 'Pisão que lança um tremor rente ao chão. Golpe BAIXO: só se defende agachado ou pulando.', pose: 'crouchPunch', type: 'fire', kind: 'fire',
+      S: 14, A: 3, R: 26, cost: 28, rank: 9,
+      proj: { dmg: 13, sp: 8.6, kb: 8, hs: 24, kd: true, style: 'wave', sc: 1.25, sy: 0.55, low: true, life: 60 },
+    },
+    sFwd: {
+      name: 'TIE SHAN KAO', info: 'Ombrada da Montanha de Ferro, com ARMADURA: não para ao ser atingido. Derruba.', pose: 'punch', pre: 'crouch',
+      type: 'rush', kind: 'punch', snd: 'kick', S: 10, A: 10, R: 24, cost: 35, rank: 9,
+      vx: 8.2, armor: 1, dmg: 19, kb: 12, hs: 0, bs: 15, kd: 1, lvl: 'mid', bh: 120, rm: 0.95, heavy: 1, tilt: 0.14,
+    },
+  },
+};

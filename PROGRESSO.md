@@ -17,7 +17,23 @@ Atualizado em 2026-10-20 por Atlas.
 - Constantes em `src/core/constantes.ts`; escala do canvas em `src/platform/escala.ts` (calculada em JS); `data-pronto` no `<html>` é o sinal que o e2e espera.
 - Vulcano adicionou `.github/workflows/ci.yml` (typecheck, test, build no push/PR) — fora do pedido; ainda não rodou em runner real.
 - NÃO feito (fica para depois): ESLint/Prettier (estavam no plano F0), PWA/manifest (F4), deploy (F6), `.gitkeep` nas pastas vazias.
-- Nenhum commit/push ainda; o dono pediu para perguntar antes.
+- Primeiro commit `eda9109` enviado em 2026-10-20 para `main` em github.com/InnovareCode/InnoFighters (autor local: InnovareCode Squad). Regra do dono: commit e push só com autorização explícita a cada vez.
+- O push da sessão não tem login do GitHub (Git Credential Manager pede navegador); foi feito no Terminal do app (`mcp__terminal__run_in_terminal`).
+- O CI do Vulcano roda pela primeira vez neste push — conferir a aba Actions do repositório.
+
+## F1 Porte fiel — EM ANDAMENTO (começou em 2026-10-20)
+- **F1a concluída** (Vega + Lyra, conferida pelo Atlas: typecheck, 115 unit, build, 39 e2e verdes):
+  - Vega: C3 em `src/core/contratos.ts`; `core/` (rng mulberry32, storage com migração); `ferramentas/extrair-prototipo.mjs` (reprodutível, 0 diferenças); `data/` conferida contra o protótipo executado.
+  - Lyra: `input/` (teclado, gamepad, toque -> InputFrame), `platform/`, `render/` base, `assets/` (loader C1).
+  - Desvios aceitos da Lyra: canvas real 1920x1080 (RS=2, como o protótipo); CSS do canvas; aviso `#rot` agora aparece em retrato (no protótipo nunca aparecia por ordem de CSS).
+- **F1b concluída em código** (2026-10-20, conferida pelo Atlas: typecheck, 175 unit, build, 50 e2e verdes):
+  - Vega: `src/fight/` (fighter, game, cpu, colisão, comandos, projétil) e `src/audio/` (AudioSys, eventos), com testes de fidelidade rodando partes puras do protótipo como gabarito.
+  - Lyra: `src/render/` (pose, rastro do golpe, hud, lutador, mundo) e e2e `fidelidade-prototipo.spec.ts` (render novo x protótipo, pixel a pixel).
+  - ATENÇÃO: os relatórios finais dos dois agentes NÃO chegaram ao Atlas (só os avisos de conclusão). Não sei, por eles, o que cada um declarou provado. Só vale o que o Atlas rodou. Íris deve confirmar a cobertura real dos testes de fidelidade.
+- **Falta da F1:** `src/ui/` (cenas, MenuList), o loop em `main.ts` ligando entrada -> fight -> render/audio (hoje `main.ts` ainda desenha só o placeholder) e a comparação da Íris. O jogo ainda não roda de ponta a ponta.
+- Atlas extraídos do protótipo têm nomes de quadro LEGADOS (guard, punch, kick...) e 3600 px de largura (acima do limite iOS de 2048): só a arte nova da F2/F3 resolve.
+- Pendência: `sharp` não está instalado; conversão de cenários/atlas para WebP e redimensionamento ficam para a F2 (pedir autorização antes de instalar).
+- Sugestão da Vega: script `"extrair": "node ferramentas/extrair-prototipo.mjs"` no `package.json`.
 
 ## Próximos passos (ordem do plano)
 1. F1 Porte fiel (Vega + Lyra) em paralelo com F2 Pipeline de sprites (Vega + Apolo). Contratos C1–C4 em `PLANO.md` seção 4.3.
@@ -41,7 +57,6 @@ Atualizado em 2026-10-20 por Atlas.
 - Poses sem cobertura no WEI LONG: soco no ar, agachamento antes do pulo, agachado fundo (reaproveitar aterrissagem).
 - Efeitos (cabeça de dragão, onda de chão): asset à parte, fundo preto, mistura aditiva `lighter`.
 - D6: detalhes da infra própria (servidor, forma de deploy) antes da F6.
-- Primeiro commit/push no GitHub (`origin` conectado, repositório vazio): aguardando OK do dono.
 
 ## Armadilhas já conhecidas
 - Linha 320 do protótipo tem 9,3 MB (ASSETS em Base64): nunca usar Read nela; para espiar, `awk 'NR==320{print substr($0,1,300)}'`.

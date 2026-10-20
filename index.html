@@ -6,13 +6,28 @@
     <meta name="theme-color" content="#000000" />
     <title>InnoFighters</title>
     <style>
-      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+      html, body { margin: 0; height: 100%; background: #05030a; overflow: hidden; }
       body { display: grid; place-items: center; touch-action: none; }
-      canvas { display: block; image-rendering: pixelated; background: #111; }
+      /* tamanho do protótipo; platform/escala.ts o refina em px inteiros assim que o JS sobe */
+      canvas { width: min(100vw, calc(100vh * 16 / 9)); height: min(100vh, calc(100vw * 9 / 16)); display: block; outline: none; background: #000; box-shadow: 0 0 80px rgba(0, 0, 0, .8); }
     </style>
   </head>
   <body>
-    <canvas id="jogo" width="960" height="540" aria-label="InnoFighters"></canvas>
+    <canvas id="jogo" width="1920" height="1080" tabindex="0" aria-label="InnoFighters"></canvas>
+    <!-- camada de toque (CSS em src/input/toque.css; só aparece em aparelhos com toque) -->
+    <div id="touch">
+      <div id="joy"><div id="knob"></div></div>
+      <div id="pad">
+        <div class="b hp" data-k="x" role="button" aria-label="Soco forte"><b>△</b><i>SOCO FORTE</i></div>
+        <div class="b lp" data-k="z" role="button" aria-label="Soco fraco"><b>□</b><i>SOCO FRACO</i></div>
+        <div class="b hk" data-k="v" role="button" aria-label="Chute forte"><b>○</b><i>CHUTE FORTE</i></div>
+        <div class="b lk" data-k="c" role="button" aria-label="Chute fraco"><b>✕</b><i>CHUTE FRACO</i></div>
+      </div>
+      <div class="b" id="r1" data-k="b" role="button" aria-label="Especial">R1 · ESPECIAL</div>
+      <div class="b" id="bp" data-k="Escape" role="button" aria-label="Pausar">II</div>
+    </div>
+    <div id="rot" role="status">Vire o aparelho para o modo paisagem</div>
+    <pre id="err" style="display:none;position:fixed;left:8px;top:8px;right:8px;margin:0;padding:10px;background:#300;color:#fcc;font:13px monospace;white-space:pre-wrap;z-index:9"></pre>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -70,23 +70,36 @@ type AtaqueAcerto = {
   kd: boolean;
   hits: number | undefined;
   proj: boolean;
+  /** E3: ticks de atordoamento que atravessam o bloqueio (nível 3 da MASHI). Ausente = o bloqueio segura. */
+  quebraGuarda: number | undefined;
+  /** E3: rank do golpe, para a armadura por rank. Projétil não tem rank (interrompe qualquer armadura de rank). */
+  rank: number | undefined;
 };
 
 const textoFlutuante = (x: number, y: number, s: string, col: string, size: number): TextoFlutuante => ({ x, y, s, col, size });
 
-const noAtaque = (mv: GolpeMontado): AtaqueAcerto => ({
-  dmg: mv.dmg ?? 0,
-  kb: mv.kb ?? 0,
-  hs: mv.hs ?? 0,
-  bs: mv.bs ?? 0,
-  lvl: mv.lvl ?? 'mid',
-  snd: mv.snd ?? 'punch',
-  kind: mv.kind,
-  heavy: !!mv.heavy,
-  kd: !!mv.kd,
-  hits: mv.hits,
-  proj: false,
-});
+/**
+ * `atacante` só importa para golpe `carga`: o nível alcançado (`nivelCarga`) escolhe `carga.porNivel[nível − 1]`, que
+ * sobrescreve dano, derrubada e quebra-guarda. Sem `carga` as contas são as de sempre (mesma ordem de operações).
+ */
+const noAtaque = (mv: GolpeMontado, atacante: Fighter): AtaqueAcerto => {
+  const nivel = mv.carga ? mv.carga.porNivel[Math.max(1, atacante.nivelCarga) - 1] : undefined;
+  return {
+    dmg: nivel?.dmg ?? mv.dmg ?? 0,
+    kb: mv.kb ?? 0,
+    hs: mv.hs ?? 0,
+    bs: mv.bs ?? 0,
+    lvl: mv.lvl ?? 'mid',
+    snd: mv.snd ?? 'punch',
+    kind: mv.kind,
+    heavy: !!mv.heavy,
+    kd: !!(nivel?.kd ?? mv.kd),
+    hits: mv.hits,
+    proj: false,
+    quebraGuarda: nivel?.quebraGuarda ?? mv.quebraGuarda,
+    rank: mv.rank,
+  };
+};
 
 export type Dependencias = {
   /** Os 4 lutadores já montados (data/montar). */
@@ -165,6 +178,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.projectiles = [];
     this.shake = 0;
     this.hitstop = 0;
+    this.trocaDeBarraNoTick = false; // não vaza para o round/luta seguinte se `resolverVidaZerada` foi chamada sem `applyHit`/`arremessar`
   }
 
   setup(cfg: ConfigPartida, ajustes: AjustesLuta): void {
@@ -235,8 +249,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   }
 
   /** Arremesso: joga o rival por cima do ombro. */
-  arremessar(a: Fighter, d: Fighter): void {
-    const dmg = 12 * a.ch.pow;
+  arremessar(a: Fighter, d: Fighter, golpe?: GolpeMontado): void {
+    const dmg = (golpe?.agarrao?.dmg ?? 12) * a.ch.pow;
     d.hp = Math.max(this.training ? 1 : 0, d.hp - dmg);
     d.dmgTaken += dmg;
     a.score += Math.round(dmg * 100);
@@ -325,6 +339,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   update(fonte: FonteEntradas): void {
     this.events = this.pendentes;
     this.pendentes = [];
+    this.trocaDeBarraNoTick = false;
     this.dentroDoUpdate = true;
     try {
       this.passo(fonte);
@@ -414,6 +429,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     c.cenaPendente = false;
     c.setState('cena');
     c.vx = 0;
+    // O Game manda NO_INPUT na cena, mas o `buf` (9 ticks) de cada lutador seguiria sendo consumido: sem isto o jogador
+    // ataca (gasta energia, som) com a dança em andamento.
+    this.p1.buf = null;
+    this.p2.buf = null;
     this.phase = 'cena-chefe';
     this.t = 0;
     this.projectiles = [];
@@ -502,7 +521,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       const box = a.attackBox(caixa);
       if (overlap(box, d.hurtbox())) {
         a.hitDone = true;
-        this.applyHit(a, d, noAtaque(mv), box);
+        this.applyHit(a, d, noAtaque(mv, a), box);
       }
     }
     for (const pr of this.projectiles) {
@@ -510,6 +529,13 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       const d = pr.owner === this.p1 ? this.p2 : this.p1;
       const o = pr.owner;
       const box = { x: pr.x - 34 * pr.sc, y: pr.y - 30 * pr.sy, w: 68 * pr.sc, h: 60 * pr.sy };
+      // E3: escudo da GARKUWA. Projétil que vem de frente e toca o lutador na janela ativa de um golpe `absorveProj`
+      // some como num choque de projéteis (evento `clash`); não há dano nem applyHit. Pelas costas ou fora da janela: acerta.
+      if (this.absorve(d, pr) && overlap(box, d.hurtbox())) {
+        pr.life = 0;
+        this.emitir({ tipo: 'clash', x: pr.x, y: pr.y });
+        continue;
+      }
       if (!d.untouchable && overlap(box, d.hurtbox())) {
         pr.life = 0;
         // PROJ_BASE vem DEPOIS no Object.assign do protótipo e sobrescreve lvl: o tremor rasteiro (`low`)
@@ -529,6 +555,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
             kd: pr.kd,
             hits: undefined,
             proj: PROJ_BASE.proj,
+            quebraGuarda: undefined,
+            rank: undefined,
           },
           box,
         );
@@ -545,6 +573,13 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
   }
 
+  /** `d` está com o escudo levantado (golpe `absorveProj` na janela ativa) contra um projétil que vem de frente? */
+  private absorve(d: Fighter, pr: ProjetilLuta): boolean {
+    if (d.state !== 'move') return false;
+    const mv = d.golpeAtual();
+    return !!mv.absorveProj && d.mt >= mv.S && d.mt < mv.S + mv.A && pr.dir === -d.facing;
+  }
+
   private applyHit(a: Fighter, d: Fighter, mv: AtaqueAcerto, box: Retangulo): void {
     const blocked = d.canBlock(mv.lvl);
     const hb = d.hurtbox();
@@ -558,15 +593,35 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       const chip = Math.max(0.4, (mv.proj ? mv.dmg : mv.dmg * a.ch.pow) * 0.12);
       d.hp = Math.max(1, d.hp - chip);
       a.score += Math.round(chip * 50);
-      d.setState('block');
-      d.stun = mv.bs + (mv.proj ? 4 : 0);
+      // E3: golpe com `quebraGuarda` (MASHI nível 3) atravessa o bloqueio: o raspão é o mesmo, mas o defensor fica
+      // atordoado (`hit`) pelos ticks do golpe em vez de em `block`. Sem o campo, o bloqueio é o de sempre.
+      const quebrou = mv.quebraGuarda !== undefined && mv.quebraGuarda > 0;
+      if (quebrou) {
+        d.hitKind = mv.kind === 'punch' || mv.lvl === 'over' || mv.proj ? 'H' : 'B';
+        d.setState('hit');
+        d.stun = mv.quebraGuarda as number;
+      } else {
+        d.setState('block');
+        d.stun = mv.bs + (mv.proj ? 4 : 0);
+      }
       d.vx = mv.kb * 0.9 * a.facing;
       d.move = null;
       if (cornered && !mv.proj) a.vx = -a.facing * mv.kb * 0.8;
-      this.shake = 2;
-      this.hitstop = 2;
+      this.shake = quebrou ? (this.ajustes.shake ? 9 : 0) : 2;
+      this.hitstop = quebrou ? 6 : 2;
       a.en = Math.min(MAX_EN, a.en + 3);
       d.en = Math.min(MAX_EN, d.en + 4);
+      if (quebrou) {
+        this.emitir({
+          tipo: 'quebra-guarda',
+          atacante: a.indice,
+          defensor: d.indice,
+          x: ox,
+          y: oy,
+          texto: textoFlutuante(d.x, d.y - SH * 0.95, 'GUARDA QUEBRADA!', '#ff5a4a', 22),
+        });
+        return;
+      }
       this.emitir({
         tipo: 'block',
         atacante: a.indice,
@@ -580,7 +635,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
     d.hitKind = mv.kind === 'punch' || mv.lvl === 'over' || mv.proj ? 'H' : 'B';
     const counter = d.state === 'move';
-    if (d.armor > 0 && d.state === 'move' && d.hp - danoDeArmadura(mv.dmg, a.ch.pow, mv.proj) > 0) {
+    // E3: `armadura.rankMax` (PESO DA MONTANHA) limita a armadura a golpes de rank <= rankMax; projétil (sem rank) e
+    // golpe forte a interrompem. Sem `armadura` no def, qualquer golpe é absorvido como sempre.
+    const rankMax = d.ch.armadura?.rankMax;
+    const armaduraAbsorve = rankMax === undefined || (mv.rank !== undefined && mv.rank <= rankMax);
+    if (d.armor > 0 && d.state === 'move' && armaduraAbsorve && d.hp - danoDeArmadura(mv.dmg, a.ch.pow, mv.proj) > 0) {
       // ARMADURA: absorve o golpe sem interromper
       const ad = danoDeArmadura(mv.dmg, a.ch.pow, mv.proj);
       d.hp -= ad;
@@ -685,8 +744,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
 
   /** Reaplica hitstop/shake da troca de barra depois que `applyHit`/`arremessar` gravaram os valores do golpe comum. */
   private reforcarTrocaDeBarra(): void {
+    // A flag vale pelo TICK inteiro (zera no início de `update`): um 2º acerto no mesmo tick (ex.: projétil do chefe no
+    // jogador) também reaplica 20/14, em vez de regravar 4/9 por cima da troca. Chamada direta de `resolverVidaZerada`
+    // fora de `update` não deixa a flag viva para o próximo golpe comum: o próximo `update` a zera antes de qualquer acerto.
     if (!this.trocaDeBarraNoTick) return;
-    this.trocaDeBarraNoTick = false;
     this.hitstop = 20;
     this.shake = this.ajustes.shake ? 14 : 0;
   }

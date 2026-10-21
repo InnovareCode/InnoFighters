@@ -168,11 +168,11 @@ describe('S0 · dica de CPU só gasta RNG de quem a tem', () => {
     return { chamadas, resumo: JSON.stringify([g.p1.hp, g.p2.hp, g.p1.x, g.p2.x, g.tick, g.round]) };
   }
 
-  it('lutador sem dica: dicasIa vazio; com dica no golpe: a lista traz o golpe, mas o RNG não muda (papéis ainda não existem)', () => {
+  it('lutador sem dica: dicasIa vazio; com dica FORA DO ALCANCE: a lista traz o golpe, mas o RNG não muda (S1b: a dica só sorteia dentro do alcance)', () => {
     expect(base['wei-long'].dicasIa).toEqual([]);
-    const comDica: LutadorDef = { ...WEI_LONG, mods: { ...WEI_LONG.mods, lp: { ...WEI_LONG.mods.lp, ia: { papel: 'pressao', alcance: [0, 200] } } } };
+    const comDica: LutadorDef = { ...WEI_LONG, mods: { ...WEI_LONG.mods, lp: { ...WEI_LONG.mods.lp, ia: { papel: 'pressao', alcance: [5000, 6000] } } } };
     const montado = montarLutador(comDica, poseWei());
-    expect(montado.dicasIa).toEqual([{ golpe: 'lp', dica: { papel: 'pressao', alcance: [0, 200] } }]);
+    expect(montado.dicasIa).toEqual([{ golpe: 'lp', dica: { papel: 'pressao', alcance: [5000, 6000] } }]);
     const a = contarSorteios(WEI_LONG);
     const b = contarSorteios(comDica);
     expect(b.chamadas).toBe(a.chamadas);

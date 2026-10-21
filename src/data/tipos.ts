@@ -52,7 +52,12 @@ export type ReboteDef = {
 /** (S4, CAMILLE) PARADE: anula golpe corpo a corpo dos `niveis` na janela ativa e responde com `sResp`. */
 export type ParryDef = { niveis: readonly NivelGolpe[]; atordoaAtacante: number };
 
-/** (S1b/S3, BAATAR e CENTELLA) Agarrão em golpe: `alcance` px, dano fixo, tipo de alvo e janela de ticks. */
+/**
+ * (S1b/S3, BAATAR e CENTELLA) Agarrão em golpe (exige `throw: 1`): `alcance` px entre os dois x (o rival nunca fica a
+ * menos de `corpo + corpo` = 78: alcance menor que isso jamais agarra), `dmg` fixo (× pow), `alvo` e `janela` de ticks.
+ * `janela` ausente = testa só em mt === S; com janela testa a cada tick de [S, S + janela) até agarrar uma vez.
+ * Só `alvo: 'chao'` existe (o `montarLutador` recusa 'ar'/'ambos' até a S3).
+ */
 export type AgarraoDef = { alcance?: number; dmg?: number; alvo?: 'chao' | 'ar' | 'ambos'; janela?: number };
 
 /** (S4, CAMILLE) Contragolpe reforçado quando acerta o rival na PREPARAÇÃO do golpe dele. */
@@ -61,7 +66,8 @@ export type ContraDef = { mult: number; hs: number };
 /**
  * Dica de CPU por golpe (E3 §2). REGRA: a CPU só gasta chamadas de RNG a mais por causa de uma dica se o PRÓPRIO
  * lutador a declara (`LutadorMontado.dicasIa` não vazio). Lutador sem dica consome exatamente o RNG de antes — é o que
- * mantém o snapshot de CPU × CPU (semente 42) intacto. Os papéis entram nas fatias S1b..S5.
+ * mantém o snapshot de CPU × CPU (semente 42) intacto. Papéis hoje: `pressao`/`aproximar` (usar o golpe no `alcance`;
+ * `segurar` mantém ESP apertado) e `defesa-projetil` (escudo no lugar do bloqueio). `antiaereo`, `defesa` e `troca`: S3..S5.
  */
 export type PapelIa = 'pressao' | 'aproximar' | 'defesa' | 'defesa-projetil' | 'antiaereo' | 'troca';
 export type DicaIa = {
@@ -159,7 +165,10 @@ export type Golpe = {
   absorveProj?: 1;
   /** (S5) Passa por baixo de projétil (terceiro nível de altura da hurtbox). */
   rente?: 1;
-  /** (S1b) Salto com alvo: ticks de voo; a velocidade horizontal vem da distância até o rival. */
+  /**
+   * (S1b) Salto com alvo (só `leap`/`rise`): ticks de voo (deve bater com o voo real: vy −17 e gravidade 0,85 = 40). A
+   * velocidade horizontal é (x do rival − x) / vxAlvo na decolagem, limitada por |vx| (16 se ausente).
+   */
   vxAlvo?: number;
   /** (S5/chefe) Golpe `type: 'troca'`: ficha para a qual o lutador troca. */
   troca?: { ficha: string };

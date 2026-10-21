@@ -40,6 +40,28 @@ export type LutadorMontado = Omit<LutadorDef, 'fichas'> & {
 
 const ESPECIAIS: readonly NomeEspecial[] = ['sFire', 'sDown', 'sFwd'];
 
+/** Projétil de mentira do ESP que não solta projétil: nunca é lançado (o golpe não é `type: 'fire'`). */
+const PROJ_NEUTRO: ProjetilDef = { dmg: 0, sp: 0, kb: 0, hs: 0, kd: false, style: 'orb', sc: 1, life: 1 };
+
+/**
+ * Dados de E3 que o motor ainda não sabe executar (ou que não fazem sentido) falham ALTO no boot, em vez de virar um
+ * golpe que silenciosamente não faz o que o dado diz. Cada fatia que implementa a mecânica tira a sua recusa daqui.
+ */
+function validarParametrosE3(id: string, nome: NomeGolpe, mv: GolpeMontado): void {
+  const onde = `${id}.${nome}`;
+  const alvo = mv.agarrao?.alvo;
+  if (alvo !== undefined && alvo !== 'chao') throw new Error(`${onde}: agarrao.alvo '${alvo}' entra na S3 (hoje só 'chao')`);
+  if (mv.agarrao && !mv.throw) throw new Error(`${onde}: agarrao exige throw: 1 (sem ele o golpe não agarra)`);
+  if (mv.vxAlvo !== undefined && mv.type !== 'leap' && mv.type !== 'rise') throw new Error(`${onde}: vxAlvo só vale em leap/rise`);
+  const c = mv.carga;
+  if (mv.type === 'carga' && !c) throw new Error(`${onde}: type 'carga' sem carga`);
+  if (c) {
+    const ok = c.niveis.length >= 1 && c.niveis.length <= 3 && c.niveis[0] === 0 && c.porNivel.length === c.niveis.length && c.max > 0;
+    if (!ok) throw new Error(`${onde}: carga inválida (1 a 3 níveis, niveis[0] = 0, porNivel do mesmo tamanho, max > 0)`);
+    if (mv.S < 2) throw new Error(`${onde}: carga exige S >= 2 (segura em mt = S−1)`);
+  }
+}
+
 /**
  * Monta um lutador a partir dos dados estáticos e das poses do atlas. Função pura: porte
  * literal de setupChars() + buildMoves() do protótipo (linhas 387-395 e 597-615).
@@ -93,8 +115,12 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
     if (dica) dicasIa.push({ golpe: n, dica });
   }
 
+  for (const n of nomes) validarParametrosE3(def.id, n, moves[n]);
+
   const sFire = moves.sFire;
-  const projDef = sFire.proj;
+  // ESP sem projétil (E3: ARREMESSO do BAATAR, MASHI da AMINU): `proj` vira um projétil neutro só para `ch.proj.cost`
+  // (a barra de energia) e `ch.spawn`. Quem tem `type: 'fire'` continua obrigado a declarar `proj`.
+  const projDef = sFire.proj ?? (sFire.type === 'fire' ? undefined : PROJ_NEUTRO);
   if (!projDef) throw new Error(`${def.id}: sFire sem proj`);
   const ponta = pd['special'] ?? pd['sa1'] ?? g;
 

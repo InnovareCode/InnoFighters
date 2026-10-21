@@ -30,6 +30,30 @@ export function cortarBorda(img, n) {
 }
 
 /**
+ * Acrescenta `esquerda/direita/topo/base` px de fundo chapado (a cor `fundo`) ao redor da imagem. Serve a folhas em que
+ * um traço da figura TANGENCIA a borda (a mão do BAATAR na B9 v2 toca x=0): `cortarBorda` tiraria mais 2 px da ponta
+ * dos dedos, então se dá margem ANTES de cortar (a margem acolchoada, não a arte, é o que sobra cortada). Pura.
+ */
+export function acolchoarRgb(img, fundo, { esquerda = 0, direita = 0, topo = 0, base = 0 } = {}) {
+  if ([esquerda, direita, topo, base].some((v) => !Number.isInteger(v) || v < 0)) {
+    throw new Error('acolchoarRgb: margens devem ser inteiros >= 0');
+  }
+  const largura = img.largura + esquerda + direita;
+  const altura = img.altura + topo + base;
+  const dados = new Uint8Array(largura * altura * 3);
+  for (let p = 0; p < largura * altura; p++) {
+    dados[p * 3] = fundo[0];
+    dados[p * 3 + 1] = fundo[1];
+    dados[p * 3 + 2] = fundo[2];
+  }
+  for (let y = 0; y < img.altura; y++) {
+    const de = y * img.largura * 3;
+    dados.set(img.dados.subarray(de, de + img.largura * 3), ((y + topo) * largura + esquerda) * 3);
+  }
+  return { largura, altura, dados };
+}
+
+/**
  * Cor do fundo = mediana por canal dos pixels de uma faixa de `faixa` px ao redor da imagem (já sem a borda
  * ruidosa). A mediana ignora um pé ou punho que chegue perto da borda. O fundo da Runway NÃO é exatamente
  * #FF00FF (mediu ≈ 254,37,248 e deriva para 250,49,241 embaixo): por isso se mede, não se assume.
@@ -437,11 +461,12 @@ export function centroDeMassaX(rgba, largura, altura) {
  * ocupadas nas últimas `faixa` colunas (centro do punho/pé, não o canto do pixel). Em px do quadro, relativos ao
  * canto superior esquerdo. `yMax` ignora as linhas de baixo (o modo 'mao' tira a faixa dos pés). É o que o motor usa: `tipX` = alcance à frente, `tipY` = altura do golpe (data/montar.ts).
  */
-export function pontaDireita(rgba, largura, altura, { faixa = 10, limiar = 128, yMax = altura } = {}) {
+export function pontaDireita(rgba, largura, altura, { faixa = 10, limiar = 128, yMax = altura, yMin = 0 } = {}) {
   const ate = Math.min(altura, Math.max(1, yMax));
+  const de0 = Math.max(0, Math.min(yMin, ate - 1));
   let xMax = -1;
   for (let x = largura - 1; x >= 0 && xMax < 0; x--) {
-    for (let y = 0; y < ate; y++) {
+    for (let y = de0; y < ate; y++) {
       if (rgba[(y * largura + x) * 4 + 3] >= limiar) {
         xMax = x;
         break;
@@ -453,13 +478,13 @@ export function pontaDireita(rgba, largura, altura, { faixa = 10, limiar = 128, 
   // à direita, senão a mão e o pé que terminam na mesma coluna dariam uma média no vazio entre os dois
   const ocupada = new Uint8Array(ate);
   let yAncora = 0;
-  for (let y = 0; y < ate; y++) if (rgba[(y * largura + xMax) * 4 + 3] >= limiar) { yAncora = y; break; }
+  for (let y = de0; y < ate; y++) if (rgba[(y * largura + xMax) * 4 + 3] >= limiar) { yAncora = y; break; }
   for (let x = Math.max(0, xMax - faixa + 1); x <= xMax; x++) {
-    for (let y = 0; y < ate; y++) if (rgba[(y * largura + x) * 4 + 3] >= limiar) ocupada[y] = 1;
+    for (let y = de0; y < ate; y++) if (rgba[(y * largura + x) * 4 + 3] >= limiar) ocupada[y] = 1;
   }
   let de = yAncora;
   let ateY = yAncora;
-  for (let y = yAncora - 1, vao = 0; y >= 0 && vao <= 2; y--) { if (ocupada[y]) { de = y; vao = 0; } else vao++; }
+  for (let y = yAncora - 1, vao = 0; y >= de0 && vao <= 2; y--) { if (ocupada[y]) { de = y; vao = 0; } else vao++; }
   for (let y = yAncora + 1, vao = 0; y < ate && vao <= 2; y++) { if (ocupada[y]) { ateY = y; vao = 0; } else vao++; }
   let somaY = 0;
   let n = 0;

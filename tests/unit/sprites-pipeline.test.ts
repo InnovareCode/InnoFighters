@@ -16,7 +16,7 @@ import { carregarFerramenta } from './_ferramenta';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const executar = await carregarFerramenta<{
   gerarLutador: (p: any) => Promise<any>;
-  processarFolha: (arquivo: string, nomes: string[], opcoes?: any) => Promise<any>;
+  processarFolha: (arquivo: string, celulas: (string | string[] | null)[], opcoes?: any) => Promise<any>;
   acharFolha: (raiz: string, id: string, folha: string) => string | null;
 }>('ferramentas/sprites/executar.mjs');
 const poses = await carregarFerramenta<{ FOLHAS: Record<string, string[]>; MINIMAS: string[]; COM_PONTA: string[] }>('ferramentas/sprites/poses.mjs');
@@ -167,6 +167,121 @@ describe('pipeline sintético (folha 4x3 -> atlas C1 v2)', () => {
   });
 });
 
+// ---- folha 3x2 sintética (layout do chefão): célula descartada, apelido, acolchoar, fator de folha -------------------
+const W6 = 900;
+const H6 = 600;
+
+/** Folha 3x2 de 900x600: 6 figuras; a primeira tem um braço que vai até x=0 (tangencia a borda esquerda). */
+async function folha3x2(nome: string): Promise<string> {
+  const buf = Buffer.alloc(W6 * H6 * 3);
+  for (let p = 0; p < W6 * H6; p++) buf.set(FUNDO, p * 3);
+  const pinta = (x0: number, y0: number, w: number, h: number, cor: number[]) => {
+    for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) buf.set(cor, (y * W6 + x) * 3);
+  };
+  for (let i = 0; i < 6; i++) {
+    const cx = (i % 3) * 300 + 120;
+    const base = Math.floor(i / 3) * 300 + 270;
+    const alturaCorpo = 100 + i * 6;
+    pinta(cx, base - alturaCorpo, 40, alturaCorpo, [30, 30, 30]);
+    pinta(cx + 8, base - alturaCorpo - 16, 24, 16, [200, 150, 110]);
+    pinta(cx + 40, base - alturaCorpo + 20, 20, 8, [240, 240, 240]);
+  }
+  pinta(0, 200, 120, 6, [240, 240, 240]); // braço da figura 0, de x=0 até o corpo (x=120)
+  const arquivo = join(tmp, nome);
+  await sharp(buf, { raw: { width: W6, height: H6, channels: 3 } }).png().toFile(arquivo);
+  return arquivo;
+}
+
+describe('acharFolha com o nome curto das folhas do BAATAR', () => {
+  it('acha `<id>-b1-vN.png` (sem descrição), não confunde b1 com b10 e acha `br`', () => {
+    const dir = join(tmp, 'arte-fonte', 'lutadores', 'big', 'folhas');
+    mkdirSync(dir, { recursive: true });
+    for (const n of ['big-b1-v1.png', 'big-b1-v2.png', 'big-b10-v9.png', 'big-br-v1.png', 'big-b2-v1.png']) writeFileSync(join(dir, n), '');
+    expect(executar.acharFolha(tmp, 'big', 'b1')?.endsWith('big-b1-v2.png')).toBe(true);
+    expect(executar.acharFolha(tmp, 'big', 'br')?.endsWith('big-br-v1.png')).toBe(true);
+    expect(executar.acharFolha(tmp, 'big', 'b3')).toBeNull();
+  });
+});
+
+describe('pipeline sintético 3x2 (layout do chefão)', () => {
+  const CELULAS_B1 = [['idle0', 'idle2'], 'idle3', 'idle1', null, 'walk0', 'walk1'];
+
+  it('processarFolha: célula null some, apelido viaja junto com o desenho, 6 figuras na grade 3x2', async () => {
+    const arquivo = await folha3x2('baatar-t-b1-v1.png');
+    const r = await executar.processarFolha(arquivo, CELULAS_B1, { grade: [3, 2], acolchoar: { esquerda: 8 } });
+    expect(r.quadros.map((q: { nome: string }) => q.nome)).toEqual(['idle0', 'idle3', 'idle1', 'walk0', 'walk1']); // r2c1 descartada
+    expect(r.quadros[0].apelidos).toEqual(['idle2']);
+    expect(r.quadros[1].apelidos).toEqual([]);
+    // a folha tem 6 figuras: uma grade 4x3 (12 células) não casa e é recusada com mensagem clara
+    await expect(executar.processarFolha(arquivo, poses.FOLHAS['f1']!)).rejects.toThrow(/esperava 12/);
+    await expect(executar.processarFolha(arquivo, ['a', 'b'], { grade: [3, 2] })).rejects.toThrow(/2 celulas para uma grade 3x2/);
+  });
+
+  it('acolchoar: o traço que tangencia x=0 não perde os 2 px do corte de borda e não avisa "encosta"', async () => {
+    const arquivo = await folha3x2('baatar-t-b1-v1.png');
+    const sem = await executar.processarFolha(arquivo, CELULAS_B1, { grade: [3, 2] });
+    const com = await executar.processarFolha(arquivo, CELULAS_B1, { grade: [3, 2], acolchoar: { esquerda: 8 } });
+    // a figura 0 vai de x=0 até x=179 (corpo em 120..159 e braço da frente até 179): 180 px inteiros só com o acolchoamento
+    expect(com.quadros[0].larguraFigura).toBe(180);
+    expect(sem.quadros[0].larguraFigura).toBe(178);
+    expect(sem.avisos.some((a: string) => /encosta na borda/.test(a))).toBe(true);
+    expect(com.avisos.some((a: string) => /encosta na borda/.test(a))).toBe(false);
+    expect(com.avisos.some((a: string) => /acolchoada/.test(a))).toBe(true);
+  });
+
+  it('gerarLutador (layout chefe): alturaRef do lutadores.json, apelido = mesmo retângulo, retrato 190x190, manifesto válido', async () => {
+    const arquivo = await folha3x2('baatar-t-b1-v1.png');
+    const saida = join(tmp, 'saida-chefe');
+    const r = await executar.gerarLutador({
+      raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida, arquivos: { b1: arquivo },
+      excecoes: { layout: 'chefe', alturaRef: 205, acolchoar: { b1: { esquerda: 8 } } },
+    });
+    const m = validarManifesto(JSON.parse(readFileSync(join(saida, 'atlas.json'), 'utf8')), 'chefe-teste/atlas.json');
+    expect(Object.keys(m.quadros)).toEqual(['idle0', 'idle1', 'idle2', 'idle3', 'walk0', 'walk1']);
+    expect(Math.abs(m.alturaRef - 205)).toBeLessThanOrEqual(1);
+    expect(m.quadros['idle0']!.h).toBe(m.alturaRef);
+    const { p, x, y, w, h, ax } = m.quadros['idle0']!;
+    expect(m.quadros['idle2']).toEqual({ p, x, y, w, h, ax }); // apelido: o mesmo desenho, sem rosto
+    expect(m.quadros['idle0']!.rosto).toBeDefined();
+    expect(r.relatorio.atlas).toMatchObject({ quadros: 6, desenhos: 5 });
+    expect(r.relatorio.quadros['idle2'].apelidoDe).toBe('idle0');
+    // alturaRef 205 = k 0,5: a janela do retrato é 95 px do atlas, entregue reduzida a 190x190
+    const retrato = await sharp(join(saida, 'retrato.png')).metadata();
+    expect([retrato.width, retrato.height]).toEqual([190, 190]);
+    expect(m.retrato).toMatchObject({ arquivo: 'retrato.png' });
+  });
+
+  it('gerarLutador: pose em `ponta` fora de COM_PONTA ganha ponta; folha desconhecida é erro', async () => {
+    const arquivo = await folha3x2('baatar-t-b1-v1.png');
+    const saida = join(tmp, 'saida-chefe-ponta');
+    await executar.gerarLutador({
+      raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida, arquivos: { b1: arquivo },
+      excecoes: { layout: 'chefe', ponta: { walk1: 'direita' } },
+    });
+    const m = validarManifesto(JSON.parse(readFileSync(join(saida, 'atlas.json'), 'utf8')), 'x');
+    expect(m.quadros['walk1']!.ponta).toBeDefined();
+    expect(m.quadros['walk0']!.ponta).toBeUndefined();
+    await expect(
+      executar.gerarLutador({ raiz: tmp, id: 'chefe-teste', folhas: ['zz'], saida, arquivos: {}, excecoes: { layout: 'chefe' } }),
+    ).rejects.toThrow(/folha desconhecida/);
+  });
+
+  it('fatorFolha multiplica a escala só da folha indicada (idle0 continua a referência)', async () => {
+    const a1 = await folha3x2('baatar-t-b1-v1.png');
+    const a2 = await folha3x2('baatar-t-b2-v1.png');
+    const saida = join(tmp, 'saida-chefe-fator');
+    const r = await executar.gerarLutador({
+      raiz: tmp, id: 'chefe-teste', folhas: ['b1', 'b2'], saida, arquivos: { b1: a1, b2: a2 },
+      excecoes: { layout: 'chefe', alturaRef: 200, fatorFolha: { b2: 0.5 } },
+    });
+    const q = r.relatorio.quadros;
+    // walk2 = r1c1 da b2 = o mesmo desenho do idle0 (r1c1 da b1), mas com metade da escala
+    expect(q['idle0'].h).toBe(200);
+    expect(Math.abs(q['walk2'].h - 100)).toBeLessThanOrEqual(2);
+    expect(r.relatorio.avisos.some((x: string) => /b2: escala da folha x0.5/.test(x))).toBe(true);
+  });
+});
+
 // ---- arte real (só roda onde a arte-fonte existe; ela é gitignored) ---------------------------------------------
 const hayatoF1 = join(RAIZ, 'arte-fonte/lutadores/hayato/folhas/hayato-f1-base-v2.png');
 const aminuF4 = join(RAIZ, 'arte-fonte/lutadores/aminu/folhas/aminu-f4-especiais-v1.png');
@@ -225,4 +340,81 @@ describe.skipIf(!existsSync(hayatoF1))('arte real (arte-fonte local)', () => {
     expect(r.info.chave).toBe('verde');
     expect(r.info.haloDepois).toBe(0);
   });
+});
+
+
+// ---- lutadores novos: arte real (arte-fonte é gitignored; sem ela os testes pulam) ---------------------------------
+const existe = (...partes: string[]) => existsSync(join(RAIZ, 'arte-fonte', 'lutadores', ...partes));
+
+describe.skipIf(!existe('baatar', 'folhas', 'baatar-b9-v2.png'))('BAATAR (arte real, grade 3x2, escala própria)', () => {
+  it('atlas completo: 54 poses, alturaRef 525 = idle0, mínimas, ponta, apelido do idle e margem à esquerda na B9', async () => {
+    const saida = join(tmp, 'baatar');
+    const r = await executar.gerarLutador({ raiz: RAIZ, id: 'baatar', saida });
+    const m = validarManifesto(JSON.parse(readFileSync(join(saida, 'atlas.json'), 'utf8')), 'baatar/atlas.json');
+    expect(Object.keys(m.quadros)).toHaveLength(54);
+    expect(r.relatorio.atlas.desenhos).toBe(53); // idle2 é o mesmo desenho do idle0
+    expect(m.alturaRef).toBe(525);
+    expect(m.quadros['idle0']!.h).toBe(525);
+    for (const n of poses.MINIMAS) expect(m.quadros[n], n).toBeDefined();
+    for (const n of [...poses.COM_PONTA, 'dive1']) expect(m.quadros[n]?.ponta, `ponta de ${n}`).toBeDefined();
+    for (const n of ['devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1']) expect(m.quadros[n], n).toBeDefined();
+    // laço do idle: idle0 e idle2 são o mesmo retângulo; idle1 e idle3 são desenhos diferentes
+    expect(m.quadros['idle2']).toMatchObject({ p: m.quadros['idle0']!.p, x: m.quadros['idle0']!.x, y: m.quadros['idle0']!.y });
+    expect(m.quadros['idle1']!.x === m.quadros['idle3']!.x && m.quadros['idle1']!.y === m.quadros['idle3']!.y).toBe(false);
+    // agachar vem da reposição (BR): ~84% do idle, e não os 98,6% da B3 original
+    expect(m.quadros['crouch']!.h / m.alturaRef).toBeLessThan(0.9);
+    expect(m.quadros['crouch']!.h / m.alturaRef).toBeGreaterThan(0.75);
+    // a B9 tem figura tangenciando x=0: acolchoada, sem aviso de "encosta na borda"
+    expect(r.relatorio.avisos.some((a: string) => /b9: acolchoada/.test(a))).toBe(true);
+    expect(r.relatorio.avisos.some((a: string) => /encosta na borda/.test(a))).toBe(false);
+    for (const f of ['b1', 'b2', 'b3', 'br', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9']) expect(r.relatorio.folhas[f].haloDepois, f).toBe(0);
+    expect(r.relatorio.folhas['b9'].arquivo).toBe('baatar-b9-v2.png'); // maior versão
+    expect(r.relatorio.folhas['b2'].arquivo).toBe('baatar-b2-v2.png');
+    // golpes: soco na altura do tronco/rosto, rasteira rente ao chão, antiaéreo no alto; jkick pelo pé (não pela mão)
+    expect(m.quadros['lp1']!.ponta![1]).toBeLessThan(m.quadros['lp1']!.h * 0.5);
+    expect(m.quadros['sweep']!.ponta![1]).toBeGreaterThan(m.quadros['sweep']!.h * 0.7);
+    expect(m.quadros['upper']!.ponta![1]).toBeLessThan(m.quadros['upper']!.h * 0.1);
+    expect(m.quadros['jkick']!.ponta![1]).toBeGreaterThan(m.quadros['jkick']!.h * 0.55);
+    // nenhum desenho sai da página nem encosta em outro (o apelido repete o retângulo: conta uma vez)
+    const paginas = m.imagens.map((_, i) => {
+      const unicos = new Map(Object.values(m.quadros).filter((q) => q.p === i).map((q) => [`${q.x},${q.y}`, { nome: `${q.x},${q.y}`, w: q.w, h: q.h, x: q.x, y: q.y }]));
+      return [...unicos.values()];
+    });
+    expect(empacotador.validarEmpacotamento({ tamanho: m.tamanho, paginas }, 4)).toEqual([]);
+    expect(m.tamanho[0]).toBeLessThanOrEqual(2048);
+    expect(m.tamanho[1]).toBeLessThanOrEqual(2048);
+  }, 180000);
+});
+
+describe.skipIf(!existe('centella', 'folhas', 'centella-f1-base-v1.png'))('CENTELLA f1 (respiração em 3 quadros, par r2c3/r3c3 colado)', () => {
+  it('12 poses de 11 desenhos: idle em laço 1-2-4-2 sem a r1c3', async () => {
+    const saida = join(tmp, 'centella');
+    const r = await executar.gerarLutador({ raiz: RAIZ, id: 'centella', saida, folhas: ['f1'] });
+    const m = validarManifesto(JSON.parse(readFileSync(join(saida, 'atlas.json'), 'utf8')), 'centella/atlas.json');
+    expect(Object.keys(m.quadros)).toHaveLength(12);
+    const { x, y } = m.quadros['idle1']!;
+    expect(m.quadros['idle3']).toMatchObject({ x, y }); // idle1 e idle3 = r1c2
+    expect(r.relatorio.atlas.desenhos).toBe(11);
+    // sem o salto de 26 px da r1c3: o idle nunca passa de ~3% da altura do idle0
+    for (const n of ['idle1', 'idle2', 'idle3']) expect(Math.abs(m.quadros[n]!.h - m.alturaRef), n).toBeLessThanOrEqual(0.03 * m.alturaRef);
+  }, 120000);
+});
+
+describe.skipIf(!existe('nila', 'folhas', 'nila-f1-base-v3.png'))('AMINU, CAMILLE e NILA: versões aprovadas (maior -vN) e folhas completas', () => {
+  const ESPERADAS: Record<string, Record<string, string>> = {
+    aminu: { f1: 'aminu-f1-base-v1.png', f2: 'aminu-f2-reacoes-v2.png', f3: 'aminu-f3-golpes-v3.png', f4: 'aminu-f4-especiais-v1.png' },
+    camille: { f1: 'camille-f1-base-v1.png', f2: 'camille-f2-reacoes-v2.png', f3: 'camille-f3-golpes-v1.png', f4: 'camille-f4-especiais-v2.png' },
+    nila: { f1: 'nila-f1-base-v3.png', f2: 'nila-f2-reacoes-v2.png', f3: 'nila-f3-golpes-v1.png', f4: 'nila-f4-especiais-v1.png' },
+  };
+  for (const [id, folhas] of Object.entries(ESPERADAS)) {
+    it(`${id}: o acharFolha pega as versões aprovadas e cada folha dá 12 figuras com halo zerado`, async () => {
+      for (const [f, nome] of Object.entries(folhas)) {
+        const arquivo = executar.acharFolha(RAIZ, id, f)!;
+        expect(arquivo.split(/[\\/]/).pop(), `${id} ${f}`).toBe(nome);
+        const r = await executar.processarFolha(arquivo, poses.FOLHAS[f]!);
+        expect(r.quadros, `${id} ${f}`).toHaveLength(12);
+        expect(r.info.haloDepois, `${id} ${f}`).toBe(0);
+      }
+    }, 120000);
+  }
 });

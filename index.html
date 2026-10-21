@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#000000" />
+    <!-- site de TESTE publico (Pages temporario): nao indexar. Remover ao entrar no servidor definitivo. -->
+    <meta name="robots" content="noindex" />
     <title>InnoFighters</title>
     <style>
       html, body { margin: 0; height: 100%; background: #05030a; overflow: hidden; }
@@ -27,6 +29,8 @@
       <div class="b" id="bp" data-k="Escape" role="button" aria-label="Pausar">II</div>
     </div>
     <div id="rot" role="status">Vire o aparelho para o modo paisagem</div>
+    <!-- avisos discretos que somem sozinhos (platform/aviso.ts), ex.: progresso nao salvo -->
+    <div id="aviso" role="status" aria-live="polite" hidden></div>
     <pre id="err" style="display:none;position:fixed;left:8px;top:8px;right:8px;margin:0;padding:10px;background:#300;color:#fcc;font:13px monospace;white-space:pre-wrap;z-index:9"></pre>
     <script type="module" src="/src/main.ts"></script>
   </body>

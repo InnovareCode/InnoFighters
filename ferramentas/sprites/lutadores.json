@@ -1,8 +1,25 @@
 {
-  "_doc": "Excecoes por lutador ao padrao do pipeline. ponta: { pose: 'cima'|'direita' } sobrescreve MODO_PONTA (poses.mjs).",
+  "_doc": "Excecoes por lutador ao padrao do pipeline (executar.mjs#gerarLutador). layout: 'padrao' (f1..f4, 4x3) | 'chefe' (b1..b9+br, 3x2). celulas: { folha: [12 ou 6 celulas] } troca o mapa de poses da folha (celula = nome | [nome, apelido...] | null = descarta). alturaRef: altura do idle0 no atlas. acolchoar: { folha: {esquerda,direita,topo,base} } px de fundo antes de cortar a borda. fatorFolha: { folha: n } multiplica a escala da folha. ponta: { pose: 'cima'|'direita'|'mao' } sobrescreve MODO_PONTA; pose fora de COM_PONTA tambem ganha ponta.",
   "hayato": {
     "ponta": {
       "sb2": "cima"
+    }
+  },
+  "centella": {
+    "_nota": "f1 v1: a respiracao em 3 quadros r1c1 > r1c2 > r1c4 > r1c2 (r1c3 quebra o ciclo: corpo sobe 26 px e o torso gira). docs/handoff-apolo-folhas1-novos.md",
+    "celulas": {
+      "f1": ["idle0", ["idle1", "idle3"], null, "idle2", "walk0", "walk1", "walk2", "walk3", "walk4", "walk5", "walk6", "walk7"]
+    }
+  },
+  "baatar": {
+    "layout": "chefe",
+    "alturaRef": 525,
+    "acolchoar": {
+      "b9": { "esquerda": 16 }
+    },
+    "ponta": {
+      "dive1": "direita",
+      "jkick": "pe"
     }
   }
 }

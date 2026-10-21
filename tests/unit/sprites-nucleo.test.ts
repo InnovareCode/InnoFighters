@@ -13,16 +13,17 @@ const nucleo = await carregarFerramenta<{
   cortarBorda: F; estimarFundo: F; detectarChave: F; calcularAlfa: F; dilatar: F; despill: F; medirHalo: F; vazamento: F;
   mascaraDeAlfa: F; rotular: F; agruparFiguras: F; ordenarGrade: F; recortarFigura: F; caixaOpaca: F; cortarRgba: F;
   espelharRgba: F; centroDeMassaX: F; pontaDireita: F; pontaCima: F; rostoDoQuadro: F; janelaRgba: F; montarManifesto: F;
-  separarFundidas: F;
+  separarFundidas: F; acolchoarRgb: F;
 }>('ferramentas/sprites/nucleo.mjs');
 const empacotador = await carregarFerramenta<{ empacotar: F; validarEmpacotamento: F }>('ferramentas/sprites/empacotar.mjs');
 const poses = await carregarFerramenta<{
   FOLHAS: Record<string, string[]>; ORDEM_CANONICA: string[]; COM_PONTA: string[]; MINIMAS: string[]; MODO_PONTA: Record<string, string>;
+  EXTRAS: string[]; ORDEM_COMPLETA: string[]; nomesDaCelula: F; resolverLayout: F;
 }>('ferramentas/sprites/poses.mjs');
 const {
   cortarBorda, estimarFundo, detectarChave, calcularAlfa, dilatar, despill, medirHalo, vazamento, mascaraDeAlfa, rotular,
   agruparFiguras, ordenarGrade, recortarFigura, caixaOpaca, espelharRgba, centroDeMassaX, pontaDireita, pontaCima,
-  rostoDoQuadro, janelaRgba, montarManifesto, separarFundidas,
+  rostoDoQuadro, janelaRgba, montarManifesto, separarFundidas, acolchoarRgb,
 } = nucleo;
 const { empacotar, validarEmpacotamento } = empacotador;
 
@@ -464,5 +465,140 @@ describe('poses e manifesto C1 v2', () => {
     const p = manifestoParaPoses(paraManifestoV1(v));
     expect(p['lp1']!.tipX).toBeGreaterThan(0);
     expect(p['lp1']!.tipY).toBeGreaterThan(0);
+  });
+});
+
+// ---- lutadores novos: grade 3x2 do BAATAR, acolchoar, apelidos, ponta do pé ---------------------------------------
+describe('acolchoarRgb', () => {
+  it('acrescenta fundo chapado só nos lados pedidos e preserva a arte intacta', () => {
+    const img = imagem(6, 4, [1, 2, 3]);
+    retangulo(img, 0, 1, 1, 2, PRETO); // traço que tangencia a borda esquerda
+    const a = acolchoarRgb(img, [9, 8, 7], { esquerda: 5, base: 2 });
+    expect([a.largura, a.altura]).toEqual([11, 6]);
+    expect(pixel(a, 0, 0)).toEqual([9, 8, 7]); // acolchoado
+    expect(pixel(a, 5, 1)).toEqual(PRETO); // o traço, agora a 5 px da borda
+    expect(pixel(a, 5, 0)).toEqual([1, 2, 3]); // resto da arte
+    expect(pixel(a, 10, 5)).toEqual([9, 8, 7]);
+  });
+
+  it('depois de cortarBorda(2) a ponta que tangenciava a borda continua inteira (sem acolchoar, perde 2 colunas)', () => {
+    const img = imagem(20, 10, MAGENTA_REAL);
+    retangulo(img, 0, 4, 3, 2, PRETO); // dedo: colunas 0..2
+    const contaPretos = (i: ReturnType<typeof imagem>) => {
+      let n = 0;
+      for (let p = 0; p < i.largura * i.altura; p++) if (i.dados[p * 3] === PRETO[0]) n++;
+      return n;
+    };
+    expect(contaPretos(cortarBorda(img, 2))).toBe(1 * 2); // só 1 das 3 colunas sobrou
+    expect(contaPretos(cortarBorda(acolchoarRgb(img, MAGENTA_REAL, { esquerda: 8 }), 2))).toBe(3 * 2); // as 3 colunas
+  });
+
+  it('recusa margem negativa ou fracionária', () => {
+    expect(() => acolchoarRgb(imagem(2, 2, [0, 0, 0]), [0, 0, 0], { esquerda: -1 })).toThrow(/inteiros/);
+    expect(() => acolchoarRgb(imagem(2, 2, [0, 0, 0]), [0, 0, 0], { topo: 1.5 })).toThrow(/inteiros/);
+  });
+});
+
+describe('pontaDireita com yMin (modo "pe")', () => {
+  // punho alto que passa da bota: sem yMin a ponta é o punho; com yMin só vale o que está abaixo
+  function figura() {
+    const l = 60;
+    const a = 80;
+    const rgba = new Uint8Array(l * a * 4);
+    const pinta = (x0: number, y0: number, w: number, h: number) => {
+      for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) rgba[(y * l + x) * 4 + 3] = 255;
+    };
+    pinta(10, 10, 20, 60); // corpo
+    pinta(30, 20, 28, 6); // punho/braço até x=57 (alto)
+    pinta(30, 60, 18, 8); // bota até x=47 (baixa)
+    return { rgba, l, a };
+  }
+
+  it('sem yMin pega o ponto mais à direita (o punho); com yMin só a bota', () => {
+    const { rgba, l, a } = figura();
+    expect(pontaDireita(rgba, l, a)[0]).toBe(58);
+    const pe = pontaDireita(rgba, l, a, { yMin: Math.round(0.55 * a) });
+    expect(pe[0]).toBe(48);
+    expect(pe[1]).toBeGreaterThan(60);
+    expect(pe[1]).toBeLessThan(68);
+  });
+});
+
+describe('layouts de folhas (resolverLayout)', () => {
+  it('o layout padrão é exatamente o mapa de 4 folhas de 12 poses', () => {
+    const l = poses.resolverLayout({});
+    expect(l.ids).toEqual(['f1', 'f2', 'f3', 'f4']);
+    for (const f of l.ids) {
+      expect(l.folhas[f].grade).toEqual([4, 3]);
+      expect(l.folhas[f].celulas).toEqual(poses.FOLHAS[f]);
+    }
+  });
+
+  it('BAATAR: 10 folhas 3x2 e as 54 poses do motor, sem pose repetida', () => {
+    const l = poses.resolverLayout({ layout: 'chefe' });
+    expect(l.ids).toEqual(['b1', 'b2', 'b3', 'br', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9']);
+    const nomes: string[] = l.ids.flatMap((f: string) => l.folhas[f].celulas.flatMap(poses.nomesDaCelula));
+    expect(new Set(nomes).size).toBe(nomes.length);
+    expect(nomes).toHaveLength(54);
+    expect([...nomes].sort()).toEqual([...poses.ORDEM_COMPLETA].sort()); // nenhuma pose faltando nem sobrando
+    for (const f of l.ids) expect(l.folhas[f].celulas, f).toHaveLength(6);
+  });
+
+  it('BAATAR: as escolhas da curadoria do Apolo estão no mapa', () => {
+    const { folhas } = poses.resolverLayout({ layout: 'chefe' });
+    // B1: idle 4 (r2c1) descartado; laço 2-1-3-1 = idle0/idle2 compartilham o frame 1
+    expect(folhas.b1.celulas[3]).toBeNull();
+    expect(folhas.b1.celulas[0]).toEqual(['idle0', 'idle2']);
+    // B3 r1c1 (agachar) não é da B3: vem da reposição; B7 r1c3 (hip toss) idem
+    expect(folhas.b3.celulas[0]).toBeNull();
+    expect(folhas.br.celulas[0]).toBe('crouch');
+    expect(folhas.b7.celulas[2]).toBeNull();
+    expect(folhas.br.celulas[2]).toBe('sa2');
+    // B9: dança, mergulho e vitória
+    expect(folhas.b9.celulas).toEqual(['devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1', 'win']);
+    // arremesso e nocaute na B4 (cabeça à esquerda na arte, nada a espelhar)
+    expect(folhas.b4.celulas.slice(4)).toEqual(['kdAir', 'koFloor']);
+  });
+
+  it('`celulas` do lutadores.json troca as células de uma folha (CENTELLA f1: laço 1-2-4-2, sem a r1c3)', () => {
+    const f1 = ['idle0', ['idle1', 'idle3'], null, 'idle2', ...poses.FOLHAS['f1']!.slice(4)];
+    const l = poses.resolverLayout({ celulas: { f1 } });
+    expect(l.folhas.f1.celulas[2]).toBeNull();
+    expect(l.folhas.f2.celulas).toEqual(poses.FOLHAS['f2']); // as outras não mudam
+  });
+
+  it('recusa pose em duas células, quantidade errada de células e layout desconhecido', () => {
+    const dup = [...poses.FOLHAS['f1']!];
+    dup[1] = 'idle0';
+    expect(() => poses.resolverLayout({ celulas: { f1: dup } })).toThrow(/duas celulas/);
+    expect(() => poses.resolverLayout({ celulas: { f1: ['idle0'] } })).toThrow(/grade 4x3/);
+    expect(() => poses.resolverLayout({ layout: 'inexistente' })).toThrow(/desconhecido/);
+  });
+
+  it('nomesDaCelula: nome, lista de apelidos e null (descartada)', () => {
+    expect(poses.nomesDaCelula('a')).toEqual(['a']);
+    expect(poses.nomesDaCelula(['a', 'b'])).toEqual(['a', 'b']);
+    expect(poses.nomesDaCelula(null)).toEqual([]);
+  });
+
+  it('as poses extras ficam depois das 48 canônicas e jpunch tem ponta', () => {
+    expect(poses.ORDEM_COMPLETA.slice(0, 48)).toEqual(poses.ORDEM_CANONICA);
+    expect(poses.EXTRAS).toEqual(['jpunch', 'devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1']);
+    expect(poses.COM_PONTA).toContain('jpunch');
+  });
+});
+
+describe('ordenarGrade 3x2 (folha do BAATAR)', () => {
+  const fig = (cx: number, cy: number) => ({ ids: [1], x0: cx - 5, y0: cy - 5, x1: cx + 5, y1: cy + 5, area: 100, somaX: cx * 100, somaY: cy * 100 });
+
+  it('lê linha a linha, esquerda para a direita, com 6 figuras', () => {
+    const embaralhadas = [fig(500, 700), fig(100, 100), fig(300, 100), fig(100, 700), fig(500, 100), fig(300, 700)];
+    const r = ordenarGrade(embaralhadas, 3, 2);
+    expect(r.separadas).toBe(true);
+    expect(r.figuras.map((f: { somaX: number; somaY: number }) => [f.somaX / 100, f.somaY / 100])).toEqual([[100, 100], [300, 100], [500, 100], [100, 700], [300, 700], [500, 700]]);
+  });
+
+  it('recusa número de figuras diferente de colunas x linhas', () => {
+    expect(() => ordenarGrade([fig(1, 1), fig(2, 2)], 3, 2)).toThrow(/esperava 6/);
   });
 });

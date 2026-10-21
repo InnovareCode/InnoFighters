@@ -1,0 +1,1 @@
+- [Padroes de seguranca do InnoFighters](project_padroes-seguranca-innofighters.md) — jogo client-side; localStorage sem clamp, guarda de caminho do CLI, repo publico

@@ -34,3 +34,10 @@ export const LUTADORES: Readonly<Record<IdLutador, LutadorDef>> = {
 };
 
 export { CAIO, HAYATO, MIN_JI, WEI_LONG };
+
+/**
+ * Definições da E3 FORA do elenco (não entram em `LUTADORES` nem `ROSTER`: o id ainda não está em `IDS_LUTADORES`, a E5
+ * liga). Existem para os testes de motor e para a fixture de desenvolvimento montarem sobre o atlas de um lutador atual.
+ */
+export { AMINU } from './aminu';
+export { BAATAR, MERGULHO_DA_AGUIA } from './baatar';

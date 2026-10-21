@@ -16,3 +16,9 @@ coverage/
 
 # F2: saida do pipeline de sprites (atlas gerados; a F3 decide o que entra em public/assets)
 sprites-gerados/
+
+# S2: segredos e lixo local que nunca devem ser versionados
+.claude/settings.local.json
+*.pem
+*.key
+*.log

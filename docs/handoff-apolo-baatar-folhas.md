@@ -63,6 +63,43 @@ logo depois do parágrafo CHARACTER:
 BODY PROPORTIONS: exactly the same proportions and size as the reference image: a big head and a very thick, heavy body about 5.5 heads tall. Standing upright does NOT make him slimmer or smaller: same head size, same huge belly, same thick arms and legs in every cell.
 ```
 
+## Lote 8: reposição BR e B9 v2 (2026-10-20)
+
+Fonte: `scratchpad/runway-lote8/baatar-br-v1.png` e `baatar-b9-v2.png`. Nas duas: 6 componentes, nenhuma linha de chão,
+1 componente pequeno de ruído e fidelidade de traje completa.
+
+### B9 v2: APROVADO, substitui a v1 inteira
+
+- **Proporção corrigida.** Do topo do cabelo ao queixo dá 151, 151 e 155 px (r1c1, r1c2, r2c1), contra 152 na B1 e 123-127
+  na v1. A cabeça tem a mesma largura da B1 (119 px em +60). A vitória (r2c3) mede 869 px, cerca de 5,7 cabeças, igual à
+  mestra. O abre-asas (r1c1) tem 830 px, a altura exata do idle.
+- **Borda.** As pontas dos dedos da mão esquerda de r1c1 (y 277-312) e de r2c1 (y 990-1040) **tangenciam** x=0: são 6 px
+  na coluna 0 e 22 px na coluna 1. No zoom ×4 o contorno das unhas está fechado, então é o traço tocando a borda, sem dedo
+  cortado; perde no máximo 1 a 2 px de contorno. Não precisa regerar. No recorte, **acrescente margem de fundo verde** à
+  esquerda dessas duas células (o recorte por componente começa em x=0). Os "x até 2398" medidos pelo Atlas não são
+  figura: a maior x de figura é 2281, e o resto é o ruído do Runway na última linha e coluna.
+- **Poses.** Abre-asas (agora em base larga, menos "ereto" que a v1, mas digno), joelho alto, mãos nas coxas com a cabeça
+  baixa e sorriso, salto de asas, mergulho no ar (pés fora do chão, base em 1657) e mão no peito sorrindo. Todas servem.
+
+Caixas B9 v2: r1 [0-782, 54-883] [794-1605, 55-885] [1700-2281, 100-883]; r2 [0-783, 923-1773] [826-1654, 1026-1657]
+[1828-2210, 914-1782].
+
+### BR v1: só 2 das 6 células entram
+
+| Célula BR | Entra no atlas? | Medida / motivo |
+|---|---|---|
+| r1c1 agachamento | **SIM, substitui B3 r1c1** | 701 px (84% do idle; o pedido era cerca de 67%). Quadril baixo, lê como agachado e fica abaixo da defesa agachada da B3 (730 px). Cabeça de 155 px, na escala da B1. |
+| r1c2 antebraço | não: fica B5 r2c1 | Saiu de novo como soco reto de punho, igual à B5. Não ganha nada. |
+| r1c3 hip toss | **SIM, substitui B7 r1c3** | Melhor que a v1: não agarra o calção. Mas o punho de baixo ainda segura a barra da própria jaqueta. Se na animação ler "ajeitando a roupa", corte o quadro e use agarra (B7 r1c2) → finalização ajoelhado (B7 r2c1). |
+| r2c1 chute baixo | não: fica B6 r2c1 | Mede 869 px, ou seja, ele está em pé. Sair do agachamento (701) para esse chute daria um salto de 24%. A B6 r2c1 (702 px) continua agachada. |
+| r2c2 soco aéreo | não: fica B8 r2c3 | Mais uma vez o punho sobe acima da cabeça, como preparo. É a 2ª tentativa que falha: aceite a B8 r2c3 como "martelo" e ponha a caixa de acerto à frente, na altura da cabeça. |
+| r2c3 respiração agachada | não | Mede 783 px, contra 701 do agachamento: alternar os dois faria a figura subir e descer 82 px. Use o agachamento como quadro único. |
+
+Caixas BR usadas: r1c1 [102-682, 182-882]; r1c3 [1700-2281, 86-882].
+
+**Mapa final para o atlas do BAATAR:** B1 (laço 2-1-3-1), B2 v2 limpa, B3 com r1c1 trocado por BR r1c1, B4, B5, B6,
+B7 com r1c3 trocado por BR r1c3, B8 e B9 v2. Todas na escala da B1 (cabeça de 147-157 px); só a B6 (140) pode pedir ×1,05.
+
 ## Caixas por componente (v1, para o recorte do atlas)
 
 - B1: r1 [102-697, 54-883] [904-1491, 55-879] [1699-2295, 46-882]; r2 [86-688, 903-1770] [891-1515, 914-1775] [1700-2257, 917-1775]

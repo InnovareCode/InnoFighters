@@ -53,6 +53,7 @@ export function navegadorFalso(settings: Partial<Configuracoes> = {}, regras: Re
     prog: progressoVazio(),
     salvar() {
       salvou.n++;
+      return true;
     },
   };
   const entrada = {} as unknown as Entrada;

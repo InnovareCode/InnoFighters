@@ -78,18 +78,45 @@ export function moveInput(name: NomeGolpe, dir: number): PlanoIa {
   return o;
 }
 
+/** Chance (antes de multiplicar por `aggr`) de a CPU usar um golpe com dica quando ele está ao alcance. Valor de partida (E6). */
+const CHANCE_DICA = 0.4;
+
 /**
- * Ponto de plug das dicas de CPU. Devolve um plano pronto ou null (= segue o fluxo normal). CONTRATO: só é chamada
- * para quem tem `dicasIa` (a guarda está em `cpuInput`) e deve chamar `rnd` APENAS depois de decidir que a dica se
- * aplica — assim uma dica fora do alcance também não altera a sequência do RNG. Os papéis entram por fatia.
+ * Dicas de CPU (docs/mecanicas-e3.md §2). Devolve um plano pronto ou null (= segue o fluxo normal). CONTRATO: só é
+ * chamada para quem tem `dicasIa` (a guarda está em `cpuInput`) e chama `rnd` APENAS depois de decidir que a dica se
+ * aplica (golpe pagável, rival dentro do `alcance`): dica fora do alcance também não altera a sequência do RNG.
+ *
+ * Papéis daqui: `pressao` e `aproximar` (usar o golpe quando o rival está no `alcance`; com `segurar`, mantém ESP
+ * apertado por N ticks sorteados, o único `rnd` extra). `defesa-projetil` age na reação a projétil (`cpuInput`), não
+ * aqui. `antiaereo`, `defesa` e `troca` entram nas fatias S3..S5.
  */
 function planoPorDica(
-  _me: Fighter,
-  _opp: Fighter,
-  _distancia: number,
-  _dir: number,
-  _rnd: () => number,
-): { plano: PlanoIa; dur: number } | null {
+  me: Fighter,
+  distancia: number,
+  dir: number,
+  L: PerfilCpu,
+  rnd: () => number,
+): { plano: PlanoIa; segurar: number } | null {
+  for (const { golpe, dica } of me.ch.dicasIa) {
+    if (dica.papel !== 'pressao' && dica.papel !== 'aproximar') continue;
+    const [min, max] = dica.alcance ?? [0, Infinity];
+    if (distancia < min || distancia > max || !me.canAfford(golpe)) continue;
+    if (rnd() >= CHANCE_DICA * L.aggr) continue;
+    const mv = me.ch.moves[golpe];
+    let segurar = 0;
+    if (dica.segurar && mv.carga) {
+      const [a, b] = dica.segurar;
+      const n = a + Math.floor(rnd() * (b - a + 1));
+      segurar = Math.max(1, mv.S - 2 + n); // o 1º tick já vai no plano; mt = S−1 é o 1º tick de carga
+    }
+    return { plano: moveInput(golpe, dir), segurar };
+  }
+  return null;
+}
+
+/** Golpe de `defesa-projetil` que a CPU pode usar agora (pagável), ou null. Só olhado por quem tem `dicasIa`. */
+function golpeContraProjetil(me: Fighter): NomeGolpe | null {
+  for (const { golpe, dica } of me.ch.dicasIa) if (dica.papel === 'defesa-projetil' && me.canAfford(golpe)) return golpe;
   return null;
 }
 
@@ -139,8 +166,17 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
           toward(ai.plan);
           ai.t = 10; // tremor baixo: pula por cima
         } else if (rnd() < L.block) {
-          ai.hold = 26;
-          ai.holdInp = { back: true, down: false };
+          // Quem tem escudo (`defesa-projetil`) usa o escudo no lugar do bloqueio, sem sortear nada a mais: a decisão de
+          // defender já saiu dos rnd() acima. Espera o projétil chegar para a janela ativa cobrir o impacto.
+          const escudo = me.ch.dicasIa.length > 0 ? golpeContraProjetil(me) : null;
+          if (escudo) {
+            const g = M[escudo];
+            const chega = (Math.abs(me.x - pr.x) - 60) / Math.max(1, Math.abs(pr.vx));
+            ai.reacao = { golpe: escudo, espera: Math.max(0, Math.floor(chega - g.S - g.A / 2)) };
+          } else {
+            ai.hold = 26;
+            ai.holdInp = { back: true, down: false };
+          }
         } else {
           ai.plan = { up: true, dur: 10 };
           toward(ai.plan);
@@ -153,6 +189,17 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     ai.hold--;
     if (ai.holdInp?.back) away(inp);
     if (ai.holdInp?.down) inp.down = true;
+    return inp;
+  }
+  if (ai.reacao && me.state !== 'move') {
+    if (ai.reacao.espera > 0) {
+      ai.reacao.espera--;
+      return inp;
+    }
+    Object.assign(inp, moveInput(ai.reacao.golpe, dir));
+    ai.reacao = null;
+    ai.plan = null;
+    ai.t = 0;
     return inp;
   }
   // 2) encadear combos: soco fraco → chute fraco → soco forte → chute forte → especial
@@ -177,11 +224,19 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   }
   if (me.state === 'move') {
     if (me.crouching || me.golpeAtual().crouch) inp.down = true;
+    if (ai.segurar > 0) {
+      ai.segurar--;
+      inp.spSeg = true; // MASHI: mantém ESP apertado (dica `segurar`)
+    }
     return inp;
   }
+  ai.segurar = 0;
+  // Golpe com dica (`ia`) só entra pelo plug de dicas; os ramos de sempre o tratam como "sem energia". Sem dica, `livre`
+  // é exatamente `canAfford` (nenhuma conta nova, nenhum rnd).
+  const livre = (n: NomeGolpe): boolean => me.canAfford(n) && !M[n].ia;
   // 3) anti-aéreo
   if (opp.y < GROUND - 50 && ad < 190 && ad > 30 && me.grounded && rnd() < L.anti * 0.25) {
-    if (me.canAfford('sDown') && rnd() < 0.5) {
+    if (livre('sDown') && rnd() < 0.5) {
       inp.down = true;
       inp.sp = true;
     } else if (rnd() < 0.5) {
@@ -212,23 +267,25 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   // Dicas de CPU (E3): REGRA — só quem declara `ia` num golpe entra aqui; lutador sem dica não chama nada e não gasta
   // RNG. Hoje nenhum papel está implementado (entram em S1b..S5), então isto é só o ponto de plug.
   if (me.ch.dicasIa.length > 0) {
-    const porDica = planoPorDica(me, opp, ad, dir, rnd);
+    const porDica = planoPorDica(me, ad, dir, L, rnd);
     if (porDica) {
-      ai.plan = porDica.plano;
-      ai.t = porDica.dur;
-      porDica.plano.dur = porDica.dur;
+      // Um tick só: o golpe começa agora, o resto é do estado `move` (e do `segurar`); depois disso, plano novo.
+      ai.plan = null;
+      ai.t = 0;
+      ai.segurar = porDica.segurar;
       for (const k of ['left', 'right', 'up', 'down', 'lp', 'lk', 'hp', 'hk', 'sp'] as const) inp[k] = !!porDica.plano[k];
+      if (porDica.segurar > 0) inp.spSeg = true;
       return inp;
     }
   }
   if (ad > 320) {
-    if (me.canAfford('sFire') && r < L.fire) {
+    if (livre('sFire') && r < L.fire) {
       doMove('sFire');
       dur = 38;
     } else if (r < 0.5) {
       toward(plan);
       dur = 14;
-    } else if (r < 0.58 && me.canAfford('sFwd')) {
+    } else if (r < 0.58 && livre('sFwd')) {
       doMove('sFwd');
       dur = 30;
     } else if (r < 0.7) {
@@ -250,10 +307,10 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     } else if (r < 0.74) {
       doMove(pick<NomeGolpe>(['hk', 'lk', 'chk']));
       dur = 24;
-    } else if (r < 0.8 && me.canAfford('sFwd')) {
+    } else if (r < 0.8 && livre('sFwd')) {
       doMove('sFwd');
       dur = 30;
-    } else if (me.canAfford('sFire') && r < 0.8 + L.fire * 0.5) {
+    } else if (livre('sFire') && r < 0.8 + L.fire * 0.5) {
       doMove('sFire');
       dur = 36;
     } else {
@@ -276,13 +333,13 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     } else if (r < 0.7) {
       doMove(pick<NomeGolpe>(['clk', 'chk']));
       dur = 26;
-    } else if (r < 0.77 && me.canAfford('sFwd')) {
+    } else if (r < 0.77 && livre('sFwd')) {
       doMove('sFwd');
       dur = 28;
-    } else if (r < 0.81 && me.canAfford('sDown')) {
+    } else if (r < 0.81 && livre('sDown')) {
       doMove('sDown');
       dur = 34;
-    } else if (r < 0.85 && me.canAfford('sFire')) {
+    } else if (r < 0.85 && livre('sFire')) {
       doMove('sFire');
       dur = 34;
     } else if (r < 0.92) {

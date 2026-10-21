@@ -49,4 +49,8 @@ já desenha os projéteis.
   e conferir com objeto rígido (bota). Sem oponente, "hip toss" vira mão no próprio calção: dizer "hands never touching
   his own clothes". Aéreo de soco sai como preparo (punho acima da cabeça): pedir "arm extended down-forward".
   Defeitos de várias folhas: juntar numa folha de reposição de 6 poses (1 geração).
+  Lote 8: anexar a b1 aprovada + frase BODY PROPORTIONS consertou a B9 (cabeça voltou a 151-155 px). Na reposição,
+  só 2 de 6 entraram: o modelo insiste em soco reto (antebraço) e punho acima da cabeça (soco aéreo) mesmo pedindo outra
+  coisa. Depois de 2 falhas, aceite e ajuste a caixa de acerto. "Igual à célula 1, só mais baixa" NÃO dá par de respiração.
+  Dedos tangenciando x=0 com contorno fechado = margem no recorte, não regerar.
 - Dragão FX do WEI aprovado (1bcee91a); falta o original em `arte-fonte/lutadores/wei-long/fx/wei-long-fx-v1.png`.

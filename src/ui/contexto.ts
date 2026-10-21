@@ -18,7 +18,8 @@ export interface Persistencia {
   hi: number;
   /** Progresso de desbloqueio (C4 v2). Troque o valor inteiro (é imutável) e chame `salvar()`. */
   prog: Progresso;
-  salvar(): void;
+  /** Grava. Devolve false se NÃO gravou (cota, modo privado, ou v2 de um build mais novo); a UI já avisa sozinha. */
+  salvar(): boolean;
 }
 
 /** O que só existe depois que a arte carregou: recursos de desenho, a luta e os efeitos dela. */

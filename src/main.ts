@@ -1,7 +1,8 @@
 import './input/toque.css';
+import './platform/aviso.css';
 import { iniciarArte } from './assets/elenco';
 import { AudioSys } from './audio/audio-sys';
-import { carregarDadosV2, salvarDadosV2, type ArmazenamentoLike } from './core/storage';
+import { carregarDadosV2, type ArmazenamentoLike } from './core/storage';
 import type { IdLutador } from './core/contratos';
 import { criarRng, sementeAleatoria } from './core/rng';
 import { CENARIO_PADRAO } from './data/cenarios';
@@ -11,13 +12,15 @@ import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
 import { mostrarErrosNaTela } from './platform/erros';
 import { observarFoco } from './platform/foco';
+import { criarAviso } from './platform/aviso';
 import { alternarTelaCheia } from './platform/tela-cheia';
 import { criarVinheta } from './render/cenario';
 import { CampoDePetalas, Efeitos } from './render/efeitos';
 import { prepararCanvas } from './render/tela';
-import type { Contexto, Mundo, Persistencia } from './ui/contexto';
+import type { Contexto, Mundo } from './ui/contexto';
 import { criarFerramentas } from './ui/ferramentas';
 import { Navegador } from './ui/navegador';
+import { criarPersistencia, MSG_NAO_SALVO } from './ui/persistencia';
 
 /** Armazenamento local, ou uma memória descartável se o navegador o bloqueia (modo privado). */
 function obterArmazenamento(): ArmazenamentoLike {
@@ -64,14 +67,8 @@ async function iniciar(): Promise<void> {
   // ---- configurações, recorde e progresso (C4 v2, com a migração da v1 e da chave antiga) ----
   const armazenamento = obterArmazenamento();
   const salvos = carregarDadosV2(armazenamento, regras);
-  const persist: Persistencia = {
-    settings: salvos.s,
-    hi: salvos.hi,
-    prog: salvos.prog,
-    salvar() {
-      salvarDadosV2(armazenamento, { s: this.settings, hi: this.hi, prog: this.prog }, regras);
-    },
-  };
+  const avisar = criarAviso(document.getElementById('aviso'));
+  const persist = criarPersistencia(armazenamento, salvos, regras, () => avisar(MSG_NAO_SALVO));
 
   // ---- áudio: só ganha contexto depois do primeiro gesto (a cena de abertura chama iniciarAudio) ----
   const audio = new AudioSys({ rng: criarRng(semente + 3) });

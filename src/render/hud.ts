@@ -25,6 +25,9 @@ export interface OpcoesHud {
   readonly alvoTreino?: AlvoTreino;
 }
 
+/** Máximo de marcadores de round por lado (a UI oferece 1 a 3; o resto é defesa em profundidade). */
+export const MAX_MARCADORES_ROUND = 5;
+
 const DOURADO: readonly [string, string] = ['#fff6b0', '#ff9a1a'];
 
 /** Barra de vida, energia, nome, placar e rounds de UM lado. Porte do `bar()` de drawHUD. */
@@ -88,7 +91,8 @@ function desenharLado(ctx: Ctx, luta: LeituraLuta, p: LutadorLeitura, nome: stri
     textoArcade(ctx, `×${barras}`, x + w / 2, 66, 22, barras > 1 ? ['#e6c8ff', '#9a4cff'] : ['#fff6b0', '#ff9a1a'], '#05060f', 'center');
   }
   if (!luta.training) {
-    for (let i = 0; i < luta.winsNeeded; i++) {
+    // teto: o valor vem da luta (hoje 1..3); defesa em profundidade contra um winsNeeded absurdo travar o quadro
+    for (let i = 0, n = Math.min(luta.winsNeeded, MAX_MARCADORES_ROUND); i < n; i++) {
       const cx = lado === 1 ? 424 - i * 20 : 536 + i * 20;
       ctx.beginPath();
       ctx.arc(cx, 66, 7, 0, Math.PI * 2);

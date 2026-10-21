@@ -13,7 +13,7 @@ import { INPUT_VAZIO } from '../core/contratos';
 import { clamp, lerp } from '../core/math';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
-import type { ConfigChefe, GolpeMontado, NomeGolpe } from '../data/tipos';
+import type { CargaDef, ConfigChefe, GolpeMontado, NomeGolpe } from '../data/tipos';
 import type { PerfilCpu } from './cpu';
 import { attackBox, hurtbox, podeBloquear } from './colisao';
 import { MOTIONS, dirNum, motion } from './comandos';
@@ -31,21 +31,32 @@ export type EstadoIa = {
   /** Último ataque (número) ou projétil ('p<id>') ao qual a IA já reagiu. */
   seen: number | string;
   chain: number;
+  /** (dica `carga`) ticks restantes segurando ESP (`spSeg`) depois do primeiro. 0 = não segura. */
+  segurar: number;
+  /** (dica `defesa-projetil`) golpe a soltar quando o projétil que a CPU viu estiver chegando; `espera` em ticks. */
+  reacao: { golpe: NomeGolpe; espera: number } | null;
 };
 export type PlanoIa = Partial<Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp', boolean>> & { dur?: number };
 
 /** O que o Fighter precisa da partida (injeção: o Fighter não conhece a classe Game). */
 export interface PartidaParaLutador {
   emitir(ev: EventoLuta): void;
-  /** Arremesso que acertou (Game.throwHit). */
-  arremessar(a: Fighter, d: Fighter): void;
+  /** Arremesso que acertou (Game.throwHit). `golpe` traz `agarrao.dmg` (E3); sem ele o dano é o de sempre (12). */
+  arremessar(a: Fighter, d: Fighter, golpe?: GolpeMontado): void;
   /** Projétil `i` de `n` (Game.spawnProjectile). */
   lancarProjetil(f: Fighter, mv: GolpeMontado, i: number, n: number): void;
   /** Queda no chão após ser derrubado (onKnock: tremor + poeira). */
   aoCair(f: Fighter): void;
 }
 
-const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0 });
+const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null });
+
+/** Nível (1..3) de uma carga com `carga` ticks segurados: o maior i+1 tal que carga >= niveis[i]. */
+function nivelDaCarga(def: CargaDef, carga: number): 1 | 2 | 3 {
+  let n = 1;
+  for (let i = 1; i < def.niveis.length; i++) if (carga >= (def.niveis[i] as number)) n = i + 1;
+  return Math.min(3, n) as 1 | 2 | 3;
+}
 
 export class Fighter {
   readonly indice: IndiceLutador;
@@ -75,8 +86,15 @@ export class Fighter {
   private fichaBase: string | null = null;
   /** O lutador montado SEM ficha (a base). `ch` aponta para ele ou para `chBase.fichas[ficha]`. */
   private chBase: LutadorMontado;
-  /** Nível de carga (AMINU, S2). Sempre 0 até a fatia da carga. */
+  /**
+   * Nível da carga (AMINU, S2): 0 fora de um golpe `carga`; de 1 a 3 do ponto de segurar (mt = S−1) até o fim do golpe
+   * (um toque sem segurar também sai como nível 1).
+   */
   nivelCarga: 0 | 1 | 2 | 3 = 0;
+  /** Ticks segurando ESP no golpe `carga` em curso (o nível sai daqui). Zerado em `startMove`. */
+  private carga = 0;
+  /** Está parado em mt = S−1 acumulando carga. */
+  private carregando = false;
 
   x = 0;
   y = GROUND;
@@ -167,7 +185,13 @@ export class Fighter {
     this.perfilIa = null;
     this.ficha = null;
     this.fichaBase = null;
+    this.zerarCarga();
+  }
+
+  private zerarCarga(): void {
     this.nivelCarga = 0;
+    this.carga = 0;
+    this.carregando = false;
   }
 
   /**
@@ -175,6 +199,9 @@ export class Fighter {
    * Chamar DEPOIS de `setChar`. Fica na ficha da fase 1 já (o `reset` do primeiro round a reaplica).
    */
   virarChefe(cfg: ConfigChefe): void {
+    // As DUAS fichas são validadas já no setup: a da fase 2 só seria usada 90 ticks depois da 1ª troca, no meio da luta.
+    this.exigirFicha(cfg.fichaFase1);
+    this.exigirFicha(cfg.fichaFase2);
     this.chefe = true;
     this.cfgChefe = cfg;
     this.barrasMax = cfg.barras;
@@ -189,12 +216,15 @@ export class Fighter {
    */
   trocarFicha(nome: string | null): void {
     if (nome === null) this.ch = this.chBase;
-    else {
-      const f = this.chBase.fichas[nome];
-      if (!f) throw new Error(`${this.chBase.id}: ficha desconhecida '${nome}'`);
-      this.ch = f;
-    }
+    else this.ch = this.exigirFicha(nome);
     this.ficha = nome;
+  }
+
+  /** A ficha `nome` da base, ou erro de dados. `hasOwn`: nomes herdados de Object.prototype ('constructor') não são ficha. */
+  private exigirFicha(nome: string): LutadorMontado {
+    const f = Object.hasOwn(this.chBase.fichas, nome) ? this.chBase.fichas[nome] : undefined;
+    if (!f) throw new Error(`${this.chBase.id}: ficha desconhecida '${nome}'`);
+    return f;
   }
 
   reset(full: boolean): void {
@@ -205,7 +235,7 @@ export class Fighter {
     this.facing = this.side === 1 ? 1 : -1;
     this.trocarFicha(this.fichaBase); // cada round começa na postura/fase base
     this.cenaPendente = false;
-    this.nivelCarga = 0;
+    this.zerarCarga();
     this.maxHp = this.cfgChefe ? this.cfgChefe.hpPorBarra : this.ch.hp;
     this.hp = this.maxHp;
     this.hpShown = this.hp;
@@ -306,11 +336,16 @@ export class Fighter {
     return motion(this.hist, seq, win);
   }
 
-  canThrow(): boolean {
+  /**
+   * Dá para agarrar o rival agora? Sem `golpe` (ou sem `agarrao`) é o arremesso de sempre: alcance 108, rival no chão.
+   * `golpe.agarrao.alcance` troca o alcance (E3: ARREMESSO 162, ABRAÇO < 108). O alvo é sempre o chão: `alvo: 'ar' |
+   * 'ambos'` é da S3 e o `montarLutador` recusa esses dados (não existe outro caminho aqui).
+   */
+  canThrow(golpe?: GolpeMontado): boolean {
     const o = this.opp;
     if (!o || !o.grounded || o.untouchable || o.stun > 0) return false;
     if (!['idle', 'walk', 'crouch', 'land', 'prejump', 'dash', 'move'].includes(o.state)) return false;
-    return Math.abs(o.x - this.x) < 108;
+    return Math.abs(o.x - this.x) < (golpe?.agarrao?.alcance ?? 108);
   }
 
   canAfford(name: NomeGolpe): boolean {
@@ -345,6 +380,7 @@ export class Fighter {
 
   endMove(inp: InputFrame | null): void {
     this.move = null;
+    this.zerarCarga();
     if (!this.grounded) this.setState('jump');
     else this.setState(inp && inp.down ? 'crouch' : 'idle');
   }
@@ -370,6 +406,8 @@ export class Fighter {
   private corpoDoUpdate(inp: InputFrame, opp: Fighter, jogo: PartidaParaLutador): void {
     this.age++;
     this.st++;
+    // Carga só existe dentro do golpe `carga`: acertado, derrubado ou trocado de golpe, o nível some no tick seguinte.
+    if (this.nivelCarga !== 0 && !(this.state === 'move' && this.move !== null && this.golpeAtual().carga)) this.zerarCarga();
     if (this.flash > 0) this.flash--;
     if (this.invuln > 0) this.invuln--;
     if (this.buf && --this.buf.t <= 0) this.buf = null;
@@ -518,10 +556,20 @@ export class Fighter {
   private updateMove(inp: InputFrame, opp: Fighter, jogo: PartidaParaLutador): void {
     const mv = this.golpeAtual();
     this.mt++;
+    const segurando = mv.carga ? this.tickDaCarga(mv, inp, jogo) : false;
     if (mv.hits && this.hitDone && this.hitCount < mv.hits && this.mt - this.lastHitMt >= (mv.every || 6)) this.hitDone = false; // golpe de vários acertos
-    if (mv.throw && this.mt === mv.S) {
-      if (this.canThrow()) jogo.arremessar(this, opp);
-      else jogo.emitir({ tipo: 'swing', lutador: this.indice, golpe: 'kick' });
+    if (mv.throw) {
+      // Sem `agarrao.janela` o agarrão testa só em mt === S (o arremesso de sempre). Com janela (ABRAÇO), testa a cada
+      // tick de [S, S + janela) até agarrar uma vez (`hitDone` marca "já agarrou"; golpe `throw` nunca usa caixa de acerto).
+      const janela = mv.agarrao?.janela;
+      const noInicio = this.mt === mv.S;
+      const dentro = janela ? this.mt >= mv.S && this.mt < mv.S + janela && !this.hitDone : noInicio;
+      if (dentro) {
+        if (this.canThrow(mv)) {
+          if (janela) this.hitDone = true;
+          jogo.arremessar(this, opp, mv);
+        } else if (noInicio) jogo.emitir({ tipo: 'swing', lutador: this.indice, golpe: 'kick' });
+      }
     }
     if (mv.type === 'fire') {
       // projétil(eis)
@@ -533,7 +581,12 @@ export class Fighter {
     } else if ((mv.type === 'rise' || mv.type === 'leap') && this.mt === mv.S) {
       // salto do golpe
       this.vy = mv.vy ?? 0;
-      this.vx = this.facing * (mv.vx ?? 0);
+      // Salto com alvo (E3): `vxAlvo` = ticks de voo; a velocidade é a distância até o rival hoje / ticks, limitada por
+      // |mv.vx| (16 se ausente). Sem `vxAlvo` é a velocidade fixa de sempre.
+      if (mv.vxAlvo) {
+        const teto = Math.abs(mv.vx ?? 16);
+        this.vx = clamp((opp.x - this.x) / mv.vxAlvo, -teto, teto);
+      } else this.vx = this.facing * (mv.vx ?? 0);
       this.y -= 1;
       jogo.emitir({ tipo: 'jump', lutador: this.indice });
     } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.buf) {
@@ -553,7 +606,12 @@ export class Fighter {
       const rushing = mv.type === 'rush' && this.mt >= mv.S && this.mt < mv.S + mv.A;
       if (rushing) this.vx = this.facing * (mv.vx ?? 0) * (this.hitDone ? 0.3 : 1);
       else this.vx *= 0.8;
-      if (mv.adv && this.mt >= mv.S - 2 && this.mt < mv.S + mv.A) this.x += (this.facing * mv.adv) / (mv.A + 2); // avanço ao golpear
+      if (mv.adv && !segurando && this.mt >= mv.S - 2 && this.mt < mv.S + mv.A) this.x += (this.facing * mv.adv) / (mv.A + 2); // avanço ao golpear
+      if (segurando && mv.carga) {
+        // carregando: anda devagar (a carga segura o golpe em mt = S−1, então o decaimento acima não pode comer a velocidade)
+        const hdir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
+        this.vx = hdir * WALK_SPEED * this.ch.spd * mv.carga.andar;
+      }
     }
     const R = this.move === '_lag' ? this.lagR : mv.R;
     if (!mv.air && this.mt >= mv.S + mv.A + R) {
@@ -562,6 +620,37 @@ export class Fighter {
       return;
     }
     this.physics(jogo);
+  }
+
+  /**
+   * Golpe `carga` (MASHI): em mt = S−1, com `spSeg` apertado, o golpe fica parado ali e soma 1 em `carga` por tick.
+   * Soltar `spSeg` (ou chegar a `carga.max`) deixa o mt andar; o nível vem de `carga.niveis`. Um toque sem segurar também
+   * sai (nível 1). Devolve true no tick em que o golpe ficou parado (o chamador anda devagar e não avança `adv`).
+   * O tick que chega a mt = S−1 já conta como o 1º segurado. O evento `carga` sai ao começar (nível 1) e a cada subida.
+   */
+  private tickDaCarga(mv: GolpeMontado, inp: InputFrame, jogo: PartidaParaLutador): boolean {
+    const c = mv.carga as CargaDef;
+    if (!this.carregando && this.mt === mv.S - 1) {
+      this.nivelCarga = 1;
+      if (inp.spSeg) {
+        this.carregando = true;
+        jogo.emitir({ tipo: 'carga', lutador: this.indice, nivel: 1 });
+      }
+    }
+    if (!this.carregando) return false;
+    if (!inp.spSeg) {
+      this.carregando = false; // soltou: o mt segue no próximo passo (este tick já avançou para S)
+      return false;
+    }
+    this.carga++;
+    this.mt = mv.S - 1;
+    const n = nivelDaCarga(c, this.carga);
+    if (n !== this.nivelCarga) {
+      this.nivelCarga = n;
+      jogo.emitir({ tipo: 'carga', lutador: this.indice, nivel: n });
+    }
+    if (this.carga >= c.max) this.carregando = false; // auto-solta no máximo
+    return true;
   }
 
   get passing(): boolean {
@@ -754,6 +843,7 @@ export class Fighter {
       const p = clamp(this.mt / Math.max(1, mv.S), 0, 0.999);
       P.name = pick(A.s, p);
       if (mv.type === 'fire') P.glow = p;
+      if (mv.carga) P.glow = clamp(this.carga / mv.carga.max, 0, 1); // o punho brilha mais a cada tick segurado
       if (L) {
         if (mv.type === 'fire') {
           P.sy = lerp(1, 0.86, p);
@@ -781,6 +871,7 @@ export class Fighter {
       P.name = pick(A.r || A.a, (into - mv.A) / Math.max(1, R));
     }
     if (mv.type === 'fire') P.glow = into < mv.A ? 1 : Math.max(0, 1 - (into - mv.A) / mv.R);
+    if (mv.carga) P.glow = clamp(this.carga / mv.carga.max, 0, 1);
     if (mv.spin && (mv.air || into < mv.A)) P.flip = Math.floor(into / 3) % 2 ? -1 : 1;
     if (L) {
       if (mv.air && !hasPose(ch, mv.pose)) P.rot = 0.22;

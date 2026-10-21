@@ -280,4 +280,17 @@ describe('HUD e faixas (texto por fase)', () => {
     expect(conta(luta({ training: true }))).toBe(0);
   });
 
+  it('HUD: winsNeeded absurdo não trava o quadro — no máximo 5 marcadores por lado', () => {
+    const arcos = (v: number) => {
+      const g = gravador();
+      desenharHUD(g.ctx, luta({ winsNeeded: v }), elenco);
+      return g.chamadas.filter(([n, , , r]) => n === 'arc' && r === 7).length;
+    };
+    const t0 = Date.now();
+    expect(arcos(1e9)).toBe(10);
+    expect(Date.now() - t0).toBeLessThan(1000);
+    expect([arcos(5), arcos(6), arcos(Infinity)]).toEqual([10, 10, 10]);
+    expect([arcos(0), arcos(-1), arcos(Number.NaN)]).toEqual([0, 0, 0]);
+  });
+
 });

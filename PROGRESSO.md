@@ -118,6 +118,10 @@ Atualizado em 2026-10-21 por Atlas.
 - Efeitos (cabeça de dragão, onda de chão): asset à parte, fundo preto, mistura aditiva `lighter`.
 - D6: detalhes da infra própria (servidor, forma de deploy) antes da F6.
 
+## Decisão do dono em 2026-10-21 — repositório público (M2 do Órion)
+- O repositório `InnovareCode/InnoFighters` FICA PÚBLICO por enquanto (docs, `PLANO.md`, `PROGRESSO.md`, `.claude/agent-memory` e a arte de `public/assets` visíveis). Reavaliar ao entrar no EasyPanel (D6): privar o repo, desligar o Pages, `sourcemap:'hidden'`.
+- Enquanto for público: nenhum id de conta, créditos ou e-mail de serviço nas memórias dos agentes nem nos docs. Secret Scanning, Push Protection e 2FA são conferências do dono no GitHub (o Atlas não alcança essas configurações).
+
 ## Armadilhas já conhecidas
 - Linha 320 do protótipo tem 9,3 MB (ASSETS em Base64): nunca usar Read nela; para espiar, `awk 'NR==320{print substr($0,1,300)}'`.
 - Folhas de sprite de IA vêm sem transparência e sem escala consistente; o pipeline de recorte e marcação (pés, ponta do golpe) é fase própria.

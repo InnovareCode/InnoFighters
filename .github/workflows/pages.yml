@@ -8,38 +8,53 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# B11: padrao do workflow = so leitura. Cada job pede o que precisa (pages/id-token so no deploy).
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# B11: cancel-in-progress=false. Cancelar um deploy no meio pode deixar o Pages num estado
+# pela metade; um deploy em andamento termina e o mais novo espera na fila.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # configure-pages so LE a configuracao do Pages (GET /pages). Se o job falhar nesse passo
+      # com 403, subir para `pages: write` (ver docs/handoff-vulcano-orion.md).
+      pages: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # B12: actions pinadas por SHA de commit (a tag e movel). O Dependabot atualiza SHA + comentario.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+      # B11: commit quebrado nao vai ao ar. Se algum destes falhar, o job `deploy` nem comeca.
+      - run: npm run typecheck
+      - run: npm test
       # `npm run build` roda tsc --noEmit e depois vite build; o --base vai para o vite build.
       - run: npm run build -- --base=/${{ github.event.repository.name }}/
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
+      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: dist
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

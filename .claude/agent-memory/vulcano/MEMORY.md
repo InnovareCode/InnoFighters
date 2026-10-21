@@ -1,0 +1,1 @@
+- [Pipeline Pages e hardening](project_pipeline-pages-e-hardening.md) — CI/Pages do InnoFighters, SHAs pinados, sem gh CLI, configure-pages pages:read nao provado

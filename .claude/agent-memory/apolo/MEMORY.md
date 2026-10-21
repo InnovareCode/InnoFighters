@@ -1,3 +1,4 @@
 - [Curadoria de sprites](project_curadoria_sprites.md) — WEI LONG; novos; BAATAR; contar componentes; linha de chão; escala por cabeça-queixo; reposição
 - [Prompts no Runway](project_prompts_runway.md) — docs/prompts é gerado (mude fonte+script); 1 referência; SPACING; KO à esquerda; HAYATO A2
+- [Curadoria de cenários](project_curadoria_cenarios.md) — pés a 84,5% da imagem (não 87%); composição em escala; limpar canto por translação
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

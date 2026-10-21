@@ -1,0 +1,2 @@
+- [Chefe E3: áreas frágeis e bugs pegos](project_e3-chefe-areas-frageis.md) — hitstop da troca, buf na Dança, ficha da fase 2, flag do Game
+- [Técnicas de QA do projeto](reference_tecnicas-de-qa-do-projeto.md) — vitest, mutação em sandbox, armadilhas de shell/Windows

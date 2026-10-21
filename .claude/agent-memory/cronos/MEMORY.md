@@ -1,1 +1,1 @@
-- [Progresso v2 / storage](project_progresso-v2.md) — E2: chave inno-fighters-v2, src/meta puro, riscos de rollback
+- [Progresso v2 / storage](project_progresso-v2.md) — E2: chave inno-fighters-v2, src/meta puro, rollback, v>2/corrompida, saneamento (Orion)

@@ -22,16 +22,20 @@ export const ALIAS: Readonly<Record<string, string>> = {
 };
 
 /** O mínimo que getPD precisa de um lutador montado. */
-export type ComPoses = { pd: Poses; alias?: Readonly<Record<string, string>> };
+export type ComPoses = { pd: Poses; alias?: Readonly<Record<string, string>>; poseDaFicha?: Readonly<Record<string, string>> };
 
 /**
  * Pose a desenhar para o nome pedido (getPD). Ordem: pose própria -> alias (do lutador, depois
- * global) -> fallback do alias -> fallback do nome -> `guard`. Acréscimo à prova de arte nova:
+ * global) -> fallback do alias -> fallback do nome -> `guard`. ANTES de tudo, a pose da FICHA (`poseDaFicha`, E3 S5: a
+ * SARPA troca `idle0` por `sarpaIdle0`) vence a pose própria, mas só se o atlas a tem: sem a arte, tudo segue como antes. Acréscimo à prova de arte nova:
  * se nem `guard` existir (atlas novo só com nomes canônicos), cai em `idle0`. Com a arte
  * antiga o resultado é idêntico ao do protótipo.
  */
 export function getPD(ch: ComPoses, name: string): PoseDados {
   const pd = ch.pd;
+  const daFicha = ch.poseDaFicha?.[name];
+  const sobre = daFicha ? pd[daFicha] : undefined;
+  if (sobre) return sobre;
   const direta = pd[name];
   if (direta) return direta;
   const a = ch.alias?.[name] || ALIAS[name];

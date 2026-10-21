@@ -1,19 +1,17 @@
-import type { IdLutador } from '../../core/contratos';
 import type { LutadorDef } from '../tipos';
 
 /*
- * AMINU, "A Lança de Kano" (E3 S2). DEFINIÇÃO DE DADOS, FORA do elenco: não está em `LUTADORES` nem em `ROSTER`, e o id
- * 'aminu' ainda não existe em `IDS_LUTADORES` (entra na E5, com a arte). Por isso o id é um cast: é a definição
- * testável/fixture, montada nos testes sobre o atlas de um lutador atual.
+ * AMINU, "A Lança de Kano" (E3 S2). No elenco desde a E5 (1º da fila de desbloqueio). Os testes de mecânica da E3 montam esta
+ * definição sobre o atlas do WEI LONG (`tests/unit/_kit-e3.ts`) para os números não dependerem da arte.
  *
  * Números de PARTIDA (docs/mecanicas-e3.md §2.1; proposta §2.3). Dano, tempos e níveis saem do harness da E6.
- * `stage` é provisório (os "Poços de Índigo de Kano" são um cenário novo da E5).
+ * `stage` 'ng': Tinturaria de Kano (src/data/cenarios.ts).
  */
 export const AMINU: LutadorDef = {
-  id: 'aminu' as IdLutador,
+  id: 'aminu',
   country: 'NIGÉRIA',
-  stage: 'br',
-  stageName: 'Poços de Índigo de Kano, Nigéria',
+  stage: 'ng',
+  stageName: 'Tinturaria de Kano, Nigéria',
   name: 'AMINU',
   title: 'A Lança de Kano',
   pitch: 1.0,

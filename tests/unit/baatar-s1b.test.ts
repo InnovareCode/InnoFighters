@@ -328,9 +328,12 @@ describe('S1b · montagem recusa dado que o motor não executa', () => {
     especiais: { ...BAATAR.especiais, [nome]: { ...BAATAR.especiais[nome], ...extra } },
   });
 
-  it('agarrao.alvo diferente de chao entra na S3: falha alto no boot', () => {
-    expect(() => montarFixtura(comGolpe('sFire', { agarrao: { alcance: 100, alvo: 'ar' } }))).toThrow(/S3/);
-    expect(() => montarFixtura(comGolpe('sFire', { agarrao: { alcance: 100, alvo: 'chao' } }))).not.toThrow();
+  it('agarrao.alvo: chao/ar/ambos montam (S3); valor desconhecido falha alto no boot', () => {
+    for (const alvo of ['chao', 'ar', 'ambos'] as const) {
+      expect(() => montarFixtura(comGolpe('sFire', { agarrao: { alcance: 100, alvo } }))).not.toThrow();
+    }
+    const ruim = { alcance: 100, alvo: 'lua' } as unknown as NonNullable<GolpeMontado['agarrao']>;
+    expect(() => montarFixtura(comGolpe('sFire', { agarrao: ruim }))).toThrow(/alvo/);
   });
 
   it('agarrao sem throw:1 e vxAlvo fora de salto são erro de dados', () => {

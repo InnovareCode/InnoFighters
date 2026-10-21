@@ -75,26 +75,28 @@ function instantaneo(game: Obj, pose: (f: Obj) => unknown, eMeu: boolean): Obj {
 type Cenario = {
   nome: string;
   seed: number;
-  c1: IdLutador;
-  c2: IdLutador;
+  c1: IdOriginal;
+  c2: IdOriginal;
   modo: 'versus' | 'cpu' | 'cpucpu' | 'training';
   niveis: [number, number];
   ticks: number;
   ajustes: { rounds: number; time: number; shake: boolean };
 };
 
-const IDS_PROTO: Record<IdLutador, string> = { hayato: 'f1', 'wei-long': 'f2', 'min-ji': 'f3', caio: 'f4' };
+/** Os 4 lutadores que existem no protótipo: a fidelidade lock-step itera SÓ eles (os 5 da expansão não têm gabarito). */
+type IdOriginal = Extract<IdLutador, 'hayato' | 'wei-long' | 'min-ji' | 'caio'>;
+const IDS_PROTO: Record<IdOriginal, string> = { hayato: 'f1', 'wei-long': 'f2', 'min-ji': 'f3', caio: 'f4' };
 const todos = TEM_PROTOTIPO ? montarTodos() : null;
 
 const cenarios: Cenario[] = [];
-const ROSTER_IDS: IdLutador[] = ['hayato', 'wei-long', 'min-ji', 'caio'];
+const ROSTER_IDS: IdOriginal[] = ['hayato', 'wei-long', 'min-ji', 'caio'];
 for (let i = 0; i < 12; i++) {
   const modo = (['versus', 'versus', 'cpu', 'cpucpu', 'training', 'cpucpu'] as const)[i % 6] as Cenario['modo'];
   cenarios.push({
     nome: `${modo} #${i}`,
     seed: 1000 + i * 17,
-    c1: ROSTER_IDS[i % 4] as IdLutador,
-    c2: ROSTER_IDS[(i + 1 + Math.floor(i / 4)) % 4] as IdLutador,
+    c1: ROSTER_IDS[i % 4] as IdOriginal,
+    c2: ROSTER_IDS[(i + 1 + Math.floor(i / 4)) % 4] as IdOriginal,
     modo,
     niveis: [i % 3, (i + 1) % 3],
     ticks: modo === 'training' ? 3000 : 5200,
@@ -107,8 +109,8 @@ for (let i = 0; i < 8; i++) {
   cenarios.push({
     nome: `longa #${i}`,
     seed: 5000 + i * 31,
-    c1: ROSTER_IDS[i % 4] as IdLutador,
-    c2: ROSTER_IDS[(i + 2 + (i >> 2)) % 4] as IdLutador,
+    c1: ROSTER_IDS[i % 4] as IdOriginal,
+    c2: ROSTER_IDS[(i + 2 + (i >> 2)) % 4] as IdOriginal,
     modo: 'cpucpu',
     niveis: [2, i % 2 ? 2 : 1],
     ticks: 9000,

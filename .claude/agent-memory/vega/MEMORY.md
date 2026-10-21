@@ -4,3 +4,6 @@
 - [E3 S1b/S2 BAATAR+AMINU](project_e3_s1b_s2.md) — alcance de agarrão vs corpo 78, carga segura o mt, dica fora do genérico, CRLF, flag vazando
 - [Pipeline de sprites F2](project_pipeline_sprites_f2.md) — fundo medido, figuras coladas (erosão), ponta por modo, escala única, armadilhas
 - [Sprites novos + BAATAR](project_sprites_novos_baatar.md) — layout 3x2, células null/apelido, acolchoar, modo pe, alturaRef 525
+- [E3 S3-S5 CENTELLA/CAMILLE/NILA](project_e3_s3_s5.md) — fidelidade trava TYPE_ANIM, activeMove é o portão da caixa, through não cruza, combo ignora ia, flag por tick
+- [E5 ligação de dados](project_e5_ligacao_dados.md) — 9 ids, atlas novo só canônico (ponte jpunch), "produção=4" quebra testes
+- [NILA f5 + HAYATO/MIN-JI arte nova](project_nila_f5_hayato_minji.md) — folhasExtras, pe:fração, fatorFolha medido (f2/f3 NILA destoam), fixture do atlas original p/ oráculo

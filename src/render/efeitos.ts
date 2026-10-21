@@ -1,5 +1,5 @@
 import { ALTURA, GROUND, LARGURA } from '../core/constantes';
-import type { EstiloProjetil, EventoLuta, ProjetilLeitura, TextoFlutuante } from '../core/contratos';
+import type { EstiloProjetil, EventoLuta, IndiceLutador, ProjetilLeitura, TextoFlutuante } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import { textoArcade } from './texto';
 import type { Ctx } from './tela';
@@ -83,6 +83,9 @@ export function projetilParaVisual(p: ProjetilLeitura, cores: readonly [string, 
 
 const DOIS_PI = Math.PI * 2;
 
+/** Onde um lutador está agora (pés em x, y): os eventos `carga` e `troca-ficha` não trazem posição, a cena a empresta. */
+export type PosicaoDoLutador = (indice: IndiceLutador) => { readonly x: number; readonly y: number };
+
 /**
  * Estado dos efeitos de uma luta. Chamar `avancar()` uma vez por tick em que a luta andou
  * (`LeituraLuta.tick` mudou), DEPOIS de processar os eventos daquele tick. O tremor de tela
@@ -151,6 +154,25 @@ export class Efeitos {
     this.impactos.push({ x, y, life: 9, max: 9, blk: true, dir, col: '#9ad8ff', rot: 0 });
   }
 
+  /** Nuvem de fumaça pálida em (x, y): sobe devagar e esmaece (troca de postura). */
+  fumaca(x: number, y: number, n: number, cor = 'rgba(210,205,230,.8)'): void {
+    const r = this.rng;
+    for (let i = 0; i < n; i++) {
+      const life = r.entre(22, 38);
+      this.particulas.push({
+        x: x + r.entre(-26, 26),
+        y: y + r.entre(-30, 30),
+        vx: r.entre(-1.2, 1.2),
+        vy: -r.entre(0.3, 1.4),
+        life,
+        max: life,
+        col: cor,
+        size: r.entre(8, 15),
+        dust: true,
+      });
+    }
+  }
+
   textoFlutuante(x: number, y: number, s: string, cor: string, tamanho = 26): void {
     this.textos.push({ x, y, s, col: cor, size: tamanho, life: 50, max: 50 });
   }
@@ -158,8 +180,9 @@ export class Efeitos {
   /**
    * Receita visual de um evento da luta (C3): o que o protótipo fazia com sparks/burst/dust/floatText
    * dentro da lógica. Eventos sem efeito visual (swing, jump, ko, round...) são ignorados aqui.
+   * `onde` dá a posição dos lutadores para os eventos que não trazem x/y (`carga`, `troca-ficha`); sem ele eles são ignorados.
    */
-  reagir(ev: EventoLuta): void {
+  reagir(ev: EventoLuta, onde?: PosicaoDoLutador): void {
     const texto = (t: TextoFlutuante | null): void => {
       if (t) this.textoFlutuante(t.x, t.y, t.s, t.col, t.size);
     };
@@ -184,11 +207,48 @@ export class Efeitos {
       case 'hit':
         this.faiscas(ev.x, ev.y, ev.cor, 18);
         this.estrela(ev.x, ev.y, ev.cor, ev.grande);
+        if (ev.contraEspecial === true) {
+          // COUP D'ARRÊT pego na preparação: o rival é interceptado, então a rajada é maior, branca, com um anel frio por trás
+          this.faiscas(ev.x, ev.y, '#ffffff', 14);
+          this.estrela(ev.x, ev.y, '#ffffff', true);
+          this.estrela(ev.x, ev.y, '#7fe3ff', true);
+        }
         texto(ev.texto);
         break;
       case 'throw':
         texto(ev.texto);
         break;
+      case 'rebote':
+        // a CENTELLA tocou a corda: a poeira sobe na parede, no x do quique
+        this.poeira(ev.x, 12, 1.4);
+        break;
+      case 'parry':
+        this.faiscas(ev.x, ev.y, '#ffffff', 14);
+        this.estrela(ev.x, ev.y, '#ffffff', true);
+        texto(ev.texto);
+        break;
+      case 'quebra-guarda':
+        this.faiscas(ev.x, ev.y, '#ff4a3a', 12);
+        this.estrela(ev.x, ev.y, '#ff4a3a', true);
+        texto(ev.texto);
+        break;
+      case 'carga': {
+        // a cada nível alcançado um pulso de brilho no corpo: mais faíscas e uma estrela maior no nível 3
+        const p = onde?.(ev.lutador);
+        if (!p) break;
+        this.faiscas(p.x, p.y - 100, ev.nivel === 3 ? '#ffffff' : '#ffe27a', 4 + 4 * ev.nivel);
+        this.estrela(p.x, p.y - 100, '#ffe27a', ev.nivel === 3);
+        break;
+      }
+      case 'troca-ficha': {
+        // flash e fumaça no lutador que trocou de postura
+        const p = onde?.(ev.lutador);
+        if (!p) break;
+        this.faiscas(p.x, p.y - 80, '#ffffff', 16);
+        this.estrela(p.x, p.y - 80, ev.ficha === null ? '#ffd27a' : '#9cffc8', false);
+        this.fumaca(p.x, p.y - 50, 9);
+        break;
+      }
       default:
         break;
     }

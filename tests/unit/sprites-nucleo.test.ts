@@ -575,6 +575,17 @@ describe('layouts de folhas (resolverLayout)', () => {
     expect(() => poses.resolverLayout({ layout: 'inexistente' })).toThrow(/desconhecido/);
   });
 
+  it('`folhasExtras` acrescenta uma folha fora do layout (NILA f5, poses sarpa*) e recusa id repetido, grade errada e pose repetida', () => {
+    const f5 = { grade: [4, 3], celulas: ['a0', 'a1', 'a2', 'a3', 'b0', 'b1', 'b2', 'b3', 'c0', null, 'c2', ['c3', 'c4']] };
+    const l = poses.resolverLayout({ folhasExtras: { f5 } });
+    expect(l.ids).toEqual(['f1', 'f2', 'f3', 'f4', 'f5']);
+    expect(l.folhas.f5.celulas).toEqual(f5.celulas);
+    expect(poses.resolverLayout({}).ids).toEqual(['f1', 'f2', 'f3', 'f4']); // sem a exceção nada muda
+    expect(() => poses.resolverLayout({ folhasExtras: { f4: f5 } })).toThrow(/ja existe/);
+    expect(() => poses.resolverLayout({ folhasExtras: { f5: { grade: [4, 3], celulas: ['a'] } } })).toThrow(/grade 4x3/);
+    expect(() => poses.resolverLayout({ folhasExtras: { f5: { celulas: ['idle0', ...f5.celulas.slice(1)] } } })).toThrow(/duas celulas/);
+  });
+
   it('nomesDaCelula: nome, lista de apelidos e null (descartada)', () => {
     expect(poses.nomesDaCelula('a')).toEqual(['a']);
     expect(poses.nomesDaCelula(['a', 'b'])).toEqual(['a', 'b']);

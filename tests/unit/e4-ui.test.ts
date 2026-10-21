@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Elenco } from '../../src/assets/elenco';
-import { IDS_LUTADORES, type IdLutador, type LeituraLuta, type LutadorLeitura } from '../../src/core/contratos';
+import { type IdLutador, type LeituraLuta, type LutadorLeitura } from '../../src/core/contratos';
 import { aplicarVitoriaArcade, liberados, progressoVazio, REGRAS_PADRAO, type Regras } from '../../src/meta';
 import { desenharHUD } from '../../src/render/hud';
 import type { CenaDesbloqueio } from '../../src/ui/cenas/desbloqueio';
@@ -8,14 +8,15 @@ import type { CenaDiff } from '../../src/ui/cenas/diff';
 import type { CenaEnding } from '../../src/ui/cenas/fim';
 import type { CenaHow } from '../../src/ui/cenas/how';
 import type { CenaSelect } from '../../src/ui/cenas/select';
-import { CHEFE_FALSO, IDS_NOVOS_FALSOS, regrasExpansaoFalsa } from '../../src/ui/dev-expansao';
 import { descricaoArcade, dicaArcadeSelecao, porExtenso, rivaisDaEscada, textoComoJogarArcade } from '../../src/ui/escada-texto';
 import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa } from '../../src/ui/grade';
 import { mundoFalso, mundoFalso9, navegadorFalso } from './_ui';
 
 const id = (s: string): IdLutador => s as IdLutador;
-const R9 = regrasExpansaoFalsa();
-const [A, B, C, D] = IDS_NOVOS_FALSOS as [IdLutador, IdLutador, IdLutador, IdLutador];
+// E5: as regras de producao ja sao as de 9 lutadores (a fixture `?expansao=1` com ids falsos nao e mais usada aqui).
+const R9 = REGRAS_PADRAO;
+const [A, B, C, D]: [IdLutador, IdLutador, IdLutador, IdLutador] = ['aminu', 'centella', 'camille', 'nila'];
+const CHEFE_FALSO: IdLutador = 'baatar';
 
 describe('grade de seleção (plano 5)', () => {
   it('9 lutadores: o chefão vai para o CENTRO; 4 (hoje) e sem chefão: ordem do roster', () => {
@@ -23,7 +24,7 @@ describe('grade de seleção (plano 5)', () => {
     expect(g).toHaveLength(9);
     expect(g[4]).toBe(CHEFE_FALSO);
     expect(g.filter((x) => x !== CHEFE_FALSO)).toEqual(R9.roster.filter((x) => x !== CHEFE_FALSO));
-    expect(ordemDaGrade(REGRAS_PADRAO.roster, REGRAS_PADRAO.chefe)).toEqual(['hayato', 'wei-long', 'min-ji', 'caio']);
+    expect(ordemDaGrade(R9.roster.slice(0, 4), null)).toEqual(['hayato', 'wei-long', 'min-ji', 'caio']);
     expect(ordemDaGrade(R9.roster, null)).toEqual(R9.roster);
   });
 
@@ -87,11 +88,12 @@ describe('grade de seleção (plano 5)', () => {
 });
 
 describe('textos do ARCADE vêm da escada', () => {
-  it('produção (4 lutadores, sem chefão): os textos de hoje, palavra por palavra', () => {
-    expect(rivaisDaEscada(REGRAS_PADRAO)).toBe(3);
-    expect(descricaoArcade(REGRAS_PADRAO)).toBe('Um jogador: enfrente os 3 rivais em sequência e torne-se o campeão.');
-    expect(dicaArcadeSelecao(REGRAS_PADRAO)).toBe('Derrote os outros três lutadores em sequência. A ordem é sorteada.');
-    expect(textoComoJogarArcade(REGRAS_PADRAO)).toBe('Enfrente os outros 3 lutadores em sequência. Se perder, use um CONTINUE (3 no total).');
+  it('onda 1 (4 lutadores, sem chefão): os textos de antes da expansão, palavra por palavra', () => {
+    const onda1: Regras = { ...R9, roster: R9.roster.slice(0, 4), fila: [], chefe: null };
+    expect(rivaisDaEscada(onda1)).toBe(3);
+    expect(descricaoArcade(onda1)).toBe('Um jogador: enfrente os 3 rivais em sequência e torne-se o campeão.');
+    expect(dicaArcadeSelecao(onda1)).toBe('Derrote os outros três lutadores em sequência. A ordem é sorteada.');
+    expect(textoComoJogarArcade(onda1)).toBe('Enfrente os outros 3 lutadores em sequência. Se perder, use um CONTINUE (3 no total).');
   });
 
   it('com chefão e 9 lutadores: 5 rivais e o chefão no fim', () => {
@@ -110,7 +112,7 @@ describe('textos do ARCADE vêm da escada', () => {
   });
 });
 
-describe('seleção com 9 lutadores (regras falsas injetadas)', () => {
+describe('seleção com 9 lutadores (regras de produção, E5)', () => {
   function select(prog = progressoVazio(), modo: 'versus' | 'cpu' | 'arcade' | 'training' = 'cpu') {
     const t = navegadorFalso({}, R9);
     t.persist.prog = prog;
@@ -183,12 +185,23 @@ describe('seleção com 9 lutadores (regras falsas injetadas)', () => {
     expect(t.salvou.n).toBe(1);
   });
 
-  it('em produção (regras padrão) nada muda: 4 casas em 2 colunas, nada travado, nenhuma gravação ao abrir', () => {
-    const t = navegadorFalso();
+  it('onda 1 (4 lutadores, regras injetadas): 4 casas em 2 colunas, nada travado, nenhuma gravação ao abrir', () => {
+    const t = navegadorFalso({}, { ...R9, roster: R9.roster.slice(0, 4), fila: [], chefe: null });
     t.ui.pronto(mundoFalso());
     const s = t.ui.cenas.select as CenaSelect;
     s.enter({ mode: 'versus' });
     expect(s.grade).toEqual(['hayato', 'wei-long', 'min-ji', 'caio']);
+    expect(s.cur).toEqual([0, 1]);
+    expect(s.novos.size).toBe(0);
+    expect(t.salvou.n).toBe(0);
+  });
+
+  it('produção (E5), save novo: os 4 iniciais liberados, os 4 da fila travados e o BAATAR oculto no centro', () => {
+    const t = navegadorFalso();
+    t.ui.pronto(mundoFalso());
+    const s = t.ui.cenas.select as CenaSelect;
+    s.enter({ mode: 'versus' });
+    expect(s.grade).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'baatar', 'aminu', 'centella', 'camille', 'nila']);
     expect(s.cur).toEqual([0, 1]);
     expect(s.novos.size).toBe(0);
     expect(t.salvou.n).toBe(0);
@@ -268,8 +281,9 @@ describe('desbloqueio ao zerar o ARCADE', () => {
     expect(fim.ir).toEqual([['title', undefined]]);
   });
 
-  it('produção: fila vazia e chefe null, então zerar não mostra aviso nenhum', () => {
-    const { e, ui, ir } = final(REGRAS_PADRAO, ['hayato', 'wei-long', 'min-ji'].map((x) => ({ id: id(x), chefe: false })));
+  it('onda 1 (fila vazia e chefe null, regras injetadas): zerar não mostra aviso nenhum', () => {
+    const onda1: Regras = { ...R9, roster: R9.roster.slice(0, 4), fila: [], chefe: null };
+    const { e, ui, ir } = final(onda1, ['wei-long', 'min-ji', 'caio'].map((x) => ({ id: id(x), chefe: false })));
     expect(e.novos).toEqual([]);
     ui.t = 61;
     e.key('Enter');
@@ -329,8 +343,8 @@ describe('HUD de barras do chefão (C3 aditivo, stub)', () => {
       trainInfo: { hits: 0, dmg: 0 }, events: [],
     }) as unknown as LeituraLuta;
   const elenco = {
-    hayato: { ch: { name: 'HAYATO', proj: { cost: 40 }, head: [0, 0, 190, 190] }, arte: { retrato: () => null } },
-    'wei-long': { ch: { name: 'WEI LONG', proj: { cost: 45 }, head: [0, 0, 190, 190] }, arte: { retrato: () => null } },
+    hayato: { ch: { name: 'HAYATO', proj: { cost: 40 }, head: [0, 0, 190, 190], fichas: {} }, arte: { retrato: () => null } },
+    'wei-long': { ch: { name: 'WEI LONG', proj: { cost: 45 }, head: [0, 0, 190, 190], fichas: {} }, arte: { retrato: () => null } },
   } as unknown as Elenco;
 
   function desenhar(b: LutadorLeitura) {
@@ -374,11 +388,11 @@ describe('HUD de barras do chefão (C3 aditivo, stub)', () => {
   });
 });
 
-describe('fixture de 9 lutadores', () => {
-  it('as regras falsas são coerentes (INICIAIS + FILA + CHEFE = roster, sem repetição)', () => {
+describe('regras de produção (E5)', () => {
+  it('são coerentes (INICIAIS + FILA + CHEFE = roster, sem repetição) e os iniciais são os 4 do protótipo', () => {
     const uniao = [...R9.iniciais, ...R9.fila, ...(R9.chefe ? [R9.chefe] : [])];
     expect(new Set(uniao).size).toBe(uniao.length);
     expect([...uniao].sort()).toEqual([...R9.roster].sort());
-    expect(R9.iniciais).toEqual([...IDS_LUTADORES]);
+    expect(R9.iniciais).toEqual(['hayato', 'wei-long', 'min-ji', 'caio']);
   });
 });

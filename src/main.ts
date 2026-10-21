@@ -59,10 +59,12 @@ async function iniciar(): Promise<void> {
   const rngVisual = criarRng(semente + 1);
   const rngUI = criarRng(semente + 2);
 
-  // `?expansao=1` (SÓ em desenvolvimento): elenco falso de 9 lutadores, fila e chefão, para testar a grade 3x3, o
-  // desbloqueio e a escada com chefão enquanto a arte nova não existe. O import dinâmico fica fora do bundle de produção.
-  const fixture = import.meta.env.DEV && new URLSearchParams(window.location.search).get('expansao') === '1' ? await import('./ui/dev-expansao') : null;
-  const regras = fixture ? fixture.regrasExpansaoFalsa() : REGRAS_PADRAO;
+  // `?expansao=1` (SÓ em desenvolvimento): os 9 lutadores reais TODOS liberados (BAATAR jogável, e ainda chefão do ARCADE),
+  // para ver os novos jogando sem zerar o ARCADE. `?expansao=4`: só os 4 de antes da E5 (fidelidade com o protótipo e o
+  // ARCADE de 3 lutas). O import dinâmico fica fora do bundle de produção.
+  const modoExpansao = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('expansao') : null;
+  const fixture = modoExpansao === '1' || modoExpansao === '4' ? await import('./ui/dev-expansao') : null;
+  const regras = !fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao();
 
   // ---- configurações, recorde e progresso (C4 v2, com a migração da v1 e da chave antiga) ----
   const armazenamento = obterArmazenamento();
@@ -116,7 +118,7 @@ async function iniciar(): Promise<void> {
   const precarga = import.meta.env.DEV && new URLSearchParams(window.location.search).get('precarga') === 'minima' ? [] : undefined;
   void iniciarArte({ baseUrl: import.meta.env.BASE_URL, aoProgredir: (p) => (ui.loadProg = p), ...(precarga ? { precarregar: precarga } : {}) })
     .then(({ elenco: elencoReal, arte }) => {
-      const elenco = fixture ? fixture.ampliarElenco(elencoReal, arte) : elencoReal;
+      const elenco = elencoReal;
       const lutadores = {} as Record<IdLutador, (typeof elenco)[IdLutador]['ch']>;
       for (const id of Object.keys(elenco) as IdLutador[]) lutadores[id] = elenco[id].ch;
       const mundo: Mundo = {

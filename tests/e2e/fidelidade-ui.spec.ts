@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { usarArteDoPrototipo } from './_jp-prototipo';
 
 /*
  * Fidelidade das TELAS (ui/): cada cena é montada no mesmo estado no protótipo original (página
@@ -235,7 +236,8 @@ test.describe('fidelidade das telas: ui/ novo x protótipo (pixel a pixel)', () 
     await proto.waitForFunction(() => !!(window as any).SF && (window as any).SF.UI.ready, undefined, { timeout: 60_000 });
     const ca = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     app = await ca.newPage();
-    await app.goto('/?seed=5&manual=1');
+    await usarArteDoPrototipo(ca);
+    await app.goto('/?seed=5&manual=1&expansao=4'); // 4 lutadores: é o que o protótipo tem
     await app.waitForSelector('html[data-pronto]', { timeout: 60_000 });
     // logo e emblema desligados dos dois lados (ver o cabeçalho)
     await app.evaluate(async () => {

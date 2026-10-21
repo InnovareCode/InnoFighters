@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { INPUT_VAZIO, type EventoLuta, type IdLutador, type InputFrame } from '../../src/core/contratos';
 import { criarRng, type Rng } from '../../src/core/rng';
 import { manifestoParaPoses, type ManifestoAtlas } from '../../src/data/atlas';
-import { AMINU, BAATAR } from '../../src/data/lutadores';
+import { AMINU, BAATAR, CAMILLE, CENTELLA, NILA } from '../../src/data/lutadores';
 import { montarLutador, type LutadorMontado } from '../../src/data/montar';
 import type { Golpe, LutadorDef } from '../../src/data/tipos';
 import { Game, type ConfigPartida, type FonteEntradas } from '../../src/fight/game';
@@ -16,6 +16,9 @@ import { montarTodos } from './_lutadores';
 
 export const ID_BAATAR = BAATAR.id;
 export const ID_AMINU = AMINU.id;
+export const ID_CENTELLA = CENTELLA.id;
+export const ID_CAMILLE = CAMILLE.id;
+export const ID_NILA = NILA.id;
 
 export function posesWei() {
   const url = new URL('../../public/assets/lutadores/wei-long/atlas.json', import.meta.url);
@@ -26,12 +29,17 @@ export function montarFixtura(def: LutadorDef): LutadorMontado {
   return montarLutador(def, posesWei());
 }
 
-/** Os 4 lutadores de produção mais BAATAR e AMINU (ou versões alteradas deles, para os testes de mutação de dados). */
-export function elencoE3(extra: Partial<Record<'baatar' | 'aminu', LutadorDef>> = {}): Record<IdLutador, LutadorMontado> {
+/** Os 4 lutadores de produção mais os da E3 (ou versões alteradas deles, para os testes de mutação de dados). */
+export function elencoE3(
+  extra: Partial<Record<'baatar' | 'aminu' | 'centella' | 'camille' | 'nila', LutadorDef>> = {},
+): Record<IdLutador, LutadorMontado> {
   return {
     ...montarTodos(),
     [ID_BAATAR]: montarFixtura(extra.baatar ?? BAATAR),
     [ID_AMINU]: montarFixtura(extra.aminu ?? AMINU),
+    [ID_CENTELLA]: montarFixtura(extra.centella ?? CENTELLA),
+    [ID_CAMILLE]: montarFixtura(extra.camille ?? CAMILLE),
+    [ID_NILA]: montarFixtura(extra.nila ?? NILA),
   } as Record<IdLutador, LutadorMontado>;
 }
 

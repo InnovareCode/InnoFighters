@@ -56,18 +56,19 @@ export type ParryDef = { niveis: readonly NivelGolpe[]; atordoaAtacante: number 
  * (S1b/S3, BAATAR e CENTELLA) Agarrão em golpe (exige `throw: 1`): `alcance` px entre os dois x (o rival nunca fica a
  * menos de `corpo + corpo` = 78: alcance menor que isso jamais agarra), `dmg` fixo (× pow), `alvo` e `janela` de ticks.
  * `janela` ausente = testa só em mt === S; com janela testa a cada tick de [S, S + janela) até agarrar uma vez.
- * Só `alvo: 'chao'` existe (o `montarLutador` recusa 'ar'/'ambos' até a S3).
+ * `alvo`: 'chao' (padrão: rival no chão), 'ar' (rival fora do chão a menos de 120 px de altura de diferença: HURACANRANA
+ * da CENTELLA) ou 'ambos'.
  */
 export type AgarraoDef = { alcance?: number; dmg?: number; alvo?: 'chao' | 'ar' | 'ambos'; janela?: number };
 
-/** (S4, CAMILLE) Contragolpe reforçado quando acerta o rival na PREPARAÇÃO do golpe dele. */
+/** (S4, CAMILLE) Contragolpe reforçado quando acerta o rival na PREPARAÇÃO do golpe dele (`mult` no lugar de 1,15; `hs` soma ao atordoamento). */
 export type ContraDef = { mult: number; hs: number };
 
 /**
  * Dica de CPU por golpe (E3 §2). REGRA: a CPU só gasta chamadas de RNG a mais por causa de uma dica se o PRÓPRIO
  * lutador a declara (`LutadorMontado.dicasIa` não vazio). Lutador sem dica consome exatamente o RNG de antes — é o que
  * mantém o snapshot de CPU × CPU (semente 42) intacto. Papéis hoje: `pressao`/`aproximar` (usar o golpe no `alcance`;
- * `segurar` mantém ESP apertado) e `defesa-projetil` (escudo no lugar do bloqueio). `antiaereo`, `defesa` e `troca`: S3..S5.
+ * `segurar` mantém ESP apertado) e `defesa-projetil` (escudo no lugar do bloqueio). `antiaereo` (golpe que entra no ramo anti-aéreo), `defesa` (golpe que substitui o bloqueio contra golpe corpo a corpo não baixo) e `troca` (troca de ficha pela distância; o único `rnd` extra da S5): nenhum deles sorteia a mais fora do ramo em que entra.
  */
 export type PapelIa = 'pressao' | 'aproximar' | 'defesa' | 'defesa-projetil' | 'antiaereo' | 'troca';
 export type DicaIa = {
@@ -78,8 +79,10 @@ export type DicaIa = {
   segurar?: readonly [number, number];
   /** (RESORTE) distância mínima até a parede de trás. */
   espacoAtras?: number;
-  /** (troca de postura) ficha preferida por faixa de distância. */
-  preferir?: { distancia: string; perto: string };
+  /** (troca de postura) ficha preferida longe (`distancia`) e perto (`perto`) do rival; null = a ficha base. */
+  preferir?: { distancia: string | null; perto: string | null };
+  /** (troca de postura) distância (px) que separa "perto" de "longe". Padrão 200. */
+  limite?: number;
 };
 
 /** Configuração da luta de chefe de um lutador (docs/mecanicas-e3.md §3.1). Só vale com `ConfigPartida.chefe`. */
@@ -170,8 +173,8 @@ export type Golpe = {
    * velocidade horizontal é (x do rival − x) / vxAlvo na decolagem, limitada por |vx| (16 se ausente).
    */
   vxAlvo?: number;
-  /** (S5/chefe) Golpe `type: 'troca'`: ficha para a qual o lutador troca. */
-  troca?: { ficha: string };
+  /** (S5) Golpe `type: 'troca'`: ficha para a qual o lutador troca em `mt === S` (null = volta à base). */
+  troca?: { ficha: string | null };
   /** Dica de CPU (ver `DicaIa`). */
   ia?: DicaIa;
   // --- especiais ---
@@ -203,7 +206,7 @@ export type EspeciaisLutador = Record<NomeEspecial, Golpe>;
 /** Ficha: variação do lutador (postura da NILA, fases do chefe). Sobrescreve (raso) campos do `LutadorDef` base. */
 export type FichaDef = Partial<Omit<LutadorDef, 'id' | 'fichas' | 'chefe'>>;
 
-export type IdCenario = 'jp' | 'cn' | 'kr' | 'br';
+export type IdCenario = 'jp' | 'cn' | 'kr' | 'br' | 'ng' | 'mx' | 'fr' | 'in' | 'mn';
 
 /** Dados estáticos de um lutador (CHARS do protótipo, sem o que é derivado do atlas). */
 export type LutadorDef = {
@@ -244,7 +247,12 @@ export type LutadorDef = {
   mods: ModsGolpes;
   especiais: EspeciaisLutador;
   /** Ajustes de animação por especial quando a folha pede outra sequência (CHAR_ANIM). */
-  anim?: Partial<Record<NomeEspecial, Anim>>;
+  anim?: Partial<Record<NomeEspecial | 'sResp', Anim>>;
+  /**
+   * (S5) Pose por ficha: nome lógico -> pose do atlas que SUBSTITUI a pose própria (ex.: `idle0 -> sarpaIdle0`). Só vale
+   * se o atlas tem a pose; senão `getPD` segue a cadeia de sempre. Diferente de `alias` (que só entra quando falta).
+   */
+  poseDaFicha?: Readonly<Record<string, string>>;
   // --- E3 ---
   /** Golpes extras que nenhuma entrada alcança (ex.: `sResp` da CAMILLE). */
   extras?: Partial<Record<'sResp', Golpe>>;

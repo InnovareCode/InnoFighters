@@ -253,12 +253,11 @@ describe('seleção de lutadores (máquina de estados)', () => {
 
   it('CPU: 1ª confirmação escolhe o seu lutador, a 2ª o adversário (sugerido = próximo), depois vai à dificuldade', () => {
     const { s, ir, audio } = select('cpu');
-    s.key('ArrowRight'); // HAYATO -> WEI LONG
-    s.key('ArrowDown'); // -> CAIO
+    s.key('ArrowDown'); // grade 3x3 (E5): HAYATO (0) -> CAIO (3)
     expect(s.cur[0]).toBe(3);
     s.key('Enter');
     expect(s.step).toBe(2);
-    expect(s.cur[1]).toBe(0); // (3 + 1) % 4
+    expect(s.cur[1]).toBe(0); // 4 (BAATAR, oculto) e 5..8 (travados) pulados: a volta cai em HAYATO
     s.key('Enter');
     rodar(s, 59);
     expect(ir).toEqual([]);
@@ -309,9 +308,9 @@ describe('seleção de lutadores (máquina de estados)', () => {
 
   it('mouse: passar por cima move o cursor; clicar confirma o quadrado', () => {
     const { s } = select('cpu');
-    s.hover(360 + 132 + 10, 92 + 10); // quadrado 1
+    s.hover(352 + 88 + 10, 92 + 10); // casa 1 da grade 3x3 (passo 88)
     expect(s.cur[0]).toBe(1);
-    s.click(360 + 10, 92 + 132 + 10); // quadrado 2
+    s.click(352 + 176 + 10, 92 + 10); // casa 2 (MIN-JI)
     expect(s.cur[0]).toBe(2);
     expect(s.lock[0]).toBe(true);
     expect(s.step).toBe(2);
@@ -319,7 +318,7 @@ describe('seleção de lutadores (máquina de estados)', () => {
 });
 
 describe('dificuldade e campanha ARCADE', () => {
-  it('ARCADE: sorteia a ordem dos 3 rivais (sem repetir o seu lutador) e abre a campanha com 3 créditos', () => {
+  it('ARCADE: sorteia 5 rivais (sem repetir o seu lutador) + o BAATAR por último e abre a campanha com 3 créditos', () => {
     const t = navegadorFalso();
     t.ui.pronto(mundoFalso());
     const d = t.ui.cenas.diff as CenaDiff;
@@ -331,8 +330,11 @@ describe('dificuldade e campanha ARCADE', () => {
     expect(t.persist.settings.diff).toBe(2);
     expect(t.salvou.n).toBe(1);
     const run = t.ui.run!;
-    expect(run.etapas.map((e) => e.id).sort()).toEqual(['hayato', 'min-ji', 'wei-long']);
-    expect(run.etapas.some((e) => e.chefe)).toBe(false); // sem chefão em produção
+    const rivais = run.etapas.slice(0, 5).map((e) => e.id);
+    expect(new Set(rivais).size).toBe(5);
+    expect(rivais.some((id) => id === 'caio' || id === 'baatar')).toBe(false);
+    expect(run.etapas.slice(0, 5).some((e) => e.chefe)).toBe(false);
+    expect(run.etapas[5]).toEqual({ id: 'baatar', chefe: true }); // ED4: o chefão fecha a escada
     expect(run).toMatchObject({ c1: 'caio', idx: 0, score: 0, continues: 3, diff: 2, cont: 0 });
     expect(ir[0]?.[0]).toBe('vs');
     expect((ir[0]?.[1] as { cfg: { c2: string; cpu: number } }).cfg).toMatchObject({ mode: 'arcade', c1: 'caio', c2: run.etapas[0]?.id, cpu: 2 });

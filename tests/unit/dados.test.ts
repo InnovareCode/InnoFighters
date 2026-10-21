@@ -25,7 +25,9 @@ function rodarPrototipo(): Obj {
 }
 
 function manifesto(id: string): ManifestoAtlas {
-  const url = new URL(`../../public/assets/lutadores/${id}/atlas.json`, import.meta.url);
+  // HAYATO e MIN-JI: o oráculo é o atlas ORIGINAL (a arte de produção foi trocada pelas folhas novas): tests/fixtures/atlas-prototipo
+  const pasta = ['hayato', 'min-ji'].includes(id) ? `tests/fixtures/atlas-prototipo/${id}` : `public/assets/lutadores/${id}`;
+  const url = new URL(`../../${pasta}/atlas.json`, import.meta.url);
   return JSON.parse(readFileSync(fileURLToPath(url), 'utf8')) as ManifestoAtlas;
 }
 

@@ -13,7 +13,7 @@ import { INPUT_VAZIO } from '../core/contratos';
 import { clamp, lerp } from '../core/math';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
-import type { CargaDef, ConfigChefe, GolpeMontado, NomeGolpe } from '../data/tipos';
+import type { CargaDef, ConfigChefe, GolpeMontado, NomeGolpe, ReboteDef } from '../data/tipos';
 import type { PerfilCpu } from './cpu';
 import { attackBox, hurtbox, podeBloquear } from './colisao';
 import { MOTIONS, dirNum, motion } from './comandos';
@@ -21,6 +21,8 @@ import type { Retangulo } from '../core/math';
 
 export type ChaveAtaque = 'sp' | 'hp' | 'hk' | 'lp' | 'lk';
 const ATK_KEYS: readonly ChaveAtaque[] = ['sp', 'hp', 'hk', 'lp', 'lk'];
+/** Margem da parede em que `physics` trava o x de um lutador em pé (60 px de cada lado). */
+const MARGEM_PAREDE = 60;
 
 /** Estado da IA de um lutador controlado pela CPU (Fighter.ai do protótipo). */
 export type EstadoIa = {
@@ -95,6 +97,18 @@ export class Fighter {
   private carga = 0;
   /** Está parado em mt = S−1 acumulando carga. */
   private carregando = false;
+  /**
+   * RESORTE (CENTELLA, S3): 0 = fora do golpe `rebote` (ou ainda na preparação); 1 = ida (corre de costas até a parede);
+   * 2 = volta (voadora, no ar até pousar). Zerado em `startMove`/`reset` e no 1º tick fora do golpe.
+   */
+  reboteFase: 0 | 1 | 2 = 0;
+  /** Distância (px) que a ida percorreu, até `rebote.maxDist`: dano (`noAtaque`) e velocidade da volta saem daqui. */
+  momento = 0;
+  private reboteX0 = 0;
+  private reboteTicks = 0;
+  /** REVERS (S4, golpe `through`): sentido em que a corrida anda (o `facing` do início) e o `mt` em que cruzou o rival (−1 = ainda não). */
+  private dirCorrida: 1 | -1 = 1;
+  private cruzouEm = -1;
 
   x = 0;
   y = GROUND;
@@ -194,6 +208,15 @@ export class Fighter {
     this.carregando = false;
   }
 
+  /** Estado do RESORTE e do REVERS: começa limpo a cada golpe (e a cada round). */
+  private zerarMovimentoE3(): void {
+    this.reboteFase = 0;
+    this.momento = 0;
+    this.reboteTicks = 0;
+    this.cruzouEm = -1;
+    this.dirCorrida = this.facing;
+  }
+
   /**
    * Faz deste lutador o chefe da luta: barras e vida por barra vêm da config, e cada round começa na `fichaFase1`.
    * Chamar DEPOIS de `setChar`. Fica na ficha da fase 1 já (o `reset` do primeiro round a reaplica).
@@ -236,6 +259,7 @@ export class Fighter {
     this.trocarFicha(this.fichaBase); // cada round começa na postura/fase base
     this.cenaPendente = false;
     this.zerarCarga();
+    this.zerarMovimentoE3();
     this.maxHp = this.cfgChefe ? this.cfgChefe.hpPorBarra : this.ch.hp;
     this.hp = this.maxHp;
     this.hpShown = this.hp;
@@ -338,14 +362,19 @@ export class Fighter {
 
   /**
    * Dá para agarrar o rival agora? Sem `golpe` (ou sem `agarrao`) é o arremesso de sempre: alcance 108, rival no chão.
-   * `golpe.agarrao.alcance` troca o alcance (E3: ARREMESSO 162, ABRAÇO < 108). O alvo é sempre o chão: `alvo: 'ar' |
-   * 'ambos'` é da S3 e o `montarLutador` recusa esses dados (não existe outro caminho aqui).
+   * `golpe.agarrao.alcance` troca o alcance (E3: ARREMESSO 162, ABRAÇO < 108) e `alvo` escolhe quem pode ser agarrado:
+   * 'chao' (padrão), 'ar' (rival fora do chão, a menos de 120 px de altura de diferença, pulando ou atacando no ar:
+   * HURACANRANA) ou 'ambos'.
    */
   canThrow(golpe?: GolpeMontado): boolean {
     const o = this.opp;
-    if (!o || !o.grounded || o.untouchable || o.stun > 0) return false;
-    if (!['idle', 'walk', 'crouch', 'land', 'prejump', 'dash', 'move'].includes(o.state)) return false;
-    return Math.abs(o.x - this.x) < (golpe?.agarrao?.alcance ?? 108);
+    if (!o || o.untouchable || o.stun > 0) return false;
+    if (Math.abs(o.x - this.x) >= (golpe?.agarrao?.alcance ?? 108)) return false;
+    const noChao = o.grounded && ['idle', 'walk', 'crouch', 'land', 'prejump', 'dash', 'move'].includes(o.state);
+    const alvo = golpe?.agarrao?.alvo ?? 'chao';
+    if (alvo === 'chao') return noChao;
+    const noAr = !o.grounded && Math.abs(o.y - this.y) < 120 && (o.state === 'jump' || o.state === 'move');
+    return alvo === 'ar' ? noAr : noChao || noAr;
   }
 
   canAfford(name: NomeGolpe): boolean {
@@ -375,6 +404,7 @@ export class Fighter {
     if (mv.inv) this.invuln = Math.max(this.invuln, mv.S + mv.inv);
     this.hitCount = 0;
     this.lastHitMt = 0;
+    this.zerarMovimentoE3();
     if (name[0] === 's') this.hist.length = 0;
   }
 
@@ -408,6 +438,8 @@ export class Fighter {
     this.st++;
     // Carga só existe dentro do golpe `carga`: acertado, derrubado ou trocado de golpe, o nível some no tick seguinte.
     if (this.nivelCarga !== 0 && !(this.state === 'move' && this.move !== null && this.golpeAtual().carga)) this.zerarCarga();
+    // Idem o RESORTE: a fase só existe dentro do golpe `rebote` (pousar vira `_lag`; acertado ou derrubado, some no tick seguinte).
+    if (this.reboteFase !== 0 && !(this.state === 'move' && this.move !== null && this.golpeAtual().rebote)) this.reboteFase = 0;
     if (this.flash > 0) this.flash--;
     if (this.invuln > 0) this.invuln--;
     if (this.buf && --this.buf.t <= 0) this.buf = null;
@@ -428,7 +460,7 @@ export class Fighter {
     const tapped = hdir && hdir !== this.prevH;
     this.prevH = hdir;
     const cm = this.state === 'move' ? this.golpeAtual() : null;
-    const trailing = this.state === 'dash' || (cm && (cm.type === 'rush' || cm.type === 'leap') && this.mt >= cm.S);
+    const trailing = this.state === 'dash' || (cm && (cm.type === 'rush' || cm.type === 'leap' || cm.type === 'rebote') && this.mt >= cm.S);
     if (trailing && this.age % 2 === 0) {
       this.trail.push({ x: this.x, y: this.y, name: this.poseT().name, f: this.facing, life: 10 });
     }
@@ -557,6 +589,8 @@ export class Fighter {
     const mv = this.golpeAtual();
     this.mt++;
     const segurando = mv.carga ? this.tickDaCarga(mv, inp, jogo) : false;
+    if (mv.rebote) this.tickDoRebote(mv, jogo);
+    if (mv.through) this.tickDoCruzamento(mv, opp);
     if (mv.hits && this.hitDone && this.hitCount < mv.hits && this.mt - this.lastHitMt >= (mv.every || 6)) this.hitDone = false; // golpe de vários acertos
     if (mv.throw) {
       // Sem `agarrao.janela` o agarrão testa só em mt === S (o arremesso de sempre). Com janela (ABRAÇO), testa a cada
@@ -589,6 +623,11 @@ export class Fighter {
       } else this.vx = this.facing * (mv.vx ?? 0);
       this.y -= 1;
       jogo.emitir({ tipo: 'jump', lutador: this.indice });
+    } else if (mv.type === 'troca' && mv.troca && this.mt === mv.S) {
+      // VADIVU (NILA): a troca acontece em mt === S, sem mexer em hp/maxHp. A ficha nova traz o mesmo golpe no mesmo slot
+      // (tempos iguais), então o golpe segue de onde estava.
+      this.trocarFicha(mv.troca.ficha);
+      jogo.emitir({ tipo: 'troca-ficha', lutador: this.indice, ficha: mv.troca.ficha });
     } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.buf) {
       // combo: cancela em golpe de rank maior
       const nm = this.resolveAttack(this.buf.k, inp);
@@ -604,7 +643,8 @@ export class Fighter {
     }
     if (this.grounded) {
       const rushing = mv.type === 'rush' && this.mt >= mv.S && this.mt < mv.S + mv.A;
-      if (rushing) this.vx = this.facing * (mv.vx ?? 0) * (this.hitDone ? 0.3 : 1);
+      // `through` (REVERS) anda no sentido do INÍCIO: o `facing` vira ao cruzar o rival, a corrida não.
+      if (rushing) this.vx = (mv.through ? this.dirCorrida : this.facing) * (mv.vx ?? 0) * (this.hitDone ? 0.3 : 1);
       else this.vx *= 0.8;
       if (mv.adv && !segurando && this.mt >= mv.S - 2 && this.mt < mv.S + mv.A) this.x += (this.facing * mv.adv) / (mv.A + 2); // avanço ao golpear
       if (segurando && mv.carga) {
@@ -612,9 +652,10 @@ export class Fighter {
         const hdir = (inp.right ? 1 : 0) - (inp.left ? 1 : 0);
         this.vx = hdir * WALK_SPEED * this.ch.spd * mv.carga.andar;
       }
+      if (this.reboteFase === 1 && mv.rebote) this.vx = -this.facing * mv.rebote.vel; // ida do RESORTE: corre de costas até a parede
     }
     const R = this.move === '_lag' ? this.lagR : mv.R;
-    if (!mv.air && this.mt >= mv.S + mv.A + R) {
+    if (!mv.air && !mv.rebote && this.mt >= mv.S + mv.A + R) {
       this.endMove(inp);
       this.physics(jogo);
       return;
@@ -651,6 +692,47 @@ export class Fighter {
     }
     if (this.carga >= c.max) this.carregando = false; // auto-solta no máximo
     return true;
+  }
+
+  /**
+   * RESORTE (CENTELLA): em `mt >= S` a ida corre de costas até a margem da parede de TRÁS dela (a mesma de `physics`: 60
+   * ou LARGURA − 60) ou até `maxTicks`; então quica: evento `rebote`, salto curto e voadora com velocidade
+   * `vxBase + momento × vxPorPx`. O dano cresce com o mesmo `momento` (`noAtaque`). Quem está encostada na parede quica
+   * já no 1º tick, com momento 0. A ida não tem caixa de acerto; a volta tem, até pousar (`activeMove`).
+   */
+  private tickDoRebote(mv: GolpeMontado, jogo: PartidaParaLutador): void {
+    const r = mv.rebote as ReboteDef;
+    if (this.reboteFase === 0 && this.mt >= mv.S) {
+      this.reboteFase = 1;
+      this.reboteX0 = this.x;
+      this.reboteTicks = 0;
+    }
+    if (this.reboteFase !== 1) return;
+    this.momento = Math.min(Math.abs(this.x - this.reboteX0), r.maxDist);
+    this.reboteTicks++;
+    const naParede = this.facing > 0 ? this.x <= MARGEM_PAREDE : this.x >= LARGURA - MARGEM_PAREDE;
+    if (naParede || this.reboteTicks > r.maxTicks) {
+      this.reboteFase = 2;
+      this.vy = r.vy;
+      this.vx = this.facing * (r.vxBase + this.momento * r.vxPorPx);
+      this.y -= 1;
+      jogo.emitir({ tipo: 'rebote', lutador: this.indice, x: this.x });
+    }
+  }
+
+  /**
+   * REVERS (CAMILLE, golpe `through`): ao passar do x do rival ela vira (`facing` troca) e só DEPOIS a caixa de acerto
+   * vale (`activeMove`): o chute de calcanhar acerta pelas costas dele. A checagem vem ANTES do movimento do tick, então
+   * o cruzamento é percebido um tick depois de o sinal da distância inverter; nesse meio tempo o `facing` do rival já
+   * acompanhou o dela, e é o que dá a ele a chance de estar segurando o "trás" novo quando o chute chega. A corrida
+   * segue no sentido do início.
+   */
+  private tickDoCruzamento(mv: GolpeMontado, opp: Fighter): void {
+    if (this.cruzouEm >= 0 || this.mt < mv.S) return;
+    if ((opp.x - this.x) * this.dirCorrida <= 0) {
+      this.cruzouEm = this.mt;
+      this.facing = (-this.dirCorrida) as 1 | -1;
+    }
   }
 
   get passing(): boolean {
@@ -699,7 +781,7 @@ export class Fighter {
       this.vx = 0;
       jogo.emitir({ tipo: 'land', lutador: this.indice });
       this.poeira(jogo, this.x, 8, 1);
-    } else if (this.state === 'move' && this.golpeAtual().air) {
+    } else if (this.state === 'move' && (this.golpeAtual().air || this.reboteFase === 2)) {
       const lag = this.golpeAtual().lag;
       jogo.emitir({ tipo: 'land', lutador: this.indice });
       if (lag) {
@@ -724,7 +806,14 @@ export class Fighter {
   }
 
   hurtbox(): Retangulo {
-    return hurtbox({ x: this.x, y: this.y, state: this.state, baixo: this.isLow(), noChao: this.grounded });
+    return hurtbox({
+      x: this.x,
+      y: this.y,
+      state: this.state,
+      baixo: this.isLow(),
+      noChao: this.grounded,
+      rente: this.state === 'move' && !!this.golpeAtual().rente,
+    });
   }
 
   attackBox(b: { fx: number; fy: number; w: number; h: number }): Retangulo {
@@ -736,6 +825,9 @@ export class Fighter {
     if (this.state !== 'move') return null;
     const mv = this.golpeAtual();
     if (mv.type === 'fire' || mv.kind === 'lag' || mv.throw) return null;
+    if (mv.parry || mv.type === 'troca') return null; // PARADE e VADIVU não têm caixa de acerto (a PARADE age em `applyHit`)
+    if (mv.rebote) return this.reboteFase === 2 ? mv : null; // só a voadora da volta acerta; a ida é só corrida
+    if (mv.through && this.cruzouEm < 0) return null; // REVERS: só acerta depois de cruzar o rival
     return this.mt >= mv.S && (mv.air || this.mt < mv.S + mv.A) ? mv : null;
   }
 
@@ -857,6 +949,17 @@ export class Fighter {
             P.sx = 1 + 0.03 * p;
           }
         }
+      }
+      return;
+    }
+    if (mv.rebote) {
+      // ida: corrida de costas (a[0], espelhada); volta: voadora (a[1], ou a[0] se a ficha só tem uma pose)
+      if (this.reboteFase === 1) {
+        P.name = A.a[0] as string;
+        P.flip = -1;
+      } else {
+        P.name = (A.a[1] ?? A.a[0]) as string;
+        if (L && !hasPose(ch, P.name)) P.rot = 0.22;
       }
       return;
     }

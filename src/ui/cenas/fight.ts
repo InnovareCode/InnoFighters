@@ -165,7 +165,7 @@ export class CenaFight implements Cena {
     reagirAosEventos(audio as unknown as { [m: string]: unknown }, game.events);
     for (const ev of game.events) {
       if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
-      efeitos.reagir(ev);
+      efeitos.reagir(ev, (i) => game.fighters[i]);
       // O chefe sai em 3 etapas (troca, danca, retomada): o flash e o "FASE 2!" são só da troca de barra, senão disparam 3 vezes.
       // danca/retomada ainda não têm efeito visual próprio (não há overlay de cena do chefe no HUD; por ora só o filtro).
       if (ev.tipo === 'fase-chefe' && ev.etapa === 'troca') this.aoFaseDoChefe(ev.lutador);

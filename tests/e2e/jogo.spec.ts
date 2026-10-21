@@ -178,7 +178,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     test.setTimeout(180_000);
     const erros = coletarErros(page);
     await salvarConfig(page);
-    await page.goto('/?seed=11');
+    await page.goto('/?seed=11&expansao=4'); // o ARCADE de 3 lutas é o do jogo de 4 (a produção tem 5 rivais + chefão)
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('diff', { mode: 'arcade', c1: 'min-ji', c2: 'hayato' }); }");
     await page.keyboard.press('Enter'); // FÁCIL

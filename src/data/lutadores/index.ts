@@ -1,9 +1,14 @@
 import type { IdLutador } from '../../core/contratos';
 import { INICIAIS as INICIAIS_LOCAL } from '../../meta/regras';
 import type { LutadorDef } from '../tipos';
+import { AMINU } from './aminu';
+import { BAATAR, MERGULHO_DA_AGUIA } from './baatar';
 import { CAIO } from './caio';
+import { CAMILLE } from './camille';
+import { CENTELLA } from './centella';
 import { HAYATO } from './hayato';
 import { MIN_JI } from './min-ji';
+import { NILA } from './nila';
 import { WEI_LONG } from './wei-long';
 
 /*
@@ -14,8 +19,15 @@ import { WEI_LONG } from './wei-long';
  * Acrescentar um lutador = id em IDS_LUTADORES (core/contratos.ts) + entrada em LUTADORES + um destes papéis.
  */
 
-/** Ordem da tela de seleção (e do `Record` de lutadores montados). */
-export const ROSTER: readonly IdLutador[] = ['hayato', 'wei-long', 'min-ji', 'caio'];
+/**
+ * Ordem da tela de seleção (e do `Record` de lutadores montados): os 4 do protótipo, a fila de desbloqueio na ordem em que
+ * se ganha (E5) e, por último, o chefão (jogável depois de derrotado). Igual a `IDS_LUTADORES`.
+ */
+export const ROSTER: readonly IdLutador[] = [
+  'hayato', 'wei-long', 'min-ji', 'caio',
+  'aminu', 'centella', 'camille', 'nila',
+  'baatar',
+];
 
 /*
  * INICIAIS, FILA_DESBLOQUEIO e CHEFE têm UMA fonte só: `src/meta/regras.ts` (Cronos), porque são regras de
@@ -31,13 +43,11 @@ export const LUTADORES: Readonly<Record<IdLutador, LutadorDef>> = {
   'wei-long': WEI_LONG,
   'min-ji': MIN_JI,
   caio: CAIO,
+  aminu: AMINU,
+  centella: CENTELLA,
+  camille: CAMILLE,
+  nila: NILA,
+  baatar: BAATAR,
 };
 
-export { CAIO, HAYATO, MIN_JI, WEI_LONG };
-
-/**
- * Definições da E3 FORA do elenco (não entram em `LUTADORES` nem `ROSTER`: o id ainda não está em `IDS_LUTADORES`, a E5
- * liga). Existem para os testes de motor e para a fixture de desenvolvimento montarem sobre o atlas de um lutador atual.
- */
-export { AMINU } from './aminu';
-export { BAATAR, MERGULHO_DA_AGUIA } from './baatar';
+export { AMINU, BAATAR, CAIO, CAMILLE, CENTELLA, HAYATO, MERGULHO_DA_AGUIA, MIN_JI, NILA, WEI_LONG };

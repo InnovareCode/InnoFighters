@@ -2,7 +2,8 @@
  * Ordem das 12 poses de cada folha (esquerda para a direita, de cima para baixo) -> nome canônico do C1.
  * Fonte: blocos "SHEET n" de docs/prompts/*.md (idênticos em todos os lutadores, exceto o texto dos especiais da
  * folha 4: os SLOTS sa/sb/sc são fixos, o que muda é o golpe desenhado neles).
- * Folha 5 (extras: jpunch etc.) é opcional e ainda não existe; o `jpunch` cai no fallback do motor.
+ * Folha 5 genérica (extras: jpunch etc.) não existe; o `jpunch` cai no fallback do motor. A NILA tem uma f5 própria (serpente,
+ * poses `sarpa*`), declarada em lutadores.json (`folhasExtras`).
  */
 export const FOLHAS = {
   f1: ['idle0', 'idle1', 'idle2', 'idle3', 'walk0', 'walk1', 'walk2', 'walk3', 'walk4', 'walk5', 'walk6', 'walk7'],
@@ -118,12 +119,24 @@ export function resolverLayout(excecoes = {}) {
     }
     folhas[id] = { grade: f.grade, celulas };
   }
+  // folhas EXTRAS do lutador (lutadores.json `folhasExtras`: NILA f5 = serpente). Entram depois das do layout; os nomes de
+  // pose delas são livres (não precisam estar em ORDEM_COMPLETA: `executar.mjs` acrescenta ao fim do manifesto).
+  const ids = [...base.ids];
+  for (const [id, f] of Object.entries(excecoes.folhasExtras ?? {})) {
+    if (folhas[id]) throw new Error(`folhasExtras: "${id}" ja existe no layout`);
+    const grade = f.grade ?? GRADE_PADRAO;
+    if (f.celulas.length !== grade[0] * grade[1]) {
+      throw new Error(`folha ${id}: ${f.celulas.length} celulas para uma grade ${grade.join('x')}`);
+    }
+    folhas[id] = { grade, celulas: f.celulas };
+    ids.push(id);
+  }
   const vistos = new Map();
-  for (const id of base.ids) {
+  for (const id of ids) {
     for (const nome of folhas[id].celulas.flatMap(nomesDaCelula)) {
       if (vistos.has(nome)) throw new Error(`pose "${nome}" aparece em duas celulas (${vistos.get(nome)} e ${id})`);
       vistos.set(nome, id);
     }
   }
-  return { ids: base.ids, folhas };
+  return { ids, folhas };
 }

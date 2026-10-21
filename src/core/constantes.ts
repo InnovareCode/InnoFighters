@@ -18,3 +18,15 @@ export const SPECIAL_COST = 40;
 
 /** Meia-largura de empurrão entre lutadores (min = 78 do protótipo = 2 * 39). LutadorDef.corpo sobrescreve. */
 export const CORPO_PADRAO = 39;
+
+// --- Cenário da luta (src/render/cenario.ts desenha o fundo em y = CENARIO_Y com CENARIO_ALTURA px de altura) ---
+/** Topo do fundo da luta na tela lógica (a imagem sobra 20 px acima e 20 abaixo). */
+export const CENARIO_Y = -20;
+/** Altura com que o fundo da luta é desenhado (ALTURA + 40). */
+export const CENARIO_ALTURA = ALTURA + 40;
+/**
+ * Fração da ALTURA DA IMAGEM em que ficam os pés dos lutadores: (GROUND − CENARIO_Y) / CENARIO_ALTURA = 490 / 580 = 84,5%.
+ * Não é os 87% de 470/540 (a tela), porque o fundo não é desenhado do tamanho da tela. O zoom da câmera é ancorado no
+ * chão, então a linha não muda com o zoom. A arte do cenário deve estar limpa dessa linha para baixo.
+ */
+export const PES_NO_CENARIO = (GROUND - CENARIO_Y) / CENARIO_ALTURA;

@@ -53,4 +53,9 @@ já desenha os projéteis.
   só 2 de 6 entraram: o modelo insiste em soco reto (antebraço) e punho acima da cabeça (soco aéreo) mesmo pedindo outra
   coisa. Depois de 2 falhas, aceite e ajuste a caixa de acerto. "Igual à célula 1, só mais baixa" NÃO dá par de respiração.
   Dedos tangenciando x=0 com contorno fechado = margem no recorte, não regerar.
+- NILA f5 serpente (2026-10-21, `docs/handoff-apolo-nila-f5.md`): REGERAR. Idle e defesa saíram na postura do ELEFANTE
+  porque o bloco CHARACTER (injetado em toda folha) termina com a postura de luta e a mestra anexada está nela; células
+  de ação concreta saíram certas. **Folha de postura alternativa: trocar a frase de postura do CHARACTER, não só a linha.**
+  Teste rápido de postura: razão largura/altura da caixa (serpente é mais larga que alta). f4/f5 da NILA ~10% menores
+  que a f1 v3 (cabeça 101-102 x 112 px): `fatorFolha` ~1,11.
 - Dragão FX do WEI aprovado (1bcee91a); falta o original em `arte-fonte/lutadores/wei-long/fx/wei-long-fx-v1.png`.

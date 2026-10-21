@@ -326,7 +326,8 @@ describe('ferramenta de retratos (gerar-retratos.mjs)', () => {
     const sidecar = validarRetrato(JSON.parse(readFileSync(`${dir}/retrato.json`, 'utf8')), id);
     const [w, h] = dimensoesPng(readFileSync(`${dir}/${sidecar.arquivo}`)) as [number, number];
     const [fx, fy, rw, rh] = sidecar.recorte!;
-    expect([rw, rh]).toEqual([190, 190]);
+    // 190 px; nos atlas de alturaRef maior (BAATAR, 525) a janela cresce na mesma proporção (mesmo enquadramento do rosto)
+    expect([rw, rh]).toEqual([Math.round((190 * Math.max(manifesto.alturaRef, 410)) / 410), Math.round((190 * Math.max(manifesto.alturaRef, 410)) / 410)]);
     expect(fx).toBeGreaterThanOrEqual(0);
     expect(fy).toBeGreaterThanOrEqual(0);
     expect(fx + rw).toBeLessThanOrEqual(w);

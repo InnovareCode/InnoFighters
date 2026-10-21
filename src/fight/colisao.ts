@@ -14,11 +14,17 @@ export type PartesDaCaixaDeDano = {
   /** Agachado ou golpe agachado (Fighter.isLow()). */
   baixo: boolean;
   noChao: boolean;
+  /** (E3 S5) Golpe `rente` em curso (BOTE da NILA): terceiro nível de altura, abaixo do agachado. */
+  rente?: boolean;
 };
 
-/** Caixa de dano. Caído/KO: faixa larga rente ao chão; senão 76 px de largura, 96% de SH em pé, 56% agachado. */
+/**
+ * Caixa de dano. Caído/KO: faixa larga rente ao chão; senão 76 px de largura, 96% de SH em pé, 56% agachado, 30% `rente`
+ * (topo a ~80 px: o projétil comum nasce a ~150 px e a caixa dele desce até ~120, então passa por cima; o agachado, a
+ * 148 px, não passa).
+ */
 export function hurtbox(f: PartesDaCaixaDeDano): Retangulo {
-  const top = f.baixo ? SH * 0.56 : SH * 0.96;
+  const top = f.rente ? SH * 0.3 : f.baixo ? SH * 0.56 : SH * 0.96;
   if (f.state === 'down' || f.state === 'ko') return { x: f.x - 70, y: f.y - 60, w: 140, h: 60 };
   return { x: f.x - 38, y: f.y - top, w: 76, h: top - (f.noChao ? 0 : 50) };
 }
@@ -51,9 +57,9 @@ export function escalaCombo(gotHits: number): number {
   return Math.max(0.5, 1 - 0.1 * gotHits);
 }
 
-/** Dano de um golpe: projétil não usa `pow`; contragolpe +15%. */
-export function danoDoGolpe(dmg: number, pow: number, projetil: boolean, gotHits: number, contragolpe: boolean): number {
-  return (projetil ? dmg : dmg * pow) * escalaCombo(gotHits) * (contragolpe ? 1.15 : 1);
+/** Dano de um golpe: projétil não usa `pow`; contragolpe +15% (`multContra`, E3: o COUP D'ARRÊT usa 1,5). */
+export function danoDoGolpe(dmg: number, pow: number, projetil: boolean, gotHits: number, contragolpe: boolean, multContra = 1.15): number {
+  return (projetil ? dmg : dmg * pow) * escalaCombo(gotHits) * (contragolpe ? multContra : 1);
 }
 
 /** Dano reduzido absorvido pela armadura (60% do dano cheio, sem escala de combo). */

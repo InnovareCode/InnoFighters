@@ -5,16 +5,15 @@ import type { Regras } from './tipos';
 export const INICIAIS: readonly IdLutador[] = ['hayato', 'wei-long', 'min-ji', 'caio'];
 
 /**
- * Ordem aprovada pelo dono: AMINU, CENTELLA, CAMILLE, NILA.
- * VAZIA ate a E5: esses ids ainda nao existem em `IDS_LUTADORES` (contratos.ts), e `IdLutador` nao os aceita.
- * Quando entrarem, e so preencher aqui — as regras e os testes ja cobrem fila de qualquer tamanho.
+ * Ordem aprovada pelo dono: AMINU, CENTELLA, CAMILLE, NILA (E5). A cada Arcade zerado libera-se o primeiro da fila
+ * ainda nao liberado (`aplicarVitoriaArcade`); as regras e os testes cobrem fila de qualquer tamanho.
  */
-export const FILA_DESBLOQUEIO: readonly IdLutador[] = [];
+export const FILA_DESBLOQUEIO: readonly IdLutador[] = ['aminu', 'centella', 'camille', 'nila'];
 
-/** BAATAR (aprovado pelo dono). `null` ate o id entrar em `IDS_LUTADORES` (E3/E5). */
-export const CHEFE: IdLutador | null = null;
+/** BAATAR (aprovado pelo dono): ultima luta do Arcade; liberado ao derrota-lo (`derrotouChefe`). */
+export const CHEFE: IdLutador | null = 'baatar';
 
-/** Rivais sorteados antes do chefao (ED4: 5 rivais + chefao). */
+/** Rivais sorteados antes do chefao (ED4: 5 rivais + chefao = 6 lutas). */
 export const TAMANHO_ESCADA = 5;
 
 export const REGRAS_PADRAO: Regras = {

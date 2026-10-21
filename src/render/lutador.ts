@@ -12,7 +12,8 @@ import type { Ctx } from './tela';
  * Ficha desconhecida cai no base (não quebra o desenho; a luta já lança erro se pedir uma que não existe).
  */
 export function chDaFicha(ch: LutadorMontado, ficha: string | null): LutadorMontado {
-  return (ficha ? ch.fichas[ficha] : undefined) ?? ch;
+  // `ficha ?` (e não `!== null`): leituras de teste antigas não têm o campo. `hasOwn`: 'toString'/'constructor' não são fichas.
+  return (ficha && Object.hasOwn(ch.fichas, ficha) ? ch.fichas[ficha] : undefined) ?? ch;
 }
 
 /**

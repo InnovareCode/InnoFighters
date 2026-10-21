@@ -47,10 +47,10 @@ const PROJ_NEUTRO: ProjetilDef = { dmg: 0, sp: 0, kb: 0, hs: 0, kd: false, style
  * Dados de E3 que o motor ainda não sabe executar (ou que não fazem sentido) falham ALTO no boot, em vez de virar um
  * golpe que silenciosamente não faz o que o dado diz. Cada fatia que implementa a mecânica tira a sua recusa daqui.
  */
-function validarParametrosE3(id: string, nome: NomeGolpe, mv: GolpeMontado): void {
+function validarParametrosE3(id: string, nome: NomeGolpe, mv: GolpeMontado, fichas: readonly string[]): void {
   const onde = `${id}.${nome}`;
   const alvo = mv.agarrao?.alvo;
-  if (alvo !== undefined && alvo !== 'chao') throw new Error(`${onde}: agarrao.alvo '${alvo}' entra na S3 (hoje só 'chao')`);
+  if (alvo !== undefined && alvo !== 'chao' && alvo !== 'ar' && alvo !== 'ambos') throw new Error(`${onde}: agarrao.alvo '${String(alvo)}' desconhecido`);
   if (mv.agarrao && !mv.throw) throw new Error(`${onde}: agarrao exige throw: 1 (sem ele o golpe não agarra)`);
   if (mv.vxAlvo !== undefined && mv.type !== 'leap' && mv.type !== 'rise') throw new Error(`${onde}: vxAlvo só vale em leap/rise`);
   const c = mv.carga;
@@ -60,13 +60,37 @@ function validarParametrosE3(id: string, nome: NomeGolpe, mv: GolpeMontado): voi
     if (!ok) throw new Error(`${onde}: carga inválida (1 a 3 níveis, niveis[0] = 0, porNivel do mesmo tamanho, max > 0)`);
     if (mv.S < 2) throw new Error(`${onde}: carga exige S >= 2 (segura em mt = S−1)`);
   }
+  // S3 (RESORTE): o golpe `rebote` corre até a parede e volta; sem números válidos ele nunca voltaria.
+  const r = mv.rebote;
+  if (mv.type === 'rebote' && !r) throw new Error(`${onde}: type 'rebote' sem rebote`);
+  if (r) {
+    const ok = mv.type === 'rebote' && r.vel > 0 && r.maxTicks > 0 && r.vy < 0 && r.maxDist > 0 && r.vxBase >= 0 && r.vxPorPx >= 0 && r.dmgPorPx >= 0;
+    if (!ok) throw new Error(`${onde}: rebote inválido (type 'rebote', vel > 0, maxTicks > 0, vy < 0, maxDist > 0, vxBase/vxPorPx/dmgPorPx >= 0)`);
+  }
+  // S4 (PARADE): janela de aparar com ao menos um nível de golpe; a resposta (`sResp`) é conferida em montarLutador.
+  const p = mv.parry;
+  if (mv.type === 'aparar' && !p) throw new Error(`${onde}: type 'aparar' sem parry`);
+  if (p && (mv.type !== 'aparar' || p.niveis.length === 0 || !(p.atordoaAtacante > 0) || mv.A <= 0)) {
+    throw new Error(`${onde}: parry inválido (type 'aparar', niveis não vazio, atordoaAtacante > 0, A > 0)`);
+  }
+  if (mv.contra && !(mv.contra.mult >= 1 && mv.contra.hs >= 0)) throw new Error(`${onde}: contra inválido (mult >= 1, hs >= 0)`);
+  // S5 (VADIVU): troca de ficha tem que apontar para uma ficha que existe (null = a base).
+  const t = mv.troca;
+  if (mv.type === 'troca' && !t) throw new Error(`${onde}: type 'troca' sem troca`);
+  if (t) {
+    if (mv.type !== 'troca') throw new Error(`${onde}: troca só vale em type 'troca'`);
+    if (t.ficha !== null && !fichas.includes(t.ficha)) throw new Error(`${onde}: troca para ficha desconhecida '${t.ficha}'`);
+  }
 }
 
 /**
  * Monta um lutador a partir dos dados estáticos e das poses do atlas. Função pura: porte
  * literal de setupChars() + buildMoves() do protótipo (linhas 387-395 e 597-615).
  */
-export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
+export function montarLutador(def: LutadorDef, pd: Poses, fichasDoLutador?: readonly string[]): LutadorMontado {
+  // `fichasDoLutador` só é passado na recursão das fichas: uma ficha não tem `fichas` próprias, mas o VADIVU dela aponta
+  // para as do lutador (ou para a base, null).
+  const nomesDeFichas = fichasDoLutador ?? Object.keys(def.fichas ?? {});
   const idle = pd['idle0'] ?? pd['guard'];
   if (!idle) throw new Error(`${def.id}: atlas sem idle0/guard`);
   const g = pd['guard'] ?? pd['idle0'];
@@ -86,6 +110,11 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
     sc1: def.especiais.sFwd.pose,
     sc0: def.especiais.sFwd.pre || 'guard',
   };
+  // Atlas novo (as 48 poses canônicas das folhas 1 a 4, sem os nomes legados `jumpPunch`/`crouchPunch`/`punch`): o FALLBACK do
+  // protótipo não alcança nenhuma pose (`punch` também não existe) e o soco aéreo / o preparo da BOTE caíam no idle0. Ponte
+  // por lutador, só quando FALTA o quadro (os 4 originais têm os dois, então o alias deles não muda; `getPD` acha o direto).
+  if (!pd['jpunch'] && !pd['jumpPunch'] && pd['jkick']) alias['jpunch'] = 'jkick';
+  if (!pd['crouchPunch'] && pd['clp']) alias['crouchPunch'] = 'clp';
 
   const parcial = { ...def, pd, alias };
   const R = def.reach || 1;
@@ -96,7 +125,8 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
     mv.anim = animFor(n, mv, def.anim);
     if (mv.type === 'fire' || mv.kind === 'lag') continue;
     mv.box = n;
-    const primeiro = mv.anim.a[0] ?? 'idle0';
+    // RESORTE: a caixa é a da voadora da volta (a[1]); a[0] é só a corrida de costas da ida.
+    const primeiro = (mv.rebote ? mv.anim.a[1] : undefined) ?? mv.anim.a[0] ?? 'idle0';
     const t = getPD(parcial, primeiro);
     const rm = mv.rm ?? 1;
     const h = mv.bh ?? 0;
@@ -115,7 +145,8 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
     if (dica) dicasIa.push({ golpe: n, dica });
   }
 
-  for (const n of nomes) validarParametrosE3(def.id, n, moves[n]);
+  for (const n of nomes) validarParametrosE3(def.id, n, moves[n], nomesDeFichas);
+  if (nomes.some((n) => moves[n].parry) && !moves.sResp) throw new Error(`${def.id}: golpe com parry exige extras.sResp (a resposta)`);
 
   const sFire = moves.sFire;
   // ESP sem projétil (E3: ARREMESSO do BAATAR, MASHI da AMINU): `proj` vira um projétil neutro só para `ch.proj.cost`
@@ -131,7 +162,7 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
   void _chefe;
   const fichas: Record<string, LutadorMontado> = {};
   for (const [nome, f] of Object.entries(fichasDef ?? {})) {
-    fichas[nome] = montarLutador({ ...defParaFicha, ...f, id: def.id }, pd);
+    fichas[nome] = montarLutador({ ...defParaFicha, ...f, id: def.id }, pd, nomesDeFichas);
   }
 
   return {

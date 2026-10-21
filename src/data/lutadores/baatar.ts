@@ -1,14 +1,13 @@
-import type { IdLutador } from '../../core/contratos';
 import type { EspeciaisLutador, Golpe, LutadorDef } from '../tipos';
 
 /*
- * BAATAR, "O Avarga das Estepes" (chefão, E3 S1b). DEFINIÇÃO DE DADOS, FORA do elenco: não está em `LUTADORES` nem em
- * `ROSTER`, e o id 'baatar' ainda não existe em `IDS_LUTADORES` (entra na E5, com a arte e o desbloqueio). Por isso o id
- * é um cast: é a definição testável/fixture, montada nos testes sobre o atlas de um lutador atual.
+ * BAATAR, "O Avarga das Estepes" (chefão, E3 S1b). No elenco desde a E5 como CHEFE (`src/meta/regras.ts`): última luta do Arcade; jogável depois
+ * de derrotado (1 barra, ficha base). Os testes de mecânica da E3 montam esta definição sobre o atlas do WEI LONG
+ * (`tests/unit/_kit-e3.ts`).
  *
  * Números de PARTIDA (docs/mecanicas-e3.md §2.5 e §3; proposta §2.4). Os de dano/tempo saem do harness da E6. `stage`
- * é provisório (a "Estepe do Naadam" é um cenário novo da E5). As poses citadas são as que qualquer atlas tem; a arte
- * própria (devekh, dive) vem na E5.
+ * 'mn' (Estepe do Naadam). As poses citadas são as que qualquer atlas tem; a arte própria (devekh, dive) entra por
+ * nome onde o atlas a tem (a Dança usa `devekh0..2` em `Fighter.poseT`).
  */
 
 /**
@@ -54,9 +53,9 @@ const ESPECIAIS_BAATAR: EspeciaisLutador = {
 };
 
 export const BAATAR: LutadorDef = {
-  id: 'baatar' as IdLutador,
+  id: 'baatar',
   country: 'MONGÓLIA',
-  stage: 'kr',
+  stage: 'mn',
   stageName: 'Estepe do Naadam, Mongólia',
   name: 'BAATAR',
   title: 'O Avarga das Estepes',
@@ -90,9 +89,16 @@ export const BAATAR: LutadorDef = {
       spd: 0.82,
       fire: ['#ff2a10', '#ffe08a', '#c4120a'],
       especiais: { ...ESPECIAIS_BAATAR, sFwd: MERGULHO_DA_AGUIA },
+      // MERGULHO: o golpe usa a animação `leap` (sc0 decolagem, sc1 queda). Na fase 2 o atlas real tem a arte própria
+      // (`dive0` agachado/impulso, `dive1` o mergulho de braços à frente); a caixa de acerto sai de `dive1`. Sem o quadro
+      // (atlas provisório dos testes de motor) vale o sc0/sc1 de sempre.
+      poseDaFicha: { sc0: 'dive0', sc1: 'dive1' },
     },
   },
-  // Só vale com `ConfigPartida.chefe`. `bonusVitoria` é provisório (o valor final sai da E6 com o dono).
+  // Só vale com `ConfigPartida.chefe`. PROVISÓRIOS (E6 fecha com o harness e o dono): `hpPorBarra` 75 (150 no total, os
+  // "50%" do Apolo caem na troca de barra), `danca.duracao` 90 ticks (~1,5 s), `bonusVitoria` 5000 e o perfil de CPU
+  // (`IA_CHEFE` em src/fight/cpu.ts: +0,15 em react/block; fase 2 com aggr 1 e anti +0,2), que são os valores do doc.
+  // O cenário é o `stage` 'mn' (luta-se na casa do rival: contra o chefe, a Estepe do Naadam).
   chefe: {
     barras: 2,
     hpPorBarra: 75,

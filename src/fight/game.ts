@@ -16,7 +16,7 @@ import { clamp, lerp, overlap, type Retangulo } from '../core/math';
 import type { Rng } from '../core/rng';
 import { PROJ_BASE } from '../data/base-moves';
 import type { LutadorMontado } from '../data/montar';
-import type { GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
+import type { ContraDef, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
 import { NO_INPUT, cpuInput, perfilChefe } from './cpu';
 import { Fighter, type PartidaParaLutador } from './fighter';
@@ -74,6 +74,8 @@ type AtaqueAcerto = {
   quebraGuarda: number | undefined;
   /** E3: rank do golpe, para a armadura por rank. Projétil não tem rank (interrompe qualquer armadura de rank). */
   rank: number | undefined;
+  /** E3 (S4): contragolpe reforçado se o rival estava na PREPARAÇÃO do golpe dele (COUP D'ARRÊT). */
+  contra: ContraDef | undefined;
 };
 
 const textoFlutuante = (x: number, y: number, s: string, col: string, size: number): TextoFlutuante => ({ x, y, s, col, size });
@@ -84,8 +86,10 @@ const textoFlutuante = (x: number, y: number, s: string, col: string, size: numb
  */
 const noAtaque = (mv: GolpeMontado, atacante: Fighter): AtaqueAcerto => {
   const nivel = mv.carga ? mv.carga.porNivel[Math.max(1, atacante.nivelCarga) - 1] : undefined;
+  const base = nivel?.dmg ?? mv.dmg ?? 0;
   return {
-    dmg: nivel?.dmg ?? mv.dmg ?? 0,
+    // RESORTE (S3): o dano cresce com o percurso da ida (`momento`, já limitado a maxDist). Sem `rebote`, a conta é a de sempre.
+    dmg: mv.rebote ? base + Math.min(atacante.momento, mv.rebote.maxDist) * mv.rebote.dmgPorPx : base,
     kb: mv.kb ?? 0,
     hs: mv.hs ?? 0,
     bs: mv.bs ?? 0,
@@ -98,6 +102,7 @@ const noAtaque = (mv: GolpeMontado, atacante: Fighter): AtaqueAcerto => {
     proj: false,
     quebraGuarda: nivel?.quebraGuarda ?? mv.quebraGuarda,
     rank: mv.rank,
+    contra: mv.contra,
   };
 };
 
@@ -261,11 +266,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     a.connected = true;
     a.en = Math.min(MAX_EN, a.en + 8);
     d.x = clamp(a.x + a.facing * 30, 70, LARGURA - 70);
+    const noAr = !d.grounded; // HURACANRANA: o rival agarrado no ar é jogado PARA BAIXO; no chão o arremesso o lança para cima
     if (this.resolverVidaZerada(d, a)) {
       d.vx = -a.facing * 7;
     } else {
       d.knockdown(-a.facing, 6);
-      d.vy = -12;
+      d.vy = noAr ? 9 : -12;
     }
     this.shake = 8;
     this.hitstop = 6;
@@ -557,6 +563,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
             proj: PROJ_BASE.proj,
             quebraGuarda: undefined,
             rank: undefined,
+            contra: undefined,
           },
           box,
         );
@@ -580,7 +587,39 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     return !!mv.absorveProj && d.mt >= mv.S && d.mt < mv.S + mv.A && pr.dir === -d.facing;
   }
 
+  /** `d` está com a PARADE ativa (golpe `aparar`, mt em [S, S + A)) contra este golpe corpo a corpo de nível aparável? */
+  private apara(d: Fighter, mv: AtaqueAcerto): boolean {
+    if (d.state !== 'move' || mv.proj) return false;
+    const g = d.golpeAtual();
+    return !!g.parry && d.mt >= g.S && d.mt < g.S + g.A && g.parry.niveis.includes(mv.lvl);
+  }
+
   private applyHit(a: Fighter, d: Fighter, mv: AtaqueAcerto, box: Retangulo): void {
+    // E3 (CAMILLE): PARADE. Anula o golpe (sem dano, sem raspão), atordoa quem atacou e responde com o `sResp`. Projétil e
+    // golpe baixo (fora de `niveis`) seguem o caminho normal; o agarrão nem passa por aqui (`arremessar`).
+    if (this.apara(d, mv)) {
+      const parry = d.golpeAtual().parry as { atordoaAtacante: number };
+      const hb = d.hurtbox();
+      const x = (Math.max(box.x, hb.x) + Math.min(box.x + box.w, hb.x + hb.w)) / 2;
+      const y = (Math.max(box.y, hb.y) + Math.min(box.y + box.h, hb.y + hb.h)) / 2;
+      a.move = null;
+      a.hitDone = true;
+      a.setState('hit');
+      a.stun = parry.atordoaAtacante;
+      a.vx = 0;
+      d.startMove('sResp', this);
+      this.hitstop = 8;
+      this.shake = this.ajustes.shake ? 3 : 0;
+      this.emitir({
+        tipo: 'parry',
+        atacante: a.indice,
+        defensor: d.indice,
+        x,
+        y,
+        texto: textoFlutuante(d.x, d.y - SH * 0.95, 'PARADA!', '#e6ebf7', 22),
+      });
+      return;
+    }
     const blocked = d.canBlock(mv.lvl);
     const hb = d.hurtbox();
     const ox = (Math.max(box.x, hb.x) + Math.min(box.x + box.w, hb.x + hb.w)) / 2;
@@ -635,6 +674,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
     d.hitKind = mv.kind === 'punch' || mv.lvl === 'over' || mv.proj ? 'H' : 'B';
     const counter = d.state === 'move';
+    // E3 (S4): contragolpe na PREPARAÇÃO do golpe do rival (lido ANTES de `d.move = null`). Só reforça se o golpe tem `contra`.
+    const emPreparo = counter && mv.contra !== undefined && d.mt < d.golpeAtual().S;
     // E3: `armadura.rankMax` (PESO DA MONTANHA) limita a armadura a golpes de rank <= rankMax; projétil (sem rank) e
     // golpe forte a interrompem. Sem `armadura` no def, qualquer golpe é absorvido como sempre.
     const rankMax = d.ch.armadura?.rankMax;
@@ -659,7 +700,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       return;
     }
     if (d.gotHits === 0) d.comboDmg = 0;
-    let dmg = danoDoGolpe(mv.dmg, a.ch.pow, mv.proj, d.gotHits, counter);
+    let dmg = danoDoGolpe(mv.dmg, a.ch.pow, mv.proj, d.gotHits, counter, emPreparo ? mv.contra?.mult : undefined);
+    const stunExtra = emPreparo ? (mv.contra?.hs ?? 0) : 0;
     if (this.training) dmg = Math.min(dmg, d.hp - 1 > 0 ? dmg : 0);
     d.hp = Math.max(0, d.hp - dmg);
     d.gotHits++;
@@ -678,7 +720,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     } else if (mv.hits && a.hitCount < mv.hits) {
       // acertos intermediários: segura o rival no combo
       d.setState('hit');
-      d.stun = mv.hs;
+      d.stun = mv.hs + stunExtra;
       d.vx = mv.kb * a.facing * 0.5;
       if (!d.grounded || a.vy < 0) {
         d.vy = Math.min(a.vy, -3);
@@ -688,7 +730,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       d.knockdown(a.facing, mv.proj ? mv.kb : Math.max(mv.kb, 7));
     } else {
       d.setState('hit');
-      d.stun = mv.hs;
+      d.stun = mv.hs + stunExtra;
       d.vx = mv.kb * a.facing;
     }
     if (cornered && !kill) a.vx = -a.facing * mv.kb * 0.8;
@@ -708,7 +750,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       contragolpe: counter,
       projetil: mv.proj,
       acertos: d.gotHits,
-      texto: counter ? textoFlutuante(ox, oy - 40, 'COUNTER!', '#ff9a3a', 24) : null,
+      texto: emPreparo
+        ? textoFlutuante(ox, oy - 40, "COUP D'ARRÊT!", '#ffffff', 26)
+        : counter
+          ? textoFlutuante(ox, oy - 40, 'COUNTER!', '#ff9a3a', 24)
+          : null,
+      ...(emPreparo ? { contraEspecial: true } : {}),
     });
   }
 

@@ -1,7 +1,7 @@
-import { GROUND } from '../core/constantes';
+import { GROUND, LARGURA } from '../core/constantes';
 import type { InputFrame } from '../core/contratos';
 import type { Rng } from '../core/rng';
-import type { NomeGolpe } from '../data/tipos';
+import type { NomeGolpe, PapelIa } from '../data/tipos';
 import type { Fighter, PlanoIa } from './fighter';
 import type { ProjetilLuta } from './projetil';
 
@@ -80,15 +80,20 @@ export function moveInput(name: NomeGolpe, dir: number): PlanoIa {
 
 /** Chance (antes de multiplicar por `aggr`) de a CPU usar um golpe com dica quando ele está ao alcance. Valor de partida (E6). */
 const CHANCE_DICA = 0.4;
+/** Chance (antes de multiplicar por `aggr`) de trocar de ficha quando a atual não serve para a distância. Valor de partida (E6). */
+const CHANCE_TROCA = 0.3;
+/** Margem da parede em que os lutadores travam (a mesma de `Fighter.physics`). */
+const MARGEM_PAREDE = 60;
 
 /**
  * Dicas de CPU (docs/mecanicas-e3.md §2). Devolve um plano pronto ou null (= segue o fluxo normal). CONTRATO: só é
  * chamada para quem tem `dicasIa` (a guarda está em `cpuInput`) e chama `rnd` APENAS depois de decidir que a dica se
  * aplica (golpe pagável, rival dentro do `alcance`): dica fora do alcance também não altera a sequência do RNG.
  *
- * Papéis daqui: `pressao` e `aproximar` (usar o golpe quando o rival está no `alcance`; com `segurar`, mantém ESP
- * apertado por N ticks sorteados, o único `rnd` extra). `defesa-projetil` age na reação a projétil (`cpuInput`), não
- * aqui. `antiaereo`, `defesa` e `troca` entram nas fatias S3..S5.
+ * Papéis daqui: `pressao` e `aproximar` (usar o golpe quando o rival está no `alcance`, e, com `espacoAtras`, só se há
+ * espaço até a parede de trás; com `segurar`, mantém ESP apertado por N ticks sorteados, o único `rnd` extra) e `troca`
+ * (muda de ficha quando a atual não é a preferida para a distância: um `rnd`, só se há o que trocar).
+ * `defesa-projetil`, `defesa` e `antiaereo` agem nas reações e no ramo anti-aéreo (`cpuInput`), não aqui.
  */
 function planoPorDica(
   me: Fighter,
@@ -98,9 +103,19 @@ function planoPorDica(
   rnd: () => number,
 ): { plano: PlanoIa; segurar: number } | null {
   for (const { golpe, dica } of me.ch.dicasIa) {
+    if (dica.papel === 'troca') {
+      const pref = dica.preferir;
+      if (!pref || !me.canAfford(golpe)) continue;
+      const desejada = distancia >= (dica.limite ?? 200) ? pref.distancia : pref.perto;
+      if (desejada === me.ficha) continue; // já está na ficha certa para esta distância: nenhum rnd
+      if (rnd() >= CHANCE_TROCA * L.aggr) continue;
+      return { plano: moveInput(golpe, dir), segurar: 0 };
+    }
     if (dica.papel !== 'pressao' && dica.papel !== 'aproximar') continue;
     const [min, max] = dica.alcance ?? [0, Infinity];
     if (distancia < min || distancia > max || !me.canAfford(golpe)) continue;
+    // RESORTE: só vale se há corda (parede) suficiente ATRÁS dela para pegar embalo.
+    if (dica.espacoAtras !== undefined && espacoAtras(me, dir) < dica.espacoAtras) continue;
     if (rnd() >= CHANCE_DICA * L.aggr) continue;
     const mv = me.ch.moves[golpe];
     let segurar = 0;
@@ -114,9 +129,32 @@ function planoPorDica(
   return null;
 }
 
-/** Golpe de `defesa-projetil` que a CPU pode usar agora (pagável), ou null. Só olhado por quem tem `dicasIa`. */
-function golpeContraProjetil(me: Fighter): NomeGolpe | null {
-  for (const { golpe, dica } of me.ch.dicasIa) if (dica.papel === 'defesa-projetil' && me.canAfford(golpe)) return golpe;
+/** Distância (px) de `me` até a margem da parede ATRÁS dela (o lado oposto ao rival, que está na direção `dir`). */
+function espacoAtras(me: Fighter, dir: number): number {
+  return dir > 0 ? me.x - MARGEM_PAREDE : LARGURA - MARGEM_PAREDE - me.x;
+}
+
+/**
+ * Um golpe com dica serve para ENCADEAR depois de um acerto? Os de `antiaereo` (erram no chão), `defesa` (PARADE) e `troca`
+ * (VADIVU) não; o que exige `espacoAtras` (RESORTE) só com a corda atrás. Sem dica, qualquer golpe serve (nada muda).
+ */
+function serveParaCombo(me: Fighter, golpe: NomeGolpe, dir: number): boolean {
+  const dica = me.ch.moves[golpe].ia;
+  if (!dica) return true;
+  if (dica.papel === 'antiaereo' || dica.papel === 'defesa' || dica.papel === 'troca') return false;
+  return dica.espacoAtras === undefined || espacoAtras(me, dir) >= dica.espacoAtras;
+}
+
+/**
+ * Golpe com a dica de `papel` que a CPU pode usar agora (pagável e, se a dica tem `alcance` e `distancia` foi dada, com o
+ * rival dentro dele), ou null. Só olhado por quem tem `dicasIa`; nunca sorteia.
+ */
+function golpeComPapel(me: Fighter, papel: PapelIa, distancia?: number): NomeGolpe | null {
+  for (const { golpe, dica } of me.ch.dicasIa) {
+    if (dica.papel !== papel || !me.canAfford(golpe)) continue;
+    if (distancia !== undefined && dica.alcance && (distancia < dica.alcance[0] || distancia > dica.alcance[1])) continue;
+    return golpe;
+  }
   return null;
 }
 
@@ -151,8 +189,20 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     ai.seen = opp.atkId;
     if (rnd() < L.react) {
       if (rnd() < L.block) {
-        ai.hold = oppMv.S + Math.min(oppMv.A, 12) + 8;
-        ai.holdInp = { back: true, down: oppMv.lvl === 'low' || (oppMv.lvl === 'mid' && rnd() < 0.3) };
+        // Quem tem PARADE (`defesa`) a usa no lugar do bloqueio contra golpe de nível aparável, com a MESMA chance de
+        // defender (nenhum rnd a mais; quem a CPU poupa é o `rnd() < 0.3` do agachar, que só o bloqueio sorteia).
+        const parada = me.ch.dicasIa.length > 0 && ad < 190 ? golpeComPapel(me, 'defesa') : null;
+        const nivelAparavel = parada !== null && !!M[parada].parry?.niveis.includes(oppMv.lvl ?? 'mid');
+        if (parada !== null && nivelAparavel) {
+          const g = M[parada];
+          // espera até a janela ativa da PARADE cobrir o impacto: S do golpe dele (+ o tempo da investida) menos o que já passou
+          const viagem = oppMv.type === 'rush' ? Math.max(0, (ad - 70) / Math.max(1, oppMv.vx ?? 1)) : 0;
+          const chega = Math.max(0, oppMv.S - opp.mt + Math.floor(viagem));
+          ai.reacao = { golpe: parada, espera: Math.max(0, chega - g.S - Math.floor(g.A / 3)) };
+        } else {
+          ai.hold = oppMv.S + Math.min(oppMv.A, 12) + 8;
+          ai.holdInp = { back: true, down: oppMv.lvl === 'low' || (oppMv.lvl === 'mid' && rnd() < 0.3) };
+        }
       } else if (rnd() < 0.5 && ad < 190) ai.hold = 0;
     }
   }
@@ -168,7 +218,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
         } else if (rnd() < L.block) {
           // Quem tem escudo (`defesa-projetil`) usa o escudo no lugar do bloqueio, sem sortear nada a mais: a decisão de
           // defender já saiu dos rnd() acima. Espera o projétil chegar para a janela ativa cobrir o impacto.
-          const escudo = me.ch.dicasIa.length > 0 ? golpeContraProjetil(me) : null;
+          const escudo = me.ch.dicasIa.length > 0 ? golpeComPapel(me, 'defesa-projetil') : null;
           if (escudo) {
             const g = M[escudo];
             const chega = (Math.abs(me.x - pr.x) - 60) / Math.max(1, Math.abs(pr.vx));
@@ -207,7 +257,9 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     const cur = me.golpeAtual();
     if (!cur.air && cur.rank < 9 && rnd() < L.combo * 0.09) {
       const candidatos: readonly NomeGolpe[] = ['lp', 'lk', 'hp', 'hk', 'chk', 'sFire', 'sFwd', 'sDown'];
-      const pool = candidatos.filter((n) => (M[n].rank > cur.rank || (!!cur.rep && n === me.move && me.rep < 2)) && me.canAfford(n));
+      const pool = candidatos.filter(
+        (n) => (M[n].rank > cur.rank || (!!cur.rep && n === me.move && me.rep < 2)) && me.canAfford(n) && serveParaCombo(me, n, dir),
+      );
       const specials = pool.filter((n) => n[0] === 's');
       const normals = pool.filter((n) => n[0] !== 's');
       let nm: NomeGolpe | null = null;
@@ -236,7 +288,11 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   const livre = (n: NomeGolpe): boolean => me.canAfford(n) && !M[n].ia;
   // 3) anti-aéreo
   if (opp.y < GROUND - 50 && ad < 190 && ad > 30 && me.grounded && rnd() < L.anti * 0.25) {
-    if (livre('sDown') && rnd() < 0.5) {
+    // Quem tem golpe `antiaereo` (HURACANRANA) usa o dele no lugar do ↓+ESP genérico, sorteando o mesmo `rnd() < 0.5`.
+    const aereo = me.ch.dicasIa.length > 0 ? golpeComPapel(me, 'antiaereo', ad) : null;
+    if (aereo !== null && rnd() < 0.5) {
+      Object.assign(inp, moveInput(aereo, dir));
+    } else if (aereo === null && livre('sDown') && rnd() < 0.5) {
       inp.down = true;
       inp.sp = true;
     } else if (rnd() < 0.5) {

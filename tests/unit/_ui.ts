@@ -73,27 +73,25 @@ export function navegadorFalso(settings: Partial<Configuracoes> = {}, regras: Re
   return { ui, c, g, audio: a, persist, salvou };
 }
 
-/** Mundo mínimo (só o que as cenas testadas leem): nome e tom de voz dos 4 lutadores. */
-export function mundoFalso(): Mundo {
-  const ch = (name: string, pitch: number) => ({ ch: { name, pitch }, arte: {} });
-  return {
-    elenco: { hayato: ch('HAYATO', 1.05), 'wei-long': ch('WEI LONG', 0.82), 'min-ji': ch('MIN-JI', 1.55), caio: ch('CAIO', 0.98) },
-  } as unknown as Mundo;
-}
+/** Os 9 lutadores do elenco (E5): nome, tom de voz e cenário da casa (iguais aos dos dados reais). */
+const ELENCO_FALSO: ReadonlyArray<readonly [string, string, number, string]> = [
+  ['hayato', 'HAYATO', 1.05, 'jp'],
+  ['wei-long', 'WEI LONG', 0.82, 'cn'],
+  ['min-ji', 'MIN-JI', 1.55, 'kr'],
+  ['caio', 'CAIO', 0.98, 'br'],
+  ['aminu', 'AMINU', 0.9, 'ng'],
+  ['centella', 'CENTELLA', 1.2, 'mx'],
+  ['camille', 'CAMILLE', 1.1, 'fr'],
+  ['nila', 'NILA', 1.12, 'in'],
+  ['baatar', 'BAATAR', 0.7, 'mn'],
+];
 
-/** Mundo mínimo para as 9 regras falsas (E4): nome, tom e cenário dos 9 lutadores. */
-export function mundoFalso9(): Mundo {
-  const ch = (name: string, pitch: number, stage: string) => ({ ch: { name, pitch, stage, K: 1, scale: 1 }, arte: { retrato: () => null } });
-  const elenco = {
-    hayato: ch('HAYATO', 1.05, 'jp'),
-    'wei-long': ch('WEI LONG', 0.82, 'cn'),
-    'min-ji': ch('MIN-JI', 1.55, 'kr'),
-    caio: ch('CAIO', 0.98, 'br'),
-    'novo-a': ch('NOVO A', 1, 'jp'),
-    'novo-b': ch('NOVO B', 1, 'cn'),
-    'novo-c': ch('NOVO C', 1, 'kr'),
-    'novo-d': ch('NOVO D', 1, 'br'),
-    'chefe-x': ch('CHEFE X', 0.7, 'br'),
-  };
+/** Mundo mínimo (só o que as cenas testadas leem): nome, tom e cenário dos 9 lutadores. */
+export function mundoFalso(): Mundo {
+  const ch = (name: string, pitch: number, stage: string) => ({ ch: { name, pitch, stage, K: 1, scale: 1, fichas: {} }, arte: { retrato: () => null } });
+  const elenco = Object.fromEntries(ELENCO_FALSO.map(([id, nome, tom, cen]) => [id, ch(nome, tom, cen)]));
   return { elenco, arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined } } as unknown as Mundo;
 }
+
+/** Igual a `mundoFalso` (desde a E5 as regras padrão já têm os 9): mantido pelo nome que os testes da E4 usam. */
+export const mundoFalso9 = mundoFalso;

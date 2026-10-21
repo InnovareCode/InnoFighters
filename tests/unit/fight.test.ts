@@ -99,9 +99,10 @@ describe('frame data (tabela base + ajustes por lutador)', () => {
     expect(lutadores.hayato.moves.sDown.anim.fall).toBe('jfall'); // CHAR_ANIM do HAYATO
     expect(lutadores.caio.moves.sDown.anim.loop).toBe(4); // melee
   });
-  it('golpes de projétil e lag não têm caixa de ataque', () => {
+  it('golpes de projétil e lag não têm caixa de ataque (o ESP corpo a corpo da AMINU/BAATAR tem)', () => {
     for (const id of Object.keys(lutadores) as IdLutador[]) {
-      expect(lutadores[id].boxes.sFire).toBeUndefined();
+      if (lutadores[id].moves.sFire.type === 'fire') expect(lutadores[id].boxes.sFire, id).toBeUndefined();
+      else expect(lutadores[id].boxes.sFire, id).toBeDefined();
       expect(lutadores[id].boxes._lag).toBeUndefined();
       expect(lutadores[id].boxes.hk?.w).toBeGreaterThanOrEqual(90);
     }

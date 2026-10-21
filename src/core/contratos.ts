@@ -99,8 +99,12 @@ export const CHAVE_STORAGE_V2 = 'inno-fighters-v2';
 /** 0 = P1 (lado esquerdo, `side` 1 no protótipo), 1 = P2. Índice em `fighters`. */
 export type IndiceLutador = 0 | 1;
 
-/** Id estável do lutador. No protótipo: f1=hayato, f2=wei-long, f3=min-ji, f4=caio. */
-export const IDS_LUTADORES = ['hayato', 'wei-long', 'min-ji', 'caio'] as const;
+/**
+ * Id estável do lutador. No protótipo: f1=hayato, f2=wei-long, f3=min-ji, f4=caio. Os cinco da expansão (E5) vêm depois,
+ * na ordem da grade: a fila de desbloqueio (aminu, centella, camille, nila) e o chefão (baatar). Esta lista é a ordem do
+ * `ROSTER` e o que o save reconhece: id fora dela é "desconhecido" (build de onda anterior), ver `src/meta/progresso.ts`.
+ */
+export const IDS_LUTADORES = ['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar'] as const;
 export type IdLutador = (typeof IDS_LUTADORES)[number];
 
 /** Máquina de estados do `Fighter` do protótipo (`this.state`). */
@@ -262,19 +266,24 @@ export type SomImpacto = 'punch' | 'kick' | 'fireballHit';
  *                'end': AudioSys.victory()
  *  perfect    -> emitido junto de round/'end' quando venceu sem perder vida: AudioSys.uiPerfect() após 700 ms
  *
- * Eventos da E3 (docs/mecanicas-e3.md §4; hoje só `fase-chefe` é emitido, os demais entram nas fatias S2..S5):
+ * Eventos da E3 (docs/mecanicas-e3.md §4), todos emitidos pelo motor: fase-chefe (S1a), quebra-guarda e carga (S2),
+ * rebote (S3), parry e hit.contraEspecial (S4), troca-ficha (S5):
  *
  *  fase-chefe   -> etapa 'troca': a barra do chefe acabou e uma nova encheu. Sai ANTES do `hit` do mesmo tick.
  *                  Receita: flash branco + faíscas no chefe, tremor (já em `shake`), som grave de impacto, animação
  *                  de "barra nova enchendo" no HUD. Cena e ficha ainda NÃO mudaram.
  *                  etapa 'danca': começou a cena (fase 'cena-chefe', relógio parado): escurece o céu da arena, faixa.
  *                  etapa 'retomada': a cena acabou e a ficha da fase 2 está ativa: desliga a faixa e o escurecimento.
- *  parry        -> (S4) faíscas 14 brancas + rajada em (x, y) + som de bloqueio agudo + texto 'PARADA!'
+ *  parry        -> (S4) faíscas 14 brancas + rajada em (x, y) + som de bloqueio agudo + texto 'PARADA!'. Sai NO LUGAR de
+ *                  block/hit (o golpe foi anulado); o atacante entra em `hit` e o defensor em golpe `sResp` (pose do fouetté).
  *  quebra-guarda-> (S2) faíscas 12 vermelhas + rajada grande em (x, y) + som de vidro/impacto + texto 'GUARDA QUEBRADA!'
  *  carga        -> (S2) a cada nível alcançado: apito crescente com tom proporcional a `nivel` + pulso de brilho
- *  rebote       -> (S3) a CENTELLA tocou a corda: poeira na parede + som de corda esticando
- *  troca-ficha  -> (S5/chefe) o lutador trocou de ficha: flash + fumaça; `ficha` null = voltou à base
- *  hit.contraEspecial -> texto próprio (ex.: 'PARADA!') no lugar de 'COUNTER!'
+ *  rebote       -> (S3) a CENTELLA tocou a corda: poeira na parede + som de corda esticando. `x` é onde ela quicou. Durante a
+ *                  ida a pose tem `flip` −1 (corrida de costas) e a volta é a voadora (flip 1).
+ *  troca-ficha  -> (S5) o lutador trocou de ficha (VADIVU da NILA, em mt === S do golpe): flash + fumaça; `ficha` null = voltou
+ *                  à base. A troca de fase do chefe NÃO emite este evento (ela tem `fase-chefe`). `LutadorLeitura.ficha` já vale.
+ *  hit.contraEspecial -> (S4) COUP D'ARRÊT na preparação do rival: o `texto` já vem como "COUP D'ARRÊT!" no lugar de 'COUNTER!'
+ *                  (`contragolpe` também é true); a render pode dar efeito próprio. Ausente nos demais acertos.
  *
  * O tremor de tela e o hitstop NÃO viajam no evento: ficam em `LeituraLuta.shake` /
  * `.hitstop` (o protótipo os lê/decrementa como estado).

@@ -693,7 +693,7 @@ describe('dados ruins: ficha que não existe, chefe sem def', () => {
     expect(chDaFicha(b, 'chefe2')).toBe(b.fichas['chefe2']);
   });
 
-  it.fails('(endurecimento, baixíssima) nome herdado de Object.prototype não é ficha: nem na render nem no Fighter', () => {
+  it('(endurecimento, baixíssima) nome herdado de Object.prototype não é ficha: nem na render nem no Fighter', () => {
     // `fichas` é um objeto simples: `fichas['toString']` acha a função herdada. Sem risco prático hoje (os nomes vêm de
     // dados tipados do repositório, não do jogador), mas a promessa "desconhecido → base / erro" fica furada.
     const b = elenco[BAATAR];

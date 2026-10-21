@@ -19,7 +19,7 @@ const executar = await carregarFerramenta<{
   processarFolha: (arquivo: string, celulas: (string | string[] | null)[], opcoes?: any) => Promise<any>;
   acharFolha: (raiz: string, id: string, folha: string) => string | null;
 }>('ferramentas/sprites/executar.mjs');
-const poses = await carregarFerramenta<{ FOLHAS: Record<string, string[]>; MINIMAS: string[]; COM_PONTA: string[] }>('ferramentas/sprites/poses.mjs');
+const poses = await carregarFerramenta<{ FOLHAS: Record<string, string[]>; MINIMAS: string[]; COM_PONTA: string[]; resolverLayout: (e: unknown) => { ids: string[]; folhas: Record<string, { grade: [number, number]; celulas: (string | string[] | null)[] }> } }>('ferramentas/sprites/poses.mjs');
 const empacotador = await carregarFerramenta<{ validarEmpacotamento: (r: any, espaco?: number) => string[] }>('ferramentas/sprites/empacotar.mjs');
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
@@ -400,11 +400,13 @@ describe.skipIf(!existe('centella', 'folhas', 'centella-f1-base-v1.png'))('CENTE
   }, 120000);
 });
 
-describe.skipIf(!existe('nila', 'folhas', 'nila-f1-base-v3.png'))('AMINU, CAMILLE e NILA: versões aprovadas (maior -vN) e folhas completas', () => {
+describe.skipIf(!existe('nila', 'folhas', 'nila-f1-base-v3.png'))('AMINU, CAMILLE, NILA, HAYATO e MIN-JI: versões aprovadas (maior -vN) e folhas completas', () => {
   const ESPERADAS: Record<string, Record<string, string>> = {
     aminu: { f1: 'aminu-f1-base-v1.png', f2: 'aminu-f2-reacoes-v2.png', f3: 'aminu-f3-golpes-v3.png', f4: 'aminu-f4-especiais-v1.png' },
     camille: { f1: 'camille-f1-base-v1.png', f2: 'camille-f2-reacoes-v2.png', f3: 'camille-f3-golpes-v1.png', f4: 'camille-f4-especiais-v2.png' },
     nila: { f1: 'nila-f1-base-v3.png', f2: 'nila-f2-reacoes-v2.png', f3: 'nila-f3-golpes-v1.png', f4: 'nila-f4-especiais-v1.png' },
+    hayato: { f1: 'hayato-f1-base-v2.png', f2: 'hayato-f2-reacoes-v2.png', f3: 'hayato-f3-golpes-v1.png', f4: 'hayato-f4-especiais-v1.png' },
+    'min-ji': { f1: 'min-ji-f1-base-v1.png', f2: 'min-ji-f2-reacoes-v2.png', f3: 'min-ji-f3-golpes-v1.png', f4: 'min-ji-f4-especiais-v1.png' },
   };
   for (const [id, folhas] of Object.entries(ESPERADAS)) {
     it(`${id}: o acharFolha pega as versões aprovadas e cada folha dá 12 figuras com halo zerado`, async () => {
@@ -417,4 +419,52 @@ describe.skipIf(!existe('nila', 'folhas', 'nila-f1-base-v3.png'))('AMINU, CAMILL
       }
     }, 120000);
   }
+});
+
+describe.skipIf(!existe('nila', 'folhas', 'nila-f5-extras-v2.png'))('NILA f5 (serpente, v2): folha extra, fatorFolha da f4 e ponta por fração', () => {
+  it('o acharFolha pega a v2 e a folha dá 12 figuras com halo zerado, pelo mapa de lutadores.json', async () => {
+    const arquivo = executar.acharFolha(RAIZ, 'nila', 'f5')!;
+    expect(arquivo.split(/[\\/]/).pop()).toBe('nila-f5-extras-v2.png');
+    const exc = JSON.parse(readFileSync(join(RAIZ, 'ferramentas', 'sprites', 'lutadores.json'), 'utf8')).nila;
+    const layout = poses.resolverLayout(exc);
+    expect(layout.ids).toEqual(['f1', 'f2', 'f3', 'f4', 'f5']);
+    const f5 = layout.folhas['f5']!;
+    const r = await executar.processarFolha(arquivo, f5.celulas, { grade: f5.grade });
+    expect(r.quadros.map((q: { nome: string }) => q.nome)).toEqual([
+      'sarpaIdle0', 'sarpaIdle1', 'sarpaIdle2', 'sarpaIdle3', 'sarpaWalk0', 'sarpaWalk1', 'sarpaSlide0', 'sarpaSlide1',
+      'sarpaLeap0', 'sarpaLeap1', 'sarpaLeap2', 'sarpaBlock',
+    ]);
+    expect(r.info.haloDepois).toBe(0);
+    expect(r.info.componentes).toBe(12);
+  }, 120000);
+
+  it('atlas da NILA (f1..f5): sarpa* depois das 48 canônicas, idle da serpente mais largo que alto, pontas do deslize e do chute, fatorFolha f2 1,2 / f3 1,15 / f4 1,1 (cabeça igual à da f1 v3)', async () => {
+    const saida = join(tmp, 'nila-f5');
+    const r = await executar.gerarLutador({ raiz: RAIZ, id: 'nila', saida, folhas: ['f1', 'f2', 'f3', 'f4', 'f5'] });
+    const m = validarManifesto(JSON.parse(readFileSync(join(saida, 'atlas.json'), 'utf8')), 'nila/atlas.json');
+    const nomes = Object.keys(m.quadros);
+    expect(nomes.slice(-12)).toEqual([
+      'sarpaIdle0', 'sarpaIdle1', 'sarpaIdle2', 'sarpaIdle3', 'sarpaWalk0', 'sarpaWalk1', 'sarpaSlide0', 'sarpaSlide1',
+      'sarpaLeap0', 'sarpaLeap1', 'sarpaLeap2', 'sarpaBlock',
+    ]);
+    expect(nomes.indexOf('win')).toBeLessThan(nomes.indexOf('sarpaIdle0'));
+    for (const i of [0, 1, 2, 3]) {
+      const q = m.quadros['sarpaIdle' + i]!;
+      expect(q.w, `sarpaIdle${i}`).toBeGreaterThanOrEqual(q.h);
+    }
+    // ponta: o deslize pelo pe (fração 0,75: abaixo da mão), o chute descendente pelo ponto mais à direita
+    expect(r.relatorio.quadros['sarpaSlide1'].modoPonta).toBe('pe:0.75');
+    expect(m.quadros['sarpaSlide1']!.ponta![1]).toBeGreaterThan(0.75 * m.quadros['sarpaSlide1']!.h);
+    expect(r.relatorio.quadros['sarpaLeap2'].modoPonta).toBe('direita');
+    expect(r.relatorio.quadros['sarpaIdle0'].ponta).toBeUndefined(); // pose sem golpe: sem ponta
+    // fatorFolha medido na cabeça (topo-queixo) contra a f1 v3: f2 ~95 px, f3 ~100, f4 ~104 contra ~115; cada quadro sai na escala da folha dele
+    for (const [folha, fator, pose] of [['f2', 1.2, 'block'], ['f3', 1.15, 'lp0'], ['f4', 1.1, 'sa0']] as const) {
+      expect(r.relatorio.avisos.some((a: string) => a.startsWith(`${folha}: escala da folha x${fator}`)), folha).toBe(true);
+      const q = r.relatorio.quadros[pose];
+      expect(q.h / q.alturaOriginal, `${folha} ${pose}`).toBeCloseTo(fator * r.relatorio.escala, 1);
+    }
+    expect(r.relatorio.avisos.some((a: string) => /^f[15]: escala da folha/.test(a))).toBe(false); // f1 e f5 não têm fator
+    // a guarda da f3 (lp0) e a da f4 (sa0) têm o tamanho do idle0 da f1 (410 px, +-5%)
+    for (const n of ['lp0', 'sa0']) expect(Math.abs(m.quadros[n]!.h - m.alturaRef), n).toBeLessThanOrEqual(0.05 * m.alturaRef);
+  }, 180000);
 });

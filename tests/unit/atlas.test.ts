@@ -16,8 +16,14 @@ const ferramenta = (await import(/* @vite-ignore */ pathToFileURL(caminho('ferra
 };
 
 const ids = Object.entries(ferramenta.LUTADORES);
+/**
+ * Este arquivo prova o atlas EXTRAÍDO DO PROTÓTIPO. HAYATO e MIN-JI ganharam arte nova em `public/assets` (pipeline de sprites,
+ * atlas v2 de 2 páginas); o atlas original deles ficou em tests/fixtures/atlas-prototipo/<id>/ e é ele que vale aqui.
+ */
+const pastaDoAtlas = (id: string): string =>
+  ['hayato', 'min-ji'].includes(id) ? `tests/fixtures/atlas-prototipo/${id}` : `public/assets/lutadores/${id}`;
 const manifesto = (id: string): ManifestoAtlas =>
-  JSON.parse(readFileSync(caminho(`public/assets/lutadores/${id}/atlas.json`), 'utf8')) as ManifestoAtlas;
+  JSON.parse(readFileSync(caminho(`${pastaDoAtlas(id)}/atlas.json`), 'utf8')) as ManifestoAtlas;
 
 describe('C1 — atlas.json extraído do protótipo', () => {
   it('constante SH_IDLE da ferramenta == a do jogo', () => {
@@ -27,7 +33,7 @@ describe('C1 — atlas.json extraído do protótipo', () => {
   it.each(ids)('%s: arquivos existem, tamanho do manifesto == cabeçalho do WebP, quadros dentro do atlas', (_f, id) => {
     const m = validarManifesto(manifesto(id));
     expect(m.lutador).toBe(id);
-    const webp = readFileSync(caminho(`public/assets/lutadores/${id}/${m.imagem}`));
+    const webp = readFileSync(caminho(`${pastaDoAtlas(id)}/${m.imagem}`));
     expect(ferramenta.dimensoesWebp(webp)).toEqual([...m.tamanho]);
     for (const [nome, q] of Object.entries(m.quadros)) {
       expect(q.x + q.w, nome).toBeLessThanOrEqual(m.tamanho[0]);
@@ -36,8 +42,8 @@ describe('C1 — atlas.json extraído do protótipo', () => {
     expect(m.alturaRef).toBe(m.quadros['idle0']?.h);
   });
 
-  it('cenários extraídos existem e são JPEG', () => {
-    for (const id of Object.values(ferramenta.CENARIOS)) {
+  it('cenários do protótipo que seguem em uso existem e são JPEG (o jp virou arte nova: cenario-jp.webp, ver f3a-assets.test.ts)', () => {
+    for (const id of Object.values(ferramenta.CENARIOS).filter((c) => c !== 'jp')) {
       const arq = caminho(`public/assets/cenarios/${id}.jpg`);
       expect(existsSync(arq), id).toBe(true);
       expect([...readFileSync(arq).subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);

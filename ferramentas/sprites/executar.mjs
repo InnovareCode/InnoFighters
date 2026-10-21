@@ -12,7 +12,7 @@ import { empacotar, validarEmpacotamento } from './empacotar.mjs';
 import {
   acolchoarRgb, agruparFiguras, caixaOpaca, calcularAlfa, centroDeMassaX, cortarBorda, cortarRgba, despill, detectarChave,
   espelharRgba, estimarFundo, janelaRgba, mascaraDeAlfa, medirHalo, montarManifesto, ordenarGrade, pontaCima, pontaDireita,
-  recortarFigura, rostoDoQuadro, rotular, separarFundidas,
+  recortarFigura, rostoDoQuadro, rotular, separarFundidas, separarFundidas,
 } from './nucleo.mjs';
 import { COM_PONTA, FAIXA_DOS_PES, FRACAO_PE, GRADE_PADRAO, MINIMAS, MODO_PONTA, ORDEM_COMPLETA, nomesDaCelula, resolverLayout } from './poses.mjs';
 
@@ -220,7 +220,10 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
   }
 
   const finais = {};
-  for (const nome of ORDEM_COMPLETA) {
+  // poses fora do mapa do motor (folhasExtras, ex.: `sarpa*` da NILA) entram depois das 54, na ordem das células
+  const nomesLayout = layout.ids.flatMap((f) => layout.folhas[f].celulas.flatMap(nomesDaCelula));
+  const ordem = [...ORDEM_COMPLETA, ...nomesLayout.filter((n) => !ORDEM_COMPLETA.includes(n))];
+  for (const nome of ordem) {
     const q = brutos[nome];
     if (!q) continue;
     finais[nome] = { nome, ...(await reamostrar(q, escala * q.fator)), baseYOriginal: q.baseY, alturaOriginal: q.alturaFigura, apelidos: q.apelidos };
@@ -235,7 +238,11 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
       q.modoPonta = modo;
       if (modo === 'cima') q.ponta = pontaCima(q.rgba, q.largura, q.altura);
       else if (modo === 'mao') q.ponta = pontaDireita(q.rgba, q.largura, q.altura, { yMax: q.altura - Math.round(FAIXA_DOS_PES * alturaRef) });
-      else if (modo === 'pe') q.ponta = pontaDireita(q.rgba, q.largura, q.altura, { yMin: Math.round(FRACAO_PE * q.altura) });
+      else if (/^pe(:\d*\.?\d+)?$/.test(modo)) {
+        // 'pe' = abaixo de FRACAO_PE da altura; 'pe:0.75' = abaixo de 75% (a bota quando a mao tambem fica na metade de baixo)
+        const fracao = modo.includes(':') ? Number(modo.split(':')[1]) : FRACAO_PE;
+        q.ponta = pontaDireita(q.rgba, q.largura, q.altura, { yMin: Math.round(Math.min(0.95, fracao) * q.altura) });
+      }
       else q.ponta = pontaDireita(q.rgba, q.largura, q.altura);
     }
     if (nome === 'idle0') q.rosto = rostoDoQuadro(q.rgba, q.largura, q.altura, alturaRef);
@@ -268,7 +275,7 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
 
   // manifesto: na ordem do motor; um apelido repete p/x/y/w/h/ax (e ponta) do quadro que tem o desenho
   const quadros = {};
-  for (const nome of ORDEM_COMPLETA) {
+  for (const nome of ordem) {
     const f = finais[nome] ?? finais[apelidoDe[nome]];
     if (!f) continue;
     const pos = posicoes[f.nome];

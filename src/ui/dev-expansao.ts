@@ -1,61 +1,36 @@
-import type { GerenciadorDeArte } from '../assets/gerenciador';
-import type { Elenco, LutadorRender } from '../assets/elenco';
-import type { IdLutador } from '../core/contratos';
-import { IDS_LUTADORES } from '../core/contratos';
-import type { Regras } from '../meta';
+import { REGRAS_PADRAO, type Regras } from '../meta';
 
 /**
- * FIXTURE de desenvolvimento e de teste (nunca usada em produção): um elenco de 9 lutadores FALSOS (os 4 reais mais
- * 4 "novos" e 1 chefão, todos reaproveitando a arte dos reais) para exercitar a grade 3x3, os estados
- * liberado/travado/NOVO!, a escada com chefão e os avisos de desbloqueio enquanto a arte nova não existe.
+ * REGRAS de desenvolvimento e de teste (nunca usadas em produção). O `main.ts` só as importa (import dinâmico) em
+ * desenvolvimento, então não entram no bundle de produção. O elenco é sempre o real (os 9 lutadores, a arte de verdade):
+ * só mudam as regras de desbloqueio.
  *
- * O `main.ts` só a importa (import dinâmico) em desenvolvimento com `?expansao=1`, então não entra no bundle de
- * produção; os testes unitários a usam direto.
+ * - `?expansao=1` (`regrasExpansao`): os 9 liberados, com o BAATAR jogável e ainda chefão do ARCADE. Serve para ver e
+ *   jogar os novos sem zerar o ARCADE cinco vezes.
+ * - `?expansao=4` (`regrasDeQuatro`): só os 4 de fábrica, sem fila nem chefão (o jogo de antes da E5). É o que os testes
+ *   de fidelidade com o protótipo (que só tem 4 lutadores) e o ARCADE de 3 lutas usam.
+ *
+ * Antes da E5 esta fixture também tinha um elenco FALSO de 9 (cópias de arte) para testar a grade 3x3 e o desbloqueio;
+ * saiu: a produção tem os 9 reais e os e2e (expansao.spec.ts) rodam neles.
  */
 
-const cast = (s: string): IdLutador => s as IdLutador;
+/** Os 4 liberados de fábrica do jogo de antes da E5. */
+const INICIAIS_DE_FABRICA = ['hayato', 'wei-long', 'min-ji', 'caio'] as const;
 
-/** Os 4 "novos" na ordem da fila de desbloqueio e o chefão. */
-export const IDS_NOVOS_FALSOS: readonly IdLutador[] = ['novo-a', 'novo-b', 'novo-c', 'novo-d'].map(cast);
-export const CHEFE_FALSO: IdLutador = cast('chefe-x');
-
-/** De quem cada falso copia a arte e os dados. */
-const MOLDE: Readonly<Record<string, IdLutador>> = {
-  'novo-a': 'hayato',
-  'novo-b': 'wei-long',
-  'novo-c': 'min-ji',
-  'novo-d': 'caio',
-  'chefe-x': 'caio',
-};
-
-/** Regras com 9 ids: 4 iniciais, fila de 4, chefão, escada de 5 rivais + chefão, travados podem ser rivais. */
-export function regrasExpansaoFalsa(): Regras {
-  const iniciais = [...IDS_LUTADORES];
+/** `?expansao=1`: o roster real inteiro liberado; o chefão continua sendo a última luta do ARCADE (quando não é o seu lutador). */
+export function regrasExpansao(): Regras {
   return {
-    roster: [...iniciais, ...IDS_NOVOS_FALSOS, CHEFE_FALSO],
-    iniciais,
-    fila: [...IDS_NOVOS_FALSOS],
-    chefe: CHEFE_FALSO,
-    tamanhoEscada: 5,
-    travadosNaEscada: true,
+    roster: [...REGRAS_PADRAO.roster],
+    iniciais: [...REGRAS_PADRAO.roster],
+    fila: [],
+    chefe: REGRAS_PADRAO.chefe,
+    tamanhoEscada: REGRAS_PADRAO.tamanhoEscada,
+    travadosNaEscada: REGRAS_PADRAO.travadosNaEscada,
   };
 }
 
-/**
- * Acrescenta os 5 falsos ao elenco (cópias dos dados com outro id e nome; o chefão maior, escala 1,3x) e faz o
- * gerenciador de arte tratá-los como apelidos dos lutadores de origem.
- */
-export function ampliarElenco(elenco: Elenco, arte: GerenciadorDeArte): Elenco {
-  const saida: Record<string, LutadorRender> = { ...elenco };
-  for (const [falso, molde] of Object.entries(MOLDE)) {
-    const base = elenco[molde];
-    const chefe = falso === CHEFE_FALSO;
-    const nome = chefe ? 'CHEFE X' : `NOVO ${falso.slice(-1).toUpperCase()}`;
-    saida[falso] = {
-      ch: { ...base.ch, id: cast(falso), name: nome, ...(chefe ? { scale: base.ch.scale * 1.3, K: base.ch.K * 1.3 } : {}) },
-      arte: base.arte,
-    };
-    arte.registrarApelido(falso, molde);
-  }
-  return saida as unknown as Elenco;
+/** `?expansao=4`: o jogo de 4 lutadores (sem fila nem chefão). */
+export function regrasDeQuatro(): Regras {
+  const quatro = [...INICIAIS_DE_FABRICA];
+  return { roster: quatro, iniciais: quatro, fila: [], chefe: null, tamanhoEscada: REGRAS_PADRAO.tamanhoEscada, travadosNaEscada: true };
 }

@@ -4,6 +4,7 @@ import type { ExtensaoChefeLeitura, LeituraLuta, LutadorLeitura } from '../core/
 import { clamp } from '../core/math';
 import { zoomIn } from './animacao';
 import { chDaFicha } from './lutador';
+import { ETIQUETA_POSTURA, desenharPostura, posturaDe, type Postura } from './postura';
 import { desenharRetratoMoldurado } from './retrato';
 import type { Ctx } from './tela';
 import { caminhoInclinado, painel, texto, textoArcade } from './texto';
@@ -31,7 +32,15 @@ export const MAX_MARCADORES_ROUND = 5;
 const DOURADO: readonly [string, string] = ['#fff6b0', '#ff9a1a'];
 
 /** Barra de vida, energia, nome, placar e rounds de UM lado. Porte do `bar()` de drawHUD. */
-function desenharLado(ctx: Ctx, luta: LeituraLuta, p: LutadorLeitura, nome: string, custoEspecial: number, lado: 1 | 2): void {
+function desenharLado(
+  ctx: Ctx,
+  luta: LeituraLuta,
+  p: LutadorLeitura,
+  nome: string,
+  custoEspecial: number,
+  lado: 1 | 2,
+  postura: Postura | null = null,
+): void {
   const x = lado === 1 ? 104 : 524;
   const w = 332;
   const y = 24;
@@ -86,6 +95,11 @@ function desenharLado(ctx: Ctx, luta: LeituraLuta, p: LutadorLeitura, nome: stri
   const placar = String(p.score).padStart(6, '0');
   textoArcade(ctx, lado === 1 ? `${rotulo}  ${placar}` : `${placar}  ${rotulo}`, ancora, 11, 14, '#cfe6ff', '#05060f', alinha);
 
+  if (postura) {
+    // postura atual (NILA: GAJA/SARPA), na faixa livre entre o nome e as bolinhas de round
+    const { w, h } = ETIQUETA_POSTURA;
+    desenharPostura(ctx, postura, lado === 1 ? 236 : LARGURA - 236 - w, 66 - h / 2);
+  }
   if (barrasMax > 1) {
     // contador de barras (×2, ×1) no meio, entre o nome e as bolinhas de round
     textoArcade(ctx, `×${barras}`, x + w / 2, 66, 22, barras > 1 ? ['#e6c8ff', '#9a4cff'] : ['#fff6b0', '#ff9a1a'], '#05060f', 'center');
@@ -142,8 +156,8 @@ export function desenharHUD(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, opcoes:
   const [a, b] = luta.fighters;
   const ra = elenco[a.id];
   const rb = elenco[b.id];
-  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1);
-  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2);
+  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1, posturaDe(ra.ch, a.ficha));
+  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2, posturaDe(rb.ch, b.ficha));
   desenharRetratoMoldurado(ctx, ra.arte.retrato(ra.ch.head), 8, 8, 88, false);
   desenharRetratoMoldurado(ctx, rb.arte.retrato(rb.ch.head), LARGURA - 96, 8, 88, true);
 

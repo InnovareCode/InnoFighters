@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { usarArteDoPrototipo } from './_jp-prototipo';
 
 /*
  * Fidelidade visual: o MESMO quadro de luta é desenhado pelo protótipo (arquivo original, rodando
@@ -350,6 +351,7 @@ test.describe('fidelidade visual: render/ novo x protótipo (pixel a pixel)', ()
       }
       info.annotations.push({ type: 'coberto', description: [...visto].join(',') });
       for (const e of cena.exige) expect(visto.has(e), `a cena nao mostrou '${e}' (viu: ${[...visto].join(',')})`).toBe(true);
+      await usarArteDoPrototipo(page);
       await page.goto('/');
       await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
       const r = await compararNoApp(page, snaps);
@@ -379,6 +381,7 @@ test.describe('fidelidade visual: render/ novo x protótipo (pixel a pixel)', ()
       },
       { poses: POSES, ids: MAPA_IDS },
     );
+    await usarArteDoPrototipo(page); // HAYATO e MIN-JI com o atlas original: é o que o protótipo desenha
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
     const r = await page.evaluate(

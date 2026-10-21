@@ -27,12 +27,24 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const LADO = 190;
 const MARGEM = 2;
 
+/** Altura do idle0 no atlas dos lutadores de tamanho normal (a janela do retrato é LADO nesta escala). */
+const ALTURA_REF_NORMAL = 410;
+
+/** Lado da janela do retrato num atlas: LADO, ou LADO x (alturaRef / 410) nos maiores (BAATAR, 525): mesmo enquadramento. */
+export function ladoDoRetrato(manifesto) {
+  return Math.round((LADO * Math.max(manifesto.alturaRef ?? ALTURA_REF_NORMAL, ALTURA_REF_NORMAL)) / ALTURA_REF_NORMAL);
+}
+
+/** Quadro do rosto (guard ?? idle0). */
+const quadroDoRosto = (manifesto) => manifesto.quadros.guard ?? manifesto.quadros.idle0;
+
 /** Recorte [x, y, w, h] (fracionário) do rosto no atlas: o mesmo `head` de montarLutador (guard ?? idle0). */
 export function recorteDoRosto(manifesto) {
-  const q = manifesto.quadros.guard ?? manifesto.quadros.idle0;
+  const q = quadroDoRosto(manifesto);
   if (!q) throw new Error(`${manifesto.lutador}: sem guard/idle0`);
   const [rx, ry] = q.rosto ?? [0, 0];
-  return [q.x + rx - LADO / 2, q.y + ry - LADO / 2, LADO, LADO];
+  const lado = ladoDoRetrato(manifesto);
+  return [q.x + rx - lado / 2, q.y + ry - lado / 2, lado, lado];
 }
 
 /** Retângulo inteiro (com margem) que contém o recorte, e o recorte relativo a ele. */
@@ -109,7 +121,8 @@ async function principal() {
       const jsonAtlas = join(dir, 'atlas.json');
       if (!existsSync(jsonAtlas)) continue;
       const m = JSON.parse(readFileSync(jsonAtlas, 'utf8'));
-      const arquivoAtlas = m.imagem ?? m.imagens?.[0];
+      // atlas C1 v2: o quadro do rosto pode estar em outra página (idle0 do BAATAR está na página 1)
+      const arquivoAtlas = m.imagem ?? m.imagens?.[quadroDoRosto(m)?.p ?? 0];
       const bytes = readFileSync(join(dir, arquivoAtlas));
       const mime = arquivoAtlas.endsWith('.png') ? 'image/png' : 'image/webp';
       const [hx, hy, w, h] = recorteDoRosto(m);

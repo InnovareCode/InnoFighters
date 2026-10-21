@@ -15,11 +15,10 @@ import {
   type Regras,
 } from '../../src/meta';
 
-// Ids falsos para os lutadores que ainda nao existem em IDS_LUTADORES (E5). O cast e so de tipo.
-const id = (s: string): IdLutador => s as IdLutador;
-const [H, W, M, C] = [id('hayato'), id('wei-long'), id('min-ji'), id('caio')];
-const [A, B, CC, D] = [id('novo-a'), id('novo-b'), id('novo-c'), id('novo-d')];
-const BOSS = id('chefe-x');
+// Ids finais (E5): `IdLutador` ja os aceita, sem cast.
+const [H, W, M, C] = ['hayato', 'wei-long', 'min-ji', 'caio'] as const satisfies readonly IdLutador[];
+const [A, B, CC, D] = ['aminu', 'centella', 'camille', 'nila'] as const satisfies readonly IdLutador[];
+const BOSS = 'baatar' satisfies IdLutador;
 
 const REGRAS: Regras = {
   roster: [H, W, M, C, A, B, CC, D, BOSS],
@@ -44,10 +43,11 @@ describe('meta/progresso: liberados', () => {
     expect(l.has(B)).toBe(false);
   });
 
-  it('regras padrao de hoje: so os 4 atuais, nada travado, sem chefao', () => {
+  it('regras padrao (E5): so os 4 iniciais liberados; a fila e AMINU, CENTELLA, CAMILLE, NILA e o chefao e o BAATAR', () => {
     expect([...liberados(progressoVazio())].sort()).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
-    expect(REGRAS_PADRAO.chefe).toBeNull();
-    expect(REGRAS_PADRAO.fila).toEqual([]);
+    expect(REGRAS_PADRAO.chefe).toBe('baatar');
+    expect(REGRAS_PADRAO.fila).toEqual(['aminu', 'centella', 'camille', 'nila']);
+    expect(REGRAS_PADRAO.roster).toHaveLength(9);
   });
 });
 
@@ -214,7 +214,7 @@ describe('meta/progresso: sanearProgresso (localStorage e dado externo)', () => 
   });
 
   it('campos de lista que nao sao lista viram vazio', () => {
-    expect(sanearProgresso({ desbloqueados: 'novo-a', vistos: { 0: 'novo-a' } }, REGRAS)).toEqual(progressoVazio());
+    expect(sanearProgresso({ desbloqueados: 'aminu', vistos: { 0: 'aminu' } }, REGRAS)).toEqual(progressoVazio());
   });
 
   it('campos extras desconhecidos sao ignorados', () => {
@@ -294,10 +294,11 @@ describe('meta/escada: montarEscada', () => {
     expect(e.filter((x) => !x.chefe).map((x) => x.id).sort()).toEqual([A, C, M, W].sort());
   });
 
-  it('com as regras padrao de hoje (4 lutadores, sem chefao): 3 rivais e nada de chefe', () => {
+  it('com as regras padrao (E5, ED4): 5 rivais e o BAATAR por ultimo, sem o lutador do jogador', () => {
     const e = montarEscada({ c1: H, prog: progressoVazio(), rng: criarRng(1) });
-    expect(e).toHaveLength(3);
-    expect(e.some((x) => x.chefe || x.id === H)).toBe(false);
+    expect(e).toHaveLength(6);
+    expect(e.slice(0, 5).some((x) => x.chefe || x.id === H || x.id === 'baatar')).toBe(false);
+    expect(e[5]).toEqual({ id: 'baatar', chefe: true });
   });
 
   it('nao muta o roster das regras', () => {

@@ -1,5 +1,5 @@
 {
-  "_doc": "Excecoes por lutador ao padrao do pipeline (executar.mjs#gerarLutador). layout: 'padrao' (f1..f4, 4x3) | 'chefe' (b1..b9+br, 3x2). celulas: { folha: [12 ou 6 celulas] } troca o mapa de poses da folha (celula = nome | [nome, apelido...] | null = descarta). alturaRef: altura do idle0 no atlas. acolchoar: { folha: {esquerda,direita,topo,base} } px de fundo antes de cortar a borda. fatorFolha: { folha: n } multiplica a escala da folha. ponta: { pose: 'cima'|'direita'|'mao' } sobrescreve MODO_PONTA; pose fora de COM_PONTA tambem ganha ponta.",
+  "_doc": "Excecoes por lutador ao padrao do pipeline (executar.mjs#gerarLutador). layout: 'padrao' (f1..f4, 4x3) | 'chefe' (b1..b9+br, 3x2). celulas: { folha: [12 ou 6 celulas] } troca o mapa de poses da folha (celula = nome | [nome, apelido...] | null = descarta). alturaRef: altura do idle0 no atlas. acolchoar: { folha: {esquerda,direita,topo,base} } px de fundo antes de cortar a borda. fatorFolha: { folha: n } multiplica a escala da folha. folhasExtras: { folha: {grade, celulas} } acrescenta uma folha fora do layout (NILA f5, poses sarpa*). ponta: { pose: 'cima'|'direita'|'mao'|'pe'|'pe:0.75' } sobrescreve MODO_PONTA; pose fora de COM_PONTA tambem ganha ponta.",
   "hayato": {
     "ponta": {
       "sb2": "cima"
@@ -9,6 +9,22 @@
     "_nota": "f1 v1: a respiracao em 3 quadros r1c1 > r1c2 > r1c4 > r1c2 (r1c3 quebra o ciclo: corpo sobe 26 px e o torso gira). docs/handoff-apolo-folhas1-novos.md",
     "celulas": {
       "f1": ["idle0", ["idle1", "idle3"], null, "idle2", "walk0", "walk1", "walk2", "walk3", "walk4", "walk5", "walk6", "walk7"]
+    }
+  },
+  "nila": {
+    "_nota": "f5 = serpente (SARPA), v2 (a v1 saiu na postura do elefante). docs/handoff-apolo-nila-f5.md e docs/handoff-vega-nila-f5.md",
+    "_fator": "cabeca (topo do cabelo ao queixo, px da folha 2400x1792, regua a 4x): f1 v3 ~115 | f2 v2 ~95 | f3 v1 ~100 | f4 v1 ~104 | f5 v2 ~117. Fatores f2 1,2 / f3 1,15 / f4 1,1 igualam a f1 (conferido no atlas final: topo-queixo 75-78 px em idle0, lp0, block, sa0). f5 v2 ja casa. docs/handoff-vega-nila-f5.md",
+    "fatorFolha": { "f2": 1.2, "f3": 1.15, "f4": 1.1 },
+    "ponta": { "sarpaSlide1": "pe:0.75", "sarpaLeap2": "direita" },
+    "folhasExtras": {
+      "f5": {
+        "grade": [4, 3],
+        "celulas": [
+          "sarpaIdle0", "sarpaIdle1", "sarpaIdle2", "sarpaIdle3",
+          "sarpaWalk0", "sarpaWalk1", "sarpaSlide0", "sarpaSlide1",
+          "sarpaLeap0", "sarpaLeap1", "sarpaLeap2", "sarpaBlock"
+        ]
+      }
     }
   },
   "baatar": {

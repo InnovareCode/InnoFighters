@@ -32,7 +32,7 @@ import {
 
 const id = (s: string): IdLutador => s as IdLutador;
 const [H, W, M, C] = [id('hayato'), id('wei-long'), id('min-ji'), id('caio')];
-const [A, B, BOSS] = [id('novo-a'), id('novo-b'), id('chefe-x')];
+const [A, B, BOSS] = ['aminu', 'centella', 'baatar'] as const satisfies readonly IdLutador[];
 const REGRAS: Pick<Regras, 'roster' | 'iniciais'> = { roster: [H, W, M, C, A, B, BOSS], iniciais: [H, W, M, C] };
 
 type Falso = ArmazenamentoLike & { dados: Map<string, string>; falhaEscrita: boolean };
@@ -276,11 +276,11 @@ describe('storage v2: saneamento (localStorage e editavel)', () => {
     expect((lerV2Cru(st)['prog'] as { desbloqueados: string[] }).desbloqueados).toEqual([A]);
   });
 
-  it('com as regras padrao (4 ids reais) um id novo nao afeta a UI: fora de desbloqueados, so preservado', () => {
-    const st = falso({ [CHAVE_STORAGE_V2]: v2({ desbloqueados: ['aminu', 'hayato'] }) });
+  it('com as regras padrao (9 ids reais) um id de onda futura nao afeta a UI: fora de desbloqueados, so preservado', () => {
+    const st = falso({ [CHAVE_STORAGE_V2]: v2({ desbloqueados: ['garkuwa', 'hayato', 'aminu'] }) });
     const r = carregarDadosV2(st);
-    expect(r.prog.desbloqueados).toEqual([]);
-    expect(r.prog.desconhecidos).toEqual(['aminu']);
+    expect(r.prog.desbloqueados).toEqual(['aminu']);
+    expect(r.prog.desconhecidos).toEqual(['garkuwa']);
   });
 });
 

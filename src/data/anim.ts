@@ -32,18 +32,33 @@ export const TYPE_ANIM = {
   leap: { s: ['sc0'], a: ['sc1'] },
 } as const satisfies Record<string, Anim>;
 
-type TipoComAnim = keyof typeof TYPE_ANIM;
-const temAnimDeTipo = (t: string | undefined): t is TipoComAnim => t !== undefined && t in TYPE_ANIM;
+/*
+ * E3: animações dos golpes novos. FICAM FORA de BASE_ANIM/TYPE_ANIM de propósito: essas duas são as tabelas do protótipo e
+ * a fidelidade (luta-fidelidade.test.ts) as compara chave a chave.
+ */
+/** Fouetté da PARADE (CAMILLE): poses que todo atlas resolve; a arte própria (sa2) vem na E5 via `anim.sResp`. */
+const ANIM_RESP: Anim = { s: ['hk0'], a: ['hk1'], r: ['hk1', 'hk0'] };
+export const TYPE_ANIM_E3 = {
+  // RESORTE (CENTELLA): a[0] = corrida de costas da ida (flip −1), a[1] = voadora da volta. Arte própria via `anim.sFwd`.
+  rebote: { s: ['sc0'], a: ['sc0', 'sc1'], r: ['sc1', 'idle0'] },
+  // VADIVU (NILA): troca de postura, sem golpe de verdade.
+  troca: { s: ['sb0'], a: ['sb0'], r: ['sb0', 'idle0'] },
+} as const satisfies Record<string, Anim>;
+
+type TipoComAnim = keyof typeof TYPE_ANIM | keyof typeof TYPE_ANIM_E3;
+const TODOS_TYPE_ANIM: Readonly<Record<string, Anim>> = { ...TYPE_ANIM, ...TYPE_ANIM_E3 };
+const temAnimDeTipo = (t: string | undefined): t is TipoComAnim => t !== undefined && t in TODOS_TYPE_ANIM;
 
 /** Animação do golpe `n` de um lutador (animFor do protótipo; `anim` = LutadorDef.anim). */
 export function animFor(n: NomeGolpe, mv: Golpe, anim: LutadorDef['anim']): Anim {
-  const doLutador = n === 'sFire' || n === 'sDown' || n === 'sFwd' ? anim?.[n] : undefined;
+  const doLutador = n === 'sFire' || n === 'sDown' || n === 'sFwd' || n === 'sResp' ? anim?.[n] : undefined;
   if (doLutador) return doLutador;
   const base = BASE_ANIM[n];
   if (base) return base;
+  if (n === 'sResp') return ANIM_RESP;
   if (n === 'sDown') {
-    return mv.type === 'fire' ? TYPE_ANIM.fireDown : temAnimDeTipo(mv.type) ? TYPE_ANIM[mv.type] : TYPE_ANIM.melee;
+    return mv.type === 'fire' ? TYPE_ANIM.fireDown : temAnimDeTipo(mv.type) ? (TODOS_TYPE_ANIM[mv.type] as Anim) : TYPE_ANIM.melee;
   }
-  if (n === 'sFwd') return temAnimDeTipo(mv.type) ? TYPE_ANIM[mv.type] : TYPE_ANIM.rush;
+  if (n === 'sFwd') return temAnimDeTipo(mv.type) ? (TODOS_TYPE_ANIM[mv.type] as Anim) : TYPE_ANIM.rush;
   return { s: ['idle0'], a: ['idle0'] };
 }

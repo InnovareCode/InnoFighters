@@ -20,7 +20,12 @@ function espiarAssets(page: Page): string[] {
   return urls;
 }
 
-const atlasDe = (urls: string[]): string[] => urls.filter((u) => /\/atlas\.webp$/.test(u)).map((u) => u.split('/')[3] as string).sort();
+// quem baixou imagem de atlas: v1 (`atlas.webp`: WEI LONG e CAIO) ou v2 em páginas (`atlas-N.webp`: HAYATO, MIN-JI e os cinco novos)
+const atlasDe = (urls: string[]): string[] => [...new Set(urls.filter((u) => /\/atlas(-\d)?\.webp$/.test(u)).map((u) => u.split('/')[3] as string))].sort();
+/** Só as imagens do atlas v1 (uma imagem por lutador). */
+const atlasV1De = (urls: string[]): string[] => urls.filter((u) => /\/atlas\.webp$/.test(u)).map((u) => u.split('/')[3] as string).sort();
+/** Páginas (`atlas-N.webp`) baixadas por um lutador. */
+const paginasDe = (urls: string[], id: string): string[] => urls.filter((u) => u.startsWith(`/assets/lutadores/${id}/atlas-`)).map((u) => u.split('/')[4] as string).sort();
 const cenariosDe = (urls: string[]): string[] => urls.filter((u) => u.startsWith('/assets/cenarios/')).map((u) => u.split('/')[3] as string).sort();
 
 test.describe('retratos e carga de arte', () => {
@@ -29,12 +34,16 @@ test.describe('retratos e carga de arte', () => {
     const urls = espiarAssets(page);
     await page.goto('/?seed=1');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(4);
-    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(4);
-    expect(atlasDe(urls)).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']); // a vitrine = os 4 de hoje
-    expect(cenariosDe(urls)).toEqual(['br.jpg', 'cn.jpg', 'jp.jpg', 'kr.jpg']);
+    // E5: o elenco tem 9 (manifesto e retrato de todos no boot), mas só a vitrine (os 4 de fábrica) baixa as imagens do atlas
+    expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(9);
+    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(9);
+    expect(atlasDe(urls)).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
+    expect(atlasV1De(urls)).toEqual(['caio', 'wei-long']); // só os dois originais que seguem em v1
+    for (const id of ['hayato', 'min-ji']) expect(paginasDe(urls, id), id).toEqual(['atlas-0.webp', 'atlas-1.webp']); // arte nova: 2 páginas, uma vez cada
+    for (const id of ['aminu', 'centella', 'camille', 'nila', 'baatar']) expect(paginasDe(urls, id), id).toEqual([]); // nenhuma página dos novos no boot
+    expect(cenariosDe(urls)).toEqual(['br.jpg', 'cenario-jp.webp', 'cn.jpg', 'kr.jpg']); // os 4 da vitrine; os cenários novos só sob demanda
     const r = await hook(page, '(h) => { const m = h.mundo(); return Object.fromEntries(Object.entries(m.elenco).map(([id, e]) => [id, e.arte.temRetrato])); }');
-    expect(r).toEqual({ hayato: true, 'wei-long': true, 'min-ji': true, caio: true });
+    expect(r).toEqual({ hayato: true, 'wei-long': true, 'min-ji': true, caio: true, aminu: true, centella: true, camille: true, nila: true, baatar: true });
   });
 
   test('tudo sob demanda: sem atlas no boot; a seleção pede só os mostrados e o VS só a dupla da luta', async ({ page }, info) => {
@@ -51,8 +60,8 @@ test.describe('retratos e carga de arte', () => {
 
     // boot: manifestos, retratos e o cenário padrão; NENHUM atlas e nenhum outro cenário
     expect(atlasDe(urls)).toEqual([]);
-    expect(cenariosDe(urls)).toEqual(['jp.jpg']);
-    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(4);
+    expect(cenariosDe(urls)).toEqual(['cenario-jp.webp']);
+    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(9);
 
     await page.keyboard.press('Enter');
     await esperarCena(page, 'intro');
@@ -76,7 +85,7 @@ test.describe('retratos e carga de arte', () => {
     await esperarCena(page, 'vs');
     await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 20_000 });
     // o VS pediu o cenário da casa do rival (WEI LONG = cn) e nada mais
-    expect(cenariosDe(urls)).toEqual(['cn.jpg', 'jp.jpg']);
+    expect(cenariosDe(urls)).toEqual(['cenario-jp.webp', 'cn.jpg']);
     expect(atlasDe(urls)).toEqual(['hayato', 'wei-long']);
     await page.waitForTimeout(700);
     await page.keyboard.press('Enter');
@@ -96,7 +105,9 @@ test.describe('retratos e carga de arte', () => {
     expect(residentes).toEqual(['hayato', 'wei-long']);
     const cargas = await hook(page, '(h) => Object.fromEntries(h.mundo().arte.cargas.lutadores)');
     expect(cargas).toEqual({ hayato: 1, 'wei-long': 1 });
-    expect(urls.filter((u) => u.endsWith('/atlas.webp'))).toHaveLength(2);
+    // HAYATO em v2 (2 páginas, uma vez cada); só o WEI LONG segue em v1 (atlas.webp)
+    expect(paginasDe(urls, 'hayato')).toEqual(['atlas-0.webp', 'atlas-1.webp']);
+    expect(atlasV1De(urls)).toEqual(['wei-long']);
     expect(erros).toEqual([]);
   });
 

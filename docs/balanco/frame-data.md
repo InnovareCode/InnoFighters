@@ -2,7 +2,7 @@
 
 > Arquivo GERADO por `npm run balanco`. Não edite à mão: rode o comando de novo.
 
-Gerado em 2026-10-21 · versão dos dados/motor `267890b2233a` · arte de PRODUÇÃO (`public/assets/lutadores`).
+Gerado em 2026-10-21 · versão dos dados/motor `d81622b9b8db` · arte de PRODUÇÃO (`public/assets/lutadores`).
 
 Como ler (todos os tempos em ticks de jogo, 60 por segundo; cada número foi medido numa `Game` em modo treino, não lido da tabela):
 
@@ -249,63 +249,63 @@ _pow 0.9_
 
 | Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 181 | 78–219 |  |
-| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 117 | 78–155 |  |
-| hp |  | mid (alto) | 7/4/14 | 7/4/14 | 9.0 | 24 | +6 | 12 | -6 | 228 | 78–279 |  |
-| hk |  | mid (alto) | 9/5/18 | 9/5/18 | 13.0 | – | KD +48 | 14 | -9 | 292 | 78–348 |  |
-| clp |  | mid | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 204 | 78–241 |  |
-| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 210 | 78–248 |  |
+| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 177 | 78–214 |  |
+| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 114 | 78–152 |  |
+| hp |  | mid (alto) | 7/4/14 | 7/4/14 | 9.0 | 24 | +6 | 12 | -6 | 222 | 78–273 |  |
+| hk |  | mid (alto) | 9/5/18 | 9/5/18 | 13.0 | – | KD +48 | 14 | -9 | 285 | 78–340 |  |
+| clp |  | mid | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 198 | 78–236 |  |
+| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 205 | 78–242 |  |
 | chp |  | mid | 6/4/17 | 6/4/17 | 10.0 | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
-| chk |  | low | 8/6/20 | 8/6/20 | 9.0 | – | KD +45 | 14 | -12 | 272 | 78–309 |  |
-| jlp |  | over | 2/80/0 | 2/9/0 | 5.0 | 15 | +6 | 10 | +1 | 156 | 78–194 | aéreo: ativos até pousar |
-| jhp |  | over | 4/80/0 | 4/7/0 | 8.0 | 20 | +13 | 12 | +5 | 164 | 78–201 | aéreo: ativos até pousar |
-| jlk |  | over | 3/80/0 | 3/8/0 | 6.0 | 17 | +9 | 11 | +3 | 248 | 78–285 | aéreo: ativos até pousar |
-| jhk |  | over | 5/80/0 | 5/6/0 | 10.0 | 22 | +16 | 13 | +7 | 273 | 78–310 | aéreo: ativos até pousar |
-| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 145 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
+| chk |  | low | 8/6/20 | 8/6/20 | 9.0 | – | KD +45 | 14 | -12 | 265 | 78–302 |  |
+| jlp |  | over | 2/80/0 | 2/9/0 | 5.0 | 15 | +6 | 10 | +1 | 152 | 78–190 | aéreo: ativos até pousar |
+| jhp |  | over | 4/80/0 | 4/7/0 | 8.0 | 20 | +13 | 12 | +5 | 160 | 78–197 | aéreo: ativos até pousar |
+| jlk |  | over | 3/80/0 | 3/8/0 | 6.0 | 17 | +9 | 11 | +3 | 241 | 78–279 | aéreo: ativos até pousar |
+| jhk |  | over | 5/80/0 | 5/6/0 | 10.0 | 22 | +16 | 13 | +7 | 265 | 78–303 | aéreo: ativos até pousar |
+| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 141 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
 | sFire | SELO DO ARCONTE | mid | 16/3/22 | 16/1/24 | 14.0 | – | KD +46 | 17 | -8 | – | 78–780+ | projétil: início = tick do 1º tiro; conecta até o teto da varredura (780) |
 | sDown | COLUNA DE ÔNIX | mid | 4/80/0 | 4/24/22 | 15.0 | – | KD +25 | 14 | -32 | 106 | 78–179 | aéreo: ativos até pousar |
-| sFwd | TRIBUTO | mid (alto) | 10/12/22 | 10/12/22 | 10.0 | 26 | -8 | 12 | -22 | 246 | 78–391 |  |
+| sFwd | TRIBUTO | mid (alto) | 10/12/22 | 10/12/22 | 10.0 | 26 | -8 | 12 | -22 | 239 | 78–385 |  |
 
 ### ficha chefe _(pow 1)_
 
 | Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 181 | 78–219 |  |
-| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 117 | 78–155 |  |
-| hp |  | mid (alto) | 7/4/14 | 7/4/14 | 9.0 | 24 | +6 | 12 | -6 | 228 | 78–279 |  |
-| hk |  | mid (alto) | 9/5/18 | 9/5/18 | 13.0 | – | KD +48 | 14 | -9 | 292 | 78–348 |  |
-| clp |  | mid | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 204 | 78–241 |  |
-| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 210 | 78–248 |  |
+| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 177 | 78–214 |  |
+| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 114 | 78–152 |  |
+| hp |  | mid (alto) | 7/4/14 | 7/4/14 | 9.0 | 24 | +6 | 12 | -6 | 222 | 78–273 |  |
+| hk |  | mid (alto) | 9/5/18 | 9/5/18 | 13.0 | – | KD +48 | 14 | -9 | 285 | 78–340 |  |
+| clp |  | mid | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 198 | 78–236 |  |
+| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 205 | 78–242 |  |
 | chp |  | mid | 6/4/17 | 6/4/17 | 10.0 | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
-| chk |  | low | 8/6/20 | 8/6/20 | 9.0 | – | KD +45 | 14 | -12 | 272 | 78–309 |  |
-| jlp |  | over | 2/80/0 | 2/9/0 | 5.0 | 15 | +6 | 10 | +1 | 156 | 78–194 | aéreo: ativos até pousar |
-| jhp |  | over | 4/80/0 | 4/7/0 | 8.0 | 20 | +13 | 12 | +5 | 164 | 78–201 | aéreo: ativos até pousar |
-| jlk |  | over | 3/80/0 | 3/8/0 | 6.0 | 17 | +9 | 11 | +3 | 248 | 78–285 | aéreo: ativos até pousar |
-| jhk |  | over | 5/80/0 | 5/6/0 | 10.0 | 22 | +16 | 13 | +7 | 273 | 78–310 | aéreo: ativos até pousar |
-| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 145 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
+| chk |  | low | 8/6/20 | 8/6/20 | 9.0 | – | KD +45 | 14 | -12 | 265 | 78–302 |  |
+| jlp |  | over | 2/80/0 | 2/9/0 | 5.0 | 15 | +6 | 10 | +1 | 152 | 78–190 | aéreo: ativos até pousar |
+| jhp |  | over | 4/80/0 | 4/7/0 | 8.0 | 20 | +13 | 12 | +5 | 160 | 78–197 | aéreo: ativos até pousar |
+| jlk |  | over | 3/80/0 | 3/8/0 | 6.0 | 17 | +9 | 11 | +3 | 241 | 78–279 | aéreo: ativos até pousar |
+| jhk |  | over | 5/80/0 | 5/6/0 | 10.0 | 22 | +16 | 13 | +7 | 265 | 78–303 | aéreo: ativos até pousar |
+| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 141 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
 | sFire | SELO DO ARCONTE | mid | 16/3/22 | 16/1/24 | 14.0 | – | KD +46 | 17 | -8 | – | 78–780+ | projétil: início = tick do 1º tiro; conecta até o teto da varredura (780) |
 | sDown | COLUNA DE ÔNIX | mid | 4/80/0 | 4/24/22 | 15.0 | – | KD +25 | 14 | -32 | 106 | 78–179 | aéreo: ativos até pousar |
-| sFwd | TRIBUTO | mid (alto) | 10/12/22 | 10/12/22 | 10.0 | 26 | -8 | 12 | -22 | 246 | 78–391 |  |
+| sFwd | TRIBUTO | mid (alto) | 10/12/22 | 10/12/22 | 10.0 | 26 | -8 | 12 | -22 | 239 | 78–385 |  |
 
 ### ficha chefe2 _(pow 1)_
 
 | Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 181 | 78–219 |  |
-| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 117 | 78–155 |  |
-| hp |  | mid (alto) | 7/4/14 | 7/4/14 | 9.0 | 24 | +6 | 12 | -6 | 228 | 78–279 |  |
-| hk |  | mid (alto) | 9/5/18 | 9/5/18 | 13.0 | – | KD +48 | 14 | -9 | 292 | 78–348 |  |
-| clp |  | mid | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 204 | 78–241 |  |
-| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 210 | 78–248 |  |
+| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 177 | 78–214 |  |
+| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 114 | 78–152 |  |
+| hp |  | mid (alto) | 7/4/14 | 7/4/14 | 9.0 | 24 | +6 | 12 | -6 | 222 | 78–273 |  |
+| hk |  | mid (alto) | 9/5/18 | 9/5/18 | 13.0 | – | KD +48 | 14 | -9 | 285 | 78–340 |  |
+| clp |  | mid | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 198 | 78–236 |  |
+| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 205 | 78–242 |  |
 | chp |  | mid | 6/4/17 | 6/4/17 | 10.0 | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
-| chk |  | low | 8/6/20 | 8/6/20 | 9.0 | – | KD +45 | 14 | -12 | 272 | 78–309 |  |
-| jlp |  | over | 2/80/0 | 2/9/0 | 5.0 | 15 | +6 | 10 | +1 | 156 | 78–194 | aéreo: ativos até pousar |
-| jhp |  | over | 4/80/0 | 4/7/0 | 8.0 | 20 | +13 | 12 | +5 | 164 | 78–201 | aéreo: ativos até pousar |
-| jlk |  | over | 3/80/0 | 3/8/0 | 6.0 | 17 | +9 | 11 | +3 | 248 | 78–285 | aéreo: ativos até pousar |
-| jhk |  | over | 5/80/0 | 5/6/0 | 10.0 | 22 | +16 | 13 | +7 | 273 | 78–310 | aéreo: ativos até pousar |
-| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 145 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
+| chk |  | low | 8/6/20 | 8/6/20 | 9.0 | – | KD +45 | 14 | -12 | 265 | 78–302 |  |
+| jlp |  | over | 2/80/0 | 2/9/0 | 5.0 | 15 | +6 | 10 | +1 | 152 | 78–190 | aéreo: ativos até pousar |
+| jhp |  | over | 4/80/0 | 4/7/0 | 8.0 | 20 | +13 | 12 | +5 | 160 | 78–197 | aéreo: ativos até pousar |
+| jlk |  | over | 3/80/0 | 3/8/0 | 6.0 | 17 | +9 | 11 | +3 | 241 | 78–279 | aéreo: ativos até pousar |
+| jhk |  | over | 5/80/0 | 5/6/0 | 10.0 | 22 | +16 | 13 | +7 | 265 | 78–303 | aéreo: ativos até pousar |
+| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 141 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
 | sFire | SELO MAIOR | mid | 14/3/22 | 14/1/24 | 16.0 | – | KD +46 | 17 | -8 | – | 78–780+ | projétil: início = tick do 1º tiro; conecta até o teto da varredura (780) |
 | sDown | COLUNA DE ÔNIX | mid | 4/80/0 | 4/24/22 | 15.0 | – | KD +25 | 14 | -32 | 106 | 78–179 | aéreo: ativos até pousar |
-| sFwd | DECRETO | mid (alto) | 8/22/22 | 24/6/22 | 14.0 | 24 | -12 | 14 | -22 | 265 | 78–262 |  |
+| sFwd | DECRETO | mid | 8/22/22 | 24/6/22 | 14.0 | 24 | -12 | 14 | -22 | 258 | 78–262 |  |
 
 `*` = a faixa de alcance tem furos na varredura de 6 px (o golpe não conecta em todas as distâncias entre o mínimo e o máximo).

@@ -44,7 +44,7 @@ export const GRADE_DE_PRODUCAO = ['hayato', 'wei-long', 'min-ji', 'caio', 'aminu
 export const DESCRICAO_DO_ARCADE = 'Um jogador: enfrente 5 rivais em sequência, depois o chefão, e torne-se o campeão.';
 
 /**
- * Pula a ENTRADA DRAMÁTICA do chefão numa luta recém-aberta (chamar antes do 1º `h.avancar`/update): a entrada não chama o motor, mas leva 156 ticks
- * (2,6 s) com o HUD escondido, então os e2e que medem o HUD ou contam ticks da luta de chefão a desligam por este hook.
+ * Pula a ENTRADA DRAMÁTICA do chefão numa luta recém-aberta (chamar antes do 1º `h.avancar`/update): a entrada não chama o motor, mas leva 270 ticks
+ * (4,5 s) com o HUD escondido, então os e2e que medem o HUD ou contam ticks da luta de chefão a desligam por este hook.
  */
 export const PULAR_ENTRADA = '(h) => { const s = h.ui.scene; if (s && s.entrada) { s.entradaPendente = false; s.entrada.zerar(); } }';

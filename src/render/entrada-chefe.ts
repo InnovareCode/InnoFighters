@@ -12,36 +12,41 @@ import { texto, textoArcade } from './texto';
  * `game.update` enquanto ela roda (como a cinemática do especial e a pausa), então tick, relógio, RNG da luta e eventos pendentes (`round start`)
  * são exatamente os de uma luta sem entrada. Ela só usa o `rngVisual` (e nem isso: a linha do tempo é uma função pura do tick).
  *
- * COMPLETA = 156 ticks (2,6 s): faixas de cinema entram (0-12), os 6 braseiros acendem da esquerda para a direita (12-48, um a cada 6 ticks), o
- * chefe de costas (`entrada0`) vira a cabeça (`entrada1`, 48-84) e aperta a tira sorrindo (`entrada2`, 84-156) com o cartão e a fala; as faixas saem
- * nos últimos 12. CURTA = 60 ticks: faixas + `entrada2` + cartão, sem os braseiros em sequência. Pular (ataque, ESP ou ENTER de um humano) só vale
- * depois do tick 10 (não engole o ENTER que confirmou o VS) e a saída leva no máximo 6 ticks.
+ * COMPLETA = 270 ticks (4,5 s, sem pressa; era 156, decisão do dono em 2026-10-21): as faixas de cinema entram (0-20), os 6 braseiros acendem da
+ * esquerda para a direita (30-90, um a cada 10 ticks), o chefe de costas (`entrada0`, 0-96) vira a cabeça (`entrada1`, 96-144) e aperta a tira sorrindo
+ * (`entrada2`, 144-270); o cartão do nome entra em 144 e a fala começa em 150 (1,2 letra por tick: as 89 letras terminam em ~224 e ficam na tela até as
+ * faixas saírem, nos últimos 20 ticks). CURTA = 60 ticks, INTACTA: faixas de 12 + `entrada2` + cartão, sem os braseiros em sequência. Pular (ataque, ESP
+ * ou ENTER de um humano) só vale depois do tick 10 (não engole o ENTER que confirmou o VS) e a saída leva no máximo 6 ticks, nos dois modos.
  */
 
 export type ModoEntrada = 'completa' | 'curta';
 
-export const DURACAO_ENTRADA_COMPLETA = 156;
+export const DURACAO_ENTRADA_COMPLETA = 270;
 export const DURACAO_ENTRADA_CURTA = 60;
 /** O pulo só vale a partir deste tick. */
 export const PULO_VALE_A_PARTIR_DE = 10;
 /** Ao pular, a saída leva no máximo isto (o mesmo da cinemática do especial). */
 export const SAIDA_AO_PULAR = 6;
-/** Altura das faixas de cinema (px lógicos) e quanto elas levam para entrar e sair. */
+/** Altura das faixas de cinema (px lógicos) e quanto elas levam para entrar e sair (CURTA / COMPLETA). */
 export const ALTURA_DA_FAIXA = 56;
 export const TICKS_DA_FAIXA = 12;
+export const TICKS_DA_FAIXA_COMPLETA = 20;
 /** Os braseiros da arena `gr`: quantos acendem na sequência, em que tick começa e quantos ticks cada um leva. */
 export const BRASEIROS = 6;
-export const BRASEIROS_COMECAM_EM = 12;
-export const TICKS_POR_BRASEIRO = 6;
+export const BRASEIROS_COMECAM_EM = 30;
+export const TICKS_POR_BRASEIRO = 10;
 /** Ticks em que o chefe vira a cabeça e em que aperta a tira (COMPLETA). */
-export const VIRA_A_CABECA_EM = 48;
-export const APERTA_A_TIRA_EM = 84;
-/** O cartão do nome aparece neste tick (COMPLETA) e neste (CURTA). */
-export const CARTAO_COMPLETA_EM = 84;
+export const VIRA_A_CABECA_EM = 96;
+export const APERTA_A_TIRA_EM = 144;
+/** O cartão do nome aparece neste tick (COMPLETA) e neste (CURTA), e leva tantos ticks para chegar inteiro. */
+export const CARTAO_COMPLETA_EM = 144;
 export const CARTAO_CURTA_EM = 8;
-/** A fala começa neste tick (COMPLETA) e revela este tanto de letras por tick. */
-export const FALA_COMECA_EM = 90;
-export const LETRAS_POR_TICK = 1.9;
+export const TICKS_DO_CARTAO_COMPLETA = 16;
+export const TICKS_DO_CARTAO_CURTA = 10;
+/** A fala começa neste tick (COMPLETA; a CURTA começa 6 ticks depois do cartão) e revela este tanto de letras por tick. */
+export const FALA_COMECA_EM = 150;
+export const LETRAS_POR_TICK = 1.2;
+export const LETRAS_POR_TICK_CURTA = 1.9;
 
 /** Quanto dura a entrada neste modo. */
 export const duracaoDaEntrada = (modo: ModoEntrada): number => (modo === 'completa' ? DURACAO_ENTRADA_COMPLETA : DURACAO_ENTRADA_CURTA);
@@ -67,22 +72,23 @@ export type QuadroDaEntrada = {
 export function linhaDaEntrada(modo: ModoEntrada, tick: number, pulouEm: number | null = null): QuadroDaEntrada {
   const total = duracaoDaEntrada(modo);
   const fim = pulouEm === null ? total : Math.min(total, pulouEm + SAIDA_AO_PULAR);
-  const saidaIni = pulouEm === null ? total - TICKS_DA_FAIXA : pulouEm;
+  const sequencia = modo === 'completa';
+  const ticksDaFaixa = sequencia ? TICKS_DA_FAIXA_COMPLETA : TICKS_DA_FAIXA;
+  const saidaIni = pulouEm === null ? total - ticksDaFaixa : pulouEm;
   const saidaDur = Math.max(1, fim - saidaIni);
   const saindo = tick >= saidaIni ? Math.min(1, (tick - saidaIni) / saidaDur) : 0;
-  const entrando = Math.min(1, tick / TICKS_DA_FAIXA);
+  const entrando = Math.min(1, tick / ticksDaFaixa);
   const faixa = ALTURA_DA_FAIXA * easeOut(entrando) * (1 - saindo);
 
-  const sequencia = modo === 'completa';
   const acesosNormal = !sequencia ? BRASEIROS : Math.min(BRASEIROS, Math.max(0, (tick - BRASEIROS_COMECAM_EM) / TICKS_POR_BRASEIRO));
   // pulou: os que faltam acendem de uma vez durante a saída
   const acesos = pulouEm === null || !sequencia ? acesosNormal : Math.min(BRASEIROS, acesosNormal + (BRASEIROS - acesosNormal) * saindo);
   const pose = !sequencia || pulouEm !== null ? 2 : tick < VIRA_A_CABECA_EM ? 0 : tick < APERTA_A_TIRA_EM ? 1 : 2;
 
   const cartaoEm = sequencia ? CARTAO_COMPLETA_EM : CARTAO_CURTA_EM;
-  const cartao = Math.min(1, Math.max(0, (tick - cartaoEm) / 10));
+  const cartao = Math.min(1, Math.max(0, (tick - cartaoEm) / (sequencia ? TICKS_DO_CARTAO_COMPLETA : TICKS_DO_CARTAO_CURTA)));
   const falaEm = sequencia ? FALA_COMECA_EM : CARTAO_CURTA_EM + 6;
-  const letras = Math.max(0, (tick - falaEm) * LETRAS_POR_TICK);
+  const letras = Math.max(0, (tick - falaEm) * (sequencia ? LETRAS_POR_TICK : LETRAS_POR_TICK_CURTA));
   return { faixa, acesos, pose, cartao, alfa: 1 - saindo, letras };
 }
 

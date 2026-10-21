@@ -467,7 +467,7 @@ describe('Z1 · fases do chefão: armadura da fase 2 e DECRETO', () => {
   it('o ZENON não é um clone do WEI LONG: o def montado sobre o atlas do WEI mantém os golpes e os números do ZENON', () => {
     const z = elenco[ID_ZENON];
     expect(z.name).toBe('ZENON');
-    expect(z.scale).toBe(1.36);
+    expect(z.scale).toBe(1.32);
     expect(z.jump).toBe(0.72);
     expect(z.moves.sDown.type).toBe('rise');
     expect(z.moves.sDown.ia).toEqual({ papel: 'antiaereo' });

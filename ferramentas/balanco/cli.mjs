@@ -12,7 +12,7 @@
  *   --so frame|sim  só a frame data, ou só a simulação
  *   --jobs N        processos em paralelo (padrão: núcleos − 1, no máximo 8)
  *   --saida <pasta> onde gravar (padrão acima)
- *   --esquiva       liga a ESQUIVA em todas as lutas (V2); saída em relatorios/balanco-esquiva (compare com a rodada sem a flag)
+ *   --esquiva       liga a ESQUIVA em todas as lutas (V2); com --completo grava a referência de PRODUÇÃO em docs/balanco (a rodada sem a flag vai para docs/balanco/sem-esquiva); com --rapido, em relatorios/balanco-esquiva
  *   --ajustes <json> "e se...": ajustes em memória, ex. '{"wei-long":{"hp":100,"pow":1.08}}' (não grava dados; saída em relatorios/)
  *   --verificar     antes de tudo, joga uma amostra duas vezes e exige resultado idêntico (determinismo)
  *
@@ -65,9 +65,11 @@ function lerArgumentos(argv, env) {
   if (!Number.isInteger(a.sementes) || a.sementes < 1 || a.sementes > 5000) throw new Error('--sementes: inteiro de 1 a 5000');
   if (!a.niveis.every((n) => n === 1 || n === 2)) throw new Error('--niveis: use 1 (NORMAL) e/ou 2 (DIFÍCIL)');
   if (a.so !== null && a.so !== 'frame' && a.so !== 'sim') throw new Error('--so: frame ou sim');
-  // O "e se..." nunca escreve na pasta de referência (docs/balanco)
-  const hipotese = a.ajustes || a.esquiva;
-  a.saida ??= a.modo === 'completo' && !hipotese ? join(RAIZ, 'docs', 'balanco') : join(RAIZ, 'relatorios', a.ajustes ? 'balanco-ajustes' : a.esquiva ? 'balanco-esquiva' : 'balanco');
+  // O "e se..." nunca escreve nas pastas de referência. A referência versionada é a da PRODUÇÃO (esquiva ligada) em docs/balanco;
+  // a rodada sem a flag fica ao lado, em docs/balanco/sem-esquiva (o `--completo` sem `--esquiva` NÃO sobrescreve a de produção).
+  a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
+    : a.modo === 'completo' ? join(RAIZ, 'docs', 'balanco', a.esquiva ? '' : 'sem-esquiva')
+    : join(RAIZ, 'relatorios', a.esquiva ? 'balanco-esquiva' : 'balanco');
   return a;
 }
 

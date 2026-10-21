@@ -9,6 +9,10 @@ Base lida: `docs/proposta-expansao.md`, `docs/prompts/08-baatar.md` e `09-cenari
 `src/data/lutadores/baatar.ts`, `src/meta/regras.ts`, `src/meta/progresso.ts`, `src/ui/grade.ts`, `src/ui/cenas/chefe.ts`,
 `src/audio/audio-sys.ts`, as folhas do BAATAR e as capturas em `arte-fonte/capturas/`.
 
+> **Valor final (decisões do dono, 2026-10-21):** escala do ZENON **1,32** (esta proposta dizia 1,36) e entrada COMPLETA de
+> **270 ticks (4,5 s)** (dizia 156 ticks, 2,6 s). O que fica abaixo com 1,36 ou 156 ticks é a proposta original, mantida como
+> registro. O valor que vale está em `src/data/lutadores/zenon.ts` (escala) e `src/render/entrada-chefe.ts` (entrada).
+
 ---
 
 ## 0. Resumo
@@ -16,7 +20,7 @@ Base lida: `docs/proposta-expansao.md`, `docs/prompts/08-baatar.md` e `09-cenari
 | | Recomendação |
 |---|---|
 | Novo chefão | **Candidato A: ZENON ARGYROS, "O Arconte"** (Grécia, pancrácio). É o dono do torneio, um anfitrião elegante e cruel numa arena de mármore sobre o mar. Também há o B, **SÉCULO, "O Primeiro Campeão"**, colosso de 1926 com rachaduras de ouro, e o C, **CROWN, "A Dona do Espetáculo"**, promotora americana. |
-| Escala | A **1,36**; B **1,42**, que é o teto medido para o HUD; C **1,30** |
+| Escala | A **1,32** (valor final; a proposta era 1,36); B **1,42**, que é o teto medido para o HUD; C **1,30** |
 | Motor | A cabe **sem primitiva nova**: só parâmetros e reuso, mais um parâmetro de "dreno de energia". B e C trazem **1 primitiva cada** |
 | Arte | 1 mestra + 10 folhas 3×2 + 1 cenário = 12 imagens, 72 créditos. Com margem de correção, **~96 a 108 dos 152 créditos** |
 | BAATAR | Vira lutador normal, **5º da fila de desbloqueio** (depois da NILA). O **MERGULHO DA ÁGUIA vira o →+ESP dele** e completa o triângulo alto/baixo/agarrão. A **Dança da Águia vira entrada e vitória**. Cenário `mn` continua sendo a casa dele |
@@ -45,7 +49,7 @@ está nas capturas `vs-do-chefao.png`, `arcade-baatar-fase-2.png` e `cenario-mn.
 4. **Energia em negativo**, a regra exclusiva do chefão: núcleo **ônix** e brilho colorido (nenhum lutador do elenco tem
    energia mais escura que o cenário).
 5. **Arena própria**, de poder, à noite ou num céu anormal, que não é a casa de nenhum país do elenco.
-6. **Entrada dramática** antes do round (2 a 3 s, só render).
+6. **Entrada dramática** antes do round (valor final: 4,5 s na COMPLETA e 1 s na CURTA; a proposta dizia 2 a 3 s; só render).
 7. **Golpes autorais** com nome próprio e um golpe "assinatura" que ninguém mais tem.
 8. **Segunda fase visível**: muda a cor, a aura, a arena, a música e um golpe.
 9. **Música própria** que muda na fase 2.
@@ -84,7 +88,7 @@ A crueldade dele é a cortesia.
 | Campo | Valor |
 |---|---|
 | Nome na tela | **ZENON** · título "O Arconte" · país GRÉCIA |
-| Idade / altura | 61 · ~2,01 m · **escala 1,36** (alto e esguio: a cabeça fica bem acima da do BAATAR, que é largo e curvado) |
+| Idade / altura | 61 · ~2,01 m · **escala 1,32** (valor final; a proposta era 1,36) (alto e esguio: a cabeça fica bem acima da do BAATAR, que é largo e curvado) |
 | Silhueta | **triângulo invertido longo**: ombros retos, casaco até abaixo do joelho, pernas longas. Em preto chapado, é a única figura do jogo com uma "saia" de casaco abrindo atrás |
 | Rosto | cabeça raspada, barba curta prateada bem aparada, nariz afilado, olhos cinza-claros, meio sorriso frio, cicatriz fina na sobrancelha esquerda |
 | Traje | casaco longo preto, aberto, com gola alta rígida e **forro púrpura-tíria**, e um fio de ouro liso nas bordas. Por baixo, túnica preta sem mangas fechada por **um broche redondo de ouro**, calça grafite e botas pretas |
@@ -151,9 +155,10 @@ Stage: a private white marble amphitheater on a cliff of a Greek island at night
 recurso que paga especial e esquiva. A tarja pode mostrar a energia "voando" da barra do rival para a dele (render).
 
 **Entrada dramática** (antes do round 1, cena de UI, só render, sem mexer no lock-step): tela com faixas pretas
-de cinema → a arena aparece com os braseiros acendendo da esquerda para a direita (0,6 s) → ZENON de costas (`entrada0`)
-→ vira a cabeça (`entrada1`) → aperta a tira de couro (`entrada2`) e entra o cartão "ZENON ARGYROS · O ARCONTE · DONO
-DO TORNEIO" (2,6 s no total, pula com ENTER).
+de cinema → a arena aparece com os braseiros acendendo da esquerda para a direita (proposta: 0,6 s; no código são 6 braseiros,
+um a cada 10 ticks, do tick 30 ao 90) → ZENON de costas (`entrada0`) → vira a cabeça (`entrada1`) → aperta a tira de couro
+(`entrada2`) e entra o cartão "ZENON ARGYROS · O ARCONTE · DONO DO TORNEIO". Valor final: **4,5 s (270 ticks)** na COMPLETA;
+a CURTA tem 60 ticks (1 s). Pula com ataque, ESP ou ENTER a partir do tick 10 (a proposta dizia 2,6 s).
 
 **Música** (sintetizada, só `tone`/`noise`): **valsa sinistra em 3/4**, 138 bpm, Ré no **modo frígio dominante** (o *dromos
 hitzaz* do rebético grego). Órgão em quintas (dente-de-serra com passa-baixa de 900 Hz), baixo de bordão no tempo 1, cravo
@@ -392,7 +397,7 @@ Melhor cor dos três: 27° do WEI LONG e 28° da MIN-JI.
 | Critério | **A · ZENON, O Arconte** | B · SÉCULO, O Primeiro Campeão | C · CROWN, A Dona do Espetáculo |
 |---|---|---|---|
 | Próximo do pedido do dono | **alto**: dono do torneio, carismático, cruel e elegante | médio-alto: dono, mas místico | baixo-médio: dona moderna, outro tom |
-| Escala / silhueta | 1,36, alto e esguio, casaco longo | **1,42, colosso em V** | 1,30, vertical com diagonal |
+| Escala / silhueta | 1,32 (valor final; a proposta era 1,36), alto e esguio, casaco longo | **1,42, colosso em V** | 1,30, vertical com diagonal |
 | Sinais de chefão (0.2, de 10) | **10** | 10 | 9 (escala fraca) |
 | Golpe assinatura | TRIBUTO: rouba o medidor do rival | **CENTENÁRIO: o chão inteiro acerta** | HOLOFOTE: o golpe cai no rival |
 | Motor | **0 primitiva nova** (1 parâmetro + reuso) | 1 primitiva (área no chão) | 1 primitiva (projétil no alvo) |

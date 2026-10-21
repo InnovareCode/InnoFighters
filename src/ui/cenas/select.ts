@@ -6,7 +6,7 @@ import { liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
 import { dicaArcadeSelecao } from '../escada-texto';
 import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa, retanguloDeToque, temCasaDeHonra, type EstadoCasa } from '../grade';
 import type { Navegador } from '../navegador';
-import { barrasDeStatus, escalaDeVitrine, mostrarLutador, P_COL } from '../personagens';
+import { barrasDeStatus, escalaDeVitrine, mostrarLutador, P_COL, tamanhoDoNomeNoContexto } from '../personagens';
 import type { ArgsSelect, Cena, ModoMenu } from '../tipos';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
@@ -262,7 +262,11 @@ export class CenaSelect implements Cena {
     f.T(`${ch.title}  •  ${ch.country}`, px + 14, 418, 13, ch.accent, 'left');
     barrasDeStatus(f, ch, px + 14, 444, 150);
     f.T('ESPECIAIS', px + 180, 438, 11, '#9fa6c9', 'left', { shadow: false });
-    ch.sps.forEach((sp, i) => f.T((i === 0 ? '' : i === 1 ? '↓ ' : '→ ') + (sp.name ?? ''), px + 180, 456 + i * 17, 13, i === 0 ? ch.fire[0] : '#e8ecff', 'left'));
+    ch.sps.forEach((sp, i) => {
+      const rotulo = (i === 0 ? '' : i === 1 ? '↓ ' : '→ ') + (sp.name ?? '');
+      // só os NOVOS encolhem o que estoura a borda do painel; os 4 do protótipo ficam a 13 px, pixel a pixel
+      f.T(rotulo, px + 180, 456 + i * 17, tamanhoDoNomeNoContexto(ctx, ch.id, rotulo), i === 0 ? ch.fire[0] : '#e8ecff', 'left');
+    });
     f.A(tag, px + 142, 72, 22, P_COL[p], '#000', 'center');
   }
 

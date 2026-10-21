@@ -109,7 +109,7 @@ describe('ZENON · limites do atlas (spec §9.4)', () => {
     expect(manifesto.imagens.length * w * h * 4).toBeLessThanOrEqual(80 * 1024 * 1024);
   });
 
-  it('alturaRef 558 = altura do idle0 (410 × 1,36: a mesma densidade de pixel dos outros) e o retrato do atlas é o do retrato.json', () => {
+  it('alturaRef 558 = altura do idle0 (410 × 1,36, a arte; o jogo a desenha a 1,32) e o retrato do atlas é o do retrato.json', () => {
     expect(manifesto.alturaRef).toBe(558);
     expect(quadros['idle0']!.h).toBe(558);
     const retrato = JSON.parse(readFileSync(caminho('public/assets/lutadores/zenon/retrato.json'), 'utf8')) as { recorte: number[] };
@@ -123,23 +123,23 @@ describe('ZENON · limites do atlas (spec §9.4)', () => {
 });
 
 describe('ZENON · hurtbox em pé medida do atlas (spec §9.2)', () => {
-  it('alturaEmPe = round2(0,92 × altura visível do idle0 em px lógicos / 254,4) = 1,25', () => {
+  it('alturaEmPe = round2(0,92 × altura visível do idle0 em px lógicos / 254,4) = 1,22', () => {
     const visivel = quadros['idle0']!.h * zenon.K; // = scale × SH_IDLE
     expect(visivel).toBeCloseTo(ZENON_DEF.scale * SH_IDLE, 6);
     const medido = Math.round(((0.92 * visivel) / (SH * 0.96)) * 100) / 100;
     expect(LUTADORES.zenon.alturaEmPe).toBe(medido);
-    expect(medido).toBe(1.25);
+    expect(medido).toBe(1.22);
   });
 
-  it('a caixa em pé cobre 92% da altura visível do sprite (a 1,0 cobriria só ~73%) e o topo fica 5 a 10% abaixo da cabeça', () => {
+  it('a caixa em pé cobre 92% da altura visível do sprite (a 1,0 cobriria só ~76%) e o topo fica 5 a 10% abaixo da cabeça', () => {
     const visivel = quadros['idle0']!.h * zenon.K;
     const caixa = hurtbox({ x: 480, y: GROUND, state: 'idle', baixo: false, noChao: true, escalaEmPe: zenon.alturaEmPe as number });
     expect(caixa.h / visivel).toBeGreaterThan(0.91);
     expect(caixa.h / visivel).toBeLessThan(0.93);
     const padrao = hurtbox({ x: 480, y: GROUND, state: 'idle', baixo: false, noChao: true });
-    expect(padrao.h / visivel).toBeLessThan(0.75);
+    expect(padrao.h / visivel).toBeLessThan(0.77);
     // agachado, no ar e em golpe seguem como hoje
-    expect(hurtbox({ x: 480, y: GROUND, state: 'crouch', baixo: true, noChao: true, escalaEmPe: 1.25 }).h).toBeCloseTo(SH * 0.56, 9);
+    expect(hurtbox({ x: 480, y: GROUND, state: 'crouch', baixo: true, noChao: true, escalaEmPe: 1.22 }).h).toBeCloseTo(SH * 0.56, 9);
   });
 });
 

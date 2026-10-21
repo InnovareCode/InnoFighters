@@ -271,7 +271,7 @@ describe('escala da vitrine: nenhum lutador sai da tela na seleção, no VS e no
     const fatores = Object.fromEntries(ids.map((i) => [i, escalaDeVitrine(prod[i]!)]));
     for (const i of ids.filter((x) => prod[x]!.scale <= 1.1)) expect(fatores[i], i).toBe(1);
     expect(fatores['baatar']).toBeCloseTo(1.1 / 1.28, 5);
-    expect(fatores['zenon']).toBeCloseTo(1.1 / 1.36, 5);
+    expect(fatores['zenon']).toBeCloseTo(1.1 / 1.32, 5);
     expect(ESCALA_MAXIMA_DE_VITRINE).toBe(1.1);
   });
 

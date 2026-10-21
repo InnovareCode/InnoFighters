@@ -2,6 +2,7 @@ import type { IdLutador } from '../core/contratos';
 import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
 import { desenharPose } from '../render/pose';
+import { FB } from '../render/texto';
 import type { Ferramentas } from './ferramentas';
 import type { Mundo } from './contexto';
 
@@ -24,6 +25,37 @@ export const ESCALA_MAXIMA_DE_VITRINE = 1.1;
 
 /** Fator (<= 1) que a vitrine multiplica na escala de desenho de um lutador. */
 export const escalaDeVitrine = (ch: { readonly scale: number }): number => Math.min(1, ESCALA_MAXIMA_DE_VITRINE / ch.scale);
+
+/**
+ * Os 4 lutadores do protótipo. Na seleção os nomes dos especiais deles ficam SEMPRE a 13 px, pixel a pixel como no protótipo (o e2e de fidelidade os
+ * compara), mesmo os que passam da borda do painel (HAYATO, WEI LONG, MIN-JI, CAIO...). Só os lutadores NOVOS encolhem a fonte para caber.
+ */
+export const LUTADORES_DO_PROTOTIPO: ReadonlySet<string> = new Set(['hayato', 'wei-long', 'min-ji', 'caio']);
+/** Tamanho padrão do nome de especial no painel da seleção e a largura útil dele (da coluna até a borda do painel, com folga). */
+export const NOME_DE_ESPECIAL = { tamanho: 13, larguraMax: 96, minimo: 8 } as const;
+
+/**
+ * Tamanho (px) do nome de especial `rotulo` no painel da seleção de `id`: 13 para todos, exceto os NOVOS cujo nome (com a seta) não cabe em
+ * `larguraMax` — esses encolhem de meio em meio px até caber (nunca abaixo de `minimo`). `medir` = largura do texto em px na fonte do corpo e no tamanho dado.
+ */
+export function tamanhoDoNomeDeEspecial(medir: (rotulo: string, tamanho: number) => number, id: string, rotulo: string): number {
+  const { tamanho, larguraMax, minimo } = NOME_DE_ESPECIAL;
+  if (LUTADORES_DO_PROTOTIPO.has(id)) return tamanho;
+  let t: number = tamanho;
+  while (t > minimo && medir(rotulo, t) > larguraMax) t -= 0.5;
+  return t;
+}
+
+/** `tamanhoDoNomeDeEspecial` medindo no contexto 2D (fonte do corpo, `FB`). */
+export function tamanhoDoNomeNoContexto(ctx: { font: string; measureText(s: string): { width: number } }, id: string, rotulo: string): number {
+  const antes = ctx.font;
+  const t = tamanhoDoNomeDeEspecial((r, tam) => {
+    ctx.font = FB(tam);
+    return ctx.measureText(r).width;
+  }, id, rotulo);
+  ctx.font = antes;
+  return t;
+}
 
 /** Respiração do lutador nos menus. */
 export const idleBob = (t: number): number => 1 + 0.012 * Math.sin(t / 16);

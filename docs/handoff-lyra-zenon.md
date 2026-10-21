@@ -7,7 +7,52 @@ Data: 2026-10-21. Missão do painel `cmvi8mrbg01ix01nxmfj3f0x0`. Sem commit. Bas
 medido com a ARTE REAL do ZENON, e o `?chefe=zenon` (ZENON provisório com a arte do WEI LONG) que eu tinha montado para ver o chefão antes do flip foi apagado sem uso. Pelo mesmo
 motivo o chefe de teste (`?chefe=teste`, BAATAR antigo) e `src/ui/dev-chefe-teste.ts` saíram: a troca para o ZENON em `tests/e2e/_chefe.ts` está feita.
 
-## RESULTADO
+## ATUALIZAÇÃO 2026-10-21 (2ª rodada, decisões do dono; missão `cmvifnnxt004j01p7thgi309f`; sem commit)
+
+Esta seção vale sobre o resto do documento: onde abaixo aparece 1,36, 156 ticks, "nome estoura" ou "derrota em roundend", o que vale é o daqui.
+
+1. **`scale` do ZENON 1,36 -> 1,32** (`src/data/lutadores/zenon.ts`). Remedido no navegador (arte real, zoom 1,0646, base dos nomes do HUD em y 77, topo do sprite em px lógicos):
+   idle0-3 = 112 / 107,5 / 105,5 / 107,5; walk0-7 = 107,5 / 103,5 / 117 / 116,5 / 117 / 108 / 106,5 / 108; block 115,5; entrada0-2 = 116 / 115,5 / 111,5; cena2 123;
+   **`win` 84 e `vitoria0` 84 (folga 7 px), `vitoria1` 86,5 (folga 9,5 px)**: antes estavam 4,5 e 2 px ACIMA da base dos nomes. Folga mínima em qualquer pose = 7 px (>= 0; a medida é a
+   faixa inteira de x, então vale também nos cantos). Salto: ápice 83 px, `jup` a 90% = y 62, `jtop` = 110,5 (nada sai da tela). e2e: `zenon-z2z3.spec.ts` "ESCALA 1,32" agora exige folga >= 0 também nas poses altas.
+   - O que dependia da escala: `K = scale·SH_IDLE/alturaRef` (tudo da render e a ponta dos golpes, `tipX/tipY·scale`, andam sozinhos); `escalaDeVitrine` (1,1/1,32, derivada); **`alturaEmPe` 1,25 -> 1,22**
+     (a regra da spec §9.2 é 0,92 × altura visível do idle0: 0,92 × 1,32 × 255 / 254,4 = 1,2173; `zenon-arte.test` mede contra o atlas real). `alturaDoProjetil` (175 px absolutos) e as caixas `bh` (absolutas) NÃO mudaram.
+   - **MOTOR MUDOU (Vega, avise o balanço):** alcance dos golpes -3% (a ponta vem da arte × scale) e hurtbox em pé do ZENON 3% mais baixa (1,22). Os testes de unidade do ZENON seguem verdes, mas **`npm run balanco`
+     do ZENON não foi rerodado**: contato e vitória do harness podem ter se mexido (`bh` é o mesmo, mas a ponta desceu ~3%).
+2. **Entrada COMPLETA 156 -> 270 ticks (4,5 s)**, `src/render/entrada-chefe.ts` (CURTA = 60, intacta: faixas de 12, cartão em 10, 1,9 letra/tick; pular continua depois do tick 10 e sai em <= 6; lock-step intacto):
+
+   | Ticks | O que | (era) |
+   |---|---|---|
+   | 0-20 | faixas entram (20 ticks) | 0-12 |
+   | 30-90 | 6 braseiros, um a cada 10 ticks (o som segue 1 por braseiro) | 12-48, de 6 em 6 |
+   | 0-96 / 96-144 / 144-270 | `entrada0` (de costas) / `entrada1` (vira a cabeça) / `entrada2` (aperta a tira) | 0-48 / 48-84 / 84-156 |
+   | 144 (+16) | cartão ZENON ARGYROS · O ARCONTE · DONO DO TORNEIO | 84 (+10) |
+   | 150-224 | fala letra a letra a 1,2 letra/tick (as 89 letras terminam no 224 e ficam lidas até as faixas saírem, ~30 ticks) | 90-138, 1,9/tick |
+   | 250-270 | faixas e cartão saem (20 ticks) | 144-156 |
+
+   O "aviso" ("O ANFITRIÃO ESTÁ À SUA ESPERA") é a `CenaChefe` ANTES do VS (segue sozinha em 170 ticks, ENTER depois do 40) e NÃO foi mexido: não faz parte dos 156/270. Fotos: `zenon-entrada-t031/t071/t120/-/t245-{desktop,celular}`.
+   Medido: motor imóvel por 270 `update()` (tick, `t`, fase e RNG iguais), o 271º anda; `game.tick` = 5 depois de 275 updates; as 89 letras estão na tela no tick 245. Unidade: foto do motor depois de 600 ticks idêntica à luta sem entrada (3 casos).
+3. **Nomes dos especiais da seleção**: `tamanhoDoNomeDeEspecial` (`src/ui/personagens.ts`), usado pelo painel de `select.ts`. Os lutadores do protótipo (`LUTADORES_DO_PROTOTIPO` = hayato, wei-long, min-ji, caio) ficam a **13 px sempre** (nem medem: pixel a pixel
+   como antes; e2e de fidelidade verde SEM `-u`); os NOVOS encolhem de 0,5 em 0,5 px até caber em 96 px (coluna px+180, 8 px da borda do painel), piso 8 px. Medido nos 10 lutadores, em P1 e P2: **nenhum nome novo passa da borda**
+   (folga >= 8,1 px). Encolhidos: PASSO DO LEÃO 10,5, HURACANRANA 11, COUP D'ARRÊT 12, PASSO DO ELEFANTE 8,5, ARREMESSO DO AVARGA 8, QUEBRA-BASE 12,5, MERGULHO DA ÁGUIA 8, SELO DO ARCONTE 10,5, COLUNA DE ÔNIX 10. **Atenção
+   à leitura:** 8 px lógicos são ~10,7 px CSS no desktop 1280, mas ~7,6 px no celular deitado (915 de largura): os 3 nomes de 8 e 8,5 px (BAATAR e NILA) ficam pequenos. Os 4 originais seguem passando da borda (HAYATO "→ KAMINARI-STEP" -12 px,
+   MIN-JI "→ TWIO YEOP CHAGI" -26 px, CAIO "↓ RABO-DE-ARRAIA" -17 px, WEI LONG "→ TIE SHAN KAO" -0,5 px): é o protótipo, não mexi.
+4. **Falas do chefão** (`falaDoChefe`): fase 2 só em `cena-chefe`; **vitória só em `matchend`** (ele venceu); **derrota só no KO FINAL**: no `ko` dele quando o rival fecha a luta com esse round (`rival.wins + 1 >= winsNeeded`) e no `matchend`
+   dele perdido COM a vida zerada; perder por TEMPO não fala; **`roundend` nunca fala**. (Hoje o chefão luta em round único, `winsNeeded = 1`, então `roundend` nem ocorre com ele; a regra está provada forçando `winsNeeded = 2`.) A assinatura
+   agora pede `winsNeeded` em `LeituraLuta`.
+   **`poseDaCena` unificada**: a cópia de `src/render/apresentacao-lutadores.ts` foi apagada; a render importa `src/data/cena.ts` (a do motor). A diferença que sumiu: a da render tratava `duracao` 0 com `Math.max(1, ...)`, mas `validarCena` já exige >= 1.
+   `fight.ts` usa `CINEMATICA_PADRAO` no lugar do `'completa'` literal (a comparação `pref === 'completa'` do modo continua: é o valor).
+   Poses de vitória (real, `matchend`): o estado `win` só entra em `t > 20`, então `vitoria0` vale de t 21 a 39 e `vitoria1` de 40 a 79 (a cena é de 80 ticks); antes disso é a pose do motor.
+
+**Provado nesta rodada (rodado):** `tsc` limpo; `vitest` 67 arquivos / 1480 testes verdes; `npm run build` ok (JS 250,6 kB, 88,5 kB gzip); `npm run test:e2e` **149 passaram, 0 falharam** (111 pulados por projeto), 4,0 min, servidor Vite fixo sem HMR
+(conferido por `curl` ao módulo); `npm run test:e2e:build` 5/5. **Mutação** (23 mutantes das constantes e regras novas, sobre `tests/unit`): 2 sobreviveram na 1ª rodada (duração do cartão da COMPLETA e passo de 0,5 px do encolhimento): testes apertados, hoje morrem todos.
+Testes novos: `tests/unit/z4-nome-de-especial.test.ts` (5) e, em `zenon-z2z3.spec.ts`, o bloco Z4 (falas, poses de vitória, nomes dos especiais) e a entrada de 270. Ajustados (números): `z3-entrada-chefe`, `zenon-arte` (alturaEmPe 1,22; a caixa padrão cobre ~76%),
+`zenon-motor`, `z2-grade-honra`, `e6a-sarpa`.
+**Capturas** (só `SALVAR_CAPTURAS=arte-fonte/capturas`, nada de `SALVAR_QUADROS`; **olhei** `zenon-entrada-t071/t120/t245-desktop` e `zenon-vitoria-matchend-vitoria1`): também `zenon-entrada-t031/-/t071/t120/t245-{desktop,celular}`, `zenon-vitoria-matchend-vitoria0/1`,
+`zenon-derrota-ko-final`, `zenon-escala-1-32-hud`, `selecao-10-especiais-zenon/baatar` (e as de sempre, regravadas).
+**NÃO provado:** o som; a leitura da fala a 1,2 letra/tick por gente de verdade (4,5 s é conta, não teste de usuário); a fonte de 8 px em celular real; o balanço do ZENON com a escala 1,32 (`npm run balanco`); a `derrota` na cena `ending` (segue como antes).
+
+## RESULTADO (Z2/Z3, 1ª rodada)
 
 ### Render (Z2)
 - **Projétil `anel`** (`src/render/projetil-anel.ts`, ligado em `efeitos.ts`; `'anel'` em `EstiloProjetil`): 3 elipses (ry = 0,45·rx, rx = 34·sc), núcleo ônix em `source-over`, borda em brilho em
@@ -91,15 +136,15 @@ só em unidade e na medição de altura; o ZENON jogável com a entrada/vitória
 - **Íris:** jogar o ARCADE inteiro até o ZENON (entrada completa, pular com ataque/ENTER/botão do toque, pausar no meio da entrada, perder e dar continue -> entrada curta, REINICIAR LUTA na pausa, fase 2 com cena e
   legenda, vitória e derrota do chefão); a grade de 10 em teclado, mouse, toque e controle (↓↓↓↑ = 7, ←/→ na honra, "???" que não confirma, NOVO! depois de derrotá-lo); o ZENON jogável em versus (entrada/vitória
   em `APRESENTACAO`, TRIBUTO com moedas); BAATAR em luta comum (entrada `devekh*` na `intro`, vitória). Atenção: teclas seguradas na hora do pulo; dois humanos no versus; CPU no ZENON.
-- **Vega:** (1) `win`/`vitoria1` do ZENON a 4,5/2 px acima dos nomes do HUD (acima); (2) a `apresentacao-especiais` dele já está certa (conferida pelos testes); (3) conferi no navegador que a luta contra ele sai em `gr` e que `celular-e7a`/`fidelidade` seguem verdes com o 10º lutador.
+- **Vega:** (1) escala 1,32 e `alturaEmPe` 1,22 mudaram o alcance (-3%) e a hurtbox em pé: rerodar `npm run balanco` do ZENON e conferir contato/vitória do jogável (a pose de vitória deixou de ser problema); (2) a `apresentacao-especiais` dele já está certa (conferida pelos testes); (3) conferi no navegador que a luta contra ele sai em `gr` e que `celular-e7a`/`fidelidade` seguem verdes com o 10º lutador.
 - **Alexandria (Z8):** documentar `APRESENTACAO` (entrada, vitória, falas, aviso, `entradaDramatica`), a rampa da fase 2 por estado, `escalaDeVitrine`, a casa de honra e o gancho `PULAR_ENTRADA` dos e2e.
-- **Atlas:** decidir (a) `scale` 1,36 x pose de vitória (acima), (b) CURTA como padrão em toque (herdado, B16; a entrada é leve: um véu, degradês e 4 faixas, mas não medi em aparelho), (c) o contraste de cn/kr/mx se o
+- **Atlas:** (a) `scale` 1,36 x pose de vitória: DECIDIDO (1,32, ver a atualização), (b) CURTA como padrão em toque (herdado, B16; a entrada é leve: um véu, degradês e 4 faixas, mas não medi em aparelho), (c) o contraste de cn/kr/mx se o
   ZENON jogável for um dos lutadores de vitrine.
 
 ## PENDÊNCIAS
-- Nome do painel de especiais da seleção **estoura a borda** (`SELO DO ARCONTE` 117 px e `COLUNA DE ÔNIX` 119 px para ~98 disponíveis): é o mesmo defeito de 13 dos 30 nomes (HAYATO, WEI LONG, MIN-JI, CAIO...
+- (RESOLVIDA, ver a atualização: fonte encolhida só nos novos) Nome do painel de especiais da seleção **estoura a borda** (`SELO DO ARCONTE` 117 px e `COLUNA DE ÔNIX` 119 px para ~98 disponíveis): é o mesmo defeito de 13 dos 30 nomes (HAYATO, WEI LONG, MIN-JI, CAIO...
   inclusive os originais). Não corrigi porque quebraria os e2e de fidelidade pixel a pixel dos 4 originais; o conserto seria encolher a fonte só com `Regras` de 10 ou só nos novos.
-- `fala.derrota` aparece na luta (KO final), não na cena `ending` (o final do ARCADE segue o de sempre).
+- (Ajustada: derrota só no KO final, vitória só no `matchend`) `fala.derrota` aparece na luta (KO final), não na cena `ending` (o final do ARCADE segue o de sempre).
 - "Pular a entrada com toque no canvas" não existe (só os botões de ataque, como a cinemática).
 - O `?chefe=zenon` provisório foi removido; para ver o chefão no navegador basta `?expansao=1` e jogar/abrir a luta.
 

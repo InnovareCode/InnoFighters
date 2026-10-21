@@ -6,7 +6,7 @@ import { CHEFE, PULAR_ENTRADA } from './_chefe';
 
 /*
  * Z2 + Z3 (Lyra): o chefão ZENON medido no navegador, com a arte real: a ENTRADA DRAMÁTICA (o motor não anda; pular; HUD escondido), a fase 2
- * (aura, arena `gr` púrpura, raios, legenda), o projétil `anel`, a casa de honra da grade de 10 (desktop e celular deitado) e a ESCALA 1,36
+ * (aura, arena `gr` púrpura, raios, legenda), o projétil `anel`, a casa de honra da grade de 10 (desktop e celular deitado) e a ESCALA 1,32
  * contra os nomes do HUD. A lógica está provada em tests/unit/{z2-render-chefao,z2-grade-honra,z3-entrada-chefe}.test.ts.
  *
  * SALVAR_CAPTURAS=<pasta> grava os quadros 1920x1080 (entrada, fase 2, grade de 10, ZENON em cada cenário, medição da escala).
@@ -94,7 +94,7 @@ async function ateALuta(page: Page): Promise<void> {
 
 test.describe('Z3: a ENTRADA DRAMÁTICA do chefão', () => {
   for (const perfil of ['desktop', 'celular'] as const) {
-    test(`${perfil}: o motor não anda por 156 ticks, o HUD some, o cartão aparece, e a luta segue sem a entrada ter mexido em nada`, async ({ page }, info) => {
+    test(`${perfil}: o motor não anda por 270 ticks, o HUD some, o cartão aparece, e a luta segue sem a entrada ter mexido em nada`, async ({ page }, info) => {
       test.skip(info.project.name !== perfil, `só no ${perfil}`);
       const erros = coletarErros(page);
       await semear(page);
@@ -112,7 +112,13 @@ test.describe('Z3: a ENTRADA DRAMÁTICA do chefão', () => {
       expect(durante).toEqual(antes);
 
       // (c) foto da entrada: HUD escondido (nenhum texto do HUD), cartão do ZENON dentro da área livre entre as faixas
-      await hook(page, '(h) => h.avancar(70)'); // tick ~101: cartão e fala
+      // a sequência da entrada de 4,5 s, em fotos: braseiros (31, 71), ele vira a cabeça (120), cartão e fala (200), fala inteira (245)
+      await capturar(page, `zenon-entrada-t031-${perfil}`);
+      await hook(page, '(h) => h.avancar(40)');
+      await capturar(page, `zenon-entrada-t071-${perfil}`);
+      await hook(page, '(h) => h.avancar(49)');
+      await capturar(page, `zenon-entrada-t120-${perfil}`);
+      await hook(page, '(h) => h.avancar(80)'); // tick 200: cartão e fala
       await capturar(page, `zenon-entrada-${perfil}`);
       const textos = await textosDoQuadro(page);
       const nomes = textos.map((x) => x.t);
@@ -133,12 +139,18 @@ test.describe('Z3: a ENTRADA DRAMÁTICA do chefão', () => {
         expect(x.x + x.w / 2).toBeLessThanOrEqual(960);
       }
 
-      // ao fim (156 updates no total) a luta segue: o tick do motor andou só DEPOIS; a `intro` é a de sempre (ROUND 1)
-      await hook(page, '(h) => h.avancar(60)');
+      // a fala inteira fica lida na tela antes de as faixas saírem (tick 245): as 89 letras
+      await hook(page, '(h) => h.avancar(45)');
+      await capturar(page, `zenon-entrada-t245-${perfil}`);
+      const lida = (await textosDoQuadro(page)).map((x) => x.t).join('');
+      expect(lida).toContain('Bem-vindo à minha casa.');
+      expect(lida).toContain('e de um último convidado.');
+      // ao fim (270 updates no total) a luta segue: o tick do motor andou só DEPOIS; a `intro` é a de sempre (ROUND 1)
+      await hook(page, '(h) => h.avancar(30)');
       const fim = await hook(page, '(h) => { const g = h.mundo().game; return { ativa: h.ui.scene.entrada.ativa, tick: g.tick, fase: g.phase }; }');
       expect(fim.ativa).toBe(false);
       expect(fim.fase).toBe('intro');
-      // 1 + 30 + 70 + 60 = 161 updates desde o início; os 156 primeiros foram da entrada, os 5 últimos do motor
+      // 1 + 30 + 40 + 49 + 80 + 45 + 30 = 275 updates desde o início; os 270 primeiros foram da entrada, os 5 últimos do motor
       expect(fim.tick).toBe(5);
       const depois = await textosDoQuadro(page);
       expect(depois.map((x) => x.t)).toContain('HAYATO'); // o HUD voltou
@@ -500,8 +512,8 @@ test.describe('Z2: a cinemática E12 dos 5 especiais do ZENON (brilho, núcleo �
   });
 });
 
-test.describe('Z2: a ESCALA 1,36 do ZENON contra os nomes do HUD', () => {
-  test('topo da cabeça >= base dos nomes + 4 px em idle*, walk* e block (câmera ao zoom máximo); salto <= 0,72 não sai da tela', async ({ page }, info) => {
+test.describe('Z2: a ESCALA 1,32 do ZENON contra os nomes do HUD', () => {
+  test('topo da cabeça >= base dos nomes + 4 px em idle*, walk* e block, e >= a base dos nomes (folga >= 0) nas poses de vitória e na cena (câmera ao zoom máximo); salto <= 0,72 não sai da tela', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
     const erros = coletarErros(page);
     await semear(page);
@@ -551,7 +563,7 @@ test.describe('Z2: a ESCALA 1,36 do ZENON contra os nomes do HUD', () => {
         return 9999;
       };
       const comuns = ['idle0', 'idle1', 'idle2', 'idle3', 'walk0', 'walk1', 'walk2', 'walk3', 'walk4', 'walk5', 'walk6', 'walk7', 'block'];
-      const altas = ['win', 'vitoria1', 'cena2'];
+      const altas = ['win', 'vitoria0', 'vitoria1', 'entrada0', 'entrada1', 'entrada2', 'cena2'];
       const topos: Record<string, number> = {};
       for (const p of [...comuns, ...altas]) topos[p] = topoDe(p);
       const vy0 = 16.5 * g.p2.ch.jump;
@@ -559,16 +571,16 @@ test.describe('Z2: a ESCALA 1,36 do ZENON contra os nomes do HUD', () => {
       return { zoom: g.cam.z, jump: g.p2.ch.jump, escala: g.p2.ch.scale, nomes, topos, comuns, altas, apice, jup: topoDe('jup', apice * 0.9), jtop: topoDe('jtop', apice) };
     });
     await hook(page, '(h) => { const g = h.mundo().game; g.p2.pose.name = "idle2"; g.p2.y = 470; h.desenhar(); }');
-    await capturar(page, 'zenon-escala-1-36-hud');
+    await capturar(page, 'zenon-escala-1-32-hud');
     info.annotations.push({ type: 'medido', description: JSON.stringify({ zoom: +r.zoom.toFixed(4), escala: r.escala, baseDosNomes: r.nomes, topos: r.topos, salto: { apice: +r.apice.toFixed(1), jup: r.jup, jtop: r.jtop } }) });
-    expect(r.escala).toBe(1.36);
+    expect(r.escala).toBe(1.32);
     expect(r.jump).toBeLessThanOrEqual(0.72);
     expect(r.zoom).toBeGreaterThan(1.06); // a câmera encostou perto do zoom máximo (1,075)
     for (const p of r.comuns) expect(r.topos[p], `${p}: topo ${r.topos[p]} contra nomes ${r.nomes}`).toBeGreaterThanOrEqual(r.nomes + 4);
     expect(r.jup).toBeGreaterThanOrEqual(0); // o salto máximo não passa do teto da tela
     expect(r.jtop).toBeGreaterThanOrEqual(0);
-    // as poses ALTAS (vitória: aplauso de braços erguidos) tocam a faixa dos nomes só se o chefe estiver nos cantos: o dado fica documentado, não é critério
-    for (const p of r.altas) expect(r.topos[p], p).toBeGreaterThan(40);
+    // as poses ALTAS (vitória: aplauso de braços erguidos) também ficam abaixo da base dos nomes (y 77), inclusive nos cantos: o teste mede a faixa inteira da largura
+    for (const p of r.altas) expect(r.topos[p], `${p}: topo ${r.topos[p]} contra nomes ${r.nomes}`).toBeGreaterThanOrEqual(r.nomes);
     expect(erros).toEqual([]);
   });
 });
@@ -764,6 +776,130 @@ test.describe('Z5: a carga sob demanda do ZENON', () => {
     // 5ª luta (idx 4): o próximo é o chefão: o ARCADE pré-busca (baixa sem decodificar) as páginas do ZENON enquanto esta luta acontece
     await hook(page, `(h) => { h.ui.set('fight', { cfg: { mode: 'arcade', c1: 'hayato', c2: 'camille', cpu: 0, esquiva: true }, run: ${JSON.stringify(run(4))} }); }`);
     await expect.poll(() => paginas().length, { timeout: 20_000 }).toBeGreaterThanOrEqual(1);
+    expect(erros).toEqual([]);
+  });
+});
+
+test.describe('Z4: as falas do chefão só no matchend / KO final, e as poses de vitória', () => {
+  const VITORIA = 'Aplausos para o convidado. A saída é pelos fundos.';
+  const DERROTA = 'Então o torneio é seu. Cuide melhor dele do que eu cuidei.';
+
+  async function luta(page: Page, winsNeeded: number): Promise<void> {
+    await semear(page);
+    await abrirJogo(page, '&expansao=1');
+    await espiarTextos(page);
+    await abrirChefe(page);
+    await ateALuta(page);
+    await hook(page, `(h) => { const g = h.mundo().game; g.winsNeeded = ${winsNeeded}; g.p1.x = 300; g.p2.x = 640; }`);
+  }
+  const fase = (page: Page): Promise<string> => hook(page, '(h) => h.mundo().game.phase');
+  /** Anda até a fase (no máximo `max` quadros). */
+  async function ate(page: Page, alvo: string, max = 600): Promise<void> {
+    for (let i = 0; i < max; i++) {
+      if ((await fase(page)) === alvo) return;
+      await hook(page, '(h) => h.avancar(1)');
+    }
+    throw new Error(`não chegou a ${alvo} (parou em ${await fase(page)})`);
+  }
+  /** Anda `n` quadros e devolve os textos desenhados. */
+  async function textosApos(page: Page, n: number): Promise<string[]> {
+    await hook(page, `(h) => h.avancar(${n})`);
+    return (await textosDoQuadro(page)).map((x) => x.t);
+  }
+  const poseDesenhada = (page: Page): Promise<string> => page.evaluate(async () => {
+    const h = (window as any).__inno;
+    const { leituraApresentada } = await import(/* @vite-ignore */ ('/src/render/apresentacao-lutadores.ts' as string));
+    const g = h.mundo().game;
+    return leituraApresentada(g, g.p2).pose.name;
+  });
+
+  test('vitória do ZENON: fala SÓ no matchend (nunca no roundend), com as poses vitoria0 e vitoria1', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'só no desktop');
+    const erros = coletarErros(page);
+    await luta(page, 2);
+    // round 1 ganho pelo ZENON por tempo, com a luta ainda aberta (2 rounds): roundend, sem fala nenhuma
+    await hook(page, '(h) => { const g = h.mundo().game; g.p1.hp = 30; g.timeLeft = 1; g.tick60 = 59; }');
+    await ate(page, 'roundend');
+    for (const n of [1, 12, 40]) {
+      const textos = await textosApos(page, n);
+      expect(textos, `roundend +${n}`).not.toContain(VITORIA);
+      expect(textos, `roundend +${n}`).not.toContain(DERROTA);
+    }
+    // luta de 1 round: o ZENON vence por tempo -> matchend, com a fala e a pose de vitória pelo tempo da fase
+    await hook(page, '(h) => { const g = h.mundo().game; g.winsNeeded = 1; g.phase = "fight"; g.t = 0; g.round = 1; g.p1.wins = 0; g.p2.wins = 0; g.p1.setState("idle"); g.p2.setState("idle"); g.p1.hp = 30; g.p2.hp = g.p2.maxHp; g.timeLeft = 1; g.tick60 = 59; }');
+    await ate(page, 'matchend');
+    expect(await hook(page, '(h) => h.mundo().game.matchWinner')).toBe(1);
+    const nomes: string[] = [];
+    for (const [alvo, esperada] of [[30, 'vitoria0'], [60, 'vitoria1']] as const) {
+      await hook(page, `(h) => { const g = h.mundo().game; while (g.t < ${alvo}) h.avancar(1); h.desenhar(); }`);
+      expect(await fase(page)).toBe('matchend');
+      expect(await poseDesenhada(page), `t ${alvo}`).toBe(esperada);
+      expect(await textosApos(page, 0), `t ${alvo}`).toContain(VITORIA);
+      await capturar(page, `zenon-vitoria-matchend-${esperada}`);
+      nomes.push(esperada);
+    }
+    expect(nomes).toEqual(['vitoria0', 'vitoria1']);
+    expect(erros).toEqual([]);
+  });
+
+  test('derrota do ZENON: fala SÓ no KO final (e depois dele no matchend); KO de round, perda por tempo e roundend ficam mudos', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'só no desktop');
+    const erros = coletarErros(page);
+    await luta(page, 2);
+    // KO de round (o jogador ainda não ganhou nenhum round e a luta é de 2): NÃO é o KO final
+    await hook(page, '(h) => { const g = h.mundo().game; g.p2.barras = 1; g.ko(g.p2, g.p1); }');
+    expect(await fase(page)).toBe('ko');
+    expect(await textosApos(page, 10)).not.toContain(DERROTA);
+    // o KO final: o jogador já tem 1 round de 2 e este fecha a luta
+    await luta(page, 2);
+    await hook(page, '(h) => { const g = h.mundo().game; g.p1.wins = 1; g.p2.barras = 1; g.ko(g.p2, g.p1); }');
+    expect(await fase(page)).toBe('ko');
+    expect(await textosApos(page, 10)).toContain(DERROTA);
+    await capturar(page, 'zenon-derrota-ko-final');
+    await ate(page, 'matchend');
+    expect(await textosApos(page, 12)).toContain(DERROTA);
+    // perder por TEMPO (a vida não zerou) não fala
+    await luta(page, 1);
+    await hook(page, '(h) => { const g = h.mundo().game; g.p2.hp = 20; g.timeLeft = 1; g.tick60 = 59; }');
+    await ate(page, 'matchend');
+    expect(await hook(page, '(h) => h.mundo().game.matchWinner')).toBe(0);
+    expect(await textosApos(page, 12)).not.toContain(DERROTA);
+    expect(erros).toEqual([]);
+  });
+});
+
+test.describe('Z4: nomes dos especiais no painel da seleção', () => {
+  test('nenhum nome de lutador NOVO passa da borda do painel; os 4 originais seguem a 13 px (fidelidade)', async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'só no desktop');
+    const erros = coletarErros(page);
+    await semear(page, { desbloqueados: ['aminu', 'centella', 'camille', 'nila', 'baatar'], zeradas: 2, chefeDerrotado: true });
+    await abrirJogo(page, '&expansao=1');
+    await espiarTextos(page);
+    await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); h.avancar(30); h.desenhar(); }");
+    const grade: string[] = await hook(page, '(h) => h.ui.scene.grade');
+    expect(grade).toHaveLength(10);
+    const originais = ['hayato', 'wei-long', 'min-ji', 'caio'];
+    const medidas: Array<{ id: string; nome: string; px: number; direita: number }> = [];
+    for (let i = 0; i < grade.length; i++) {
+      await hook(page, `(h) => { h.ui.scene.cur[0] = ${i}; h.ui.scene.cur[1] = ${i}; h.avancar(2); }`);
+      expect(await hook(page, `(h) => h.ui.scene.estado(h.ui.scene.idEm(${i}))`), grade[i]).not.toMatch(/travado|oculto/);
+      const textos = await textosDoQuadro(page);
+      // os 3 nomes de especial de cada painel: coluna x = px + 180 (P1 px 20, P2 px 656), linhas y 456, 473, 490
+      for (const [px, lado] of [[20, 'P1'], [656, 'P2']] as const) {
+        const linhas = textos.filter((q) => Math.abs(q.x - (px + 180)) < 0.01 && [456, 473, 490].some((y) => Math.abs(q.y - y) < 0.01));
+        expect(linhas.length, `${grade[i]} ${lado}: 3 nomes de especial`).toBe(3);
+        for (const q of linhas) {
+          const direita = q.x + q.w;
+          medidas.push({ id: `${grade[i]}/${lado}`, nome: q.t, px: q.px, direita: +(direita - (px + 284)).toFixed(1) });
+          if (originais.includes(grade[i]!)) expect(q.px, `${grade[i]} "${q.t}" é original: 13 px`).toBe(13);
+          else expect(direita, `${grade[i]} ${lado} "${q.t}" passa da borda do painel (${q.px}px, ${q.w.toFixed(1)} de largura)`).toBeLessThanOrEqual(px + 284 - 8);
+        }
+      }
+      if (grade[i] === 'zenon') await capturar(page, 'selecao-10-especiais-zenon');
+      if (grade[i] === 'baatar') await capturar(page, 'selecao-10-especiais-baatar');
+    }
+    info.annotations.push({ type: 'medido', description: JSON.stringify(medidas.filter((m) => m.id.endsWith('/P1')).map((m) => `${m.id.split('/')[0]} ${m.nome} ${m.px}px folga ${-m.direita}`)) });
+    expect(medidas.some((m) => m.px < 13), 'algum nome novo encolheu').toBe(true);
     expect(erros).toEqual([]);
   });
 });

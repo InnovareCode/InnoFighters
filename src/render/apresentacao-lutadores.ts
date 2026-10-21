@@ -1,4 +1,5 @@
 import type { LeituraLuta, LutadorLeitura } from '../core/contratos';
+import { poseDaCena } from '../data/cena';
 import type { CenaDef } from '../data/tipos';
 
 /*
@@ -55,13 +56,6 @@ export const APRESENTACAO: Readonly<Record<string, Apresentacao>> = {
   },
 };
 
-/** A pose da cena no tick `t`: `poses[i]` vale de `floor(i·duracao/n)` ao próximo; a última segura até o fim. */
-export function poseDaCena(cena: CenaDef, t: number): string {
-  const n = cena.poses.length;
-  const i = Math.min(n - 1, Math.max(0, Math.floor((t * n) / Math.max(1, cena.duracao))));
-  return cena.poses[i] as string;
-}
-
 /** O mesmo lutador com outra pose desenhada (cópia rasa: o `Fighter` e a leitura original não mudam). */
 export function comPose(f: LutadorLeitura, nome: string): LutadorLeitura {
   return f.pose.name === nome ? f : { ...f, pose: { ...f.pose, name: nome } };
@@ -91,16 +85,27 @@ export function leituraApresentada(luta: LeituraLuta, f: LutadorLeitura): Lutado
 }
 
 /**
- * A fala que vale agora para o chefão `f` (ou null): fase 2 durante a cena, vitória no `matchend` com ele vencedor e derrota no KO dele
- * (`ko` e depois). `t` é o tempo da fase.
+ * A fala que vale agora para o chefão `f` (ou null). Só três momentos: fase 2 durante a cena; vitória SÓ no `matchend` com ele vencedor; derrota SÓ no KO
+ * FINAL dele (o `ko` que decide a luta, e fica até o `matchend` dele perdido por KO; perder por tempo não fala). Nunca em `roundend` (decisão do dono, 2026-10-21): perder ou ganhar um
+ * round sem decidir a luta, inclusive por tempo, não fala. `t` é o tempo da fase.
  */
-export function falaDoChefe(luta: Pick<LeituraLuta, 'phase' | 'matchWinner' | 'winner' | 'fighters'>, f: Pick<LutadorLeitura, 'id' | 'chefe' | 'indice' | 'hp'>): string | null {
+export function falaDoChefe(
+  luta: Pick<LeituraLuta, 'phase' | 'matchWinner' | 'fighters' | 'winsNeeded'>,
+  f: Pick<LutadorLeitura, 'id' | 'chefe' | 'indice' | 'hp'>,
+): string | null {
   if (!f.chefe) return null;
   const falas = APRESENTACAO[f.id]?.falas;
   if (!falas) return null;
   if (luta.phase === 'cena-chefe') return falas.fase2 ?? null;
-  const vencedor = luta.matchWinner ?? luta.winner;
-  if (luta.phase === 'matchend' || luta.phase === 'roundend') return vencedor === f.indice ? (falas.vitoria ?? null) : (falas.derrota ?? null);
-  if (luta.phase === 'ko' && f.hp <= 0) return falas.derrota ?? null;
+  if (luta.phase === 'matchend') {
+    if (luta.matchWinner === f.indice) return falas.vitoria ?? null;
+    // perdeu a luta: a derrota só fala se foi por KO (a vida dele zerou); perder por tempo não fala
+    return luta.matchWinner !== null && f.hp <= 0 ? (falas.derrota ?? null) : null;
+  }
+  if (luta.phase === 'ko' && f.hp <= 0) {
+    // KO FINAL = o adversário fecha a luta com este round (o `wins` dele só sobe no `endRound`, depois do KO)
+    const rival = luta.fighters[f.indice === 0 ? 1 : 0];
+    return rival.wins + 1 >= luta.winsNeeded ? (falas.derrota ?? null) : null;
+  }
   return null;
 }

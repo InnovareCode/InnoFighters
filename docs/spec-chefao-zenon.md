@@ -1,6 +1,6 @@
 # InnoFighters: spec do motor e da UI para o chefão ZENON ARGYROS, "O Arconte"
 
-Autora: Nova · 2026-10-21 · Status: **especificação**. Nada foi implementado e `src/` não foi tocado.
+Autora: Nova · 2026-10-21 · Status: **especificação**, com a implementação em andamento (estado em `CHANGELOG.md` e `PROGRESSO.md`). Este texto é o plano original; o que vale no código está nas notas de **valor final**.
 Missão do painel: `cmvi6ln4j01aa01nxloqm0f2u`.
 
 **Decisões do dono (2026-10-21):**
@@ -9,6 +9,10 @@ Missão do painel: `cmvi6ln4j01aa01nxloqm0f2u`.
   lugar do ABRAÇO DA ESTEPE no →+ESP.
 - A Dança da Águia vira só entrada e vitória do BAATAR. Não há provocação.
 - A Vega já está fazendo a parte "BAATAR normal" (fatia Z0 abaixo), com `CHEFE` temporariamente `null`.
+- **Valor final (decisões do dono, 2026-10-21; conferido no código):** escala **1,32** (`alturaEmPe` 1,22, era 1,36); entrada
+  COMPLETA de **270 ticks** (4,5 s, era 156 ticks); CURTA de 60 ticks, intacta; derrota do chefão só no KO final e vitória só
+  no `matchend`. Onde o texto abaixo diz **1,36**, **156 ticks** ou **2,6 s**, é o plano original, mantido como registro.
+  O valor que vale está em `src/data/lutadores/zenon.ts` (escala) e `src/render/entrada-chefe.ts` (entrada).
 
 **Base lida (código de hoje; as linhas citadas podem andar):**
 - `src/fight/game.ts`: `setup`, `passo`, `talvezIniciarCenaDoChefe` em :461, `andarCenaDoChefe` em :480, `applyHit` em
@@ -36,7 +40,7 @@ não o código. Por isso o código fica pronto antes, com o ZENON provisório so
 |---|---|---|---|
 | A1 | o gancho `fase-chefe` "hoje escurece o céu do `mn`" | **não existe**. Só o comentário de `contratos.ts:302` fala nisso; `ui/cenas/fight.ts:274` diz "danca/retomada ainda não têm efeito visual próprio" | a aura e a sobreposição da fase 2 são **render nova** (§4.3), não reuso. Não há nada a "desligar" no `mn` |
 | A2 | `ia.papel: 'zonear'` no SELO | `PapelIa` não tem `zonear` (`data/tipos.ts:73`) | SELO **sem dica**: a CPU já solta projétil pelo ramo padrão (`fire` do perfil). Criar o papel seria código e RNG novos |
-| A3 | hurtbox cresce com a escala | `colisao.ts:31` usa caixa **fixa** (76 px de largura, 96% de `SH` = 254 px) para qualquer `scale` | a 1,36 a cabeça fica ~93 px acima da caixa. Reusar `alturaEmPe` (E6a), que já existe (§9.2) |
+| A3 | hurtbox cresce com a escala | `colisao.ts:31` usa caixa **fixa** (76 px de largura, 96% de `SH` = 254 px) para qualquer `scale` | a 1,36 a cabeça ficava ~93 px acima da caixa. Reusar `alturaEmPe` (E6a), que já existe (§9.2). Valor final: 1,22 com escala 1,32 |
 | A4 | o agregado do harness é genérico | `ferramentas/balanco/agregado.ts:54/204` tem um campo `baatar` fixo | generalizar na Z1 (§10) |
 | A5 | `ordemDaGrade` "trata 9" | trata **só** `roster.length === 9` com o chefe dentro; com 10 cai na ordem do roster e `retanguloDaCasa(9, 3)` desenha a 10ª casa em cima do painel de descrição (y 356 x painel em y 358) | layout novo (§7) |
 | A6 | `ConfigChefe.danca` | usado em `game.ts:484`, `fighter.ts:1048`, `baatar.ts:109`, nos testes de chefe e no harness (`fezDanca`) | o rename é pequeno e todo interno (§2) |
@@ -193,19 +197,24 @@ update():
 `game.update` não é chamado. Por isso tick, RNG, eventos pendentes (`round start`) e relógio ficam exatamente como numa
 luta sem a entrada. A entrada usa `rngVisual` (o dos efeitos), nunca o `rng` da luta.
 
-**Linha do tempo (COMPLETA = 156 ticks ≈ 2,6 s; CURTA = 60 ticks):**
+**Linha do tempo (valor final: COMPLETA = 270 ticks ≈ 4,5 s; CURTA = 60 ticks ≈ 1 s).** Esta tabela é a do código
+(`src/render/entrada-chefe.ts`, constantes e comentário do topo). A do plano original (156 ticks, 8 focos, faixas de 12) foi
+substituída; o que o plano pedia de diferente está na nota de valor final no topo.
 
 | Ticks | O que aparece | Pose do ZENON (resto do lutador a partir do `LutadorLeitura` atual) |
 |---|---|---|
-| 0–12 | faixas pretas de cinema entram (altura 0 → 56 px lógicos); HUD escondido | `entrada0` (de costas) |
-| 12–48 | braseiros acendem da esquerda para a direita (sobreposição procedural §6, 8 focos, um a cada 4,5 ticks) | `entrada0` |
-| 48–84 | — | `entrada1` (vira a cabeça) |
-| 84–156 | cartão "ZENON ARGYROS · O ARCONTE · DONO DO TORNEIO" + legenda com a fala de entrada (§1 da proposta), faixas saem nos últimos 12 | `entrada2` (aperta a tira) |
+| 0–20 | faixas pretas de cinema entram (altura 0 → 56 px lógicos); HUD escondido | `entrada0` (de costas) |
+| 30–90 | 6 braseiros acendem da esquerda para a direita, um a cada 10 ticks (sobreposição procedural §6) | `entrada0` |
+| 0–96 | — | `entrada0` (de costas) |
+| 96–144 | — | `entrada1` (vira a cabeça) |
+| 144–270 | cartão "ZENON ARGYROS · O ARCONTE · DONO DO TORNEIO" entra em 144; legenda com a fala de entrada (§1 da proposta) a partir de 150, 1,2 letra por tick; faixas saem nos últimos 20 ticks | `entrada2` (aperta a tira) |
 
-- **CURTA:** faixas + `entrada2` + cartão, sem os braseiros em sequência.
+- **CURTA (60 ticks):** faixas de 12 ticks + `entrada2` + cartão (em 8, 10 ticks para chegar inteiro), sem os braseiros em
+  sequência. A fala começa 6 ticks depois do cartão, a 1,9 letra por tick.
 - **Quando é CURTA:** depois de um *continue* (`run` com uma derrota já registrada contra o chefe), com
-  `prefers-reduced-motion` ou com a preferência de cinemática "curta" ou "desligada". O nome do chefão aparece sempre: a
-  entrada não some, só encolhe.
+  `prefers-reduced-motion` ou com a preferência de cinemática "curta" ou "desligada" (`modoDaEntrada`, `src/ui/cenas/fight.ts`:
+  com a cinemática DESLIGADA a entrada continua, em CURTA; decisão 7 do dono). O nome do chefão aparece sempre: a entrada não
+  some, só encolhe.
 - **Pular:** qualquer botão de ataque, ESP ou ENTER de um humano. A saída leva no máximo 6 ticks (o mesmo
   `TICKS_DA_SAIDA_AO_PULAR`). O pulo só vale depois do tick 10, para não engolir o ENTER que confirmou o VS.
 - **Regras sem cinemática (`?expansao=4`):** sem entrada.
@@ -218,7 +227,9 @@ luta sem a entrada. A entrada usa `rngVisual` (o dos efeitos), nunca o `rng` da 
 **Falas:**
 - Fase 2: legenda durante `phase === 'cena-chefe'`.
 - Vitória: legenda no `matchend` com o chefe vencedor.
-- Derrota: legenda no `ko` final do chefe e no `ending`.
+- Derrota: só no KO final dele (o `ko` que fecha a luta, e o `matchend` quando ele perdeu por KO). Perder por tempo não fala,
+  e `roundend` nunca fala (decisão 6 do dono, 2026-10-21). A cena `ending` não traz fala: `falaDoChefe` só é chamada em
+  `src/ui/cenas/fight.ts:495`.
 
 Texto: `Falas = { entrada?, fase2?, vitoria?, derrota? }`. Letreiro com `f.T`, sem `fillText` de fonte nova.
 
@@ -227,13 +238,13 @@ Texto: `Falas = { entrada?, fase2?, vitoria?, derrota? }`. Letreiro com `f.T`, s
   - Com a entrada COMPLETA, a CURTA e pulada no tick 11, `game.tick`, `game.t`, o hash dos dois `Fighter` e
     `rng.estado()` são **iguais** aos de uma luta sem entrada, depois de N = 600
     ticks de `game.update` com as mesmas entradas.
-  - O controlador termina em exatamente 156 / 60 avanços, e em ≤ 6 avanços depois de `pular()`.
+  - O controlador termina em exatamente 270 / 60 avanços (valor final; era 156 / 60), e em ≤ 6 avanços depois de `pular()`.
 - **e2e (Lyra, porta 5173):**
   - (a) com o chefe na fase de entrada, `h.ui.m.game.tick` não muda em 30 quadros;
   - (b) ENTER no quadro 20 faz `game.tick` andar em ≤ 8 quadros;
   - (c) foto da entrada nos perfis desktop e celular, com 0 sobreposição de HUD;
   - (d) **auditar os e2e que chegam à luta de chefe** (`expansao.spec.ts`, `celular-e7a.spec.ts`, `cinematica.spec.ts`).
-    Eles devem pular a entrada pelo hook, senão ganham 2,6 s e a contagem de quadros muda.
+    Eles devem pular a entrada pelo hook, senão ganham 4,5 s (valor final; era 2,6 s) e a contagem de quadros muda.
 
 ---
 
@@ -435,6 +446,10 @@ ordemDaGrade(roster, chefe):
 
 ### 9.1 Escala 1,36 e o teto do HUD (cálculo; a Lyra mede)
 
+> **Valor final: escala 1,32** (decisão do dono, 2026-10-21). O cálculo abaixo é o de 1,36 e fica como registro. Medido pela
+> Lyra com 1,32 (`docs/handoff-lyra-zenon.md`): o topo do sprite fica 7 px abaixo da base dos nomes do HUD nas poses `win` e
+> `vitoria0` (y 84 contra 77) e 9,5 px em `vitoria1`. O critério de 4 px passa.
+
 - **Altura da guarda na tela:** `K = scale · SH_IDLE / idle0.h`, então `idle0` mede `1,36 × 255 = 347` px lógicos. O
   zoom máximo da câmera é 1,075 (`game.ts:525`), ancorado no chão (y 470). A cabeça fica em **y ≈ 470 − 347 × 1,075 ≈ 97**.
   Poses mais altas que o `idle0` (o BAATAR tem `walk` 4% mais alto) dão **y ≈ 82**. Os nomes do HUD terminam em
@@ -454,7 +469,8 @@ A caixa em pé tem 254 px fixos, e a 1,36 cerca de 93 px da cabeça e dos ombros
 `alturaEmPe`** (E6a, que aceita fator > 1 e não pede código), com o valor **medido**, não chutado:
 `alturaEmPe = round2(0,92 × altura visível do idle0 em px lógicos / 254,4)`.
 
-Com 347 px, dá ≈ **1,25**. Só vale em `idle`, `walk` e `block` em pé. Agachado, no ar e em golpe seguem como hoje.
+Com 347 px (1,36), dá ≈ **1,25**. Valor final, com 1,32 (336,6 px): **1,22** (`src/data/lutadores/zenon.ts`, com o comentário da conta).
+Só vale em `idle`, `walk` e `block` em pé. Agachado, no ar e em golpe seguem como hoje.
 Efeito de balanço: o ZENON fica mais fácil de acertar no salto, o que ajuda a faixa de 20% a 40%. O harness roda com 1,0 e
 com o valor medido e escolhe.
 
@@ -604,7 +620,7 @@ linha 1) e `cena0-2` (S10 linha 2). Com S11: `f2Idle0-3` e `f2Walk0-1`, ligados 
 |---|---|---|
 | R1 | Deriva do casaco e das tiras entre as células (arte) | "plain gold trim"; anexar a S1 aprovada; `ancora: 'tronco'` (§9.3) |
 | R2 | Memória do atlas de 5 páginas no celular | teto do §9.4; `alturaRef` 500 como reserva; medir no E7a |
-| R3 | Cabeça encostando no HUD a 1,36 | medir (§9.1); `scale` em passos de 0,02 |
+| R3 | Cabeça encostando no HUD a 1,36 (resolvido com 1,32, §9.1) | medir (§9.1); `scale` em passos de 0,02 |
 | R4 | O dreno anula o kit do jogador (frustração) | meta "especiais ≥ 0,6×" (§10); valores no harness |
 | R5 | Aura e sobreposição custam quadro no celular | orçamento de primitivas; ≤ 1,15× medido |
 | R6 | A entrada vaza para o lock-step | o motor não é chamado; unit de determinismo com hash e RNG (§3.2) |
@@ -627,7 +643,7 @@ linha 1) e `cena0-2` (S10 linha 2). Com S11: `f2Idle0-3` e `f2Walk0-1`, ligados 
 |---|---|---|
 | **D-Z1** | O ZENON é jogável depois de derrotado? | **Sim**: mantém a regra já decidida ("chefão jogável após derrotá-lo"). Jogável = ficha base, 1 barra, sem armadura, TRIBUTO com dreno menor (harness). Custo: entra na matriz regular do harness |
 | **D-Z2** | Posição do BAATAR na grade | **9ª casa (ordem da fila)**, com o AMINU no centro e o ZENON na casa de honra embaixo. A alternativa é o BAATAR no centro, com a ordem escrita à mão |
-| **D-Z3** | Entrada dramática | **COMPLETA (2,6 s) na 1ª luta contra o chefão de cada ARCADE; CURTA (1 s) depois de um continue**; pular sempre. A alternativa é sempre COMPLETA |
+| **D-Z3** | Entrada dramática | **COMPLETA na 1ª luta contra o chefão de cada ARCADE; CURTA (1 s) depois de um continue**; pular sempre. A alternativa é sempre COMPLETA. **Valor final (dono, 2026-10-21): COMPLETA de 270 ticks (4,5 s), era 2,6 s; CURTA de 60 ticks, intacta** |
 | **D-Z4** | Folha S11 (idle e andar da fase 2, +6 créditos) | **Não, por enquanto.** A fase 2 já se lê pela cena, pela aura, pela arena, pela música e pelos golpes. Dá para gerar depois sem mexer em código (`poseDaFicha`) |
 
 Continuam da proposta, sem bloquear código: orçamento de créditos (§7.5) e revisão nativa do selo em grego (§7.6).

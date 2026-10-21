@@ -1,18 +1,18 @@
 # InnoFighters — Progresso
 
-Atualizado em 2026-10-21 (Alexandria, Z8, sobre o commit `0684548`). Histórico de estados mais antigos abaixo; o bloco mais novo é o primeiro.
+Atualizado em 2026-10-21 (Alexandria, Z8; HEAD `3f72613`, com alterações não commitadas do Zenon). Histórico de estados mais antigos abaixo; o bloco mais novo é o primeiro.
 
 ## Estado em 2026-10-21 (commit `0684548`) — o mais novo
 - No `main`: `0684548` (Zenon Argyros, o Arconte), sobre `9b63acb` (esquiva, cinemática única por especial, BAATAR normal, balanço) e `1cb1ccd`. A árvore estava limpa na data desta revisão.
-- **Zenon no jogo:** chefão final (`CHEFE = 'zenon'`, `src/meta/regras.ts`), 10º lutador. Luta em duas barras, cena da fase 2 (90 ticks), trilha da valsa, dreno (TRIBUTO e DECRETO), armadura da fase 2, SELO com projétil próprio, entrada dramática (156 ticks; 60 depois de continue) e casa de honra na grade de 10. Depois de derrotado, jogável.
+- **Zenon no jogo:** chefão final (`CHEFE = 'zenon'`, `src/meta/regras.ts`), 10º lutador. Luta em duas barras, cena da fase 2 (90 ticks), trilha da valsa, dreno (TRIBUTO e DECRETO), armadura da fase 2, SELO com projétil próprio, entrada dramática (COMPLETA de 270 ticks, 4,5 s; CURTA de 60 ticks) e casa de honra na grade de 10. Depois de derrotado, jogável.
 - **Fila e elenco:** AMINU > CENTELLA > CAMILLE > NILA > BAATAR (lutador comum, 5º da fila). A Dança da Águia virou só a entrada e a vitória do BAATAR.
 - **Esquiva:** ligada (`Regras.esquiva`). N (P1), O (P2), L1/L2 no controle, ESQ no toque. Custo 20.
 - **Cinemática do especial:** COMPLETA (48 ticks) ou CURTA (20 ticks). Padrão COMPLETA; CURTA com `prefers-reduced-motion`.
-- **Balanço** (`docs/balanco/`, sem esquiva, versão de dados `267890b2233a`): ZENON jogável 52,9% de vitória geral. Chefão: 31,4% no NORMAL e 19,1% no DIFÍCIL (meta 20-40%, só no NORMAL). Com esquiva (configuração de produção, `relatorios/balanco-esquiva/`, não versionado): 36,0% e 28,0%. **A confirmar** em rodada versionada.
+- **Balanço** (`docs/balanco/`, COM esquiva = produção, dados `d81622b9b8db`, escala 1,32): ZENON jogável 51,4% de vitória geral. Chefão: 31,9% no NORMAL (meta 30-40%) e 23,0% no DIFÍCIL (meta ≥ ~20%, `docs/balanco/README.md`). Comparação sem esquiva (`docs/balanco/sem-esquiva/`): ZENON 52,6%; chefão 28,0% no NORMAL e 14,9% no DIFÍCIL (fora da meta).
 - **Testes nesta revisão:** `npm run typecheck` limpo. `npx vitest run`: 66 arquivos, 1475 testes verdes. E2E: última rodada da Lyra, 145 passaram e 0 falharam (`docs/handoff-lyra-zenon.md`); não reexecutada aqui (regra: só a Lyra roda e2e).
 - **Sprites:** `npm run sprites` executa (o import duplicado de `separarFundidas` não está mais no HEAD).
-- **Docs desta passada** (Alexandria): `README.md`, `CHANGELOG.md`, `docs/arquitetura.md`, `docs/como-adicionar-um-lutador.md`, `PROGRESSO.md`. Alterações **não commitadas**, aguardando OK do dono.
-- **Em aberto:** as decisões da seção "Decisões em aberto" (bloco do Zenon). E7 (celular), E8 (segurança e deploy), F4 a F7. Som do chefão não foi ouvido, só as chamadas foram conferidas.
+- **Docs desta passada** (Alexandria): `README.md`, `CHANGELOG.md`, `docs/arquitetura.md`, `docs/como-adicionar-um-lutador.md`, `PROGRESSO.md`, `docs/spec-chefao-zenon.md`, `docs/proposta-novo-chefao.md`. Alterações **não commitadas**, aguardando OK do dono.
+- **Em aberto:** nenhuma decisão do Zenon (as 8 dúvidas de 2026-10-21 foram decididas, ver a seção própria). Observação para o teste em aparelho: 3 nomes de especial a 8 e 8,5 px (decisão 5). E7 (celular), E8 (segurança e deploy), F4 a F7. Som do chefão não foi ouvido, só as chamadas foram conferidas.
 
 ## Estado em 2026-10-21 (noite, histórico: commit `c7437c1`)
 - NO AR e no `main` (commit `c7437c1`, Pages #6 verde): os 9 lutadores (HAYATO A2, WEI LONG, MIN-JI nova, CAIO + AMINU, CENTELLA, CAMILLE, NILA e o chefão BAATAR), 6 cenários novos, escada do Arcade com 5 rivais + chefão, fila de desbloqueio AMINU > CENTELLA > CAMILLE > NILA, mecânicas E3 S0 a S5, pipeline de sprites F2, correções do Órion (storage, CSP, workflows). 833 testes unitários, e2e 95, e2e:build 5.
@@ -129,18 +129,21 @@ Atualizado em 2026-10-21 (Alexandria, Z8, sobre o commit `0684548`). Histórico 
 - D8: áudio 100% sintetizado no MVP.
 - D9: nome InnoFighters, chave `inno-fighters-v1`, migrando uma vez de `sakura-fighters-v4`.
 
+## Decididas em 2026-10-21 (Zenon e chefão)
+Decisões do dono sobre as 8 dúvidas registradas pela Alexandria no mesmo dia. Cada uma foi conferida no código ou no balanço regerado.
+
+1. **DECIDIDO: escala do ZENON 1,32** (era 1,36). Feito: `scale 1.32` e `alturaEmPe 1.22` em `src/data/lutadores/zenon.ts`. Medido pela Lyra (`docs/handoff-lyra-zenon.md`): folga mínima de 7 px nas poses de vitória (`win`, `vitoria0`) e 9,5 px em `vitoria1`.
+2. **DECIDIDO: entrada COMPLETA mantida e mais longa, 270 ticks (4,5 s); CURTA intacta, 60 ticks.** Feito: `DURACAO_ENTRADA_COMPLETA = 270` e `DURACAO_ENTRADA_CURTA = 60` em `src/render/entrada-chefe.ts` (antes 156 ticks). Pular continua valendo a partir do tick 10.
+3. **DECIDIDO: aceitar o contraste do ZENON em cn, kr e mx** (1,34 a 1,37 contra o fundo; mínimo do Apolo é 1,5). Sem mudança de arte.
+4. **DECIDIDO: manter o andar do ZENON como está** ("ficou bom"). Sem a passada alternada (S2 v2). Nada a fazer no código.
+5. **DECIDIDO: fonte menor só nos nomes de especial dos lutadores NOVOS.** Feito em `src/ui/personagens.ts` (`NOME_DE_ESPECIAL`): os 4 do protótipo ficam em 13 px (e2e de fidelidade intacto); os novos encolhem de 0,5 em 0,5 px até caber em 96 px, com piso de 8 px.
+   - **Observação para o teste em aparelho:** ARREMESSO DO AVARGA e MERGULHO DA ÁGUIA (BAATAR) ficam em 8 px, e PASSO DO ELEFANTE (NILA) em 8,5 px. Em celular deitado (915 px de largura, medido pela Lyra) o de 8 px dá cerca de 7,6 px CSS; o de 8,5 px deve dar cerca de 8,1 px (proporção, **a confirmar em aparelho**). Os 4 originais continuam passando da borda, como no protótipo.
+6. **DECIDIDO: derrota do chefão só no KO final; vitória só no `matchend`.** Feito em `falaDoChefe` (`src/render/apresentacao-lutadores.ts`): fase 2 só em `cena-chefe`; vitória só em `matchend`; derrota só no `ko` que fecha a luta ou no `matchend` perdido por KO. Perder por tempo não fala; `roundend` nunca fala.
+7. **DECIDIDO: manter a entrada do chefão com cinemática DESLIGADA, em CURTA.** Sem mudança: `modoDaEntrada` (`src/ui/cenas/fight.ts`) devolve CURTA quando a preferência não é `completa`.
+8. **DECIDIDO: balanço regerado com a esquiva (produção).** Feito: `docs/balanco/` = COM esquiva (ZENON 51,4%; chefão 31,9% no NORMAL e 23,0% no DIFÍCIL). `docs/balanco/sem-esquiva/` guarda a comparação (ZENON 52,6%; chefão 28,0% e 14,9%).
+
 ## Decisões em aberto
-### Zenon e chefão (registrado pela Alexandria em 2026-10-21, para o dono e o Atlas decidirem)
-1. **Escala do ZENON (1,36) x poses de vitória.** Medido no navegador (Lyra): as poses `win` e `vitoria1` ficam com o topo do sprite a 4,5 px e 2 px acima da base dos nomes do HUD (y 77). Só encostam nos nomes quando o ZENON está nos cantos da arena (nomes em x 110-175 e 800-854). Opções: (a) manter 1,36 e aceitar; (b) `scale` 1,32, que dá 7 px de folga sem mexer na arte. O critério "inclusive `win`" só fecha em (b). Não testado: a escala 1,42.
-2. **Cinemática CURTA como padrão em toque.** Hoje o padrão é COMPLETA em todos os aparelhos. CURTA só entra com `prefers-reduced-motion` ou com a preferência salva. A entrada do chefão em CURTA e a cinemática em CURTA não foram medidas em aparelho.
-   - **Dado conhecido:** a entrada COMPLETA do chefão tem 156 ticks (2,6 s) e esconde o HUD durante a entrada. O custo em aparelho de toque não foi medido.
-   - **Como fica se mudar:** `CINEMATICA_PADRAO` (`src/core/contratos.ts`) e o padrão de `src/ui/cenas/fight.ts`, que hoje repete `'completa'` literal.
-3. **Contraste do ZENON jogável em cn, kr e mx.** Razão de luminância do corpo com o fundo: cn 1,37, kr 1,34, mx 1,34 (o casaco preto sobre fundo médio). Acima de 1,5: gr 1,64, jp 2,52, br 3,05, fr 4,09 (o mínimo de 1,5 é o do Apolo). O chefão luta sempre no `gr`, então o problema só aparece se o ZENON jogável lutar nesses três. Opções: aceitar, ou pedir ao Apolo luz ou piso mais claros nesses cenários.
-4. **Andar do ZENON pode patinar (critério S2 v2).** Idle com 2,5 px de desvio (critério da spec: até 4). Andar com 11,8 px no atlas, cerca de 7 px na tela (critério: até 8 px). A âncora pelo tronco foi testada e descartada (piorou). A saída é a passada alternada (S2 v2), que o Apolo já previu. Opções: fazer S2 v2 agora ou aceitar o andar como está e olhar no jogo.
-5. **Nomes de especiais estouram o painel da seleção.** 13 de 30 nomes passam da borda (ex.: `SELO DO ARCONTE` com 117 px e `COLUNA DE ÔNIX` com 119 px, para cerca de 98 disponíveis). Inclui os 4 originais. Corrigir só nos novos é possível, mas o e2e de fidelidade pixel a pixel dos originais quebra se a fonte mudar. Opções: encolher a fonte só dos novos (com regra própria) ou em todos, aceitando atualizar o e2e de fidelidade.
-6. **Fala de derrota só no KO?** Hoje a derrota do chefão (`falaDoChefe`, `src/render/apresentacao-lutadores.ts`) aparece no KO, mas também em `roundend` e `matchend` sempre que o chefão perde um round (inclusive por tempo) ou a luta. A vitória também aparece em `roundend` quando ele vence um round. A intenção registrada era derrota só no KO final. Opções: (a) restringir a derrota ao KO e a vitória ao `matchend`; (b) manter o comportamento atual e documentar.
-7. **Cinemática DESLIGADA e a entrada do chefão.** Com a cinemática DESLIGADA, a entrada do chefão ainda roda, em CURTA (`src/ui/cenas/fight.ts`, `modoDaEntrada`). O comentário da função diz que é intencional. Opções: manter (a entrada é a apresentação do chefe) ou desligar a entrada junto com a cinemática.
-8. **Qual balanço é a referência.** `docs/balanco/` é a rodada sem esquiva. A produção tem `Regras.esquiva` ligada. Opções: regerar `docs/balanco/` com a esquiva (`npm run balanco -- --completo --esquiva --saida docs/balanco`) ou versionar as duas rodadas. A decisão de rodar e gravar fica com o Atlas, porque a saída é versionada.
+Nenhuma no momento. As dúvidas do Zenon de 2026-10-21 foram decididas (ver a seção acima).
 
 ### Decisões anteriores (2026-10-20)
 - D4 APROVADA em 2026-10-20 (proposta em `docs/proposta-wei-long.md`): conjunto canônico = folhas 153007 (base), 153112 (reação), 153710 (golpes), 153054 (especiais); descartadas 153049, rncovy.jfif, 8hwvqp.jfif. A 153710 entra como está no MVP (braçadeira marrom, faixa, barba longa). A ombrada do TIE SHAN KAO fica como soco com aura por enquanto.

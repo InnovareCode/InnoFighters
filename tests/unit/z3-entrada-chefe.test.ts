@@ -4,11 +4,12 @@ import { describe, expect, it } from 'vitest';
 import type { Elenco } from '../../src/assets/elenco';
 import { INPUT_VAZIO, type Configuracoes, type IdLutador, type InputFrame, type LeituraLuta, type LutadorLeitura } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
-import { poseDaCena as poseDoMotor } from '../../src/data/cena';
+import { poseDaCena } from '../../src/data/cena';
+import * as apresentacaoDosLutadores from '../../src/render/apresentacao-lutadores';
 import { Game } from '../../src/fight/game';
 import { REGRAS_PADRAO, type Regras } from '../../src/meta';
 import { Efeitos, CampoDePetalas } from '../../src/render/efeitos';
-import { APRESENTACAO, comPose, falaDoChefe, leituraApresentada, poseDaCena, poseDeApresentacao } from '../../src/render/apresentacao-lutadores';
+import { APRESENTACAO, comPose, falaDoChefe, leituraApresentada, poseDeApresentacao } from '../../src/render/apresentacao-lutadores';
 import {
   ALTURA_DA_FAIXA,
   DURACAO_ENTRADA_COMPLETA,
@@ -39,30 +40,36 @@ const elenco = Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { 
 const CARTAO = APRESENTACAO['zenon']?.entradaDramatica as NonNullable<NonNullable<(typeof APRESENTACAO)[string]>['entradaDramatica']>;
 
 describe('linha do tempo da entrada (função pura do tick)', () => {
-  it('COMPLETA = 156 ticks (2,6 s) e CURTA = 60 (1 s)', () => {
-    expect(DURACAO_ENTRADA_COMPLETA).toBe(156);
+  it('COMPLETA = 270 ticks (4,5 s, decisão do dono em 2026-10-21) e CURTA = 60 (1 s, intacta)', () => {
+    expect(DURACAO_ENTRADA_COMPLETA).toBe(270);
     expect(DURACAO_ENTRADA_CURTA).toBe(60);
   });
 
-  it('faixas: 0 -> 56 px em 12 ticks, ficam e saem nos últimos 12', () => {
+  it('faixas: 0 -> 56 px em 20 ticks (COMPLETA) ou 12 (CURTA), ficam e saem nos últimos 20 / 12', () => {
     expect(linhaDaEntrada('completa', 0).faixa).toBe(0);
-    expect(linhaDaEntrada('completa', 12).faixa).toBe(ALTURA_DA_FAIXA);
+    expect(linhaDaEntrada('completa', 19).faixa).toBeLessThan(ALTURA_DA_FAIXA);
+    expect(linhaDaEntrada('completa', 20).faixa).toBe(ALTURA_DA_FAIXA);
     expect(ALTURA_DA_FAIXA).toBe(56);
     expect(linhaDaEntrada('completa', 100).faixa).toBe(ALTURA_DA_FAIXA);
-    expect(linhaDaEntrada('completa', 156).faixa).toBe(0);
-    const saida = [144, 148, 152, 156].map((t) => linhaDaEntrada('completa', t).faixa);
+    expect(linhaDaEntrada('completa', 250).faixa).toBe(ALTURA_DA_FAIXA);
+    expect(linhaDaEntrada('completa', 270).faixa).toBe(0);
+    const saida = [250, 255, 260, 265, 270].map((t) => linhaDaEntrada('completa', t).faixa);
     expect(saida[0]).toBe(ALTURA_DA_FAIXA);
     expect(saida).toEqual([...saida].sort((a, b) => b - a));
     expect(linhaDaEntrada('curta', 60).faixa).toBe(0);
+    // CURTA intacta: entra em 12 e sai nos últimos 12
+    expect(linhaDaEntrada('curta', 11).faixa).toBeLessThan(ALTURA_DA_FAIXA);
+    expect(linhaDaEntrada('curta', 12).faixa).toBe(ALTURA_DA_FAIXA);
+    expect(linhaDaEntrada('curta', 48).faixa).toBe(ALTURA_DA_FAIXA);
   });
 
-  it('os 6 braseiros acendem da esquerda para a direita, um a cada 6 ticks, de 12 a 48', () => {
-    expect(linhaDaEntrada('completa', 11).acesos).toBe(0);
-    expect(linhaDaEntrada('completa', 12).acesos).toBe(0);
-    expect(linhaDaEntrada('completa', 18).acesos).toBe(1);
-    expect(linhaDaEntrada('completa', 30).acesos).toBe(3);
-    expect(linhaDaEntrada('completa', 48).acesos).toBe(6);
-    expect(linhaDaEntrada('completa', 100).acesos).toBe(6);
+  it('os 6 braseiros acendem da esquerda para a direita, um a cada 10 ticks, de 30 a 90', () => {
+    expect(linhaDaEntrada('completa', 29).acesos).toBe(0);
+    expect(linhaDaEntrada('completa', 30).acesos).toBe(0);
+    expect(linhaDaEntrada('completa', 40).acesos).toBe(1);
+    expect(linhaDaEntrada('completa', 60).acesos).toBe(3);
+    expect(linhaDaEntrada('completa', 90).acesos).toBe(6);
+    expect(linhaDaEntrada('completa', 200).acesos).toBe(6);
     let ant = -1;
     for (let t = 0; t <= DURACAO_ENTRADA_COMPLETA; t++) {
       const a = linhaDaEntrada('completa', t).acesos;
@@ -71,20 +78,28 @@ describe('linha do tempo da entrada (função pura do tick)', () => {
     }
   });
 
-  it('a pose: de costas (0) até o tick 48, vira a cabeça (1) até o 84 e aperta a tira (2) depois', () => {
+  it('a pose: de costas (0) até o tick 96, vira a cabeça (1) até o 144 e aperta a tira (2) depois', () => {
     const p = (t: number) => linhaDaEntrada('completa', t).pose;
-    expect([0, 47].map(p)).toEqual([0, 0]);
-    expect([48, 83].map(p)).toEqual([1, 1]);
-    expect([84, 155].map(p)).toEqual([2, 2]);
+    expect([0, 95].map(p)).toEqual([0, 0]);
+    expect([96, 143].map(p)).toEqual([1, 1]);
+    expect([144, 269].map(p)).toEqual([2, 2]);
   });
 
-  it('o cartão e a fala entram no tick 84 / 90 (COMPLETA)', () => {
-    expect(linhaDaEntrada('completa', 83).cartao).toBe(0);
-    expect(linhaDaEntrada('completa', 94).cartao).toBe(1);
-    expect(linhaDaEntrada('completa', 90).letras).toBe(0);
-    expect(linhaDaEntrada('completa', 100).letras).toBeGreaterThan(0);
-    // a fala inteira (88 letras) termina antes de as faixas saírem
-    expect(linhaDaEntrada('completa', 144).letras).toBeGreaterThanOrEqual((APRESENTACAO['zenon']?.falas?.entrada ?? '').length);
+  it('o cartão e a fala entram no tick 144 / 150 (COMPLETA); a fala inteira (89 letras) termina antes de as faixas saírem e ainda fica >= 25 ticks lida', () => {
+    expect(linhaDaEntrada('completa', 143).cartao).toBe(0);
+    expect(linhaDaEntrada('completa', 152).cartao).toBeCloseTo(0.5, 6); // 16 ticks para chegar inteiro (a CURTA leva 10)
+    expect(linhaDaEntrada('completa', 159).cartao).toBeLessThan(1);
+    expect(linhaDaEntrada('completa', 160).cartao).toBe(1);
+    expect(linhaDaEntrada('curta', 13).cartao).toBeCloseTo(0.5, 6);
+    expect(linhaDaEntrada('completa', 150).letras).toBe(0);
+    expect(linhaDaEntrada('completa', 160).letras).toBeGreaterThan(0);
+    const total = (APRESENTACAO['zenon']?.falas?.entrada ?? '').length;
+    expect(total).toBe(89);
+    expect(linhaDaEntrada('completa', 223).letras).toBeLessThan(total);
+    expect(linhaDaEntrada('completa', 225).letras).toBeGreaterThanOrEqual(total);
+    // letras por tick: 1,2 (um ritmo de leitura calmo), e a CURTA segue com 1,9
+    expect(linhaDaEntrada('completa', 160).letras).toBeCloseTo(12, 6);
+    expect(linhaDaEntrada('curta', 24).letras).toBeCloseTo(1.9 * 10, 6);
   });
 
   it('CURTA: faixas + `entrada2` + cartão, sem a sequência de braseiros (todos acesos desde o início, sem véu)', () => {
@@ -124,8 +139,8 @@ describe('o controlador EntradaDoChefe', () => {
     return { e, sons };
   };
 
-  it('termina em EXATAMENTE 156 / 60 avanços', () => {
-    for (const [modo, n] of [['completa', 156], ['curta', 60]] as const) {
+  it('termina em EXATAMENTE 270 / 60 avanços', () => {
+    for (const [modo, n] of [['completa', 270], ['curta', 60]] as const) {
       const { e } = iniciar(modo);
       for (let i = 1; i <= n; i++) {
         expect(e.ativa, `${modo} antes do avanço ${i}`).toBe(true);
@@ -165,10 +180,10 @@ describe('o controlador EntradaDoChefe', () => {
 
   it('pular perto do fim não estende nada (a saída nunca passa do fim natural)', () => {
     const { e } = iniciar('completa');
-    for (let i = 0; i < 153; i++) e.avancar();
+    for (let i = 0; i < 267; i++) e.avancar();
     expect(e.pular()).toBe(true);
     while (e.ativa) e.avancar();
-    expect(e.tick).toBe(156);
+    expect(e.tick).toBe(270);
   });
 
   it('sons: o das faixas ao iniciar, um tom por braseiro (0 a 5, uma vez cada, em ordem) e o do cartão uma vez', () => {
@@ -203,7 +218,7 @@ describe('o controlador EntradaDoChefe', () => {
     const g = gravadorBasico();
     e.desenhar(g.ctx);
     expect(g.chamadas.length).toBe(0 + g.chamadas.length); // (inativa só depois do fim; aqui ainda está ativa)
-    for (let i = 0; i < 100; i++) e.avancar();
+    for (let i = 0; i < 200; i++) e.avancar();
     const d = gravadorBasico();
     e.desenhar(d.ctx);
     const t = d.textos();
@@ -224,10 +239,13 @@ describe('o controlador EntradaDoChefe', () => {
 describe('a tabela de apresentação', () => {
   const luta = (phase: LeituraLuta['phase'], round: number, t: number) => ({ phase, round, t });
 
-  it('poseDaCena é a MESMA conta do motor (src/data/cena): poses[floor(t·n/duracao)], a última segura', () => {
-    for (const c of [APRESENTACAO['zenon']?.entrada, APRESENTACAO['zenon']?.vitoria, APRESENTACAO['baatar']?.entrada, APRESENTACAO['baatar']?.vitoria]) {
-      for (let t = 0; t <= 200; t++) expect(poseDaCena(c!, t), `t ${t}`).toBe(poseDoMotor(c!, t));
-    }
+  it('poseDaCena é UMA conta só (src/data/cena, a do motor): a render não tem cópia e usa a mesma para entrada e vitória', () => {
+    expect('poseDaCena' in apresentacaoDosLutadores).toBe(false);
+    // entrada do BAATAR (90 ticks, 3 poses): 0-29 devekh0, 30-59 devekh1, 60+ devekh2; a vitória (60 ticks, 2 poses) troca em 30
+    const lutador = { id: 'baatar', state: 'win', chefe: false } as const;
+    const nome = (phase: LeituraLuta['phase'], t: number, round = 1) => poseDeApresentacao({ phase, round, t }, lutador);
+    expect([0, 29, 30, 59, 60, 500].map((t) => nome('intro', t))).toEqual(['devekh0', 'devekh0', 'devekh1', 'devekh1', 'devekh2', 'devekh2']);
+    expect([0, 29, 30, 500].map((t) => nome('matchend', t))).toEqual(['devekh0', 'devekh0', 'win', 'win']);
     expect(poseDaCena({ duracao: 90, poses: ['a', 'b', 'c'] }, 29)).toBe('a');
     expect(poseDaCena({ duracao: 90, poses: ['a', 'b', 'c'] }, 30)).toBe('b');
     expect(poseDaCena({ duracao: 90, poses: ['a', 'b', 'c'] }, 999)).toBe('c');
@@ -289,13 +307,21 @@ describe('a tabela de apresentação', () => {
   it('as falas do chefão: fase 2 na cena, vitória no matchend com ele vencedor, derrota no KO final; fora do chefão nada', () => {
     const falas = APRESENTACAO['zenon']?.falas;
     const chefe = { id: ID_ZENON, chefe: true, indice: 1 as const, hp: 10 };
-    const l = (phase: LeituraLuta['phase'], matchWinner: 0 | 1 | null = null) => ({ phase, matchWinner, winner: matchWinner, fighters: [] }) as unknown as Pick<LeituraLuta, 'phase' | 'matchWinner' | 'winner' | 'fighters'>;
+    // `rivalWins` = rounds que o jogador (índice 0) já ganhou; `winsNeeded` = rounds para fechar a luta
+    const l = (phase: LeituraLuta['phase'], matchWinner: 0 | 1 | null = null, rivalWins = 0, winsNeeded = 2) =>
+      ({ phase, matchWinner, winner: matchWinner, winsNeeded, fighters: [{ wins: rivalWins }, { wins: 0 }] }) as unknown as Pick<LeituraLuta, 'phase' | 'matchWinner' | 'fighters' | 'winsNeeded'>;
     expect(falaDoChefe(l('cena-chefe'), chefe)).toBe(falas?.fase2);
     expect(falaDoChefe(l('matchend', 1), chefe)).toBe(falas?.vitoria);
-    expect(falaDoChefe(l('matchend', 0), chefe)).toBe(falas?.derrota);
-    expect(falaDoChefe(l('ko'), { ...chefe, hp: 0 })).toBe(falas?.derrota);
+    expect(falaDoChefe(l('matchend', 0), { ...chefe, hp: 0 })).toBe(falas?.derrota);
+    expect(falaDoChefe(l('matchend', 0), chefe)).toBeNull(); // perdeu por tempo (a vida não zerou): sem fala
+    // KO final: o jogador já tem 1 round de 2 e este KO fecha a luta; o KO do 1º round (0 de 2) NÃO fala
+    expect(falaDoChefe(l('ko', null, 1), { ...chefe, hp: 0 })).toBe(falas?.derrota);
+    expect(falaDoChefe(l('ko', null, 0), { ...chefe, hp: 0 })).toBeNull();
+    expect(falaDoChefe(l('ko', null, 0, 1), { ...chefe, hp: 0 })).toBe(falas?.derrota); // luta de 1 round: todo KO é final
     expect(falaDoChefe(l('ko'), chefe)).toBeNull(); // o KO foi do jogador
     expect(falaDoChefe(l('fight'), chefe)).toBeNull();
+    // roundend NUNCA fala (nem vitória nem derrota do round)
+    for (const vencedor of [0, 1, null] as const) expect(falaDoChefe(l('roundend', vencedor, 1), vencedor === 0 ? { ...chefe, hp: 0 } : chefe), `roundend ${String(vencedor)}`).toBeNull();
     expect(falaDoChefe(l('cena-chefe'), { ...chefe, chefe: false })).toBeNull();
     expect(falas?.fase2).toBe('Chega de cortesia.');
   });
@@ -343,10 +369,10 @@ describe('a CENA da luta com a entrada: o motor e o lock-step não a veem', () =
       f: g.fighters.map((f) => [f.x, f.y, f.hp, f.en, f.state, f.barras, f.ficha, f.score, f.age]),
     });
 
-  it('COMPLETA (o padrão na 1ª luta do ARCADE): game.tick fica em 0 por 156 update() e anda no 157º', () => {
+  it('COMPLETA (o padrão na 1ª luta do ARCADE): game.tick fica em 0 por 270 update() e anda no 271º', () => {
     const t = montar({}, REGRAS_PADRAO, run());
     expect(t.cena.entrada.ativa).toBe(false); // começa no 1º update (a arte pronta)
-    for (let i = 1; i <= DURACAO_ENTRADA_COMPLETA; i++) {
+    for (let i = 1; i <= 270; i++) {
       t.update();
       expect(t.game.tick, `update ${i}`).toBe(0);
       expect(t.game.t, `update ${i}`).toBe(0);
@@ -492,7 +518,7 @@ describe('a CENA da luta com a entrada: o motor e o lock-step não a veem', () =
 
   it('o desenho: durante a entrada o HUD some (nem o nome do lutador sai) e o cartão aparece; depois, o HUD e o "ROUND 1" voltam', () => {
     const t = montar({}, REGRAS_PADRAO, run());
-    t.update(100);
+    t.update(200);
     const durante = gravadorBasico();
     (t.c as { ctx: unknown }).ctx = durante.ctx;
     t.cena.draw();

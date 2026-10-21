@@ -27,7 +27,7 @@ export const SELO_MAIOR: Golpe = {
 
 /**
  * ↓+ESP: a COLUNA DE ÔNIX. Subida invulnerável (joelhada com a palma para cima), o anti-aéreo dele. Molde do RAIJIN-KEN; `vy` menor
- * que o dele porque a 1,36 de escala o ápice de -14,5 levava a cabeça para fora da tela (spec §9.1: a subida fica abaixo de ~90 px).
+ * que o dele porque a 1,36 (hoje 1,32) de escala o ápice de -14,5 levava a cabeça para fora da tela (spec §9.1: a subida fica abaixo de ~90 px).
  */
 export const COLUNA_DE_ONIX: Golpe = {
   name: 'COLUNA DE ÔNIX', info: 'Joelhada subindo com a palma aberta: INVULNERÁVEL no início. Ótimo contra pulos.',
@@ -68,7 +68,7 @@ const ESPECIAIS_BASE: EspeciaisLutador = { sFire: SELO_DO_ARCONTE, sDown: COLUNA
 const ESPECIAIS_DO_CHEFE: EspeciaisLutador = { ...ESPECIAIS_BASE, sFwd: TRIBUTO_DO_CHEFE };
 
 /**
- * Golpes comuns do jogável. O sprite de 1,36 tem a mão na altura do ROSTO (a ponta do `hp1` fica a ~300 px do chão): com a caixa de altura
+ * Golpes comuns do jogável. O sprite de 1,32 (era 1,36) tem a mão na altura do ROSTO (a ponta do `hp1` fica a ~290 px do chão): com a caixa de altura
  * padrão (54 a 84 px, centrada na mão) o fundo dela ficava a 226-269 px, acima do topo da hurtbox de quem tem escala 1,0 (254 px), e os golpes
  * em pé quase nunca acertavam (harness: `hk` 2,9% de contato, 7% de vitória). `bh` maior (a caixa cresce para cima e para baixo da mão) leva o
  * fundo a ~170-180 px: pega o peito e a cabeça de quem é menor. tests/unit/zenon-arte.test.ts trava o fundo contra o atlas real.
@@ -130,13 +130,13 @@ export const ZENON_DEF: Omit<LutadorDef, 'id'> = {
   spd: 0.92,
   hp: 100,
   jump: 0.72,
-  scale: 1.36,
+  scale: 1.32,
   stride: 15,
   bars: [4, 3, 5, 2],
   reach: 1.12,
-  // Hurtbox em pe: a caixa fixa (254 px) deixava ~93 px da cabeca e dos ombros de fora a 1,36 (spec §9.2). 0,92 x idle0 (347 px logicos = 1,36 x 255) / 254,4 = 1,25.
+  // Hurtbox em pe: a caixa fixa (254 px) deixava ~93 px da cabeca e dos ombros de fora (spec §9.2). 0,92 x idle0 (336,6 px logicos = 1,32 x 255) / 254,4 = 1,22 (era 1,25 a 1,36).
   // tests/unit/zenon-arte.test.ts mede de novo contra o atlas real.
-  alturaEmPe: 1.25,
+  alturaEmPe: 1.22,
   // O SELO nasce a meia altura (a ponta do `sa1` fica a ~280 px, acima de qualquer cabeca de escala 1,0): ver `alturaDoProjetil` em tipos.ts.
   alturaDoProjetil: 175,
   mods: MODS_BASE,

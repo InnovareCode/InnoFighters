@@ -3,6 +3,16 @@
 Marcos do InnoFighters, do mais recente para o mais antigo. Datas e hashes vêm do `git log` (fuso -03:00).
 Os nomes de fase (F0, E1a, E3 S2...) são os de `PLANO.md` e `docs/plano-expansao.md`.
 
+## 2026-10-21: decisões do dono sobre o chefão ZENON (não commitado)
+
+- **Escala do ZENON 1,32** (era 1,36): `scale 1.32` e `alturaEmPe 1.22` em `src/data/lutadores/zenon.ts`. Folga mínima de 7 px entre o topo do sprite e a base dos nomes do HUD nas poses de vitória (medido pela Lyra).
+- **Entrada dramática do chefão:** COMPLETA de 270 ticks (4,5 s; era 156). CURTA de 60 ticks (1 s), intacta. Com a cinemática DESLIGADA, a entrada roda em CURTA. Pulável por ataque ou ESP a partir do tick 10.
+- **Falas do chefão:** derrota só no KO que fecha a luta (ou no `matchend` perdido por KO); vitória só no `matchend`. Perder por tempo não fala; `roundend` nunca fala.
+- **Nomes de especial:** só os lutadores NOVOS encolhem a fonte (piso de 8 px). Os 4 do protótipo seguem em 13 px.
+- **Balanço com esquiva** (`docs/balanco/`, produção, dados `d81622b9b8db`): ZENON jogável 51,4% de vitória geral. Chefão 31,9% no NORMAL (meta 30-40%) e 23,0% no DIFÍCIL (meta ≥ ~20%). Comparação sem esquiva em `docs/balanco/sem-esquiva/`: ZENON 52,6%; chefão 28,0% (NORMAL) e 14,9% (DIFÍCIL).
+- **Observação para o teste em aparelho:** ARREMESSO DO AVARGA e MERGULHO DA ÁGUIA (BAATAR) em 8 px, e PASSO DO ELEFANTE (NILA) em 8,5 px. Em celular deitado, ~7,6 px CSS para o de 8 px (medido pela Lyra); o de 8,5 px deve dar ~8,1 px (**a confirmar**).
+- **Não provado ainda:** som do chefão, a fonte de 8 px em aparelho real e a entrada em CURTA em aparelho de toque.
+
 ## 2026-10-21: chefão ZENON ARGYROS, esquiva, cinemática do especial e balanço (`0684548`)
 
 - **Chefão final ZENON** (`CHEFE = 'zenon'`, `src/meta/regras.ts`): 10º lutador (`IDS_LUTADORES`, 10 ids). Luta em duas barras de 50, cena da fase 2 de 90 ticks, trilha da valsa 3/4 (`TRILHAS.chefe`, 138 bpm; +12% na fase 2), armadura nos golpes fortes da fase 2, projétil SELO com altura de nascimento própria (`alturaDoProjetil`).

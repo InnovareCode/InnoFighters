@@ -136,7 +136,7 @@ Os números desta lista vêm da versão anterior do doc; **a confirmar** se as l
 
 **Altura em pé e projétil:**
 
-- `alturaEmPe` (`tipos.ts:283`): altura da hurtbox em pé, em múltiplo da escala. Ausente = a caixa de sempre. Meça no navegador (skill `medir-antes-de-afirmar`) antes de confiar na conta: o ZENON tem 1,25, medido contra o sprite real.
+- `alturaEmPe` (`tipos.ts:283`): altura da hurtbox em pé, em múltiplo da escala. Ausente = a caixa de sempre. Meça no navegador (skill `medir-antes-de-afirmar`) antes de confiar na conta: o ZENON tem 1,22, medido contra o sprite real.
 - `alturaDoProjetil` (`tipos.ts:289`, usada em `src/data/montar.ts:198`): altura, em px, de onde o projétil nasce. Ausente = a ponta do golpe. ZENON: `175` (`zenon.ts:141`).
 
 ## Passo 6b: chefão (`ConfigChefe`)
@@ -167,7 +167,7 @@ chefe: {
 1. **`mods` da ficha é raso, por golpe.** `FichaDef.mods` SUBSTITUI o `mods` do def, golpe por golpe. Escrever `hp: { armor: 1 }` na fase 2 apaga o `bh` (a caixa de acerto) do golpe, e o golpe não conecta em nenhuma distância. Sempre espalhe o base: `hp: { ...MODS_BASE.hp, armor: 1 }` (`zenon.ts:111-112`).
 2. **Sprite alto com caixa centrada na mão.** A caixa de acerto é `fy = tipY·scale + bh/2` e tem altura `bh`. Com escala acima de 1,2, o fundo da caixa fica acima da cabeça de quem tem escala 1,0 (hurtbox a 254 px). Medido no harness, na primeira rodada: `hk` com 2,9% de contato, o ZENON jogável com 7% de vitória e o chefão com 86% de vitória do jogador. Correção: `bh` maior nos golpes altos (`zenon.ts:77-81`) e `alturaDoProjetil`.
 3. **Escala acima de 1,1 na vitrine.** `K` já leva `scale`, então a cabeça sai da tela na seleção, no VS e no final. Normalize na vitrine com `escalaDeVitrine` (`src/ui/personagens.ts:26`), nunca no dado. Os lutadores até 1,1 não mudam.
-4. **Balanço com a configuração de produção.** A referência versionada (`docs/balanco/`) é a rodada sem esquiva, e a produção tem a esquiva ligada. Para medir o jogo de hoje: `npm run balanco -- --completo --esquiva`, que grava em `relatorios/balanco-esquiva/` (não versionado).
+4. **Balanço com a configuração de produção.** A referência versionada (`docs/balanco/`) é a rodada COM esquiva, igual à produção: `npm run balanco -- --completo --esquiva` a regera. A rodada sem esquiva fica em `docs/balanco/sem-esquiva/` (`npm run balanco -- --completo`). Meça sempre com a esquiva.
 
 ## Passo 7: registro
 

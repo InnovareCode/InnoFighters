@@ -2,7 +2,7 @@ import { reagirAosEventos } from '../../audio/eventos';
 import { tocarReceita, type SintetizadorLike } from '../../audio/receitas';
 import { ALTURA, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
-import type { EventoLuta } from '../../core/contratos';
+import { CINEMATICA_PADRAO, type EventoLuta } from '../../core/contratos';
 import { ESQUIVA_PADRAO } from '../../data/esquiva';
 import type { DummyTreino, FonteEntradas } from '../../fight/game';
 import { chefeDaLeitura } from '../../render/aura-chefe';
@@ -99,7 +99,7 @@ export class CenaFight implements Cena {
   private modoDaEntrada(a: ArgsFight): ModoEntrada | null {
     if (!a.cfg.chefe || !APRESENTACAO[a.cfg.c2]?.entradaDramatica || !this.ui.c.regras.cinematica) return null;
     const reduz = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
-    const pref = this.ui.c.persist.settings.cinematica ?? (reduz ? 'curta' : 'completa');
+    const pref = this.ui.c.persist.settings.cinematica ?? (reduz ? 'curta' : CINEMATICA_PADRAO);
     return pref === 'completa' && !a.run?.entradaDoChefeVista ? 'completa' : 'curta';
   }
 

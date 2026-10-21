@@ -13,6 +13,6 @@ na F1 (`extrair-prototipo.mjs`). Vazio na Fase 0.
 
 - `balanco/` (E6a): `npm run balanco -- [--rapido | --completo] [opções]` (ver `--ajuda`). Mede a frame data de cada golpe NO MOTOR e joga CPU x CPU
   (9x9, dois lados, NORMAL e DIFÍCIL, N sementes) mais o BAATAR chefão contra os 8; grava `frame-data.md/.json` e `resultados.md/.json`
-  (`--completo` em `docs/balanco/`, `--rapido` e `--ajustes` em `relatorios/`, ignorado pelo git). Determinístico por semente; a 2ª rodada
+  (`--completo --esquiva` = produção em `docs/balanco/`; `--completo` sem a flag = `docs/balanco/sem-esquiva/`; `--rapido` e `--ajustes` em `relatorios/`, ignorado pelo git). Determinístico por semente; a 2ª rodada
   com os mesmos parâmetros diz se o resultado é IDÊNTICO. `--ajustes '{"wei-long":{"hp":100}}'` mede uma hipótese em memória, sem tocar nos
   dados. Código em TypeScript (`*.ts`, carregado pelo Vite em SSR); testes em `tests/unit/balanco.test.ts`.

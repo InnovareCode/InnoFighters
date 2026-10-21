@@ -1,1 +1,1 @@
-- [Armadilhas de UI do InnoFighters](armadilhas-ui-innofighters.md) — CSS do toque, RS=2, e2e com import de src, quirks de shell, cinemática/esquiva (L1+L2), chefão ZENON: entrada, aura, grade de 10 (Z2+Z3)
+- [Armadilhas de UI do InnoFighters](armadilhas-ui-innofighters.md) — CSS do toque, RS=2, e2e com import de src, cinemática/esquiva (L1+L2), chefão ZENON (Z2+Z3) e decisões do dono Z4: escala 1,32, entrada 270 ticks, falas, fonte dos especiais

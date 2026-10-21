@@ -66,7 +66,7 @@ Dez lutadores (`IDS_LUTADORES`, `src/core/contratos.ts:125`). O ZENON é o chef�
 - Lutadores ainda travados podem aparecer como rivais na escada (`travadosNaEscada: true`, `src/meta/regras.ts`).
 - Jogando com o ZENON, não há luta de chefe: a escada só tem rivais (`src/meta/escada.ts`).
 
-**Chefão ZENON (resumo):** duas barras. Na troca de barra, o chefão entra numa cena de poses de 90 ticks, com a trilha da valsa e a legenda "Chega de cortesia.", e a fase 2 fica mais forte. O TRIBUTO e o DECRETO roubam energia do rival. A esquiva também vale na luta de chefe. A entrada dramática (156 ticks; 60 ticks depois de um continue) mostra o nome e a fala do chefão. Um ataque ou ESP de um jogador humano pula a entrada, a partir do tick 10 (`src/ui/cenas/fight.ts`).
+**Chefão ZENON (resumo):** duas barras. Na troca de barra, o chefão entra numa cena de poses de 90 ticks, com a trilha da valsa e a legenda "Chega de cortesia.", e a fase 2 fica mais forte. O TRIBUTO e o DECRETO roubam energia do rival. A esquiva também vale na luta de chefe. A entrada dramática (270 ticks, 4,5 s, na primeira luta de cada Arcade; 60 ticks, 1 s, depois de um continue ou com a cinemática curta ou desligada) mostra o nome e a fala do chefão. Um ataque ou ESP de um jogador humano pula a entrada, a partir do tick 10 (`src/ui/cenas/fight.ts`).
 
 ## Controles
 

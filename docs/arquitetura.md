@@ -200,7 +200,7 @@ O chefão final é `CHEFE = 'zenon'` (`src/meta/regras.ts`). A luta de chefe lig
 - `src/data/cena.ts`: `poseDaCena` (usada pelo motor em `src/fight/fighter.ts:1050`, estado `cena`) e `validarCena` (duração inteira de 1 a 600; 1 a 8 nomes `^[\w-]+$`). `validarCena` é chamada em `src/data/montar.ts:105`, então dado inválido falha no boot.
 - `Golpe.drenaEnergia` (`src/data/tipos.ts:200`, tipo `DrenaEnergiaDef` em `tipos.ts:120`): `{ acerto, defesa }`. Validado em `src/data/montar.ts:85-93`: recusa projétil, `hits > 1`, `throw`/`agarrao` e números fora de `0 <= defesa <= acerto <= 100`.
 - `LutadorDef.anim.throw` (`src/data/tipos.ts:271`): arte própria do agarrão comum. Sem ela, vale a animação base (`src/data/anim.ts`, `BASE_ANIM.throw`).
-- `LutadorDef.alturaEmPe` (`tipos.ts:283`): altura da hurtbox em pé, em múltiplo da escala. No ZENON, `1,25`: medido, 0,92 × 347 px visíveis / 254,4 px (`src/data/lutadores/zenon.ts`).
+- `LutadorDef.alturaEmPe` (`tipos.ts:283`): altura da hurtbox em pé, em múltiplo da escala. No ZENON, `1,22`: medido, 0,92 × 337 px visíveis (1,32 × 255) / 254,4 px (`src/data/lutadores/zenon.ts`).
 - `LutadorDef.alturaDoProjetil` (`tipos.ts:289`): altura, em px, de onde o projétil nasce. Usada em `src/data/montar.ts:198`. Ausente = a conta de sempre.
 - Ficha: `FichaDef` (`tipos.ts:228`) é parcial e sobrescreve a base. Atenção: `mods` é **raso por golpe**. Veja a armadilha em `docs/como-adicionar-um-lutador.md`.
 
@@ -208,9 +208,9 @@ Números do ZENON (`src/data/lutadores/zenon.ts`, conferidos):
 
 | Campo | Valor | Linha |
 |---|---|---|
-| `scale` | 1,36 | `zenon.ts:133` |
+| `scale` | 1,32 | `zenon.ts:133` |
 | `jump`, `spd`, `pow`, `hp`, `reach`, `stride` | 0,72; 0,92; 1,0; 100; 1,12; 15 | `zenon.ts:129-136` |
-| `alturaEmPe` | 1,25 | `zenon.ts:139` |
+| `alturaEmPe` | 1,22 | `zenon.ts:139` |
 | `alturaDoProjetil` | 175 | `zenon.ts:141` |
 | `chefe` | 2 barras de 50; cena de 90 ticks (`cena0`, `cena1`, `cena2`); bônus 5000; `trilha: 'chefe'` | `zenon.ts:146-154` |
 | dreno do TRIBUTO | 12/6 no jogável; 20/10 na ficha do chefe | `zenon.ts:46` e `:51`, `:63` |
@@ -229,9 +229,9 @@ Números do ZENON (`src/data/lutadores/zenon.ts`, conferidos):
 - Projétil do SELO: estilo `anel` (`src/render/projetil-anel.ts`) e estilo E12 (`src/render/estilos-especiais.ts`). Dreno visível: `src/render/moedas-dreno.ts`, a partir de `ev.dreno` (valor real transferido, não o dado).
 - Apresentação: `APRESENTACAO` (`src/render/apresentacao-lutadores.ts:36`) reúne a pose de entrada e de vitória, as falas, o aviso do VS e o cartão da entrada. Só desenho: nada disso vai ao motor. `poseDeApresentacao` (`apresentacao-lutadores.ts:76`) troca só o nome da pose; a `intro` e a vitória continuam com o tempo do motor.
 - Falas: `falaDoChefe` (`apresentacao-lutadores.ts:97`), desenhada em `src/ui/cenas/fight.ts:495` com `src/render/legenda.ts`. Ver o comportamento real na seção 6.6.
-- Entrada dramática: `src/render/entrada-chefe.ts`. COMPLETA = 156 ticks (`DURACAO_ENTRADA_COMPLETA`, `:23`); CURTA = 60 ticks (`:24`). `PULO_VALE_A_PARTIR_DE = 10` (`:26`) e `SAIDA_AO_PULAR = 6` (`:28`). Escolha do modo: `modoDaEntrada` (`src/ui/cenas/fight.ts:95-104`).
+- Entrada dramática: `src/render/entrada-chefe.ts`. COMPLETA = 270 ticks (4,5 s; era 156) (`DURACAO_ENTRADA_COMPLETA`, `:23`); CURTA = 60 ticks (`:24`). `PULO_VALE_A_PARTIR_DE = 10` (`:26`) e `SAIDA_AO_PULAR = 6` (`:28`). Escolha do modo: `modoDaEntrada` (`src/ui/cenas/fight.ts:95-104`).
 - Cinemática do especial: `src/render/cinematica.ts`. COMPLETA = 48 ticks (`DURACAO_COMPLETA`), CURTA = 20 ticks (`DURACAO_CURTA`), saída ao pular em no máximo 6 ticks. `modoDaCinematica` (`cinematica.ts:49`) devolve `null` para DESLIGADA ou com `Regras.cinematica` desligada.
-- Escala na vitrine: `escalaDeVitrine` (`src/ui/personagens.ts:26`) encolhe só quem passa de `ESCALA_MAXIMA_DE_VITRINE = 1.1` (`personagens.ts:23`). Usada em seleção, VS e final (`src/ui/cenas/select.ts:259`, `vs.ts:93`, `fim.ts:48`). Os lutadores de até 1,1 ficam idênticos ao de antes. O BAATAR (1,28) e o ZENON (1,36) são encolhidos na vitrine, não no dado.
+- Escala na vitrine: `escalaDeVitrine` (`src/ui/personagens.ts:26`) encolhe só quem passa de `ESCALA_MAXIMA_DE_VITRINE = 1.1` (`personagens.ts:23`). Usada em seleção, VS e final (`src/ui/cenas/select.ts:259`, `vs.ts:93`, `fim.ts:48`). Os lutadores de até 1,1 ficam idênticos ao de antes. O BAATAR (1,28) e o ZENON (1,32) são encolhidos na vitrine, não no dado.
 
 ### 6.4 Áudio
 
@@ -276,10 +276,10 @@ Isso significa que a fala de derrota aparece também quando o chefão perde um r
 ## 8. Balanceamento (harness)
 
 - Comando: `npm run balanco -- [--rapido | --completo] [opções]` (`ferramentas/balanco/cli.mjs`, ajuda com `--ajuda`).
-- `--completo` (100 sementes por combinação, NORMAL e DIFÍCIL) grava a referência em `docs/balanco/`: `resultados.md`, `resultados.json`, `frame-data.md`, `frame-data.json`.
-- **A referência versionada é a rodada SEM esquiva** (`docs/balanco/resultados.md`, versão de dados `267890b2233a`, hash `08a116c08e22a075`). Com `--esquiva`, a saída vai para `relatorios/balanco-esquiva/`, que não é versionada (`cli.mjs:70`). A produção tem `esquiva: true` (`src/meta/regras.ts`). Por isso, a referência em `docs/balanco/` não representa o jogo como ele é hoje. **Decisão em aberto** em `PROGRESSO.md`.
-- Números do chefão, rodada sem esquiva (`docs/balanco/resultados.md`): jogador vence **31,4%** no NORMAL e **19,1%** no DIFÍCIL (meta 20-40%, só vale no NORMAL). ZENON jogável na taxa geral: 52,9% (IC 51%-55%).
-- Números com esquiva (`relatorios/balanco-esquiva/resultados.md`, hash `23037ac3e454a428`, não versionado): **36,0%** no NORMAL e **28,0%** no DIFÍCIL. **A confirmar** com nova rodada `npm run balanco -- --completo --esquiva` antes de citar em doc público.
+- `--completo --esquiva` (100 sementes por combinação, NORMAL e DIFÍCIL) grava a referência de PRODUÇÃO em `docs/balanco/`: `resultados.md`, `resultados.json`, `frame-data.md`, `frame-data.json`. `--completo` sem a flag grava a rodada sem esquiva em `docs/balanco/sem-esquiva/`. `docs/balanco/README.md` diz qual é qual.
+- **A referência versionada em `docs/balanco/` é a rodada COM esquiva (produção, `esquiva: true` em `src/meta/regras.ts`)**: versão de dados `d81622b9b8db`, hash `2c93922d5c48c8ea`, ZENON `scale 1,32` / `alturaEmPe 1,22`. A rodada sem esquiva fica em `docs/balanco/sem-esquiva/` (hash `2c88c4e935021822`), só para comparação.
+- Números do chefão COM esquiva (`docs/balanco/resultados.md`): jogador vence **31,9%** no NORMAL (meta 30-40%) e **23,0%** no DIFÍCIL (>= ~20%). ZENON jogável na taxa geral: 51,4% (IC 50%-53%); os 10 lutadores ficam entre 42,7% e 57,2%. 0 lutas travadas.
+- Sem esquiva (`docs/balanco/sem-esquiva/`): chefão 28,0% (NORMAL) e 14,9% (DIFÍCIL); ZENON 52,6%. Sem a esquiva o DIFÍCIL cai abaixo de 20%: por isso a meta se mede com a esquiva ligada.
 - Harness: `ferramentas/balanco/` (cada luta monta a própria `Game` em memória; nada toca o estado do jogo).
 
 ## 9. Política de segurança de conteúdo (CSP)
@@ -309,7 +309,7 @@ img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:
 |---|---|---|
 | `ferramentas/extrair-prototipo.mjs` | tira atlas e cenários do protótipo para `public/assets` | usado na F1 |
 | `ferramentas/sprites/` | pipeline de folhas para atlas C1 v2. `npm run sprites -- <id>` | executa: sem argumento, imprime o uso. O import duplicado de `separarFundidas` não está mais no HEAD. `npm run sprites -- zenon` **não foi rodado** nesta passada (grava em `sprites-gerados/` e `arte-fonte/`) |
-| `ferramentas/balanco/` | harness de frame data e simulação (`npm run balanco`) | commitado; `docs/balanco/` é a rodada sem esquiva (seção 8) |
+| `ferramentas/balanco/` | harness de frame data e simulação (`npm run balanco`) | commitado; `docs/balanco/` é a rodada de produção, com esquiva (seção 8) |
 | `ferramentas/gerar-retratos.mjs` | retrato de cada lutador a partir do atlas (`--so <id>`, `--verificar`) | funcional, sem script npm |
 | `ferramentas/converter-cenarios.mjs` | cenários da arte-fonte para WebP 1920x1080. `--so <sigla>` converte só alguns | fontes em `FONTES` (`converter-cenarios.mjs:13`); a `gr` usa `gr-v2` |
 | `ferramentas/prompts/montar-prompts.mjs` | gera `docs/prompts/` a partir de `docs/prompts-arte.md` | não reconferido nesta passada |

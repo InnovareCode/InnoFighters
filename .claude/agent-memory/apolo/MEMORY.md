@@ -4,5 +4,6 @@
 - [Logo paleta D (INNO azul)](project_logo_paleta_d.md) — D1 Cobalto Real recomendada; aro claro obrigatório; Vite com paleta em memória
 - [Identidade dos especiais](project_identidade_especiais.md) — 1 estilo exclusivo por lutador; contraste 3:1; lacunas throw/sResp/MASHI
 - [Novo chefão](project_novo_chefao.md) — A ZENON recomendado; núcleo ônix só do chefão; teto escala 1,42; BAATAR 5º na fila
-- [Textos de provocação](project_textos_provocacao.md) — 148 falas; territórios de voz; 38/linha validado por script; † = revisão nativa
+- [Textos de provocação](project_textos_provocacao.md) — 232 balões formato spec §7.3; 34/linha; revanche = quem perdeu; † não é texto
+- [Textos dos chefões](project_textos_chefoes.md) — Os Cinco Selos = pactos; aviso/seleção sem gênero; corte no 1º ". "; lore corrigida
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

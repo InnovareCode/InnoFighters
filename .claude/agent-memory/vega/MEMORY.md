@@ -11,3 +11,6 @@
 - [E6b balanceamento + V1/V2 esquiva](project_e6b_v1v2.md) — fixture dos 4 originais como oráculo, campos opcionais nos eventos, CPU da esquiva
 - [BAATAR vira normal](project_baatar_normal.md) — CHEFE null temporário, fixtura do chefe antigo em testes, MERGULHO dmg 10, dica de CPU x combo
 - [ZENON chefão Z1/Z4/Z5](project_zenon_chefao.md) — sprite alto x caixa de acerto, mods de ficha raso, âncora tronco descartada, harness com esquiva
+- [Provocações P1](project_provocacoes_p1.md) — dados/lógica pura das falas, validação no import (main.ts importa por efeito), pref storage, armadilhas
+- [Sons por lutador S0-S3](project_sons_regua_s0.md) — régua congelada, 10 vozes, 33 assinaturas; armadilhas da régua (P, estalo), falta S4/S5
+- [Chefões R1: danoRecebido](project_chefoes_r1_dano_recebido.md) — fator no motor so no chefe, rampa, DIFÍCIL fora em 4/6, hash regulares f420ce92, aura da Lyra

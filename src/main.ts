@@ -1,11 +1,12 @@
 import './input/toque.css';
-import { carregarRecursos } from './assets/carregador';
-import { montarElenco, planoPadrao } from './assets/elenco';
+import { iniciarArte } from './assets/elenco';
 import { AudioSys } from './audio/audio-sys';
-import { carregarDados, salvarDados, type ArmazenamentoLike } from './core/storage';
+import { carregarDadosV2, salvarDadosV2, type ArmazenamentoLike } from './core/storage';
 import type { IdLutador } from './core/contratos';
 import { criarRng, sementeAleatoria } from './core/rng';
+import { CENARIO_PADRAO } from './data/cenarios';
 import { Game } from './fight/game';
+import { REGRAS_PADRAO } from './meta';
 import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
 import { mostrarErrosNaTela } from './platform/erros';
@@ -41,7 +42,7 @@ function lerSemente(): number {
   return Number.isFinite(n) ? n >>> 0 : sementeAleatoria();
 }
 
-function iniciar(): void {
+async function iniciar(): Promise<void> {
   const canvas = document.getElementById('jogo');
   if (!(canvas instanceof HTMLCanvasElement)) throw new Error('canvas #jogo nao encontrado');
   const ctx = prepararCanvas(canvas);
@@ -55,14 +56,20 @@ function iniciar(): void {
   const rngVisual = criarRng(semente + 1);
   const rngUI = criarRng(semente + 2);
 
-  // ---- configurações e recorde (C4, com a migração da chave antiga) ----
+  // `?expansao=1` (SÓ em desenvolvimento): elenco falso de 9 lutadores, fila e chefão, para testar a grade 3x3, o
+  // desbloqueio e a escada com chefão enquanto a arte nova não existe. O import dinâmico fica fora do bundle de produção.
+  const fixture = import.meta.env.DEV && new URLSearchParams(window.location.search).get('expansao') === '1' ? await import('./ui/dev-expansao') : null;
+  const regras = fixture ? fixture.regrasExpansaoFalsa() : REGRAS_PADRAO;
+
+  // ---- configurações, recorde e progresso (C4 v2, com a migração da v1 e da chave antiga) ----
   const armazenamento = obterArmazenamento();
-  const salvos = carregarDados(armazenamento);
+  const salvos = carregarDadosV2(armazenamento, regras);
   const persist: Persistencia = {
     settings: salvos.s,
     hi: salvos.hi,
+    prog: salvos.prog,
     salvar() {
-      salvarDados(armazenamento, { s: this.settings, hi: this.hi });
+      salvarDadosV2(armazenamento, { s: this.settings, hi: this.hi, prog: this.prog }, regras);
     },
   };
 
@@ -98,6 +105,7 @@ function iniciar(): void {
     entrada,
     rngVisual,
     rngUI,
+    regras,
     alternarTelaCheia,
     temToque: () => document.body.classList.contains('touch'),
   };
@@ -107,19 +115,22 @@ function iniciar(): void {
   observarFoco(window, { aoPerderFoco: () => ui.blur(), aoOcultar: () => ui.blur() });
 
   // ---- carregamento da arte (barra de progresso na abertura) ----
-  void carregarRecursos(planoPadrao(import.meta.env.BASE_URL), { aoProgredir: (p) => (ui.loadProg = p) })
-    .then((rec) => {
-      const elenco = montarElenco(rec);
+  // `?precarga=minima` (só em desenvolvimento) não carrega nenhum atlas no boot: tudo sob demanda, para testar essa via.
+  const precarga = import.meta.env.DEV && new URLSearchParams(window.location.search).get('precarga') === 'minima' ? [] : undefined;
+  void iniciarArte({ baseUrl: import.meta.env.BASE_URL, aoProgredir: (p) => (ui.loadProg = p), ...(precarga ? { precarregar: precarga } : {}) })
+    .then(({ elenco: elencoReal, arte }) => {
+      const elenco = fixture ? fixture.ampliarElenco(elencoReal, arte) : elencoReal;
       const lutadores = {} as Record<IdLutador, (typeof elenco)[IdLutador]['ch']>;
       for (const id of Object.keys(elenco) as IdLutador[]) lutadores[id] = elenco[id].ch;
       const mundo: Mundo = {
         rec: {
           elenco,
-          cenarios: rec.cenarios,
-          cenarioPadrao: rec.cenarios.get('jp') ?? [...rec.cenarios.values()][0]!,
+          cenarios: arte.cenarios,
+          cenarioPadrao: arte.cenarios.get(CENARIO_PADRAO) as CanvasImageSource,
           vinheta: criarVinheta(),
         },
         elenco,
+        arte,
         game: new Game({ lutadores, rng: rngLogica }),
         efeitos: new Efeitos(rngVisual),
         petalasLuta: new CampoDePetalas(rngVisual, 'luta'),
@@ -183,4 +194,4 @@ function iniciar(): void {
   if (!manual) requestAnimationFrame(quadro);
 }
 
-iniciar();
+iniciar().catch((e: unknown) => console.error(e));

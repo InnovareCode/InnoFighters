@@ -331,10 +331,11 @@ describe('dificuldade e campanha ARCADE', () => {
     expect(t.persist.settings.diff).toBe(2);
     expect(t.salvou.n).toBe(1);
     const run = t.ui.run!;
-    expect([...run.order].sort()).toEqual(['hayato', 'min-ji', 'wei-long']);
+    expect(run.etapas.map((e) => e.id).sort()).toEqual(['hayato', 'min-ji', 'wei-long']);
+    expect(run.etapas.some((e) => e.chefe)).toBe(false); // sem chefão em produção
     expect(run).toMatchObject({ c1: 'caio', idx: 0, score: 0, continues: 3, diff: 2, cont: 0 });
     expect(ir[0]?.[0]).toBe('vs');
-    expect((ir[0]?.[1] as { cfg: { c2: string; cpu: number } }).cfg).toMatchObject({ mode: 'arcade', c1: 'caio', c2: run.order[0], cpu: 2 });
+    expect((ir[0]?.[1] as { cfg: { c2: string; cpu: number } }).cfg).toMatchObject({ mode: 'arcade', c1: 'caio', c2: run.etapas[0]?.id, cpu: 2 });
   });
 
   it('padrão da dificuldade: o cursor começa na dificuldade salva', () => {
@@ -351,7 +352,7 @@ describe('CONTINUAR? (ARCADE)', () => {
     const t = navegadorFalso();
     t.ui.pronto(mundoFalso());
     const c = t.ui.cenas.continue as CenaContinue;
-    const run = { c1: 'caio' as const, order: ['hayato', 'wei-long', 'min-ji'] as Array<'hayato' | 'wei-long' | 'min-ji'>, idx: 1, score, continues, diff: 1, cont: 0 };
+    const run = { c1: 'caio' as const, etapas: (['hayato', 'wei-long', 'min-ji'] as const).map((id) => ({ id: id as 'hayato', chefe: false })), idx: 1, score, continues, diff: 1, cont: 0 };
     const ir: Array<[string, unknown]> = [];
     t.ui.go = ((n: string, a: unknown) => ir.push([n, a])) as never;
     c.enter({ run, a: { cfg: { mode: 'arcade', c1: 'caio', c2: 'wei-long', cpu: 1 }, run } });

@@ -23,15 +23,18 @@ export function desenharPose(
   branco = 0,
 ): void {
   const pd = getPD(ch, nome);
+  const img = arte.imagemDe(pd);
+  if (!img) return; // atlas ainda nao carregado: o lutador aparece quando a arte chegar
   const K = ch.K * escala;
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(facing, 1);
   ctx.globalAlpha = alfa;
-  ctx.drawImage(arte.imagem, pd.x, pd.y, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
-  if (branco > 0) {
+  ctx.drawImage(img, pd.x, pd.y, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
+  const sil = branco > 0 ? arte.silhuetaDe(pd) : null;
+  if (sil) {
     ctx.globalAlpha = branco;
-    ctx.drawImage(arte.silhueta(), pd.x, pd.y, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
+    ctx.drawImage(sil, pd.x, pd.y, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
   }
   ctx.restore();
 }

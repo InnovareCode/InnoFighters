@@ -1,5 +1,6 @@
 import type { IdLutador } from '../core/contratos';
 import type { ConfigPartida } from '../fight/game';
+import type { Etapa } from '../meta';
 
 /** Ação de navegação de menu (NAV do protótipo). */
 export type AcaoNav = 'up' | 'down' | 'left' | 'right' | 'ok' | 'back';
@@ -16,14 +17,20 @@ export const NAV: Readonly<Record<string, AcaoNav>> = {
 
 export type NomeCena =
   | 'boot' | 'intro' | 'title' | 'menu' | 'select' | 'diff' | 'vs' | 'fight'
-  | 'how' | 'options' | 'result' | 'continue' | 'ending';
+  | 'how' | 'options' | 'result' | 'continue' | 'ending' | 'chefe' | 'desbloqueio';
 
 export type ModoMenu = 'arcade' | 'versus' | 'cpu' | 'training';
 
-/** Estado da campanha ARCADE (UI.run do protótipo). */
+/**
+ * Configuração de partida + marca de luta de chefe. `chefe` ainda não existe em `ConfigPartida` (a Vega o entrega na
+ * E3, plano 2.3): hoje a luta ignora o campo e a UI o usa só para o aviso, o VS e o HUD do chefão.
+ */
+export type ConfigPartidaUI = ConfigPartida & { chefe?: boolean };
+
+/** Estado da campanha ARCADE (UI.run do protótipo): a escada de etapas vem de `montarEscada` (src/meta). */
 export type CampanhaArcade = {
   c1: IdLutador;
-  order: IdLutador[];
+  etapas: Etapa[];
   idx: number;
   score: number;
   continues: number;
@@ -34,7 +41,7 @@ export type CampanhaArcade = {
 /** Argumentos de entrada das cenas (o que `UI.go(nome, args)` leva). */
 export type ArgsSelect = { mode: ModoMenu };
 export type ArgsDiff = { mode: 'arcade' | 'cpu'; c1: IdLutador; c2: IdLutador };
-export type ArgsVs = { cfg: ConfigPartida; run?: CampanhaArcade };
+export type ArgsVs = { cfg: ConfigPartidaUI; run?: CampanhaArcade };
 export type ArgsFight = ArgsVs;
 export type ArgsResult = {
   a: ArgsFight;
@@ -43,6 +50,8 @@ export type ArgsResult = {
 };
 export type ArgsContinue = { run: CampanhaArcade; a: ArgsFight };
 export type ArgsEnding = { run: CampanhaArcade };
+export type ArgsAvisoChefe = { cfg: ConfigPartidaUI; run: CampanhaArcade };
+export type ArgsDesbloqueio = { novos: readonly IdLutador[]; indice?: number };
 export type ArgsTitle = { fromIntro?: boolean } | undefined;
 export type ArgsComo = { from: string };
 

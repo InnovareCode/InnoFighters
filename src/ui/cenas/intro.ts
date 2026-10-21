@@ -1,12 +1,11 @@
 import { ALTURA, LARGURA } from '../../core/constantes';
 import { clamp, easeOut, lerp } from '../../core/math';
-import { ROSTER } from '../../data/lutadores';
+import { VITRINE } from '../../data/lutadores';
 import { desenharPose } from '../../render/pose';
-import { cenarioDoCiclo, LOGO_S, LOGO_Y, marca, PALETA_MARCA } from '../logo';
+import { cenarioDoCiclo, CICLO_VITRINE, LOGO_S, LOGO_Y, marca, PALETA_MARCA } from '../logo';
 import type { Navegador } from '../navegador';
 import type { Cena } from '../tipos';
 import type { CenaTitle } from './title';
-import { CICLO_CENARIOS } from '../../data/cenarios';
 
 type Faisca = { x: number; y: number; vx: number; vy: number; life: number; c: string };
 
@@ -28,7 +27,7 @@ export class CenaIntro implements Cena {
     const { audio, rngVisual } = this.ui.c;
     const t = ++this.t;
     if (t === 6) audio.introWhoosh();
-    for (let i = 0; i < 4; i++) if (t === 34 + i * 20) audio.introHit(i);
+    for (let i = 0; i < VITRINE.length; i++) if (t === 34 + i * 20) audio.introHit(i);
     if (t === 128) {
       audio.logoSlam();
       for (let k = 0; k < 70; k++) {
@@ -98,9 +97,9 @@ export class CenaIntro implements Cena {
     // 2) quatro painéis inclinados com os lutadores
     const panelsA = t < 128 ? 1 : clamp(1 - (t - 128) / 70, 0, 1);
     if (t >= 30 && panelsA > 0) {
-      const pw = W / 4;
+      const pw = W / VITRINE.length;
       const sk = 70;
-      ROSTER.forEach((id, i) => {
+      VITRINE.forEach((id, i) => {
         const r = m.elenco[id];
         const ch = r.ch;
         const t0 = 34 + i * 20;
@@ -119,7 +118,7 @@ export class CenaIntro implements Cena {
         ctx.lineTo(x0 - sk / 2, H);
         ctx.closePath();
         ctx.clip();
-        const img = cenarioDoCiclo(m, CICLO_CENARIOS[i] ?? 'jp');
+        const img = cenarioDoCiclo(m, CICLO_VITRINE[i] ?? 'jp');
         const push = 1.25 + (t - t0) * 0.0015;
         ctx.save();
         ctx.translate(x0 + pw / 2, H / 2);

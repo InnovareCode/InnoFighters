@@ -1,5 +1,6 @@
-import { ROSTER } from '../../data/lutadores';
+import { VITRINE } from '../../data/lutadores';
 import { desenharFundoMenu } from '../../render/cenario';
+import { descricaoArcade } from '../escada-texto';
 import { marca } from '../logo';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
@@ -19,7 +20,7 @@ export class CenaMenu implements Cena {
     const ir = (mode: ModoMenu) => () => this.ui.go('select', { mode });
     return new MenuList(
       [
-        { label: 'ARCADE', desc: 'Um jogador: enfrente os 3 rivais em sequência e torne-se o campeão.', onOk: ir('arcade') },
+        { label: 'ARCADE', desc: descricaoArcade(this.ui.c.regras), onOk: ir('arcade') },
         { label: 'VERSUS 2 JOGADORES', desc: 'Duelo local no mesmo teclado ou com dois controles.', onOk: ir('versus') },
         { label: 'LUTA vs CPU', desc: 'Escolha qualquer combinação de lutadores e a dificuldade.', onOk: ir('cpu') },
         { label: 'TREINAMENTO', desc: 'Pratique combos sem pressão: tempo infinito, energia e alvo configurável.', onOk: ir('training') },
@@ -46,7 +47,7 @@ export class CenaMenu implements Cena {
     const m = this.ui.m;
     const t = this.ui.t;
     desenharFundoMenu(ctx, m.rec.cenarioPadrao, m.rec.vinheta, t, 0.42);
-    const id = ROSTER[Math.floor(t / 300) % 4] ?? 'hayato';
+    const id = VITRINE[Math.floor(t / 300) % VITRINE.length] ?? 'hayato';
     const k = (t % 300) / 300;
     f.spotlight(720, 380, 230, 'rgba(255,190,220,.16)');
     ctx.save();

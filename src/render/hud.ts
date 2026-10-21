@@ -1,8 +1,9 @@
 import type { Elenco } from '../assets/elenco';
 import { ALTURA, LARGURA, MAX_EN } from '../core/constantes';
-import type { LeituraLuta, LutadorLeitura } from '../core/contratos';
+import type { ExtensaoChefeLeitura, LeituraLuta, LutadorLeitura } from '../core/contratos';
 import { clamp } from '../core/math';
 import { zoomIn } from './animacao';
+import { chDaFicha } from './lutador';
 import { desenharRetratoMoldurado } from './retrato';
 import type { Ctx } from './tela';
 import { caminhoInclinado, painel, texto, textoArcade } from './texto';
@@ -35,6 +36,11 @@ function desenharLado(ctx: Ctx, luta: LeituraLuta, p: LutadorLeitura, nome: stri
   const sk = 12;
   const pct = p.hp / p.maxHp;
   const rastroPct = p.hpShown / p.maxHp;
+  // luta de chefe (C3 aditivo, plano 2.5): barras de vida empilhadas. Campos ausentes = 1 barra, desenho de sempre.
+  const ext = p as LutadorLeitura & ExtensaoChefeLeitura;
+  const barras = ext.barras ?? 1;
+  const barrasMax = ext.barrasMax ?? 1;
+  const empilhada = barrasMax > 1 && barras > 1;
 
   caminhoInclinado(ctx, x - 4, y - 4, w + 8, h + 8, sk, lado);
   ctx.fillStyle = '#05060f';
@@ -42,7 +48,13 @@ function desenharLado(ctx: Ctx, luta: LeituraLuta, p: LutadorLeitura, nome: stri
   ctx.save();
   caminhoInclinado(ctx, x, y, w, h, sk, lado);
   ctx.clip();
-  ctx.fillStyle = '#4a0d12';
+  if (empilhada) {
+    // a barra de baixo (a que vem depois) aparece inteira por trás da barra atual, em outra cor
+    const gp = ctx.createLinearGradient(0, y, 0, y + h);
+    gp.addColorStop(0, '#c58aff');
+    gp.addColorStop(1, '#5a1fb0');
+    ctx.fillStyle = gp;
+  } else ctx.fillStyle = '#4a0d12';
   ctx.fillRect(x, y, w, h);
   const fx = (f: number): number => (lado === 1 ? x + w - w * f : x);
   ctx.fillStyle = '#e03a2e';
@@ -67,10 +79,14 @@ function desenharLado(ctx: Ctx, luta: LeituraLuta, p: LutadorLeitura, nome: stri
   const alinha = lado === 1 ? 'left' : 'right';
   const ancora = lado === 1 ? x + 6 : x + w - 6;
   textoArcade(ctx, nome, ancora, 66, 22, '#fff', '#05060f', alinha);
-  const rotulo = p.cpu !== null ? 'CPU' : lado === 1 ? '1P' : '2P';
+  const rotulo = ext.chefe === true ? 'CHEFÃO' : p.cpu !== null ? 'CPU' : lado === 1 ? '1P' : '2P';
   const placar = String(p.score).padStart(6, '0');
   textoArcade(ctx, lado === 1 ? `${rotulo}  ${placar}` : `${placar}  ${rotulo}`, ancora, 11, 14, '#cfe6ff', '#05060f', alinha);
 
+  if (barrasMax > 1) {
+    // contador de barras (×2, ×1) no meio, entre o nome e as bolinhas de round
+    textoArcade(ctx, `×${barras}`, x + w / 2, 66, 22, barras > 1 ? ['#e6c8ff', '#9a4cff'] : ['#fff6b0', '#ff9a1a'], '#05060f', 'center');
+  }
   if (!luta.training) {
     for (let i = 0; i < luta.winsNeeded; i++) {
       const cx = lado === 1 ? 424 - i * 20 : 536 + i * 20;
@@ -122,10 +138,10 @@ export function desenharHUD(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, opcoes:
   const [a, b] = luta.fighters;
   const ra = elenco[a.id];
   const rb = elenco[b.id];
-  desenharLado(ctx, luta, a, ra.ch.name, ra.ch.proj.cost, 1);
-  desenharLado(ctx, luta, b, rb.ch.name, rb.ch.proj.cost, 2);
-  desenharRetratoMoldurado(ctx, ra.arte.imagem, ra.ch.head, 8, 8, 88, false);
-  desenharRetratoMoldurado(ctx, rb.arte.imagem, rb.ch.head, LARGURA - 96, 8, 88, true);
+  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1);
+  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2);
+  desenharRetratoMoldurado(ctx, ra.arte.retrato(ra.ch.head), 8, 8, 88, false);
+  desenharRetratoMoldurado(ctx, rb.arte.retrato(rb.ch.head), LARGURA - 96, 8, 88, true);
 
   // medalhão do KO e cronômetro
   ctx.save();

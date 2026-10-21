@@ -16,6 +16,12 @@ export type InputFrame = {
   lk: boolean;
   hk: boolean;
   sp: boolean;
+  /**
+   * E3: ESP SEGURADO (estado, não borda). Opcional de propósito: ausente = false, então os quadros do protótipo
+   * e todo código antigo seguem iguais. Só a carga do AMINU (S2) lê. Produzido por `input/teclas.ts`
+   * (`segurada.has(mapa.sp)`); a CPU não precisa preencher.
+   */
+  spSeg?: boolean;
 };
 
 export const INPUT_VAZIO: Readonly<InputFrame> = Object.freeze({
@@ -61,6 +67,13 @@ export const CHAVE_STORAGE = 'inno-fighters-v1';
 /** Chave do protótipo (Sakura Fighters). Migrar uma vez e apagar. */
 export const CHAVE_STORAGE_LEGADA = 'sakura-fighters-v4';
 
+/**
+ * C4 v2 (expansao, E2). Chave NOVA, nao `v: 2` dentro da v1: um rollback de build le a v1 intacta em vez de
+ * regravar por cima. `CHAVE_STORAGE` segue apontando para a v1 ate a E4 trocar a UI; ai ela passa a valer a V2.
+ */
+export const CHAVE_STORAGE_V1 = CHAVE_STORAGE;
+export const CHAVE_STORAGE_V2 = 'inno-fighters-v2';
+
 // ---------------------------------------------------------------------------
 // C3 — Estado de leitura da luta + fila de eventos (Fase 1a, Vega).
 //
@@ -87,7 +100,8 @@ export const CHAVE_STORAGE_LEGADA = 'sakura-fighters-v4';
 export type IndiceLutador = 0 | 1;
 
 /** Id estável do lutador. No protótipo: f1=hayato, f2=wei-long, f3=min-ji, f4=caio. */
-export type IdLutador = 'hayato' | 'wei-long' | 'min-ji' | 'caio';
+export const IDS_LUTADORES = ['hayato', 'wei-long', 'min-ji', 'caio'] as const;
+export type IdLutador = (typeof IDS_LUTADORES)[number];
 
 /** Máquina de estados do `Fighter` do protótipo (`this.state`). */
 export type EstadoLutador =
@@ -103,7 +117,9 @@ export type EstadoLutador =
   | 'block'
   | 'down'
   | 'ko'
-  | 'win';
+  | 'win'
+  /** E3: o chefe está na Dança da Águia (cena entre as fases). Nunca ocorre fora de luta de chefe. */
+  | 'cena';
 
 /**
  * Quadro escolhido por `poseT()` + ajustes de transformação. `name` é o nome do
@@ -163,6 +179,23 @@ export type LutadorLeitura = {
   trail: readonly RastroLeitura[];
   /** Controlado pela CPU? nível 0..2 (FÁCIL/NORMAL/DIFÍCIL) ou null. */
   cpu: number | null;
+  // --- C3 aditivo da E3 (docs/mecanicas-e3.md §4). Valores sem a mecânica: 1, 1, false, null, 0. ---
+  /**
+   * Barras de vida que ainda restam (1 fora de luta de chefe). `hp`/`maxHp` descrevem a barra ATUAL; `maxHp` é o
+   * `hpPorBarra` do chefe. Na troca de barra `hp` salta para cheio e `hpShown` acompanha no mesmo tick.
+   */
+  barras: number;
+  /** Barras com que a luta começou (2 no chefão, 1 nos demais). */
+  barrasMax: number;
+  /** Este lutador é o chefe da luta? */
+  chefe: boolean;
+  /**
+   * Ficha (conjunto de poses/atributos) ativa: null = a base do lutador. A render escolhe
+   * `elenco[id].ch.fichas[ficha]` para `getPD` e para as cores `fire` quando não for null.
+   */
+  ficha: string | null;
+  /** Nível de carga do MASHI (AMINU, S2): 0 = sem carga. */
+  nivelCarga: 0 | 1 | 2 | 3;
 };
 
 export type EstiloProjetil = 'orb' | 'wave' | 'blade' | 'boomerang';
@@ -184,7 +217,16 @@ export type ProjetilLeitura = {
   frame: number;
 };
 
-export type FaseLuta = 'idle' | 'intro' | 'fight' | 'ko' | 'timeover' | 'roundend' | 'matchend';
+export type FaseLuta =
+  | 'idle'
+  | 'intro'
+  | 'fight'
+  | 'ko'
+  | 'timeover'
+  | 'roundend'
+  | 'matchend'
+  /** E3: cena do chefe entre as barras (relógio parado, sem acertos, sem projéteis). Nunca ocorre fora de luta de chefe. */
+  | 'cena-chefe';
 
 export type ModoLuta = 'versus' | 'cpu' | 'arcade' | 'training';
 
@@ -219,6 +261,20 @@ export type SomImpacto = 'punch' | 'kick' | 'fireballHit';
  *  round      -> fase 'start': AudioSys.roundStart(); 'fight': AudioSys.fight(); 'timeover': AudioSys.timeOver();
  *                'end': AudioSys.victory()
  *  perfect    -> emitido junto de round/'end' quando venceu sem perder vida: AudioSys.uiPerfect() após 700 ms
+ *
+ * Eventos da E3 (docs/mecanicas-e3.md §4; hoje só `fase-chefe` é emitido, os demais entram nas fatias S2..S5):
+ *
+ *  fase-chefe   -> etapa 'troca': a barra do chefe acabou e uma nova encheu. Sai ANTES do `hit` do mesmo tick.
+ *                  Receita: flash branco + faíscas no chefe, tremor (já em `shake`), som grave de impacto, animação
+ *                  de "barra nova enchendo" no HUD. Cena e ficha ainda NÃO mudaram.
+ *                  etapa 'danca': começou a cena (fase 'cena-chefe', relógio parado): escurece o céu da arena, faixa.
+ *                  etapa 'retomada': a cena acabou e a ficha da fase 2 está ativa: desliga a faixa e o escurecimento.
+ *  parry        -> (S4) faíscas 14 brancas + rajada em (x, y) + som de bloqueio agudo + texto 'PARADA!'
+ *  quebra-guarda-> (S2) faíscas 12 vermelhas + rajada grande em (x, y) + som de vidro/impacto + texto 'GUARDA QUEBRADA!'
+ *  carga        -> (S2) a cada nível alcançado: apito crescente com tom proporcional a `nivel` + pulso de brilho
+ *  rebote       -> (S3) a CENTELLA tocou a corda: poeira na parede + som de corda esticando
+ *  troca-ficha  -> (S5/chefe) o lutador trocou de ficha: flash + fumaça; `ficha` null = voltou à base
+ *  hit.contraEspecial -> texto próprio (ex.: 'PARADA!') no lugar de 'COUNTER!'
  *
  * O tremor de tela e o hitstop NÃO viajam no evento: ficam em `LeituraLuta.shake` /
  * `.hitstop` (o protótipo os lê/decrementa como estado).
@@ -270,6 +326,8 @@ export type EventoLuta =
       acertos: number;
       /** Texto 'COUNTER!' quando for contragolpe. */
       texto: TextoFlutuante | null;
+      /** E3 (S4): contragolpe especial (ex.: COUP D'ARRÊT na preparação do rival). Ausente = comum. */
+      contraEspecial?: boolean;
     }
   | { tipo: 'throw'; atacante: IndiceLutador; defensor: IndiceLutador; pitch: number; texto: TextoFlutuante }
   | { tipo: 'ko'; defensor: IndiceLutador; pitch: number }
@@ -281,7 +339,27 @@ export type EventoLuta =
       vencedor?: IndiceLutador | null;
       fimDaLuta?: boolean;
     }
-  | { tipo: 'perfect'; vencedor: IndiceLutador };
+  | { tipo: 'perfect'; vencedor: IndiceLutador }
+  | EventoFaseChefe
+  | {
+      tipo: 'parry';
+      atacante: IndiceLutador;
+      defensor: IndiceLutador;
+      x: number;
+      y: number;
+      texto: TextoFlutuante;
+    }
+  | {
+      tipo: 'quebra-guarda';
+      atacante: IndiceLutador;
+      defensor: IndiceLutador;
+      x: number;
+      y: number;
+      texto: TextoFlutuante;
+    }
+  | { tipo: 'carga'; lutador: IndiceLutador; nivel: 1 | 2 | 3 }
+  | { tipo: 'rebote'; lutador: IndiceLutador; x: number }
+  | { tipo: 'troca-ficha'; lutador: IndiceLutador; ficha: string | null };
 
 /** Tudo o que render/ui/audio podem ler de uma luta em andamento. */
 export type LeituraLuta = {
@@ -317,3 +395,28 @@ export type LeituraLuta = {
   /** Eventos emitidos NESTE tick. */
   readonly events: readonly EventoLuta[];
 };
+
+// ---------------------------------------------------------------------------
+// C3 aditivo da E3 — campos reais (S0, Vega). Substituem o stub que a UI (E4) usava.
+// ---------------------------------------------------------------------------
+
+/** Etapas da luta de chefe (docs/mecanicas-e3.md §3). */
+export type EtapaFaseChefe = 'troca' | 'danca' | 'retomada';
+
+/**
+ * Evento do chefe. `lutador` = o chefe. `barrasRestantes` = barras DEPOIS do evento (1 na troca da 2ª para a 1ª;
+ * nas etapas 'danca' e 'retomada' repete o valor atual). ATENÇÃO (UI): sai uma vez por etapa, então quem só quer o
+ * flash da troca de barra deve filtrar `etapa === 'troca'`.
+ */
+export type EventoFaseChefe = {
+  tipo: 'fase-chefe';
+  lutador: IndiceLutador;
+  etapa: EtapaFaseChefe;
+  barrasRestantes: number;
+};
+
+/**
+ * @deprecated Era o stub da E4; os campos agora são obrigatórios em `LutadorLeitura`. Mantido (tudo opcional) para
+ * quem ainda faz `p as LutadorLeitura & ExtensaoChefeLeitura` ou fabrica leituras parciais.
+ */
+export type ExtensaoChefeLeitura = Partial<Pick<LutadorLeitura, 'barras' | 'barrasMax' | 'chefe'>>;

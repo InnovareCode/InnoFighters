@@ -1,2 +1,3 @@
-- [Curadoria de sprites](project_curadoria_sprites.md) — WEI LONG canônico proposto; medir fundo por pixel; .jfif precisa cópia .jpg; FX à parte
+- [Curadoria de sprites](project_curadoria_sprites.md) — WEI LONG; folhas 1 dos novos; contar componentes; andar step-and-drag; .jfif; FX à parte
+- [Prompts no Runway](project_prompts_runway.md) — docs/prompts é gerado (mude fonte+script); 1 referência; SPACING; KO à esquerda; HAYATO A2
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

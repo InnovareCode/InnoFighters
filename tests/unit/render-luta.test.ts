@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Elenco } from '../../src/assets/elenco';
+import type { ArteLutador, Elenco } from '../../src/assets/elenco';
 import type { EventoLuta, LeituraLuta, LutadorLeitura, ProjetilLeitura } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
 import { LUTADORES } from '../../src/data/lutadores';
@@ -42,7 +42,8 @@ function lutador(extra: Partial<LutadorLeitura> = {}): LutadorLeitura {
   return {
     id: 'hayato', indice: 0, x: 300, y: 470, facing: 1, state: 'idle', pose, move: null, mt: 0,
     hp: 100, maxHp: 100, hpShown: 100, en: 0, flash: 0, invuln: 0, age: 0, score: 0, wins: 0, maxCombo: 0,
-    dmgTaken: 0, combo: combo0, trail: [], cpu: null, ...extra,
+    dmgTaken: 0, combo: combo0, trail: [], cpu: null,
+    barras: 1, barrasMax: 1, chefe: false, ficha: null, nivelCarga: 0, ...extra,
   };
 }
 
@@ -69,7 +70,9 @@ const poses: Poses = {
 };
 const hayato = montarLutador(LUTADORES.hayato, poses);
 const wei = montarLutador(LUTADORES['wei-long'], poses);
-const arteFalsa = { imagem: { tag: 'atlas' } as unknown as CanvasImageSource, silhueta: () => ({ tag: 'silhueta' }) as unknown as CanvasImageSource };
+const IMG = { tag: 'atlas' } as unknown as CanvasImageSource;
+const SIL = { tag: 'silhueta' } as unknown as CanvasImageSource;
+const arteFalsa: ArteLutador = { pronta: true, imagemDe: () => IMG, silhuetaDe: () => SIL, retrato: () => null };
 const elenco = {
   hayato: { ch: hayato, arte: arteFalsa },
   'wei-long': { ch: wei, arte: arteFalsa },
@@ -89,13 +92,20 @@ describe('desenharPose', () => {
 
   it('a silhueta branca só entra com branco > 0 (flash sob demanda)', () => {
     let pedidas = 0;
-    const arte = { imagem: arteFalsa.imagem, silhueta: () => (pedidas++, arteFalsa.silhueta()) };
+    const arte: ArteLutador = { ...arteFalsa, silhuetaDe: () => (pedidas++, SIL) };
     const g = gravador();
     desenharPose(g.ctx, hayato, arte, 'idle0', 0, 0, 1);
     expect(pedidas).toBe(0);
     expect(g.chamou('drawImage')).toBe(1);
     desenharPose(g.ctx, hayato, arte, 'idle0', 0, 0, 1, 1, 1, 0.5);
     expect(pedidas).toBe(1);
+  });
+
+  it('atlas ainda não carregado (arte nula): não desenha nem quebra', () => {
+    const g = gravador();
+    const sem: ArteLutador = { pronta: false, imagemDe: () => null, silhuetaDe: () => null, retrato: () => null };
+    expect(() => desenharPose(g.ctx, hayato, sem, 'idle0', 0, 0, 1, 1, 1, 0.5)).not.toThrow();
+    expect(g.chamadas).toEqual([]);
   });
 
   it('pose inexistente cai na cadeia de fallback em vez de quebrar', () => {

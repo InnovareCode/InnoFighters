@@ -1,6 +1,9 @@
 import { ALTURA, LARGURA } from '../../core/constantes';
+import type { IdLutador } from '../../core/contratos';
+import { aplicarVitoriaArcade } from '../../meta';
 import { desenharFundoMenu } from '../../render/cenario';
 import { zoomIn } from '../../render/animacao';
+import { cfgDaEtapa } from '../campanha';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
 import { mostrarLutador } from '../personagens';
@@ -139,9 +142,8 @@ export class CenaContinue implements Cena {
     r.continues--;
     r.cont++;
     this.ui.c.audio.uiOk();
-    const prox = r.order[r.idx];
-    if (!prox) return;
-    this.ui.go('vs', { cfg: { mode: 'arcade', c1: r.c1, c2: prox, cpu: r.diff, keepScore: true }, run: r });
+    if (!r.etapas[r.idx]) return;
+    this.ui.go('vs', { cfg: cfgDaEtapa(r, true), run: r }); // continuar o chefão volta direto ao VS dele
   }
 
   key(k: string): boolean {
@@ -195,17 +197,21 @@ export class CenaContinue implements Cena {
 export class CenaEnding implements Cena {
   private run: CampanhaArcade | null = null;
   private rec = false;
+  /** Lutadores liberados por esta vitória (fila primeiro, chefão depois): um aviso para cada. */
+  novos: IdLutador[] = [];
 
   constructor(private readonly ui: Navegador) {}
 
   enter(a: ArgsEnding): void {
-    const { persist, audio } = this.ui.c;
+    const { persist, audio, regras } = this.ui.c;
     this.run = a.run;
     this.rec = a.run.score > persist.hi;
-    if (this.rec) {
-      persist.hi = a.run.score;
-      persist.salvar();
-    }
+    if (this.rec) persist.hi = a.run.score;
+    // zerou o ARCADE: conta a vitória e libera o próximo da fila (e o chefão, se ele estava na escada e caiu)
+    const v = aplicarVitoriaArcade(persist.prog, { derrotouChefe: a.run.etapas.some((e) => e.chefe) }, regras);
+    persist.prog = v.prog;
+    this.novos = v.novos;
+    persist.salvar();
     audio.victory();
   }
 
@@ -231,18 +237,19 @@ export class CenaEnding implements Cena {
     if (t > 60 && Math.floor(t / 30) % 2 === 0) f.A('ENTER — VOLTAR AO TÍTULO', W / 2, 505, 24, '#fff', '#000');
   }
 
+  /** Sai da tela final: um aviso de desbloqueio por lutador novo, ou direto ao título. */
+  private sair(): void {
+    this.ui.c.audio.startMusic('menu');
+    if (this.novos.length > 0) this.ui.go('desbloqueio', { novos: this.novos });
+    else this.ui.go('title');
+  }
+
   key(k: string): boolean {
-    if (this.ui.t > 60 && (NAV[k] === 'ok' || NAV[k] === 'back')) {
-      this.ui.c.audio.startMusic('menu');
-      this.ui.go('title');
-    }
+    if (this.ui.t > 60 && (NAV[k] === 'ok' || NAV[k] === 'back')) this.sair();
     return true;
   }
 
   click(): void {
-    if (this.ui.t > 60) {
-      this.ui.c.audio.startMusic('menu');
-      this.ui.go('title');
-    }
+    if (this.ui.t > 60) this.sair();
   }
 }

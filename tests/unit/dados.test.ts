@@ -44,12 +44,14 @@ describe.skipIf(!TEM_PROTOTIPO)('src/data == protótipo', () => {
   });
 
   it('ROSTER na ordem f1..f4', () => {
-    expect(ROSTER.map((id) => LUTADORES[id].idPrototipo)).toEqual(['f1', 'f2', 'f3', 'f4']);
+    expect(ROSTER.filter((id) => LUTADORES[id].idPrototipo).map((id) => LUTADORES[id].idPrototipo)).toEqual(['f1', 'f2', 'f3', 'f4']);
   });
 
+  // lutadores novos (sem idPrototipo) não existem no protótipo: só quem tem entra na prova de fidelidade
   for (const id of ROSTER) {
     const def = LUTADORES[id];
     const f = def.idPrototipo;
+    if (!f) continue;
 
     describe(`${id} (${f})`, () => {
       it('dados estáticos, ajustes de golpes, especiais e animação idênticos', () => {

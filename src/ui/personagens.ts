@@ -32,6 +32,7 @@ export function mostrarLutador(
 ): void {
   const { ctx } = f;
   const r = m.elenco[id];
+  m.arte.pedir(id); // carga sob demanda: se o atlas não está na memória, pede (o lutador aparece quando chegar)
   f.floorShadow(x, y, 70 * scale);
   ctx.save();
   ctx.translate(x, y);
@@ -68,6 +69,7 @@ export function miniatura(
 ): void {
   const { ctx } = f;
   const r = m.elenco[id];
+  m.arte.pedir(id);
   ctx.save();
   ctx.beginPath();
   f.rr(x, y, w, h, 6);

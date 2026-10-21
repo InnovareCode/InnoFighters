@@ -159,13 +159,15 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     await page.goto('/?seed=1');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     const r = await page.evaluate(() => ({
-      nova: JSON.parse(window.localStorage.getItem('inno-fighters-v1') ?? 'null'),
+      nova: JSON.parse(window.localStorage.getItem('inno-fighters-v2') ?? 'null'),
+      v1: window.localStorage.getItem('inno-fighters-v1'),
       antiga: window.localStorage.getItem('sakura-fighters-v4'),
       hi: (window as any).__inno.persist.hi,
       rounds: (window as any).__inno.persist.settings.rounds,
     }));
     expect(r.antiga).toBeNull();
-    expect(r.nova).toMatchObject({ v: 1, hi: 4321, s: { rounds: 3, time: 60, diff: 2, shake: false } });
+    expect(r.nova).toMatchObject({ v: 2, hi: 4321, s: { rounds: 3, time: 60, diff: 2, shake: false }, prog: { desbloqueados: [], zeradas: 0, chefeDerrotado: false, vistos: [] } });
+    expect(r.v1).toBeNull(); // veio da chave do protótipo: a v1 nunca existiu aqui
     expect(r.hi).toBe(4321);
     expect(r.rounds).toBe(3);
     expect(erros).toEqual([]);
@@ -181,7 +183,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('diff', { mode: 'arcade', c1: 'min-ji', c2: 'hayato' }); }");
     await page.keyboard.press('Enter'); // FÁCIL
     await esperarCena(page, 'vs');
-    const ordem = await hook(page, '(h) => h.ui.run.order');
+    const ordem = await hook(page, '(h) => h.ui.run.etapas.map((e) => e.id)');
     expect([...ordem].sort()).toEqual(['caio', 'hayato', 'wei-long']);
 
     for (let luta = 0; luta < 3; luta++) {
@@ -199,7 +201,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
       }
       await esperarCena(page, luta < 2 ? 'vs' : 'ending', 40_000);
     }
-    const fim = await hook(page, '(h) => ({ score: h.ui.scene.run.score, hi: h.persist.hi, salvo: JSON.parse(localStorage.getItem("inno-fighters-v1")).hi })');
+    const fim = await hook(page, '(h) => ({ score: h.ui.scene.run.score, hi: h.persist.hi, salvo: JSON.parse(localStorage.getItem("inno-fighters-v2")).hi })');
     expect(fim.score).toBeGreaterThan(0);
     expect(fim.hi).toBe(fim.score);
     expect(fim.salvo).toBe(fim.score);
@@ -220,7 +222,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
       page,
       `(h) => {
         h.ui.fade = 0; h.ui.fadeDir = 0;
-        const run = { c1: 'caio', order: ['hayato', 'wei-long', 'min-ji'], idx: 1, score: 5000, continues: 1, diff: 0, cont: 0 };
+        const run = { c1: 'caio', etapas: ['hayato', 'wei-long', 'min-ji'].map((id) => ({ id, chefe: false })), idx: 1, score: 5000, continues: 1, diff: 0, cont: 0 };
         h.ui.set('continue', { run, a: { cfg: { mode: 'arcade', c1: 'caio', c2: 'wei-long', cpu: 0 }, run } });
         const c = h.ui.scene;
         h.avancar(120);
@@ -230,7 +232,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
         h.ui.fadeTo = null; h.ui.fadeDir = 0;
         h.ui.set('continue', { run, a: { cfg: { mode: 'arcade', c1: 'caio', c2: 'wei-long', cpu: 0 }, run } });
         h.avancar(1);                                    // sem créditos -> GAME OVER
-        return { aposDoisSegundos, gasto, over: c.over, hi: h.persist.hi, salvo: JSON.parse(localStorage.getItem('inno-fighters-v1')).hi };
+        return { aposDoisSegundos, gasto, over: c.over, hi: h.persist.hi, salvo: JSON.parse(localStorage.getItem('inno-fighters-v2')).hi };
       }`,
     );
     expect(r.aposDoisSegundos).toBe(480);

@@ -1,37 +1,76 @@
 import { LARGURA } from '../../core/constantes';
-import { ROSTER } from '../../data/lutadores';
+import type { IdLutador } from '../../core/contratos';
 import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
+import { liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
+import { dicaArcadeSelecao } from '../escada-texto';
+import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa, type EstadoCasa } from '../grade';
 import type { Navegador } from '../navegador';
 import { barrasDeStatus, mostrarLutador, P_COL } from '../personagens';
 import type { ArgsSelect, Cena, ModoMenu } from '../tipos';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
+
 const TECLAS_P1: Readonly<Record<string, Dir>> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 const TECLAS_P2: Readonly<Record<string, Dir>> = { w: 'up', s: 'down', a: 'left', d: 'right' };
 
-/** Seleção de lutador(es): grade 2x2, 1 ou 2 jogadores, etapa de alvo/adversário. */
+/**
+ * Seleção de lutador(es): grade de 2 colunas até 4 lutadores (layout de hoje) ou 3x3 com o chefão no centro (9),
+ * estados liberado / NOVO! / travado / chefão oculto, 1 ou 2 jogadores, etapa de alvo/adversário.
+ * Tudo deriva de `regras.roster` (nada de "4" fixo) e do progresso do jogador.
+ */
 export class CenaSelect implements Cena {
   mode: ModoMenu = 'arcade';
   versus = false;
   step = 1;
+  /** Posições na grade (não ids): `grade[cur[p]]` é o lutador sob o cursor. */
   cur: [number, number] = [0, 1];
   lock: [boolean, boolean] = [false, false];
   pick: [number, number] = [0, 1];
   flash: [number, number] = [0, 0];
   done = 0;
+  /** Ids na ordem das casas. */
+  grade: IdLutador[] = [];
+  private colunas: 2 | 3 = 2;
+  private libs: ReadonlySet<IdLutador> = new Set();
+  /** Liberados que ainda não tinham sido vistos ao abrir a tela (selo NOVO!). */
+  novos: ReadonlySet<IdLutador> = new Set();
 
   constructor(private readonly ui: Navegador) {}
 
   enter(a: ArgsSelect): void {
+    const { regras, persist } = this.ui.c;
     this.mode = a.mode;
     this.versus = a.mode === 'versus';
     this.step = 1;
-    this.cur = [0, 1];
+    this.grade = ordemDaGrade(regras.roster, regras.chefe);
+    this.colunas = colunasDaGrade(this.grade.length);
+    this.libs = liberados(persist.prog, regras);
+    // o selo NOVO! vale durante esta visita; ao abrir, já conta como visto (some na próxima)
+    this.novos = new Set(naoVistos(persist.prog).filter((id) => this.libs.has(id)));
+    if (this.novos.size > 0) {
+      persist.prog = marcarVistos(persist.prog, [...this.novos]);
+      persist.salvar();
+    }
+    const primeiro = Math.max(0, proximaLiberada(this.grade, this.libs, 0));
+    this.cur = [primeiro, Math.max(0, proximaLiberada(this.grade, this.libs, primeiro + 1))];
     this.lock = [false, false];
     this.pick = [0, 1];
     this.flash = [0, 0];
     this.done = 0;
+  }
+
+  private get n(): number {
+    return this.grade.length;
+  }
+
+  private idEm(i: number): IdLutador {
+    return this.grade[i] ?? this.grade[0] ?? 'hayato';
+  }
+
+  private estado(id: IdLutador): EstadoCasa {
+    const { regras, persist } = this.ui.c;
+    return estadoDaCasa(id, { prog: persist.prog, regras, novos: this.novos });
   }
 
   private title(): string {
@@ -44,22 +83,22 @@ export class CenaSelect implements Cena {
     return this.versus ? null : this.step === 1 ? 0 : 1;
   }
 
+  /** O cursor anda por TODAS as casas (inclusive travadas, para mostrar o que falta); só a confirmação é barrada. */
   private moveCursor(p: 0 | 1, a: Dir): void {
-    const i = this.cur[p];
-    let col = i % 2;
-    let row = i >> 1;
-    if (a === 'left' || a === 'right') col = 1 - col;
-    else row = 1 - row;
-    this.cur[p] = row * 2 + col;
+    this.cur[p] = moverNaGrade(this.cur[p], a, this.n, this.colunas);
     this.ui.c.audio.uiMove();
   }
 
   private confirm(p: 0 | 1): void {
     if (this.lock[p] || this.done) return;
+    const id = this.idEm(this.cur[p]);
+    if (!podeEscolher(this.estado(id))) {
+      this.ui.c.audio.deny(); // travado não confirma, em nenhum modo
+      return;
+    }
     this.lock[p] = true;
     this.pick[p] = this.cur[p];
     this.flash[p] = 36;
-    const id = ROSTER[this.cur[p]] ?? 'hayato';
     this.ui.c.audio.uiSelect(this.ui.m.elenco[id].ch.pitch);
     if (this.versus) {
       if (this.lock[0] && this.lock[1]) this.done = 70;
@@ -71,7 +110,7 @@ export class CenaSelect implements Cena {
     }
     if (this.step === 1) {
       this.step = 2;
-      this.cur[1] = (this.cur[0] + 1) % 4;
+      this.cur[1] = Math.max(0, proximaLiberada(this.grade, this.libs, this.cur[0] + 1));
       this.lock[1] = false;
       return;
     }
@@ -129,7 +168,7 @@ export class CenaSelect implements Cena {
   }
 
   private tileRect(i: number): { x: number; y: number; w: number; h: number } {
-    return { x: 360 + (i % 2) * 132, y: 92 + (i >> 1) * 132, w: 120, h: 120 };
+    return retanguloDaCasa(i, this.colunas);
   }
 
   private jogadorDoMouse(): 0 | 1 {
@@ -137,7 +176,7 @@ export class CenaSelect implements Cena {
   }
 
   hover(mx: number, my: number): void {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < this.n; i++) {
       const r = this.tileRect(i);
       const p = this.jogadorDoMouse();
       if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h && !this.lock[p] && this.cur[p] !== i) {
@@ -148,7 +187,7 @@ export class CenaSelect implements Cena {
   }
 
   click(mx: number, my: number): void {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < this.n; i++) {
       const r = this.tileRect(i);
       if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
         const p = this.jogadorDoMouse();
@@ -161,12 +200,21 @@ export class CenaSelect implements Cena {
   update(): void {
     for (let p = 0; p < 2; p++) if ((this.flash[p as 0 | 1] ?? 0) > 0) this.flash[p as 0 | 1]--;
     if (this.done > 0 && --this.done === 0) {
-      const c1 = ROSTER[this.pick[0]] ?? 'hayato';
-      const c2 = ROSTER[this.pick[1]] ?? 'wei-long';
+      const c1 = this.idEm(this.pick[0]);
+      const c2 = this.idEm(this.pick[1]);
       if (this.mode === 'arcade' || this.mode === 'cpu') this.ui.go('diff', { mode: this.mode, c1, c2 });
       else if (this.mode === 'versus') this.ui.go('vs', { cfg: { mode: 'versus', c1, c2, cpu: null } });
       else this.ui.go('fight', { cfg: { mode: 'training', c1, c2, cpu: null } });
     }
+  }
+
+  /** Texto do painel quando a casa não está liberada (sem revelar a fila: só o próximo vira "?"). */
+  private textosDeCasaFechada(id: IdLutador): { nome: string; linhas: string[] } {
+    const { regras, persist } = this.ui.c;
+    if (this.estado(id) === 'chefe-oculto') return { nome: '???', linhas: ['Aparece no fim do ARCADE.', 'Derrote-o para liberar.'] };
+    const linhas = ['Zere o ARCADE para liberar.'];
+    if (proximoDaFila(persist.prog, regras) === id) linhas.push('É o próximo a ser liberado.');
+    return { nome: '???', linhas };
   }
 
   private lado(p: 0 | 1, x: number, facing: number): void {
@@ -174,7 +222,21 @@ export class CenaSelect implements Cena {
     const m = this.ui.m;
     const t = this.ui.t;
     const idx = this.versus ? this.cur[p] : p === 0 ? (this.step === 1 ? this.cur[0] : this.pick[0]) : this.cur[1];
-    const ch = m.elenco[ROSTER[idx] ?? 'hayato'].ch;
+    const id = this.idEm(idx);
+    const px = p === 0 ? 20 : LARGURA - 20 - 284;
+    const tag = this.versus ? (p === 0 ? 'JOGADOR 1' : 'JOGADOR 2') : p === 0 ? 'VOCÊ' : this.mode === 'training' ? 'ALVO' : 'ADVERSÁRIO';
+    if (!podeEscolher(this.estado(id))) {
+      // casa fechada: nada de lutador (nem carrega o atlas): só um ponto de interrogação e o que falta
+      f.spotlight(x, 300, 190, p === 0 ? 'rgba(63,169,255,.28)' : 'rgba(255,79,94,.28)');
+      f.A('?', x, 260, 170, ['#4a4a66', '#1a1a2e'], '#0a0a14');
+      const tx = this.textosDeCasaFechada(id);
+      f.panel(px, 374, 284, 132, { stroke: P_COL[p] });
+      f.A(tx.nome, px + 14, 394, 28, '#fff', '#000', 'left');
+      tx.linhas.forEach((l, i) => f.T(l, px + 14, 424 + i * 20, 14, i === 0 ? '#e8ecff' : '#ffd23f', 'left'));
+      f.A(tag, px + 142, 72, 22, P_COL[p], '#000', 'center');
+      return;
+    }
+    const ch = m.elenco[id].ch;
     const fl = this.flash[p];
     f.spotlight(x, 300, 190, p === 0 ? 'rgba(63,169,255,.28)' : 'rgba(255,79,94,.28)');
     ctx.save();
@@ -187,19 +249,99 @@ export class CenaSelect implements Cena {
     }
     ctx.restore();
     mostrarLutador(f, m, ch.id, x, 362, 1.18, facing, t + p * 30, fl > 12 ? 'special' : 'guard');
-    const px = p === 0 ? 20 : LARGURA - 20 - 284;
     f.panel(px, 374, 284, 132, { stroke: P_COL[p] });
     f.A(ch.name, px + 14, 394, 28, '#fff', '#000', 'left');
     f.T(`${ch.title}  •  ${ch.country}`, px + 14, 418, 13, ch.accent, 'left');
     barrasDeStatus(f, ch, px + 14, 444, 150);
     f.T('ESPECIAIS', px + 180, 438, 11, '#9fa6c9', 'left', { shadow: false });
     ch.sps.forEach((sp, i) => f.T((i === 0 ? '' : i === 1 ? '↓ ' : '→ ') + (sp.name ?? ''), px + 180, 456 + i * 17, 13, i === 0 ? ch.fire[0] : '#e8ecff', 'left'));
-    const tag = this.versus ? (p === 0 ? 'JOGADOR 1' : 'JOGADOR 2') : p === 0 ? 'VOCÊ' : this.mode === 'training' ? 'ALVO' : 'ADVERSÁRIO';
     f.A(tag, px + 142, 72, 22, P_COL[p], '#000', 'center');
   }
 
-  draw(): void {
+  /** Cadeado simples (corpo + argola) centrado em (cx, cy). */
+  private cadeado(cx: number, cy: number, esc: number): void {
+    const { ctx } = this.ui.c;
+    ctx.save();
+    ctx.strokeStyle = '#cfd6f5';
+    ctx.lineWidth = 4 * esc;
+    ctx.beginPath();
+    ctx.arc(cx, cy - 6 * esc, 9 * esc, Math.PI, 0);
+    ctx.stroke();
+    ctx.fillStyle = '#cfd6f5';
+    ctx.fillRect(cx - 14 * esc, cy - 6 * esc, 28 * esc, 22 * esc);
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.arc(cx, cy + 4 * esc, 3.5 * esc, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  private casa(i: number): void {
     const { ctx, f } = this.ui.c;
+    const m = this.ui.m;
+    const id = this.idEm(i);
+    const est = this.estado(id);
+    const r = this.tileRect(i);
+    const esc = r.w / 120; // 1 na grade de hoje (120 px); 0,67 na 3x3 (80 px)
+    const rc = m.elenco[id];
+    const ch = rc.ch;
+    const aqui = ([0, 1] as const).filter((p) => (this.versus || (p === 0 ? true : this.step === 2)) && this.cur[p] === i);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8);
+    ctx.restore();
+    if (est === 'chefe-oculto') {
+      const g = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
+      g.addColorStop(0, '#2a1236');
+      g.addColorStop(1, '#0a0614');
+      ctx.fillStyle = g;
+      ctx.fillRect(r.x, r.y, r.w, r.h);
+      f.A('???', r.x + r.w / 2, r.y + r.h / 2 - 6 * esc, 30 * esc, '#6a5a8a', '#0a0a14');
+    } else {
+      desenharRetrato(ctx, rc.arte.retrato(ch.head), r.x, r.y, r.w, false, ['#34406e', '#0c1233']);
+      if (est === 'travado') {
+        ctx.fillStyle = 'rgba(6,3,16,.9)'; // silhueta escura do retrato
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+        this.cadeado(r.x + r.w / 2, r.y + r.h / 2 - 8 * esc, esc);
+      }
+    }
+    ctx.fillStyle = 'rgba(0,0,0,.6)';
+    ctx.fillRect(r.x, r.y + r.h - 22 * esc, r.w, 22 * esc);
+    f.T(est === 'travado' || est === 'chefe-oculto' ? '???' : ch.name, r.x + r.w / 2, r.y + r.h - 11 * esc, 14 * esc, est === 'travado' || est === 'chefe-oculto' ? '#9fa6c9' : '#fff', 'center');
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#0a0a14';
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    if (est === 'novo') {
+      // selo NOVO! (pisca de leve) até o jogador ver
+      const a = 0.75 + 0.25 * Math.sin(this.ui.t / 8);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.fillStyle = '#ffd23f';
+      ctx.fillRect(r.x + (r.w - 50 * esc) / 2, r.y + 26 * esc, 50 * esc, 17 * esc);
+      ctx.restore();
+      f.T('NOVO!', r.x + r.w / 2, r.y + 34.5 * esc, 12 * esc, '#1b0b00', 'center', { shadow: false });
+    }
+    aqui.forEach((p, n) => {
+      const pulse = this.lock[p] ? 1 : 0.6 + 0.4 * Math.sin(this.ui.t / 6);
+      ctx.save();
+      ctx.globalAlpha = pulse;
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = P_COL[p];
+      ctx.strokeRect(r.x - 3 - n * 5, r.y - 3 - n * 5, r.w + 6 + n * 10, r.h + 6 + n * 10);
+      ctx.restore();
+      ctx.fillStyle = P_COL[p];
+      ctx.fillRect(r.x + (p ? r.w - 34 * esc : 0), r.y, 34 * esc, 20 * esc);
+      f.T(this.versus ? (p ? '2P' : '1P') : p ? 'CPU' : '1P', r.x + (p ? r.w - 17 * esc : 17 * esc), r.y + 10 * esc, 13 * esc, '#fff', 'center', { shadow: false });
+      if (this.lock[p]) {
+        ctx.fillStyle = 'rgba(0,0,0,.35)';
+        ctx.fillRect(r.x, r.y, r.w, r.h - 22 * esc);
+        f.A('OK', r.x + r.w / 2, r.y + 50 * esc, 30 * esc, P_COL[p], '#000');
+      }
+    });
+  }
+
+  draw(): void {
+    const { ctx, f, regras } = this.ui.c;
     const m = this.ui.m;
     const W = LARGURA;
     desenharFundoMenu(ctx, m.rec.cenarioPadrao, m.rec.vinheta, this.ui.t, 0.5);
@@ -214,58 +356,34 @@ export class CenaSelect implements Cena {
       f.panel(px, 100, 284, 250, { stroke: P_COL[1] });
       const msg =
         this.mode === 'arcade'
-          ? 'Derrote os outros três lutadores em sequência. A ordem é sorteada.'
+          ? dicaArcadeSelecao(regras)
           : this.mode === 'training'
             ? 'Depois você escolhe quem será o alvo do treino.'
             : 'Depois você escolhe o adversário e a dificuldade.';
       f.wrap(msg, px + 16, 126, 252, 20, 15, '#e8ecff');
-      const outros = ROSTER.filter((_, i) => i !== this.cur[0]);
-      outros.forEach((id, i) => {
-        const r = m.elenco[id];
-        desenharRetrato(ctx, r.arte.imagem, r.ch.head, px + 18 + i * 88, 210, 80, true, ['#4a2a5a', '#160c24']);
-        f.T(r.ch.name, px + 58 + i * 88, 304, 13, '#fff', 'center');
-      });
+      // retratos dos outros lutadores: só cabem os 3 de hoje; com elenco maior o painel fica só com o texto
+      const outros = this.grade.filter((_, i) => i !== this.cur[0]);
+      if (outros.length <= 3) {
+        outros.forEach((id, i) => {
+          const r = m.elenco[id];
+          desenharRetrato(ctx, r.arte.retrato(r.ch.head), px + 18 + i * 88, 210, 80, true, ['#4a2a5a', '#160c24']);
+          f.T(r.ch.name, px + 58 + i * 88, 304, 13, '#fff', 'center');
+        });
+      }
     }
     // grade central
-    for (let i = 0; i < 4; i++) {
-      const r = this.tileRect(i);
-      const rc = m.elenco[ROSTER[i] ?? 'hayato'];
-      const ch = rc.ch;
-      const aqui = ([0, 1] as const).filter((p) => (this.versus || (p === 0 ? true : this.step === 2)) && this.cur[p] === i);
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,.4)';
-      ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8);
-      ctx.restore();
-      desenharRetrato(ctx, rc.arte.imagem, ch.head, r.x, r.y, r.w, false, ['#34406e', '#0c1233']);
-      ctx.fillStyle = 'rgba(0,0,0,.6)';
-      ctx.fillRect(r.x, r.y + r.h - 22, r.w, 22);
-      f.T(ch.name, r.x + r.w / 2, r.y + r.h - 11, 14, '#fff', 'center');
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#0a0a14';
-      ctx.strokeRect(r.x, r.y, r.w, r.h);
-      aqui.forEach((p, n) => {
-        const pulse = this.lock[p] ? 1 : 0.6 + 0.4 * Math.sin(this.ui.t / 6);
-        ctx.save();
-        ctx.globalAlpha = pulse;
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = P_COL[p];
-        ctx.strokeRect(r.x - 3 - n * 5, r.y - 3 - n * 5, r.w + 6 + n * 10, r.h + 6 + n * 10);
-        ctx.restore();
-        ctx.fillStyle = P_COL[p];
-        ctx.fillRect(r.x + (p ? r.w - 34 : 0), r.y, 34, 20);
-        f.T(this.versus ? (p ? '2P' : '1P') : p ? 'CPU' : '1P', r.x + (p ? r.w - 17 : 17), r.y + 10, 13, '#fff', 'center', { shadow: false });
-        if (this.lock[p]) {
-          ctx.fillStyle = 'rgba(0,0,0,.35)';
-          ctx.fillRect(r.x, r.y, r.w, r.h - 22);
-          f.A('OK', r.x + r.w / 2, r.y + 50, 30, P_COL[p], '#000');
-        }
-      });
-    }
+    for (let i = 0; i < this.n; i++) this.casa(i);
     const act = this.versus ? 0 : (this.active() ?? 0);
-    const hc = m.elenco[ROSTER[this.cur[act]] ?? 'hayato'].ch;
+    const idc = this.idEm(this.cur[act]);
     f.panel(352, 358, 256, 100, { r: 8 });
-    f.A(hc.name, 480, 376, 22, '#fff', '#000');
-    f.wrap(hc.desc, 366, 402, 228, 17, 13, '#e8ecff');
+    if (podeEscolher(this.estado(idc))) {
+      const hc = m.elenco[idc].ch;
+      f.A(hc.name, 480, 376, 22, '#fff', '#000');
+      f.wrap(hc.desc, 366, 402, 228, 17, 13, '#e8ecff');
+    } else {
+      f.A('???', 480, 376, 22, '#9fa6c9', '#000');
+      f.wrap(this.estado(idc) === 'chefe-oculto' ? 'Aparece no fim do ARCADE.' : 'Zere o ARCADE para liberar.', 366, 402, 228, 17, 13, '#e8ecff');
+    }
     f.hint(this.versus ? 'P1: ← ↑ ↓ → e Z      P2: WASD e J      X / K desfazer     ESC menu' : '← ↑ ↓ → mover     ENTER / Z confirmar     ESC / X voltar');
   }
 }

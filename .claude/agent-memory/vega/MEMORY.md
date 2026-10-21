@@ -1,2 +1,3 @@
 - [Porte Fase 1a](project_porte_fase1a.md) — tipX/tipY->ponta, ids f1..f4, teste de fidelidade contra o protótipo, armadilhas
 - [Porte Fase 1b](project_porte_fase1b.md) — fight/audio: prova lock-step contra o protótipo, quirks preservados, eventos de setup
+- [E3 chefe S0/S1a](project_e3_chefe_s0_s1a.md) — chefão no motor: resolverVidaZerada sobrescrito pelos chamadores, setChar desfaz chefe, dica de CPU só esqueleto

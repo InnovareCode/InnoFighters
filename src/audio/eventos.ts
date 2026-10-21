@@ -63,6 +63,21 @@ export function sonsDoEvento(ev: EventoLuta): ChamadaSom[] {
       return [];
     case 'perfect':
       return [{ metodo: 'uiPerfect', args: [], atrasoMs: ATRASO_PERFECT_MS }];
+    // --- E3: só métodos que o AudioSys já tem (nenhum som novo sintetizado) ---
+    case 'fase-chefe':
+      if (ev.etapa === 'troca') return [{ metodo: 'fireballHit', args: [] }];
+      if (ev.etapa === 'danca') return [{ metodo: 'introWhoosh', args: [] }];
+      return [{ metodo: 'fight', args: [] }];
+    case 'parry':
+      return [{ metodo: 'block', args: [] }];
+    case 'quebra-guarda':
+      return [{ metodo: 'fireballHit', args: [] }];
+    case 'carga':
+      return [{ metodo: 'uiSelect', args: [1 + ev.nivel * 0.15] }];
+    case 'rebote':
+      return [{ metodo: 'land', args: [] }];
+    case 'troca-ficha':
+      return [{ metodo: 'jump', args: [] }];
   }
 }
 

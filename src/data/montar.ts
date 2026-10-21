@@ -1,12 +1,14 @@
-import { SH_IDLE } from '../core/constantes';
+import { CORPO_PADRAO, SH_IDLE } from '../core/constantes';
 import { animFor } from './anim';
 import { LADO_RETRATO } from './atlas';
 import { BASE_MOVES, NOMES_GOLPES_BASE } from './base-moves';
 import { getPD } from './poses';
-import type { CaixaGolpe, GolpeMontado, LutadorDef, NomeEspecial, NomeGolpe, Poses, ProjetilDef } from './tipos';
+import type { CaixaGolpe, DicaIa, GolpeMontado, LutadorDef, NomeEspecial, NomeGolpe, Poses, ProjetilDef } from './tipos';
 
 /** Lutador pronto para a luta/render: dados estáticos + tudo o que deriva do atlas (setupChars + buildMoves). */
-export type LutadorMontado = LutadorDef & {
+export type LutadorMontado = Omit<LutadorDef, 'fichas'> & {
+  /** Meia-largura de empurrão já resolvida (def.corpo ?? CORPO_PADRAO). */
+  corpo: number;
   /** Poses do atlas (formato interno; ver manifestoParaPoses). */
   pd: Poses;
   /** Arte antiga de poucas poses? (sem walk7): liga os ajustes de transformação do poseT. */
@@ -27,6 +29,13 @@ export type LutadorMontado = LutadorDef & {
   special: string;
   /** De onde o projétil nasce em relação aos pés (px lógicos, já na escala do lutador). */
   spawn: { x: number; y: number };
+  /**
+   * Fichas montadas (mesmas poses do atlas, dados da ficha por cima). Vazio = só a base. Cada ficha é um
+   * `LutadorMontado` completo (com `fichas` vazio), então `Fighter.trocarFicha` só troca a referência.
+   */
+  fichas: Record<string, LutadorMontado>;
+  /** Golpes que declaram `ia` (dica de CPU). Vazio = a CPU não gasta RNG extra por causa deste lutador. */
+  dicasIa: readonly { golpe: NomeGolpe; dica: DicaIa }[];
 };
 
 const ESPECIAIS: readonly NomeEspecial[] = ['sFire', 'sDown', 'sFwd'];
@@ -47,6 +56,7 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
     moves[n] = { ...BASE_MOVES[n], ...(def.mods[n] ?? {}), id: n, anim: semAnim };
   }
   for (const n of ESPECIAIS) moves[n] = { ...def.especiais[n], id: n, anim: semAnim };
+  if (def.extras?.sResp) moves.sResp = { ...def.extras.sResp, id: 'sResp', anim: semAnim };
 
   const alias: Record<string, string> = {
     sb1: def.especiais.sDown.pose,
@@ -77,13 +87,30 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
     boxes[n] = { fx: 20, fy: (t.tipY || 150) * def.scale + h / 2, w: Math.max(90, reach - 20), h };
   }
 
+  const dicasIa: { golpe: NomeGolpe; dica: DicaIa }[] = [];
+  for (const n of nomes) {
+    const dica = moves[n].ia;
+    if (dica) dicasIa.push({ golpe: n, dica });
+  }
+
   const sFire = moves.sFire;
   const projDef = sFire.proj;
   if (!projDef) throw new Error(`${def.id}: sFire sem proj`);
   const ponta = pd['special'] ?? pd['sa1'] ?? g;
 
+  // Fichas: cada uma é o def base com os campos da ficha por cima, montada sobre as MESMAS poses (sem `fichas`/`chefe`
+  // próprios: não há ficha de ficha). `id` é o do lutador, então a render continua achando o elenco certo.
+  const { fichas: fichasDef, ...defSemFichas } = def;
+  const { chefe: _chefe, ...defParaFicha } = defSemFichas;
+  void _chefe;
+  const fichas: Record<string, LutadorMontado> = {};
+  for (const [nome, f] of Object.entries(fichasDef ?? {})) {
+    fichas[nome] = montarLutador({ ...defParaFicha, ...f, id: def.id }, pd);
+  }
+
   return {
-    ...def,
+    ...defSemFichas,
+    corpo: def.corpo ?? CORPO_PADRAO,
     pd,
     legacy: !pd['walk7'],
     K: (def.scale * SH_IDLE) / idle.h,
@@ -100,5 +127,7 @@ export function montarLutador(def: LutadorDef, pd: Poses): LutadorMontado {
     proj: { ...projDef, cost: sFire.cost ?? 0, speed: projDef.sp },
     special: sFire.name ?? '',
     spawn: { x: ((ponta.tipX ?? 150) - 30) * def.scale, y: (ponta.tipY ?? 150) * def.scale },
+    fichas,
+    dicasIa,
   };
 }

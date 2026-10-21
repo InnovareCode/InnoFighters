@@ -1,6 +1,6 @@
 import { LARGURA } from '../../core/constantes';
-import type { IdLutador } from '../../core/contratos';
-import { ROSTER } from '../../data/lutadores';
+import { montarEscada } from '../../meta';
+import { cfgDaEtapa } from '../campanha';
 import { AI_LEVELS } from '../../fight/cpu';
 import { desenharFundoMenu } from '../../render/cenario';
 import { MenuList } from '../menu-lista';
@@ -30,21 +30,15 @@ export class CenaDiff implements Cena {
 
   /** Nível escolhido: grava como padrão e segue para a tela de confronto. */
   private escolher(i: number): void {
-    const { persist, rngUI } = this.ui.c;
+    const { persist, rngUI, regras } = this.ui.c;
     persist.settings.diff = i;
     persist.salvar();
     const a = this.a;
     if (a.mode === 'arcade') {
-      const outros: IdLutador[] = ROSTER.filter((c) => c !== a.c1);
-      for (let k = outros.length - 1; k > 0; k--) {
-        const j = Math.floor(rngUI.proximo() * (k + 1));
-        const tmp = outros[k] as IdLutador;
-        outros[k] = outros[j] as IdLutador;
-        outros[j] = tmp;
-      }
-      const run: CampanhaArcade = { c1: a.c1, order: outros, idx: 0, score: 0, continues: 3, diff: i, cont: 0 };
+      const etapas = montarEscada({ c1: a.c1, prog: persist.prog, rng: rngUI, regras });
+      const run: CampanhaArcade = { c1: a.c1, etapas, idx: 0, score: 0, continues: 3, diff: i, cont: 0 };
       this.ui.run = run;
-      this.ui.go('vs', { cfg: { mode: 'arcade', c1: a.c1, c2: outros[0] as IdLutador, cpu: i }, run });
+      this.ui.go('vs', { cfg: cfgDaEtapa(run, false), run });
     } else this.ui.go('vs', { cfg: { mode: 'cpu', c1: a.c1, c2: a.c2, cpu: i } });
   }
 

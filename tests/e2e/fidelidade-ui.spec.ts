@@ -101,7 +101,20 @@ async function prepararNoApp(app: Page, caso: Caso): Promise<Sorteio> {
     U.ready = true;
     U.loadProg = 0;
     if (c.hi !== undefined) h.persist.hi = c.hi;
-    U.set(c.cena, c.args);
+    // a campanha do jogo novo guarda `etapas` (montarEscada) onde o protótipo guardava `order`
+    const noApp = (v: any): any => {
+      if (Array.isArray(v)) return v.map(noApp);
+      if (v && typeof v === 'object') {
+        const o: any = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, noApp(x)]));
+        if (Array.isArray(v.order)) {
+          o.etapas = v.order.map((id: string) => ({ id, chefe: false }));
+          delete o.order;
+        }
+        return o;
+      }
+      return v;
+    };
+    U.set(c.cena, noApp(c.args));
     U.cenas.title.brasas.lista.length = 0; // brasas fora da comparação (cor nova de propósito)
     if (c.ticks) h.avancar(c.ticks);
     if (c.t !== undefined) U.t = c.t;

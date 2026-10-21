@@ -1,0 +1,155 @@
+#!/usr/bin/env node
+/**
+ * Gera `retrato.png` + `retrato.json` de cada lutador a partir do atlas (docs/plano-expansao.md 1.4).
+ *
+ * Por que existe: a seleção e o HUD desenhavam o rosto recortando o atlas INTEIRO (milhões de pixels) só para
+ * mostrar 88-120 px. Com carga sob demanda, a seleção não pode exigir todos os atlas na memória; o retrato é um
+ * arquivo pequeno por lutador.
+ *
+ * "Sem mudar a imagem": o recorte do jogo é fracionário (o `rosto` do manifesto é fracionário). Então o retrato
+ * guarda um recorte INTEIRO com 2 px de margem (pixels idênticos aos do atlas, sem reamostrar) e o `retrato.json`
+ * guarda o recorte fracionário dentro dele. O jogo desenha `drawImage(retrato, fx, fy, 190, 190, ...)`: a mesma
+ * amostragem de antes, só que lendo um arquivo pequeno.
+ *
+ * Sem dependência nova: o Node não decodifica WebP, então usa o Chromium que o Playwright já instala (devDependency)
+ * para decodificar o atlas e ler os pixels; o PNG é escrito com zlib do próprio Node (sem perdas).
+ *
+ * Uso:  node ferramentas/gerar-retratos.mjs [--so <id>] [--verificar] [--saida <pasta>]
+ *   --verificar  não grava: regenera em memória e sai com código 1 se o que está no disco diferir.
+ */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { deflateSync } from 'node:zlib';
+
+const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+/** Lado do retrato no atlas (LADO_RETRATO de src/data/atlas.ts). */
+export const LADO = 190;
+const MARGEM = 2;
+
+/** Recorte [x, y, w, h] (fracionário) do rosto no atlas: o mesmo `head` de montarLutador (guard ?? idle0). */
+export function recorteDoRosto(manifesto) {
+  const q = manifesto.quadros.guard ?? manifesto.quadros.idle0;
+  if (!q) throw new Error(`${manifesto.lutador}: sem guard/idle0`);
+  const [rx, ry] = q.rosto ?? [0, 0];
+  return [q.x + rx - LADO / 2, q.y + ry - LADO / 2, LADO, LADO];
+}
+
+/** Retângulo inteiro (com margem) que contém o recorte, e o recorte relativo a ele. */
+export function janelaInteira([hx, hy, w, h], largura, altura) {
+  const x0 = Math.max(0, Math.floor(hx) - MARGEM);
+  const y0 = Math.max(0, Math.floor(hy) - MARGEM);
+  const x1 = Math.min(largura, Math.ceil(hx + w) + MARGEM);
+  const y1 = Math.min(altura, Math.ceil(hy + h) + MARGEM);
+  return { x0, y0, w: x1 - x0, h: y1 - y0, recorte: [hx - x0, hy - y0, w, h] };
+}
+
+const tabelaCrc = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+const crc32 = (b) => {
+  let c = 0xffffffff;
+  for (const x of b) c = tabelaCrc[(c ^ x) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+};
+const bloco = (tipo, dados) => {
+  const t = Buffer.concat([Buffer.from(tipo, 'ascii'), dados]);
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(dados.length);
+  const sum = Buffer.alloc(4);
+  sum.writeUInt32BE(crc32(t));
+  return Buffer.concat([len, t, sum]);
+};
+
+/** PNG RGBA de 8 bits, sem perdas, a partir de pixels RGBA (Buffer de w*h*4). */
+export function codificarPng(rgba, largura, altura) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(largura, 0);
+  ihdr.writeUInt32BE(altura, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  const linhas = Buffer.alloc((1 + largura * 4) * altura);
+  for (let y = 0; y < altura; y++) rgba.copy(linhas, y * (1 + largura * 4) + 1, y * largura * 4, (y + 1) * largura * 4);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    bloco('IHDR', ihdr),
+    bloco('IDAT', deflateSync(linhas, { level: 9 })),
+    bloco('IEND', Buffer.alloc(0)),
+  ]);
+}
+
+/** Largura e altura de um PNG (lidas do IHDR). */
+export function dimensoesPng(buf) {
+  if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error('nao e PNG');
+  return [buf.readUInt32BE(16), buf.readUInt32BE(20)];
+}
+
+function argumentos(argv) {
+  const a = { so: null, verificar: false, saida: join(RAIZ, 'public', 'assets', 'lutadores') };
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--so') a.so = argv[++i];
+    else if (argv[i] === '--verificar') a.verificar = true;
+    else if (argv[i] === '--saida') a.saida = resolve(argv[++i]);
+  }
+  return a;
+}
+
+async function principal() {
+  const args = argumentos(process.argv.slice(2));
+  const { chromium } = await import('@playwright/test');
+  const ids = (await import('node:fs')).readdirSync(args.saida, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((id) => !args.so || id === args.so);
+  const navegador = await chromium.launch();
+  const pagina = await navegador.newPage();
+  let diferentes = 0;
+  try {
+    for (const id of ids) {
+      const dir = join(args.saida, id);
+      const jsonAtlas = join(dir, 'atlas.json');
+      if (!existsSync(jsonAtlas)) continue;
+      const m = JSON.parse(readFileSync(jsonAtlas, 'utf8'));
+      const arquivoAtlas = m.imagem ?? m.imagens?.[0];
+      const bytes = readFileSync(join(dir, arquivoAtlas));
+      const mime = arquivoAtlas.endsWith('.png') ? 'image/png' : 'image/webp';
+      const [hx, hy, w, h] = recorteDoRosto(m);
+      const j = janelaInteira([hx, hy, w, h], m.tamanho[0], m.tamanho[1]);
+      const b64 = await pagina.evaluate(
+        async ({ url, j }) => {
+          const img = new Image();
+          img.src = url;
+          await img.decode();
+          const c = document.createElement('canvas');
+          c.width = j.w;
+          c.height = j.h;
+          const g = c.getContext('2d', { willReadFrequently: true });
+          g.drawImage(img, j.x0, j.y0, j.w, j.h, 0, 0, j.w, j.h); // sem escala: pixels idênticos aos do atlas
+          const d = g.getImageData(0, 0, j.w, j.h).data;
+          let s = '';
+          for (let i = 0; i < d.length; i += 0x8000) s += String.fromCharCode(...d.subarray(i, i + 0x8000));
+          return btoa(s);
+        },
+        { url: `data:${mime};base64,${bytes.toString('base64')}`, j },
+      );
+      const png = codificarPng(Buffer.from(b64, 'base64'), j.w, j.h);
+      const json = `${JSON.stringify({ arquivo: 'retrato.png', recorte: j.recorte }, null, 2)}\n`;
+      const caminhoPng = join(dir, 'retrato.png');
+      const caminhoJson = join(dir, 'retrato.json');
+      if (args.verificar) {
+        const igual = existsSync(caminhoPng) && existsSync(caminhoJson) && readFileSync(caminhoPng).equals(png) && readFileSync(caminhoJson, 'utf8') === json;
+        console.log(`${id}: ${igual ? 'ok' : 'DIFERE'}`);
+        if (!igual) diferentes++;
+      } else {
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(caminhoPng, png);
+        writeFileSync(caminhoJson, json);
+        console.log(`${id}: retrato.png ${j.w}x${j.h} (${png.length} bytes), recorte ${j.recorte.map((v) => +v.toFixed(3)).join(', ')}`);
+      }
+    }
+  } finally {
+    await navegador.close();
+  }
+  if (diferentes) process.exit(1);
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await principal();

@@ -2,6 +2,7 @@ import { ALTURA, LARGURA } from '../../core/constantes';
 import { easeOut } from '../../core/math';
 import { AI_LEVELS } from '../../fight/cpu';
 import { desenharPose } from '../../render/pose';
+import { EsperaDeArte } from '../espera-de-arte';
 import type { Navegador } from '../navegador';
 import type { ArgsVs, Cena } from '../tipos';
 
@@ -9,11 +10,14 @@ import type { ArgsVs, Cena } from '../tipos';
 export class CenaVs implements Cena {
   private a: ArgsVs | null = null;
   private started = false;
+  /** Carga sob demanda dos dois lutadores e do cenário (já nasce pronta quando estão na memória). */
+  readonly espera = new EsperaDeArte();
 
   constructor(private readonly ui: Navegador) {}
 
   enter(a: ArgsVs): void {
     this.a = a;
+    this.espera.iniciar(this.ui.m, a.cfg);
     this.ui.c.audio.uiVs();
   }
 
@@ -22,13 +26,17 @@ export class CenaVs implements Cena {
   }
 
   private start(): void {
-    if (this.started || !this.a) return;
+    if (this.started || !this.a || !this.espera.pronta) return;
     this.started = true;
     this.ui.go('fight', this.a);
     this.started = false;
   }
 
   key(k: string): boolean {
+    if (this.espera.falhou && (k === 'Escape' || k === 'x')) {
+      this.ui.go('menu');
+      return true;
+    }
     if (this.ui.t > 30 && (k === 'Enter' || k === ' ' || k === 'z' || k === 'c' || k === 'j')) this.start();
     return true;
   }
@@ -68,6 +76,12 @@ export class CenaVs implements Cena {
       ctx.fill();
     }
     ctx.restore();
+    if (a.cfg.chefe) {
+      // o chefão: fundo avermelhado e a faixa de desafio final
+      ctx.fillStyle = 'rgba(150,10,30,.22)';
+      ctx.fillRect(0, 0, W, H);
+      f.A('CHEFÃO', W / 2, 38, 34, ['#fff6b0', '#ff4a3a'], '#2a0000');
+    }
     const k1 = easeOut(t / 28);
     const k2 = easeOut((t - 8) / 28);
     f.spotlight(240, 330, 260, `${c1.accent}55`);
@@ -98,7 +112,9 @@ export class CenaVs implements Cena {
     const run = a.run;
     const lab =
       mode === 'arcade' && run
-        ? `ARCADE — LUTA ${run.idx + 1} DE ${run.order.length}`
+        ? a.cfg.chefe
+          ? 'ARCADE — O CHEFÃO'
+          : `ARCADE — LUTA ${run.idx + 1} DE ${run.etapas.length}`
         : mode === 'cpu'
           ? `LUTA vs CPU — ${AI_LEVELS[a.cfg.cpu ?? 0]?.name ?? ''}`
           : 'VERSUS';
@@ -106,6 +122,8 @@ export class CenaVs implements Cena {
     f.A(lab, W / 2, 420, 26, '#fff', '#000');
     f.T(`CENÁRIO: ${c2.stageName || ''}`, W / 2, 448, 14, '#ffd23f', 'center');
     f.T(`Vença ${rounds}${rounds === 1 ? ' round' : ' rounds'} para ganhar a luta`, W / 2, 474, 15, '#ffd9a6', 'center');
-    if (t > 40 && Math.floor(t / 25) % 2 === 0) f.T('ENTER para pular', W / 2, 510, 13, '#cfd6f5', 'center');
+    if (this.espera.falhou) f.T(`Não foi possível carregar os lutadores. ESC volta ao menu.`, W / 2, 510, 13, '#ff9a9a', 'center');
+    else if (!this.espera.pronta) f.T(`Carregando lutadores... ${this.espera.percentual}%`, W / 2, 510, 13, '#cfd6f5', 'center');
+    else if (t > 40 && Math.floor(t / 25) % 2 === 0) f.T('ENTER para pular', W / 2, 510, 13, '#cfd6f5', 'center');
   }
 }

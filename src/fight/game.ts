@@ -18,7 +18,7 @@ import { PROJ_BASE } from '../data/base-moves';
 import type { LutadorMontado } from '../data/montar';
 import type { GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
-import { NO_INPUT, cpuInput } from './cpu';
+import { NO_INPUT, cpuInput, perfilChefe } from './cpu';
 import { Fighter, type PartidaParaLutador } from './fighter';
 import type { ProjetilLuta } from './projetil';
 
@@ -36,6 +36,11 @@ export type ConfigPartida = {
   stage?: IdCenario;
   /** Mantém a pontuação do P1 (modo arcade, entre lutas). */
   keepScore?: boolean;
+  /**
+   * E3: luta de chefe. O P2 (`c2`) vira o chefe SE o `LutadorDef` dele tiver `chefe`; senão a opção é ignorada
+   * (é o lutador normal). Round único (`winsNeeded = 1`), seja qual for `ajustes.rounds`, e IA própria.
+   */
+  chefe?: boolean;
 };
 
 /** Parte das configurações que a luta lê. Passe o MESMO objeto que a UI altera (shake é lido ao vivo). */
@@ -121,6 +126,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   trainInfo: InfoTreino = { hits: 0, dmg: 0 };
   events: EventoLuta[] = [];
 
+  /** Troca de barra no tick: o `hitstop`/`shake` dela têm que sobreviver ao que o chamador grava depois. */
+  private trocaDeBarraNoTick = false;
   private pid = 0;
   private tick60 = 0;
   private refillT = 0;
@@ -167,9 +174,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.stage = cfg.stage ?? this.lutadores[cfg.c2].stage; // luta na casa do rival
     this.p1.setChar(this.lutadores[cfg.c1]);
     this.p2.setChar(this.lutadores[cfg.c2]);
+    const cfgChefe = cfg.chefe ? this.lutadores[cfg.c2].chefe : undefined;
+    if (cfgChefe) this.p2.virarChefe(cfgChefe);
     this.p1.cpu = cfg.p1cpu != null ? cfg.p1cpu : null;
     this.p2.cpu = cfg.cpu != null ? cfg.cpu : null;
-    this.winsNeeded = ajustes.rounds;
+    this.winsNeeded = cfgChefe ? 1 : ajustes.rounds;
     this.timeMax = this.training ? 0 : ajustes.time;
     this.dummy = 'stand';
     this.round = 1;
@@ -193,6 +202,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     const completo = first || this.round === 1;
     this.p1.reset(completo);
     this.p2.reset(completo);
+    this.aplicarPerfilDoChefe(false); // todo round recomeça na fase 1
     this.clearFx();
     this.timeLeft = this.timeMax;
     this.tick60 = 0;
@@ -206,6 +216,17 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.p2.combo = { hits: 0, dmg: 0, t: 0 };
     this.introLen = this.training ? 40 : 90;
     if (!this.training) this.emitir({ tipo: 'round', fase: 'start', round: this.round });
+  }
+
+  /** O chefe desta luta (sempre o P2) ou null. A UI lê `fighters[i].chefe`. */
+  private get chefeDaLuta(): Fighter | null {
+    return this.p2.chefe ? this.p2 : null;
+  }
+
+  /** IA do chefe: nível da CPU escolhido + acréscimo da fase. Sem chefe não faz nada (os outros usam AI_LEVELS). */
+  private aplicarPerfilDoChefe(fase2: boolean): void {
+    const c = this.chefeDaLuta;
+    if (c) c.perfilIa = perfilChefe(c.cpu ?? 1, fase2);
   }
 
   aoCair(f: Fighter): void {
@@ -226,8 +247,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     a.connected = true;
     a.en = Math.min(MAX_EN, a.en + 8);
     d.x = clamp(a.x + a.facing * 30, 70, LARGURA - 70);
-    if (d.hp <= 0 && !this.training) {
-      this.ko(d, a);
+    if (this.resolverVidaZerada(d, a)) {
       d.vx = -a.facing * 7;
     } else {
       d.knockdown(-a.facing, 6);
@@ -235,6 +255,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
     this.shake = 8;
     this.hitstop = 6;
+    this.reforcarTrocaDeBarra();
     this.emitir({
       tipo: 'throw',
       atacante: a.indice,
@@ -371,12 +392,47 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         }
       }
     }
+    if (this.phase === 'cena-chefe') this.andarCenaDoChefe();
+    else if (this.phase === 'fight') this.talvezIniciarCenaDoChefe();
     if ((this.phase === 'ko' || this.phase === 'timeover') && this.t >= 100) this.endRound();
     if (this.phase === 'roundend' && this.t >= 175) {
       this.round++;
       this.startRound(false);
     }
     if (this.phase === 'matchend' && this.t >= 150) this.matchDone = true;
+  }
+
+  /**
+   * Dança da Águia (E3 §3.3). Começa no primeiro tick em que a luta segue em 'fight' e o chefe, com a barra já trocada
+   * (`cenaPendente`), está livre no chão (depois de levantar). KO ou fim de tempo no mesmo tick vencem: a fase já não é
+   * 'fight' e a cena não começa. Durante a cena: relógio parado, sem acertos, sem projéteis, sem entradas.
+   */
+  private talvezIniciarCenaDoChefe(): void {
+    const c = this.chefeDaLuta;
+    if (!c || !c.cenaPendente || !c.grounded) return;
+    if (c.state !== 'idle' && c.state !== 'walk' && c.state !== 'crouch' && c.state !== 'land') return;
+    c.cenaPendente = false;
+    c.setState('cena');
+    c.vx = 0;
+    this.phase = 'cena-chefe';
+    this.t = 0;
+    this.projectiles = [];
+    this.hitstop = 0;
+    this.emitir({ tipo: 'fase-chefe', lutador: c.indice, etapa: 'danca', barrasRestantes: c.barras });
+  }
+
+  /** Fim da cena: o chefe entra na ficha da fase 2 e a luta volta a andar. A cena dura `danca.duracao` ticks. */
+  private andarCenaDoChefe(): void {
+    const c = this.chefeDaLuta;
+    const cfg = c?.cfgChefe;
+    this.projectiles = []; // um golpe do jogador que terminava durante a cena pode ter soltado projétil
+    if (!c || !cfg || this.t < cfg.danca.duracao) return;
+    c.trocarFicha(cfg.fichaFase2);
+    c.setState('idle');
+    this.aplicarPerfilDoChefe(true);
+    this.phase = 'fight';
+    this.t = 0;
+    this.emitir({ tipo: 'fase-chefe', lutador: c.indice, etapa: 'retomada', barrasRestantes: c.barras });
   }
 
   private updateTraining(): void {
@@ -423,7 +479,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     if (a.passing || b.passing) return;
     if ((a.untouchable && a.state !== 'win') || (b.untouchable && b.state !== 'win') || a.state === 'down' || b.state === 'down') return;
     const dx = b.x - a.x;
-    const min = 78;
+    const min = a.corpo + b.corpo; // 39 + 39 = 78 com o corpo padrão
     if (Math.abs(dx) < min && Math.abs(a.y - b.y) < 90) {
       const s = dx >= 0 ? 1 : -1;
       const push = (min - Math.abs(dx)) / 2;
@@ -557,10 +613,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     d.en = Math.min(MAX_EN, d.en + 5);
     d.flash = 8;
     d.move = null;
-    const kill = d.hp <= 0 && !this.training;
-    if (this.training && d.hp <= 0) d.hp = 1;
-    if (kill) this.ko(d, a);
-    else if (mv.hits && a.hitCount < mv.hits) {
+    const kill = this.resolverVidaZerada(d, a);
+    if (kill) {
+      // o KO já foi aplicado em resolverVidaZerada: não há reação de hit/knockdown
+    } else if (mv.hits && a.hitCount < mv.hits) {
       // acertos intermediários: segura o rival no combo
       d.setState('hit');
       d.stun = mv.hs;
@@ -579,6 +635,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     if (cornered && !kill) a.vx = -a.facing * mv.kb * 0.8;
     this.shake = this.ajustes.shake ? (mv.heavy || mv.proj || kill ? 9 : 5) : 0;
     this.hitstop = mv.heavy || kill ? 6 : 4;
+    this.reforcarTrocaDeBarra();
     this.emitir({
       tipo: 'hit',
       atacante: a.indice,
@@ -594,6 +651,44 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       acertos: d.gotHits,
       texto: counter ? textoFlutuante(ox, oy - 40, 'COUNTER!', '#ff9a3a', 24) : null,
     });
+  }
+
+  /**
+   * Único lugar que decide o que acontece quando a vida de `d` chegou a 0 ou menos (golpe, projétil ou
+   * arremesso). Devolve true se houve KO. Treino nunca mata: a vida fica em 1.
+   *
+   * Chefe com barra de sobra (E3): NÃO é KO. A barra seguinte enche, o combo é cortado, o chefe fica invulnerável
+   * por 60 ticks (o combo não atravessa para a barra final) e a Dança da Águia fica pendente. Devolve false, então
+   * os chamadores aplicam a reação normal (atordoamento ou derrubada). O evento `fase-chefe` sai ANTES do `hit`.
+   */
+  resolverVidaZerada(d: Fighter, a: Fighter): boolean {
+    if (d.hp > 0) return false;
+    if (this.training) {
+      d.hp = 1;
+      return false;
+    }
+    if (d.barras > 1) {
+      d.barras--;
+      d.hp = d.maxHp;
+      d.gotHits = 0;
+      d.invuln = 60;
+      d.cenaPendente = true;
+      this.hitstop = 20;
+      this.shake = 14;
+      this.trocaDeBarraNoTick = true;
+      this.emitir({ tipo: 'fase-chefe', lutador: d.indice, etapa: 'troca', barrasRestantes: d.barras });
+      return false;
+    }
+    this.ko(d, a);
+    return true;
+  }
+
+  /** Reaplica hitstop/shake da troca de barra depois que `applyHit`/`arremessar` gravaram os valores do golpe comum. */
+  private reforcarTrocaDeBarra(): void {
+    if (!this.trocaDeBarraNoTick) return;
+    this.trocaDeBarraNoTick = false;
+    this.hitstop = 20;
+    this.shake = this.ajustes.shake ? 14 : 0;
   }
 
   private ko(d: Fighter, a: Fighter): void {
@@ -613,14 +708,19 @@ export class Game implements LeituraLuta, PartidaParaLutador {
 
   private endRound(): void {
     let w: Fighter | null = null;
-    if (this.p1.hp > this.p2.hp) w = this.p1;
-    else if (this.p2.hp > this.p1.hp) w = this.p2;
+    // desempate por tempo: vida somada de todas as barras (com 1 barra == hp, como no protótipo)
+    if (this.p1.vidaTotal > this.p2.vidaTotal) w = this.p1;
+    else if (this.p2.vidaTotal > this.p1.vidaTotal) w = this.p2;
     this.winner = w ? w.indice : null;
     this.perfect = false;
     if (w) {
       w.wins++;
-      this.perfect = w.hp >= w.maxHp - 0.01;
+      // Perfeito é sobre a barra final e exige não ter perdido nenhuma barra (barras === barrasMax: 1 === 1 nos normais).
+      this.perfect = w.hp >= w.maxHp - 0.01 && w.barras === w.barrasMax;
       w.score += Math.max(0, this.timeLeft) * 100 + Math.round(w.hp) * 50 + (this.perfect ? 5000 : 0);
+      // Bônus por derrotar o chefe: só quando o perdedor era o chefe da luta.
+      const perdedor = w === this.p1 ? this.p2 : this.p1;
+      if (perdedor.cfgChefe) w.score += perdedor.cfgChefe.bonusVitoria;
     }
     const fimDaLuta = !!w && w.wins >= this.winsNeeded;
     this.emitir({ tipo: 'round', fase: 'end', round: this.round, vencedor: this.winner, fimDaLuta });

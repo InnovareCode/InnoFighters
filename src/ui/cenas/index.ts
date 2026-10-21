@@ -1,6 +1,8 @@
 import type { Navegador } from '../navegador';
 import type { Cena, NomeCena } from '../tipos';
 import { CenaBoot } from './boot';
+import { CenaChefe } from './chefe';
+import { CenaDesbloqueio } from './desbloqueio';
 import { CenaDiff } from './diff';
 import { CenaFight } from './fight';
 import { CenaContinue, CenaEnding, CenaResult } from './fim';
@@ -28,5 +30,7 @@ export function criarCenas(ui: Navegador): Record<NomeCena, Cena> {
     result: new CenaResult(ui),
     continue: new CenaContinue(ui),
     ending: new CenaEnding(ui),
+    chefe: new CenaChefe(ui),
+    desbloqueio: new CenaDesbloqueio(ui),
   };
 }

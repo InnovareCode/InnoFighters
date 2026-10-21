@@ -13,7 +13,8 @@ import { INPUT_VAZIO } from '../core/contratos';
 import { clamp, lerp } from '../core/math';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
-import type { GolpeMontado, NomeGolpe } from '../data/tipos';
+import type { ConfigChefe, GolpeMontado, NomeGolpe } from '../data/tipos';
+import type { PerfilCpu } from './cpu';
 import { attackBox, hurtbox, podeBloquear } from './colisao';
 import { MOTIONS, dirNum, motion } from './comandos';
 import type { Retangulo } from '../core/math';
@@ -56,6 +57,26 @@ export class Fighter {
   score = 0;
   wins = 0;
   maxHp = 0;
+  /** Barras de vida restantes (1 = luta normal; `barrasMax` no começo do round). */
+  barras = 1;
+  /** Barras com que o round começa (1; 2 no chefão). `reset` volta `barras` para cá. */
+  barrasMax = 1;
+  /** É o chefe desta luta? (`virarChefe`; `setChar` desfaz.) */
+  chefe = false;
+  /** Configuração do chefe (hpPorBarra, fichas, cena). null fora de luta de chefe. */
+  cfgChefe: ConfigChefe | null = null;
+  /** A barra acabou e a Dança da Águia ainda não rodou (o `Game` dispara no primeiro tick livre). */
+  cenaPendente = false;
+  /** Perfil de CPU próprio (só o chefe). null = usa `AI_LEVELS[cpu]`. */
+  perfilIa: PerfilCpu | null = null;
+  /** Ficha ativa (null = a base). `reset` volta para `fichaBase`. */
+  ficha: string | null = null;
+  /** Ficha com que cada round começa: null normalmente; `fichaFase1` no chefe. */
+  private fichaBase: string | null = null;
+  /** O lutador montado SEM ficha (a base). `ch` aponta para ele ou para `chBase.fichas[ficha]`. */
+  private chBase: LutadorMontado;
+  /** Nível de carga (AMINU, S2). Sempre 0 até a fatia da carga. */
+  nivelCarga: 0 | 1 | 2 | 3 = 0;
 
   x = 0;
   y = GROUND;
@@ -112,8 +133,18 @@ export class Fighter {
     this.indice = indice;
     this.side = indice === 0 ? 1 : 2;
     this.ch = ch;
+    this.chBase = ch;
     this.maxHp = ch.hp;
     this.reset(true);
+  }
+
+  /** Vida somada de todas as barras (desempate por tempo). Com 1 barra == hp. */
+  get vidaTotal(): number {
+    return this.hp + (this.barras - 1) * this.maxHp;
+  }
+  /** Meia-largura de empurrão (LutadorDef.corpo; default 39). */
+  get corpo(): number {
+    return this.ch.corpo;
   }
 
   get id(): IdLutador {
@@ -124,9 +155,46 @@ export class Fighter {
     return this.pose.dy;
   }
 
+  /** Troca o lutador inteiro (nova luta). Desfaz tudo o que for de chefe/ficha: o próximo `virarChefe` é explícito. */
   setChar(ch: LutadorMontado): void {
     this.ch = ch;
+    this.chBase = ch;
     this.maxHp = ch.hp;
+    this.barrasMax = 1;
+    this.chefe = false;
+    this.cfgChefe = null;
+    this.cenaPendente = false;
+    this.perfilIa = null;
+    this.ficha = null;
+    this.fichaBase = null;
+    this.nivelCarga = 0;
+  }
+
+  /**
+   * Faz deste lutador o chefe da luta: barras e vida por barra vêm da config, e cada round começa na `fichaFase1`.
+   * Chamar DEPOIS de `setChar`. Fica na ficha da fase 1 já (o `reset` do primeiro round a reaplica).
+   */
+  virarChefe(cfg: ConfigChefe): void {
+    this.chefe = true;
+    this.cfgChefe = cfg;
+    this.barrasMax = cfg.barras;
+    this.fichaBase = cfg.fichaFase1;
+    this.maxHp = cfg.hpPorBarra;
+    this.trocarFicha(cfg.fichaFase1);
+  }
+
+  /**
+   * Troca de ficha (postura, fase do chefe) SEM mexer em `hp`/`maxHp` (diferente de `setChar`). null = a base.
+   * Nome desconhecido é erro de dados: falha alto em vez de desenhar a ficha errada.
+   */
+  trocarFicha(nome: string | null): void {
+    if (nome === null) this.ch = this.chBase;
+    else {
+      const f = this.chBase.fichas[nome];
+      if (!f) throw new Error(`${this.chBase.id}: ficha desconhecida '${nome}'`);
+      this.ch = f;
+    }
+    this.ficha = nome;
   }
 
   reset(full: boolean): void {
@@ -135,9 +203,13 @@ export class Fighter {
     this.vx = 0;
     this.vy = 0;
     this.facing = this.side === 1 ? 1 : -1;
-    this.maxHp = this.ch.hp;
+    this.trocarFicha(this.fichaBase); // cada round começa na postura/fase base
+    this.cenaPendente = false;
+    this.nivelCarga = 0;
+    this.maxHp = this.cfgChefe ? this.cfgChefe.hpPorBarra : this.ch.hp;
     this.hp = this.maxHp;
     this.hpShown = this.hp;
+    this.barras = this.barrasMax;
     if (full) this.en = 0;
     else this.en = Math.max(this.en * 0.5, 20);
     this.state = 'idle';
@@ -342,6 +414,7 @@ export class Fighter {
         }
         return;
       case 'win':
+      case 'cena': // Dança da Águia: parado no lugar até o Game devolver o controle
         this.vx = 0;
         this.physics(jogo);
         return;
@@ -653,6 +726,12 @@ export class Fighter {
         } else if (this.state === 'down' && this.phase === 'rise') P.name = 'crouch';
         else P.name = 'koFloor';
         break;
+      case 'cena': {
+        // devekh0..2 (folha B9) em terços da duração; sem a arte (atlas provisório) cai em `win`/`guard` via getPD
+        const dur = this.cfgChefe?.danca.duracao ?? 90;
+        P.name = 'devekh' + Math.min(2, Math.floor((this.st * 3) / dur));
+        break;
+      }
       case 'win':
         P.name = 'win';
         if (L) {

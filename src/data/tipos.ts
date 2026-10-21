@@ -1,4 +1,4 @@
-import type { IdLutador } from '../core/contratos';
+import type { EstiloProjetil, IdLutador } from '../core/contratos';
 
 /** Nomes das entradas da tabela de golpes (ch.moves) do protótipo. */
 export type NomeGolpe =
@@ -6,17 +6,90 @@ export type NomeGolpe =
   | 'clp' | 'clk' | 'chp' | 'chk' // agachado (↓ + botão)
   | 'jlp' | 'jhp' | 'jlk' | 'jhk' // no ar
   | '_lag' | 'throw' // recuperação de pouso / arremesso
-  | 'sFire' | 'sDown' | 'sFwd'; // 3 especiais: ESP · ↓+ESP · →+ESP
+  | 'sFire' | 'sDown' | 'sFwd' // 3 especiais: ESP · ↓+ESP · →+ESP
+  | 'sResp'; // E3 (CAMILLE): resposta da PARADE. Golpe oculto: nenhuma entrada o alcança (só `startMove('sResp')`)
 
 export type NomeEspecial = 'sFire' | 'sDown' | 'sFwd';
 
 /** mid: bloqueia em pé ou agachado · low: só agachado · over: só em pé · throw: não bloqueia. */
 export type NivelGolpe = 'mid' | 'low' | 'over' | 'throw';
-export type TipoGolpe = 'fire' | 'rise' | 'rush' | 'leap' | 'melee';
+/** `carga`/`rebote`/`aparar`/`troca` são as primitivas da E3 (docs/mecanicas-e3.md §1): o tipo existe desde a S0, a lógica entra na fatia de cada lutador. */
+export type TipoGolpe = 'fire' | 'rise' | 'rush' | 'leap' | 'melee' | 'carga' | 'rebote' | 'aparar' | 'troca';
 export type KindGolpe = 'punch' | 'kick' | 'sweep' | 'fire' | 'lag';
 /** Som de impacto; é o nome do método do AudioSys (AudioSys[mv.snd]()). */
 export type SomGolpe = 'punch' | 'kick' | 'fireballHit';
-export type EstiloProjetilDef = 'orb' | 'wave' | 'blade' | 'boomerang';
+/** Uma só definição de estilos de projétil: a de core/contratos.ts (C3). Alias mantido p/ quem já importa. */
+export type EstiloProjetilDef = EstiloProjetil;
+
+// ---------------------------------------------------------------------------
+// E3 — parâmetros novos dos golpes e dicas de CPU (docs/mecanicas-e3.md §2). SÓ TIPOS na S0: campo ausente = código
+// antigo intacto. Cada um ganha a lógica (e o teste medido) na fatia indicada.
+// ---------------------------------------------------------------------------
+
+/** (S2, AMINU) MASHI: segurar carrega. `niveis[i]` = ticks de espera para atingir o nível i; `max` = auto-solta. */
+export type CargaDef = {
+  max: number;
+  /** Limiar em ticks de cada nível (ex.: [0, 30, 70] → nível 1 a partir de 0, 2 a partir de 30, 3 a partir de 70). */
+  niveis: readonly number[];
+  /** Multiplicador de velocidade ao andar carregando. */
+  andar: number;
+  /** Ajustes aplicados ao golpe conforme o nível alcançado (índice = nível − 1). */
+  porNivel: readonly { dmg?: number; kd?: 1; quebraGuarda?: number }[];
+};
+
+/** (S3, CENTELLA) RESORTE: corre de costas até a corda, quica e volta; quanto mais longe a corda, mais forte. */
+export type ReboteDef = {
+  vel: number;
+  maxTicks: number;
+  vy: number;
+  vxBase: number;
+  vxPorPx: number;
+  dmgPorPx: number;
+  /** Distância máxima que conta para dano (px). */
+  maxDist: number;
+};
+
+/** (S4, CAMILLE) PARADE: anula golpe corpo a corpo dos `niveis` na janela ativa e responde com `sResp`. */
+export type ParryDef = { niveis: readonly NivelGolpe[]; atordoaAtacante: number };
+
+/** (S1b/S3, BAATAR e CENTELLA) Agarrão em golpe: `alcance` px, dano fixo, tipo de alvo e janela de ticks. */
+export type AgarraoDef = { alcance?: number; dmg?: number; alvo?: 'chao' | 'ar' | 'ambos'; janela?: number };
+
+/** (S4, CAMILLE) Contragolpe reforçado quando acerta o rival na PREPARAÇÃO do golpe dele. */
+export type ContraDef = { mult: number; hs: number };
+
+/**
+ * Dica de CPU por golpe (E3 §2). REGRA: a CPU só gasta chamadas de RNG a mais por causa de uma dica se o PRÓPRIO
+ * lutador a declara (`LutadorMontado.dicasIa` não vazio). Lutador sem dica consome exatamente o RNG de antes — é o que
+ * mantém o snapshot de CPU × CPU (semente 42) intacto. Os papéis entram nas fatias S1b..S5.
+ */
+export type PapelIa = 'pressao' | 'aproximar' | 'defesa' | 'defesa-projetil' | 'antiaereo' | 'troca';
+export type DicaIa = {
+  papel: PapelIa;
+  /** Distância (px) em que o golpe faz sentido: [mín, máx]. */
+  alcance?: readonly [number, number];
+  /** (carga) quantos ticks segurar ESP, sorteado em [mín, máx]. */
+  segurar?: readonly [number, number];
+  /** (RESORTE) distância mínima até a parede de trás. */
+  espacoAtras?: number;
+  /** (troca de postura) ficha preferida por faixa de distância. */
+  preferir?: { distancia: string; perto: string };
+};
+
+/** Configuração da luta de chefe de um lutador (docs/mecanicas-e3.md §3.1). Só vale com `ConfigPartida.chefe`. */
+export type ConfigChefe = {
+  barras: 2;
+  /** Vida de cada barra (vira `maxHp` do chefe). */
+  hpPorBarra: number;
+  /** Ficha ativa na fase 1 (atributos do modo chefão) — chave de `LutadorDef.fichas`. */
+  fichaFase1: string;
+  /** Ficha ativa na fase 2, depois da cena. */
+  fichaFase2: string;
+  /** Dança da Águia: ticks entre a troca de barra e a retomada. */
+  danca: { duracao: number };
+  /** Pontos para quem derrota o chefe (valor final na E6). */
+  bonusVitoria: number;
+};
 
 export type ProjetilDef = {
   dmg: number;
@@ -74,6 +147,24 @@ export type Golpe = {
   air?: 1;
   throw?: 1;
   through?: 1;
+  // --- E3: parâmetros novos (ver blocos acima) ---
+  carga?: CargaDef;
+  rebote?: ReboteDef;
+  parry?: ParryDef;
+  agarrao?: AgarraoDef;
+  contra?: ContraDef;
+  /** (S2) Nível de quebra de guarda: bloqueado vira atordoamento de `quebraGuarda` ticks. */
+  quebraGuarda?: number;
+  /** (S2) Projétil frontal que tocar o lutador durante este golpe some (evento `clash`). */
+  absorveProj?: 1;
+  /** (S5) Passa por baixo de projétil (terceiro nível de altura da hurtbox). */
+  rente?: 1;
+  /** (S1b) Salto com alvo: ticks de voo; a velocidade horizontal vem da distância até o rival. */
+  vxAlvo?: number;
+  /** (S5/chefe) Golpe `type: 'troca'`: ficha para a qual o lutador troca. */
+  troca?: { ficha: string };
+  /** Dica de CPU (ver `DicaIa`). */
+  ia?: DicaIa;
   // --- especiais ---
   name?: string;
   info?: string;
@@ -100,13 +191,24 @@ export type Anim = { s: readonly string[]; a: readonly string[]; r?: readonly st
 export type ModsGolpes = Partial<Record<NomeGolpe, Partial<Golpe>>>;
 export type EspeciaisLutador = Record<NomeEspecial, Golpe>;
 
+/** Ficha: variação do lutador (postura da NILA, fases do chefe). Sobrescreve (raso) campos do `LutadorDef` base. */
+export type FichaDef = Partial<Omit<LutadorDef, 'id' | 'fichas' | 'chefe'>>;
+
 export type IdCenario = 'jp' | 'cn' | 'kr' | 'br';
 
 /** Dados estáticos de um lutador (CHARS do protótipo, sem o que é derivado do atlas). */
 export type LutadorDef = {
   id: IdLutador;
-  /** Chave no protótipo (f1..f4); só para a ferramenta de extração e o teste de fidelidade. */
-  idPrototipo: 'f1' | 'f2' | 'f3' | 'f4';
+  /**
+   * Chave no protótipo (f1..f4). OPCIONAL: lutadores novos não existem no protótipo; os testes de
+   * fidelidade iteram só quem tem.
+   */
+  idPrototipo?: 'f1' | 'f2' | 'f3' | 'f4';
+  /**
+   * Meia-largura de empurrão entre lutadores (px lógicos). Default CORPO_PADRAO (39). A distância mínima
+   * entre dois lutadores é a soma dos dois `corpo` (39 + 39 = 78, o valor fixo do protótipo).
+   */
+  corpo?: number;
   country: string;
   /** Cenário da casa do lutador (luta-se na casa do rival). */
   stage: IdCenario;
@@ -134,6 +236,15 @@ export type LutadorDef = {
   especiais: EspeciaisLutador;
   /** Ajustes de animação por especial quando a folha pede outra sequência (CHAR_ANIM). */
   anim?: Partial<Record<NomeEspecial, Anim>>;
+  // --- E3 ---
+  /** Golpes extras que nenhuma entrada alcança (ex.: `sResp` da CAMILLE). */
+  extras?: Partial<Record<'sResp', Golpe>>;
+  /** (S1b) PESO DA MONTANHA: `armor:1` só absorve golpes de rank ≤ rankMax; projétil e golpe forte interrompem. */
+  armadura?: { rankMax: number };
+  /** Fichas nomeadas (ver `FichaDef`). Montadas no boot por `montarLutador`; ausente = só a base. */
+  fichas?: Record<string, FichaDef>;
+  /** Presente = este lutador pode ser o chefe (`ConfigPartida.chefe`). Sem `cfg.chefe` o lutador é o jogável normal. */
+  chefe?: ConfigChefe;
 };
 
 /** Pose no formato interno (o do POSEDATA do protótipo). tipX/tipY em px lógicos relativos à âncora. */

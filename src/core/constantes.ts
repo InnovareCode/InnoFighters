@@ -15,3 +15,6 @@ export const JUMP_FORCE = -16.5;
 export const MAX_HP = 100;
 export const MAX_EN = 100;
 export const SPECIAL_COST = 40;
+
+/** Meia-largura de empurrão entre lutadores (min = 78 do protótipo = 2 * 39). LutadorDef.corpo sobrescreve. */
+export const CORPO_PADRAO = 39;

@@ -1,9 +1,11 @@
 import { reagirAosEventos } from '../../audio/eventos';
-import { ALTURA, LARGURA } from '../../core/constantes';
+import { ALTURA, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
 import type { DummyTreino, FonteEntradas } from '../../fight/game';
 import { desenharMundo } from '../../render/mundo';
 import { NOMES_ALVO_TREINO } from '../../render/hud';
+import { cfgDaEtapa } from '../campanha';
+import { EsperaDeArte } from '../espera-de-arte';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
 import { desenharLinhasDeGolpes, P_COL } from '../personagens';
@@ -19,6 +21,8 @@ export class CenaFight implements Cena {
   private ended = false;
   private a: ArgsFight | null = null;
   private ultimoTick = 0;
+  /** A arte da luta está na memória? (a luta só anda depois) */
+  readonly espera = new EsperaDeArte();
   private m: MenuList;
   private am: MenuList;
   private cm: MenuList;
@@ -41,12 +45,20 @@ export class CenaFight implements Cena {
     this.paused = false;
     this.view = 'main';
     this.ended = false;
+    this.espera.iniciar(this.ui.m, a.cfg);
+    this.prebuscarProximoRival(a);
     game.setup(a.cfg, persist.settings);
     if (a.cfg.keepScore && a.run) game.p1.score = a.run.score;
     efeitos.limpar();
     this.ultimoTick = game.tick;
     audio.startMusic('fight');
     this.montarMenus();
+  }
+
+  /** ARCADE: baixa (sem decodificar) a arte do próximo rival enquanto esta luta acontece. */
+  private prebuscarProximoRival(a: ArgsFight): void {
+    const prox = a.run?.etapas[a.run.idx + 1]?.id;
+    if (prox) this.ui.m.arte.prebuscar({ lutadores: [prox], cenarios: [this.ui.m.elenco[prox].ch.stage] });
   }
 
   /** Zera projéteis, tremor e congelamento (clearFx do protótipo, sem as partículas que moram no render). */
@@ -143,7 +155,7 @@ export class CenaFight implements Cena {
   }
 
   update(): void {
-    if (this.paused) return;
+    if (this.paused || !this.espera.pronta) return;
     const { game, efeitos, petalasLuta } = this.ui.m;
     const { audio } = this.ui.c;
     const t0 = game.t;
@@ -154,6 +166,9 @@ export class CenaFight implements Cena {
     for (const ev of game.events) {
       if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
       efeitos.reagir(ev);
+      // O chefe sai em 3 etapas (troca, danca, retomada): o flash e o "FASE 2!" são só da troca de barra, senão disparam 3 vezes.
+      // danca/retomada ainda não têm efeito visual próprio (não há overlay de cena do chefe no HUD; por ora só o filtro).
+      if (ev.tipo === 'fase-chefe' && ev.etapa === 'troca') this.aoFaseDoChefe(ev.lutador);
     }
     if (game.tick !== this.ultimoTick) {
       this.ultimoTick = game.tick;
@@ -163,6 +178,15 @@ export class CenaFight implements Cena {
       this.ended = true;
       this.finish();
     }
+  }
+
+  /** O chefe passou para a 2ª barra: flash e faíscas nele e o aviso na tela (o som e o tremor são da luta). */
+  private aoFaseDoChefe(indice: 0 | 1): void {
+    const { game, efeitos } = this.ui.m;
+    const f = game.fighters[indice];
+    efeitos.faiscas(f.x, f.y - 120, '#ffffff', 40);
+    efeitos.estrela(f.x, f.y - 120, '#e6c8ff', true);
+    efeitos.textoFlutuante(f.x, f.y - SH, 'FASE 2!', '#ff9a3a', 28);
   }
 
   private finish(): void {
@@ -175,9 +199,10 @@ export class CenaFight implements Cena {
       run.score = game.p1.score;
       if (win === 0) {
         run.idx++;
-        const prox = run.order[run.idx];
+        const prox = run.etapas[run.idx];
         if (!prox) this.ui.go('ending', { run });
-        else this.ui.go('vs', { cfg: { mode: 'arcade', c1: run.c1, c2: prox, cpu: run.diff, keepScore: true }, run });
+        else if (prox.chefe) this.ui.go('chefe', { cfg: cfgDaEtapa(run, true), run }); // aviso de chefe, depois o VS do chefão
+        else this.ui.go('vs', { cfg: cfgDaEtapa(run, true), run });
       } else this.ui.go('continue', { run, a });
       return;
     }
@@ -269,6 +294,9 @@ export class CenaFight implements Cena {
     const W = LARGURA;
     const H = ALTURA;
     desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, { tremor: persist.settings.shake, alvoTreino: game.dummy });
+    if (!this.espera.pronta) {
+      f.T(this.espera.falhou ? 'Não foi possível carregar os lutadores.' : `Carregando lutadores... ${this.espera.percentual}%`, W / 2, H / 2, 20, '#fff', 'center');
+    }
     if (!this.paused) {
       if (game.training && game.phase === 'fight' && game.t < 400) {
         f.T('ESC pausa  •  R reposiciona  •  T troca o alvo', W / 2, H - 56, 13, '#cfd6f5', 'center', { alpha: 1 - game.t / 400 });

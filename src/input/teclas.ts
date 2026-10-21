@@ -47,6 +47,8 @@ export class TeclasVirtuais {
       lk: this.apertada.has(mapa.lk),
       hk: this.apertada.has(mapa.hk),
       sp: this.apertada.has(mapa.sp),
+      // segurado (nível, não borda): o MASHI da S2 carrega enquanto o botão de especial estiver pressionado
+      spSeg: this.segurada.has(mapa.sp),
     };
   }
 
@@ -72,6 +74,7 @@ export class TeclasVirtuais {
       lk: a.lk || b.lk,
       hk: a.hk || b.hk,
       sp: a.sp || b.sp,
+      spSeg: a.spSeg === true || b.spSeg === true,
     };
   }
 }

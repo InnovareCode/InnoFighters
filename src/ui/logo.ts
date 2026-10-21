@@ -2,8 +2,7 @@ import { criarCanvasPadrao } from '../assets/canvas';
 import { ALTURA, LARGURA } from '../core/constantes';
 import type { IdLutador } from '../core/contratos';
 import type { Rng } from '../core/rng';
-import { CICLO_CENARIOS } from '../data/cenarios';
-import { ROSTER } from '../data/lutadores';
+import { LUTADORES, VITRINE } from '../data/lutadores';
 import { desenharVinheta } from '../render/cenario';
 import { desenharPose } from '../render/pose';
 import type { Ctx } from '../render/tela';
@@ -13,8 +12,11 @@ import type { Mundo } from './contexto';
 export const GAME_NAME = 'INNO FIGHTERS';
 export const LOGO_Y = 142;
 export const LOGO_S = 0.84;
-/** Lutador "da casa" de cada cenário do ciclo (STAGE_OF). */
-export const STAGE_OF: readonly IdLutador[] = ROSTER;
+/** Quem aparece no título (e a ordem do ciclo de cenários): a VITRINE, não o elenco inteiro. */
+export const STAGE_OF: readonly IdLutador[] = VITRINE;
+
+/** Cenário da casa de cada lutador da vitrine, na ordem da vitrine: é o ciclo de fundos do título. */
+export const CICLO_VITRINE: readonly string[] = VITRINE.map((id) => LUTADORES[id].stage);
 
 // ---------- logotipo (desenhado uma vez em canvases próprios, em alta resolução) ----------
 type Logo = { art: HTMLCanvasElement; mask: HTMLCanvasElement; tmp: HTMLCanvasElement; w: number; h: number };
@@ -195,9 +197,10 @@ export const cenarioDoCiclo = imagemDoCenario;
 /** Fundo do título: os 4 cenários em sequência, com movimento lento de câmera. Devolve o índice em destaque. */
 export function desenharCicloDeCenarios(ctx: Ctx, m: Mundo, t: number): number {
   const per = 420;
-  const i = Math.floor(t / per) % 4;
+  const n = CICLO_VITRINE.length;
+  const i = Math.floor(t / per) % n;
   const k = (t % per) / per;
-  const nxt = (i + 1) % 4;
+  const nxt = (i + 1) % n;
   const kb = (img: CanvasImageSource, p: number, a: number): void => {
     const z = 1.08 + p * 0.1;
     const ox = Math.sin(p * Math.PI) * 18 - p * 30;
@@ -208,8 +211,8 @@ export function desenharCicloDeCenarios(ctx: Ctx, m: Mundo, t: number): number {
     ctx.drawImage(img, -LARGURA / 2 - 20, -ALTURA / 2 - 12, LARGURA + 40, ALTURA + 24);
     ctx.restore();
   };
-  kb(imagemDoCenario(m, CICLO_CENARIOS[i] ?? 'jp'), k, 1);
-  if (k > 0.86) kb(imagemDoCenario(m, CICLO_CENARIOS[nxt] ?? 'jp'), (k - 0.86) * 0.7, (k - 0.86) / 0.14);
+  kb(imagemDoCenario(m, CICLO_VITRINE[i] ?? 'jp'), k, 1);
+  if (k > 0.86) kb(imagemDoCenario(m, CICLO_VITRINE[nxt] ?? 'jp'), (k - 0.86) * 0.7, (k - 0.86) / 0.14);
   return k > 0.86 ? ((k - 0.86) / 0.14 > 0.5 ? nxt : i) : i;
 }
 
@@ -263,15 +266,23 @@ export function quadroIdle(t: number, taxa = 10): string {
   return `idle${seq[Math.floor(t / taxa) % 6]}`;
 }
 
-/** Os 4 lutadores enfileirados no título; `featured` brilha. */
+/** Posições x da fileira: metade à esquerda, metade à direita, passo de 192 px a partir das bordas (4 heróis = 104, 296 | 664, 856). */
+export function posicoesDaFileira(n: number): number[] {
+  const esq = Math.ceil(n / 2);
+  const dir = n - esq;
+  return Array.from({ length: n }, (_, i) => (i < esq ? 104 + 192 * i : 856 - 192 * (dir - 1 - (i - esq))));
+}
+
+/** Os lutadores da vitrine enfileirados no título; `featured` brilha. */
 export function fileiraDeHerois(f: Ferramentas, m: Mundo, t: number, featured: IdLutador, alpha = 1): void {
   const { ctx } = f;
-  const xs = [104, 296, 664, 856];
-  ROSTER.forEach((id, i) => {
+  const xs = posicoesDaFileira(VITRINE.length);
+  const lado = Math.ceil(VITRINE.length / 2);
+  VITRINE.forEach((id, i) => {
     const r = m.elenco[id];
     const on = id === featured;
     const sc = on ? 0.94 : 0.84;
-    const fac = i < 2 ? 1 : -1;
+    const fac = i < lado ? 1 : -1;
     const x = xs[i] ?? 0;
     const y = 528;
     ctx.save();

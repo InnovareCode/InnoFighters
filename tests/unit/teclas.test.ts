@@ -3,19 +3,22 @@ import { INPUT_VAZIO } from '../../src/core/contratos';
 import { CTRL_P1, CTRL_P2 } from '../../src/input/mapa';
 import { normalizarTecla, TeclasVirtuais } from '../../src/input/teclas';
 
+/** Quadro lido sem teclas: ler() sempre traz spSeg (segurado do especial), mesmo falso. */
+const VAZIO = { ...INPUT_VAZIO, spSeg: false };
+
 describe('TeclasVirtuais (C2 = readInput do protótipo)', () => {
   it('sem teclas, o InputFrame é vazio', () => {
-    expect(new TeclasVirtuais().lerP1()).toEqual(INPUT_VAZIO);
+    expect(new TeclasVirtuais().lerP1()).toEqual(VAZIO);
   });
 
   it('direções são estado segurado; golpes são borda de descida', () => {
     const t = new TeclasVirtuais();
     t.definir('ArrowLeft', true);
     t.definir('z', true);
-    expect(t.lerP1()).toEqual({ ...INPUT_VAZIO, left: true, lp: true });
+    expect(t.lerP1()).toEqual({ ...VAZIO, left: true, lp: true });
     t.fimDoTick();
     // seguiu apertando: direção continua, golpe não repete
-    expect(t.lerP1()).toEqual({ ...INPUT_VAZIO, left: true });
+    expect(t.lerP1()).toEqual({ ...VAZIO, left: true });
   });
 
   it('soltar e apertar de novo gera nova borda', () => {
@@ -47,8 +50,24 @@ describe('TeclasVirtuais (C2 = readInput do protótipo)', () => {
     const t = new TeclasVirtuais();
     t.definir('a', true);
     t.definir('j', true);
-    expect(t.lerP1()).toEqual(INPUT_VAZIO);
-    expect(t.lerP2()).toEqual({ ...INPUT_VAZIO, left: true, lp: true });
+    expect(t.lerP1()).toEqual(VAZIO);
+    expect(t.lerP2()).toEqual({ ...VAZIO, left: true, lp: true });
+  });
+
+  it('spSeg é nível (segurado), sp é borda: segue true com o botão pressionado depois do tick', () => {
+    const t = new TeclasVirtuais();
+    t.definir('b', true);
+    expect(t.lerP1()).toMatchObject({ sp: true, spSeg: true });
+    t.fimDoTick();
+    expect(t.lerP1()).toMatchObject({ sp: false, spSeg: true });
+    t.definir('b', false);
+    expect(t.lerP1()).toMatchObject({ sp: false, spSeg: false });
+    // P2 usa o próprio botão (l), e o mesclado enxerga qualquer um dos dois
+    t.definir('l', true);
+    t.fimDoTick();
+    expect(t.lerP1().spSeg).toBe(false);
+    expect(t.lerP2().spSeg).toBe(true);
+    expect(t.lerMesclado()).toMatchObject({ sp: false, spSeg: true });
   });
 
   it('lerMesclado faz o OR dos dois mapas', () => {
@@ -56,7 +75,7 @@ describe('TeclasVirtuais (C2 = readInput do protótipo)', () => {
     t.definir('ArrowUp', true);
     t.definir('l', true);
     t.definir('d', true);
-    expect(t.lerMesclado()).toEqual({ ...INPUT_VAZIO, up: true, right: true, sp: true });
+    expect(t.lerMesclado()).toEqual({ ...VAZIO, up: true, right: true, sp: true, spSeg: true });
   });
 
   it('soltarTodas (perda de foco) solta direções', () => {

@@ -1,7 +1,9 @@
 import type { Elenco } from '../assets/elenco';
+import type { GerenciadorDeArte } from '../assets/gerenciador';
 import type { AudioSys } from '../audio/audio-sys';
 import type { Configuracoes, IdLutador } from '../core/contratos';
 import type { Rng } from '../core/rng';
+import type { Progresso, Regras } from '../meta';
 import type { Game } from '../fight/game';
 import type { Efeitos, CampoDePetalas } from '../render/efeitos';
 import type { RecursosDeDesenho } from '../render/mundo';
@@ -14,6 +16,8 @@ export interface Persistencia {
   readonly settings: Configuracoes;
   /** Recorde (HISCORE). */
   hi: number;
+  /** Progresso de desbloqueio (C4 v2). Troque o valor inteiro (é imutável) e chame `salvar()`. */
+  prog: Progresso;
   salvar(): void;
 }
 
@@ -21,6 +25,8 @@ export interface Persistencia {
 export interface Mundo {
   readonly rec: RecursosDeDesenho;
   readonly elenco: Elenco;
+  /** Carga sob demanda das imagens (atlas e cenários); os dados dos lutadores já estão todos em `elenco`. */
+  readonly arte: GerenciadorDeArte;
   readonly game: Game;
   readonly efeitos: Efeitos;
   /** Pétalas do fundo da luta (as dos menus ficam no Navegador). */
@@ -38,6 +44,8 @@ export interface Contexto {
   readonly rngVisual: Rng;
   /** Sorteio das decisões de interface (ordem dos rivais do ARCADE). */
   readonly rngUI: Rng;
+  /** Regras do desbloqueio e do elenco (padrão: `REGRAS_PADRAO`; testes injetam outras, ex.: 9 ids falsos). */
+  readonly regras: Regras;
   alternarTelaCheia(): void;
   /** Aparelho com tela de toque (muda o texto "PRESSIONE ENTER"). */
   temToque(): boolean;

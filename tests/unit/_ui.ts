@@ -2,6 +2,7 @@ import type { AudioSys } from '../../src/audio/audio-sys';
 import type { Configuracoes } from '../../src/core/contratos';
 import { CONFIGURACOES_PADRAO } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
+import { progressoVazio, REGRAS_PADRAO, type Regras } from '../../src/meta';
 import type { Entrada } from '../../src/input/entrada';
 import type { Ctx } from '../../src/render/tela';
 import type { Contexto, Mundo, Persistencia } from '../../src/ui/contexto';
@@ -42,13 +43,14 @@ export function audioFalso() {
 }
 
 /** Navegador com contexto falso (sem navegador de verdade): serve para testar a lógica das cenas. */
-export function navegadorFalso(settings: Partial<Configuracoes> = {}) {
+export function navegadorFalso(settings: Partial<Configuracoes> = {}, regras: Regras = REGRAS_PADRAO) {
   const g = gravador();
   const a = audioFalso();
   const salvou = { n: 0 };
   const persist: Persistencia = {
     settings: { ...CONFIGURACOES_PADRAO, ...settings },
     hi: 0,
+    prog: progressoVazio(),
     salvar() {
       salvou.n++;
     },
@@ -62,6 +64,7 @@ export function navegadorFalso(settings: Partial<Configuracoes> = {}) {
     entrada,
     rngVisual: criarRng(1),
     rngUI: criarRng(2),
+    regras,
     alternarTelaCheia: () => undefined,
     temToque: () => false,
   };
@@ -75,4 +78,21 @@ export function mundoFalso(): Mundo {
   return {
     elenco: { hayato: ch('HAYATO', 1.05), 'wei-long': ch('WEI LONG', 0.82), 'min-ji': ch('MIN-JI', 1.55), caio: ch('CAIO', 0.98) },
   } as unknown as Mundo;
+}
+
+/** Mundo mínimo para as 9 regras falsas (E4): nome, tom e cenário dos 9 lutadores. */
+export function mundoFalso9(): Mundo {
+  const ch = (name: string, pitch: number, stage: string) => ({ ch: { name, pitch, stage, K: 1, scale: 1 }, arte: { retrato: () => null } });
+  const elenco = {
+    hayato: ch('HAYATO', 1.05, 'jp'),
+    'wei-long': ch('WEI LONG', 0.82, 'cn'),
+    'min-ji': ch('MIN-JI', 1.55, 'kr'),
+    caio: ch('CAIO', 0.98, 'br'),
+    'novo-a': ch('NOVO A', 1, 'jp'),
+    'novo-b': ch('NOVO B', 1, 'cn'),
+    'novo-c': ch('NOVO C', 1, 'kr'),
+    'novo-d': ch('NOVO D', 1, 'br'),
+    'chefe-x': ch('CHEFE X', 0.7, 'br'),
+  };
+  return { elenco, arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined } } as unknown as Mundo;
 }

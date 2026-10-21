@@ -3,7 +3,7 @@ import { expect, test, type CDPSession, type Page } from '@playwright/test';
 // a página agora baixa ~6 MB de arte antes de ficar pronta; com vários navegadores em paralelo isso passa de 30 s
 test.describe.configure({ timeout: 90_000 });
 
-type Quadro = Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'hp' | 'lk' | 'hk' | 'sp', boolean>;
+type Quadro = Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'hp' | 'lk' | 'hk' | 'sp' | 'spSeg', boolean>;
 type Hook = { entrada: { lerP1(): Quadro; lerP2(): Quadro; lerMesclado(): Quadro; fimDoTick(): void; temToque: boolean } };
 
 async function abrir(page: Page, viewport?: { width: number; height: number }): Promise<string[]> {
@@ -20,7 +20,7 @@ const p2 = (page: Page) => page.evaluate(() => (window as unknown as { __inno: H
 const mesclado = (page: Page) => page.evaluate(() => (window as unknown as { __inno: Hook }).__inno.entrada.lerMesclado());
 const fimDoTick = (page: Page) => page.evaluate(() => (window as unknown as { __inno: Hook }).__inno.entrada.fimDoTick());
 
-const VAZIO: Quadro = { left: false, right: false, up: false, down: false, lp: false, hp: false, lk: false, hk: false, sp: false };
+const VAZIO: Quadro = { left: false, right: false, up: false, down: false, lp: false, hp: false, lk: false, hk: false, sp: false, spSeg: false };
 
 test.describe('teclado (InputFrame = readInput do protótipo)', () => {
   test('direção é segurada, golpe é borda de descida', async ({ page }) => {

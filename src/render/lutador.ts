@@ -7,6 +7,15 @@ import { desenharRastroGolpe } from './rastro-golpe';
 import type { Ctx } from './tela';
 
 /**
+ * O lutador montado a desenhar: a ficha ativa (C3 `LutadorLeitura.ficha`) quando não é null, senão o base.
+ * Cada ficha é um `LutadorMontado` completo sobre as mesmas poses (`getPD`, cores `fire`, escala).
+ * Ficha desconhecida cai no base (não quebra o desenho; a luta já lança erro se pedir uma que não existe).
+ */
+export function chDaFicha(ch: LutadorMontado, ficha: string | null): LutadorMontado {
+  return (ficha ? ch.fichas[ficha] : undefined) ?? ch;
+}
+
+/**
  * Desenha um lutador (porte de Fighter.draw do protótipo): sombra, brilho da magia, reflexo no
  * piso, imagens fantasma da corrida, o corpo (com flash branco de dano) e o rastro do golpe.
  * Só lê `LutadorLeitura` (C3): a pose já vem escolhida pela luta em `f.pose`.
@@ -14,10 +23,12 @@ import type { Ctx } from './tela';
  * Nota de fidelidade: no protótipo o piscar da invulnerabilidade (`globalAlpha = 0.6`) era
  * sobrescrito pelo `pose()` seguinte e nunca tinha efeito; portanto não é desenhado aqui.
  */
-export function desenharLutador(ctx: Ctx, f: LutadorLeitura, ch: LutadorMontado, arte: ArteLutador): void {
+export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMontado, arte: ArteLutador): void {
+  const ch = chDaFicha(chBase, f.ficha);
   const P = f.pose;
   const pd = getPD(ch, P.name);
   const K = ch.K;
+  const img = arte.imagemDe(pd); // null = atlas ainda nao carregado: so sombra e brilho
   const air = GROUND - f.y;
   const deitado = P.name === 'koFloor';
   const fl = f.facing * P.flip;
@@ -52,25 +63,27 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, ch: LutadorMontado,
     ctx.restore();
   }
 
-  if (!deitado) {
+  if (!deitado && img) {
     // reflexo no piso molhado
     ctx.save();
     ctx.translate(f.x, GROUND + 4 + (air - P.dy));
     ctx.scale(fl, -1);
     ctx.translate(P.dx, 0);
     ctx.scale(P.sx, P.sy);
-    quadro(arte.imagem, 0.15);
+    quadro(img, 0.15);
     ctx.restore();
   }
 
   // rastro de imagens (corrida, investidas): silhueta branca esmaecendo
   for (const tr of f.trail) {
     const tp = getPD(ch, tr.name);
+    const silTr = arte.silhuetaDe(tp);
+    if (!silTr) continue;
     ctx.save();
     ctx.translate(tr.x, tr.y);
     ctx.scale(tr.f, 1);
     ctx.globalAlpha = (tr.life / 10) * 0.28;
-    ctx.drawImage(arte.silhueta(), tp.x, tp.y, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
+    ctx.drawImage(silTr, tp.x, tp.y, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
     ctx.restore();
     ctx.globalAlpha = 1;
   }
@@ -86,8 +99,11 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, ch: LutadorMontado,
     ctx.translate(0, SH * 0.45);
   }
   ctx.scale(P.sx, P.sy);
-  quadro(arte.imagem, 1);
-  if (f.flash > 0) quadro(arte.silhueta(), (f.flash / 8) * 0.5);
+  if (img) {
+    quadro(img, 1);
+    const silFlash = f.flash > 0 ? arte.silhuetaDe(pd) : null;
+    if (silFlash) quadro(silFlash, (f.flash / 8) * 0.5);
+  }
   ctx.restore();
 
   desenharRastroGolpe(ctx, f, ch);

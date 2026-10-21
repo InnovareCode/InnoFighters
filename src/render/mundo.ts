@@ -5,7 +5,7 @@ import { aplicarCamera } from './camera';
 import { desenharCenarioLuta, desenharVinheta } from './cenario';
 import { desenharPetalas, desenharProjetil, projetilParaVisual, type CampoDePetalas, type Efeitos } from './efeitos';
 import { desenharHUD, desenharOverlay, type OpcoesHud } from './hud';
-import { desenharLutador } from './lutador';
+import { chDaFicha, desenharLutador } from './lutador';
 import { limparQuadro, type Ctx } from './tela';
 
 /** Imagens e dados montados de que a cena de luta precisa para desenhar. */
@@ -54,7 +54,7 @@ export function desenharMundo(
   }
   for (const p of luta.projectiles) {
     const dono = luta.fighters[p.dono];
-    desenharProjetil(ctx, projetilParaVisual(p, rec.elenco[dono.id].ch.fire));
+    desenharProjetil(ctx, projetilParaVisual(p, chDaFicha(rec.elenco[dono.id].ch, dono.ficha).fire));
   }
   efeitos.desenharParticulas(ctx);
   efeitos.desenharImpactos(ctx);

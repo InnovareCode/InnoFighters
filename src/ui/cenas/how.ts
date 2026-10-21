@@ -1,5 +1,7 @@
 import { LARGURA } from '../../core/constantes';
-import { ROSTER } from '../../data/lutadores';
+import type { IdLutador } from '../../core/contratos';
+import { liberados } from '../../meta';
+import { textoComoJogarArcade } from '../escada-texto';
 import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
 import { FH } from '../../render/texto';
@@ -7,18 +9,32 @@ import type { Navegador } from '../navegador';
 import { barrasDeStatus, desenharLinhasDeGolpes, P_COL, SCHEME } from '../personagens';
 import { NAV, type ArgsComo, type Cena } from '../tipos';
 
+/** A aba LUTADORES mostra o elenco em 2 colunas (cabe 4; para mais, a E4 reorganiza junto com a grade 3x3 da seleção). */
+const COLUNAS_ABA_LUTADORES = 2;
+const POR_PAGINA = 4;
+
 export const ABAS_COMO_JOGAR = ['OBJETIVO', 'CONTROLES', 'GOLPES', 'SISTEMA', 'LUTADORES'] as const;
 
 /** Tela "Como jogar": 5 abas (objetivo, controles, golpes, sistema, lutadores). */
 export class CenaHow implements Cena {
   tab = 0;
   cid = 0;
+  /** Página da aba LUTADORES (4 por página). */
+  pagina = 0;
 
   constructor(private readonly ui: Navegador) {}
 
   enter(_a: ArgsComo): void {
     this.tab = 0;
     this.cid = 0;
+    this.pagina = 0;
+  }
+
+  /** Só os lutadores liberados aparecem aqui (travados não vazam nome nem golpes). */
+  private lista(): IdLutador[] {
+    const { regras, persist } = this.ui.c;
+    const libs = liberados(persist.prog, regras);
+    return regras.roster.filter((id) => libs.has(id));
   }
 
   key(k: string): boolean {
@@ -35,12 +51,18 @@ export class CenaHow implements Cena {
       return true;
     }
     if ((k === 'ArrowUp' || k === 'w') && this.tab === 2) {
-      this.cid = (this.cid + 3) % 4;
+      this.cid = (this.cid + this.lista().length - 1) % this.lista().length;
+      audio.uiMove();
+      return true;
+    }
+    const paginas = Math.ceil(this.lista().length / POR_PAGINA);
+    if (this.tab === 4 && paginas > 1 && (k === 'ArrowUp' || k === 'w' || k === 'ArrowDown' || k === 's')) {
+      this.pagina = (this.pagina + (k === 'ArrowDown' || k === 's' ? 1 : paginas - 1)) % paginas;
       audio.uiMove();
       return true;
     }
     if ((k === 'ArrowDown' || k === 's') && this.tab === 2) {
-      this.cid = (this.cid + 1) % 4;
+      this.cid = (this.cid + 1) % this.lista().length;
       audio.uiMove();
       return true;
     }
@@ -96,7 +118,7 @@ export class CenaHow implements Cena {
       this.bullet(64, y0 + 30, 400, 'VENÇA O ROUND', 'Zere a barra de vida do rival para dar o K.O. Se o tempo acabar, vence quem tiver mais vida.');
       this.bullet(64, y0 + 120, 400, 'VENÇA A LUTA', 'Ganhe o número de rounds configurado (padrão: 2 — "melhor de 3"). Um round sem sofrer dano vale PERFECT e bônus de pontos.');
       this.bullet(64, y0 + 230, 400, 'BARRA SUPER', 'Enche ao dar e receber golpes e aos poucos com o tempo. Cada especial gasta uma parte da barra (de 20 a 45).');
-      this.bullet(500, y0 + 30, 400, 'ARCADE', 'Enfrente os outros 3 lutadores em sequência. Se perder, use um CONTINUE (3 no total).');
+      this.bullet(500, y0 + 30, 400, 'ARCADE', textoComoJogarArcade(this.ui.c.regras));
       this.bullet(500, y0 + 120, 400, 'VERSUS E LUTA vs CPU', 'Duelo com um amigo no mesmo teclado/controle ou contra a CPU em 3 dificuldades.');
       this.bullet(500, y0 + 210, 400, 'TREINAMENTO', 'Tempo infinito, energia sempre cheia e alvo configurável (parado, agachado, bloqueando, pulando ou CPU). Veja o dano dos seus combos.');
     } else if (this.tab === 1) {
@@ -131,7 +153,7 @@ export class CenaHow implements Cena {
       f.T('Controle (PlayStation): □ soco fraco • △ soco forte • ✕ chute fraco • ○ chute forte • R1 especial • START pausa • 2 controles = 2 jogadores.', 60, y0 + 318, 13, '#cfd6f5', 'left');
       f.T('Menus: setas / WASD navegam • ENTER / Z confirmam • ESC / X voltam • o mouse também funciona.', 60, y0 + 346, 14, '#cfd6f5', 'left');
     } else if (this.tab === 2) {
-      const id = ROSTER[this.cid] ?? 'hayato';
+      const id = this.lista()[this.cid] ?? 'hayato';
       const ch = m.elenco[id].ch;
       f.A(ch.name, 480, y0 + 8, 24, ch.accent, '#000');
       f.T('↑ ↓ trocar de lutador', 920, y0 + 8, 13, '#cfd6f5', 'right');
@@ -146,13 +168,13 @@ export class CenaHow implements Cena {
       this.bullet(500, y0 + 212, 400, 'ENERGIA', 'Cada especial tem um custo. Acertar golpes enche mais a barra.');
       this.bullet(500, y0 + 288, 400, 'DICA', 'Pule por cima dos projéteis, use a rasteira contra quem só bloqueia em pé e alterne alto/baixo para furar a defesa.');
     } else {
-      ROSTER.forEach((id, i) => {
+      this.lista().slice(this.pagina * POR_PAGINA, (this.pagina + 1) * POR_PAGINA).forEach((id, i) => {
         const r = m.elenco[id];
         const ch = r.ch;
-        const x = 40 + (i % 2) * 446;
-        const y = y0 + (i >> 1) * 188;
+        const x = 40 + (i % COLUNAS_ABA_LUTADORES) * 446;
+        const y = y0 + Math.floor(i / COLUNAS_ABA_LUTADORES) * 188;
         f.panel(x, y, 434, 178, { stroke: ch.accent });
-        desenharRetrato(ctx, r.arte.imagem, ch.head, x + 10, y + 10, 100, false, ['#34406e', '#0c1233']);
+        desenharRetrato(ctx, r.arte.retrato(ch.head), x + 10, y + 10, 100, false, ['#34406e', '#0c1233']);
         f.A(ch.name, x + 124, y + 26, 28, '#fff', '#000', 'left');
         f.T(ch.title, x + 124, y + 52, 13, ch.accent, 'left');
         f.wrap(ch.desc, x + 124, y + 74, 296, 17, 13, '#e8ecff');

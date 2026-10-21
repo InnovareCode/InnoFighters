@@ -1,3 +1,4 @@
+import type { IdLutador } from '../core/contratos';
 import type { IdCenario } from './tipos';
 
 export type CenarioDef = {
@@ -6,7 +7,7 @@ export type CenarioDef = {
   arquivo: string;
   nome: string;
   /** Lutador da casa (STAGE_OF do protótipo). */
-  casa: 'hayato' | 'wei-long' | 'min-ji' | 'caio';
+  casa: IdLutador;
 };
 
 /**

@@ -1,10 +1,14 @@
 import {
   CHAVE_STORAGE,
   CHAVE_STORAGE_LEGADA,
+  CHAVE_STORAGE_V2,
   CONFIGURACOES_PADRAO,
   type ArmazenamentoV1,
   type Configuracoes,
 } from './contratos';
+import { progressoVazio, sanearProgresso } from '../meta/progresso';
+import { REGRAS_PADRAO } from '../meta/regras';
+import type { ArmazenamentoV2, Progresso, Regras } from '../meta/tipos';
 
 /** Subconjunto de Storage que usamos; permite testar em Node com um Map. */
 export interface ArmazenamentoLike {
@@ -107,4 +111,77 @@ function removerLegado(armazenamento: ArmazenamentoLike): void {
   } catch {
     /* sem armazenamento: ignora */
   }
+}
+
+// ---------------------------------------------------------------------------
+// C4 v2 (expansao, E2): chave `inno-fighters-v2` com progresso de desbloqueio.
+// Convive com as funcoes acima (v1) ate a E4 trocar a UI. Nota de camada: `meta/` e codigo puro que
+// so importa `core/contratos` e `core/rng`; importar `meta/progresso` aqui nao cria ciclo.
+// ---------------------------------------------------------------------------
+
+export type DadosSalvosV2 = { s: Configuracoes; hi: number; prog: Progresso };
+
+function padroesV2(): DadosSalvosV2 {
+  return { s: { ...CONFIGURACOES_PADRAO }, hi: 0, prog: progressoVazio() };
+}
+
+/** Le `inno-fighters-v2`; undefined se ausente, corrompida ou de outra versao. */
+function lerV2(armazenamento: ArmazenamentoLike, regras: Pick<Regras, 'roster' | 'iniciais'>): DadosSalvosV2 | undefined {
+  const o = lerJson(armazenamento, CHAVE_STORAGE_V2);
+  if (!ehObjeto(o) || o['v'] !== 2) return undefined;
+  return { s: sanearConfiguracoes(o['s']), hi: sanearHi(o['hi']), prog: sanearProgresso(o['prog'], regras) };
+}
+
+/**
+ * Grava `inno-fighters-v2`. Devolve false se o storage falhou (cota, modo privado) — e nesse caso nada foi
+ * apagado por aqui. O progresso e saneado antes de gravar, para o disco nunca guardar lixo.
+ */
+export function salvarDadosV2(
+  armazenamento: ArmazenamentoLike,
+  dados: DadosSalvosV2,
+  regras: Pick<Regras, 'roster' | 'iniciais'> = REGRAS_PADRAO,
+): boolean {
+  const corpo: ArmazenamentoV2 = { v: 2, s: dados.s, hi: dados.hi, prog: sanearProgresso(dados.prog, regras) };
+  try {
+    armazenamento.setItem(CHAVE_STORAGE_V2, JSON.stringify(corpo));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Carrega config, recorde e progresso (plano 3.3):
+ *  1. `inno-fighters-v2` valida -> usa (com `hi = max(v2.hi, v1.hi)`); apaga `sakura-fighters-v4` se ainda existir.
+ *     A v1 FICA (uma release).
+ *  2. senao `inno-fighters-v1` valida -> {s, hi} + progresso vazio, grava a v2 (nao apaga a v1).
+ *  3. senao `sakura-fighters-v4` -> migra s/hi, grava a v2.
+ *  4. senao -> padroes (nao grava).
+ * Uma v2 corrompida cai no passo 2/3 em vez de ir direto aos padroes (nao perde o recorde). A legada so e
+ * apagada DEPOIS que a v2 foi gravada com sucesso. Idempotente: carregar duas vezes da o mesmo resultado.
+ */
+export function carregarDadosV2(
+  armazenamento: ArmazenamentoLike,
+  regras: Pick<Regras, 'roster' | 'iniciais'> = REGRAS_PADRAO,
+): DadosSalvosV2 {
+  const atual = lerV2(armazenamento, regras);
+  if (atual) {
+    removerLegado(armazenamento);
+    // Rollback para o build v1 e reavanco: o recorde batido la so existe na v1. Vale o maior; regrava a v2
+    // (best-effort, sem apagar nada) para o disco concordar com o retorno. Nunca toca a v1.
+    const recordeV1 = lerV1(armazenamento)?.hi ?? 0;
+    if (recordeV1 > atual.hi) {
+      const mesclado: DadosSalvosV2 = { ...atual, hi: recordeV1 };
+      salvarDadosV2(armazenamento, mesclado, regras);
+      return mesclado;
+    }
+    return atual;
+  }
+  const base = lerV1(armazenamento) ?? lerLegado(armazenamento);
+  if (base) {
+    const migrado: DadosSalvosV2 = { s: base.s, hi: base.hi, prog: progressoVazio() };
+    if (salvarDadosV2(armazenamento, migrado, regras)) removerLegado(armazenamento);
+    return migrado;
+  }
+  return padroesV2();
 }

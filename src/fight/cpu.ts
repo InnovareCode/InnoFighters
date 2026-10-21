@@ -12,6 +12,40 @@ export const AI_LEVELS = [
   { name: 'DIFÍCIL', desc: 'Rápida, agressiva e punitiva. Só para veteranos.', think: 8, react: 0.92, block: 0.88, aggr: 1, fire: 0.3, anti: 0.75, combo: 0.85 },
 ] as const;
 
+/** Os números que a CPU usa para decidir (o que `AI_LEVELS[n]` tem, sem nome nem descrição). */
+export type PerfilCpu = { think: number; react: number; block: number; aggr: number; fire: number; anti: number; combo: number };
+
+/**
+ * IA do CHEFE (docs/mecanicas-e3.md §3.5). Fica FORA de `AI_LEVELS` porque essa lista é o menu de dificuldade
+ * (`ui/cenas/diff.ts`). É o nível escolhido pelo jogador com um acréscimo; na fase 2 fica no máximo de agressão.
+ * Valores de partida: os finais saem do harness (E6) e da sessão do dono.
+ */
+export const IA_CHEFE = {
+  /** Somado a `react` e `block` do nível escolhido (teto 1). */
+  bonusReacao: 0.15,
+  /** Fase 2: `aggr` fixo neste valor e `anti` somado de `antiExtra` (teto 1). */
+  fase2: { aggr: 1, antiExtra: 0.2 },
+} as const;
+
+/** Perfil de CPU do chefe para o nível `nivel` (0..2) e a fase (2 = depois da Dança da Águia). */
+export function perfilChefe(nivel: number, fase2: boolean): PerfilCpu {
+  const base = AI_LEVELS[nivel] ?? AI_LEVELS[0];
+  const p: PerfilCpu = {
+    think: base.think,
+    react: Math.min(1, base.react + IA_CHEFE.bonusReacao),
+    block: Math.min(1, base.block + IA_CHEFE.bonusReacao),
+    aggr: base.aggr,
+    fire: base.fire,
+    anti: base.anti,
+    combo: base.combo,
+  };
+  if (fase2) {
+    p.aggr = IA_CHEFE.fase2.aggr;
+    p.anti = Math.min(1, base.anti + IA_CHEFE.fase2.antiExtra);
+  }
+  return p;
+}
+
 export const NO_INPUT = (): InputFrame => ({ left: false, right: false, up: false, down: false, lp: false, lk: false, hp: false, hk: false, sp: false });
 
 /** O que a CPU precisa enxergar da partida. */
@@ -45,13 +79,29 @@ export function moveInput(name: NomeGolpe, dir: number): PlanoIa {
 }
 
 /**
+ * Ponto de plug das dicas de CPU. Devolve um plano pronto ou null (= segue o fluxo normal). CONTRATO: só é chamada
+ * para quem tem `dicasIa` (a guarda está em `cpuInput`) e deve chamar `rnd` APENAS depois de decidir que a dica se
+ * aplica — assim uma dica fora do alcance também não altera a sequência do RNG. Os papéis entram por fatia.
+ */
+function planoPorDica(
+  _me: Fighter,
+  _opp: Fighter,
+  _distancia: number,
+  _dir: number,
+  _rnd: () => number,
+): { plano: PlanoIa; dur: number } | null {
+  return null;
+}
+
+/**
  * Decide as entradas da CPU neste tick (cpuInput do protótipo, linhas 939-1020). Toda a
  * aleatoriedade vem de `rng` (o RNG da LÓGICA): mesma semente + mesmas entradas = mesma luta.
  * A ordem e a quantidade das chamadas ao RNG são as do protótipo (Math.random).
  */
 export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng): InputFrame {
   const nivel = me.cpu ?? 0;
-  const L = AI_LEVELS[nivel] ?? AI_LEVELS[0];
+  // `perfilIa` só existe no chefe (Game.setup); qualquer outro lutador usa a tabela de sempre, sem nenhuma conta nova.
+  const L: PerfilCpu = me.perfilIa ?? AI_LEVELS[nivel] ?? AI_LEVELS[0];
   const ai = me.ai;
   const inp = NO_INPUT();
   const M = me.ch.moves;
@@ -159,6 +209,18 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     Object.assign(plan, moveInput(n, dir));
   };
   if (!me.grounded) return inp;
+  // Dicas de CPU (E3): REGRA — só quem declara `ia` num golpe entra aqui; lutador sem dica não chama nada e não gasta
+  // RNG. Hoje nenhum papel está implementado (entram em S1b..S5), então isto é só o ponto de plug.
+  if (me.ch.dicasIa.length > 0) {
+    const porDica = planoPorDica(me, opp, ad, dir, rnd);
+    if (porDica) {
+      ai.plan = porDica.plano;
+      ai.t = porDica.dur;
+      porDica.plano.dur = porDica.dur;
+      for (const k of ['left', 'right', 'up', 'down', 'lp', 'lk', 'hp', 'hk', 'sp'] as const) inp[k] = !!porDica.plano[k];
+      return inp;
+    }
+  }
   if (ad > 320) {
     if (me.canAfford('sFire') && r < L.fire) {
       doMove('sFire');

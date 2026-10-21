@@ -328,7 +328,8 @@ describe('a tabela de apresentação', () => {
 });
 
 describe('a CENA da luta com a entrada: o motor e o lock-step não a veem', () => {
-  const settings = (s: Partial<Configuracoes>): Partial<Configuracoes> => ({ ...s });
+  // estes testes são da ENTRADA do chefão: a PROVOCAÇÃO (balão do round 1) fica desligada pela opção, senão os updates de lutas comuns (caio, treino) seriam dela
+  const settings = (s: Partial<Configuracoes>): Partial<Configuracoes> => ({ provocacoes: 'desligadas', ...s });
   type Frames = { p1: InputFrame; p2: InputFrame };
 
   function montar(set: Partial<Configuracoes> = {}, regras: Regras = REGRAS_PADRAO, run?: CampanhaArcade, c2: IdLutador = ID_ZENON, chefe = true) {

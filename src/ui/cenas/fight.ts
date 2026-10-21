@@ -4,6 +4,7 @@ import { ALTURA, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
 import { CINEMATICA_PADRAO, type EventoLuta } from '../../core/contratos';
 import { ESQUIVA_PADRAO } from '../../data/esquiva';
+import { criarMemoriaDeFalas, provocacoesLigadas } from '../../data/provocacoes';
 import type { DummyTreino, FonteEntradas } from '../../fight/game';
 import { chefeDaLeitura } from '../../render/aura-chefe';
 import { APRESENTACAO, falaDoChefe } from '../../render/apresentacao-lutadores';
@@ -11,6 +12,21 @@ import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinema
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
 import { desenharLegenda } from '../../render/legenda';
 import { MoedasDeDreno } from '../../render/moedas-dreno';
+import {
+  blip,
+  falaDaRodada,
+  falaDaVitoria,
+  falasDaAbertura,
+  modoDaProvocacao,
+  montarRoteiro,
+  Provocacao,
+  provocacaoLigada,
+  SOM_DA_VITORIA,
+  SOM_DO_BALAO,
+  type DadosDeFala,
+  type FalaDoRoteiro,
+  type TipoProvocacao,
+} from '../../render/provocacao';
 import { somDoAcerto } from '../../render/identidade-especiais';
 import { chDaFicha } from '../../render/lutador';
 import { SessaoEspecial } from '../../render/sessao-especial';
@@ -40,6 +56,28 @@ export class CenaFight implements Cena {
   readonly sessao: SessaoEspecial;
   /** ENTRADA DRAMÁTICA do chefão (apresentação pura, antes do 1º `game.update`: o motor e o lock-step não a veem). */
   readonly entrada: EntradaDoChefe;
+  /**
+   * PROVOCAÇÃO (balão antes do round e na vitória; docs/spec-provocacao-prerround-e-vitoria.md): o 3º controlador fora do motor. Enquanto roda, a cena
+   * NÃO chama `game.update`. A única escrita no jogo é `matchDone = true` no fim da vitória (o mesmo efeito do ENTER).
+   */
+  readonly provocacao: Provocacao;
+  /** A provocação do round 1 ainda não começou nesta luta (espera a arte ficar pronta)? */
+  private aberturaPendente = false;
+  /** A provocação da vitória já foi (ou não vai ser) disparada nesta luta? */
+  private vitoriaDisparada = false;
+  /** Quem venceu o round que acabou de terminar (null = empate) e se o round foi decidido por tempo: vêm dos eventos, o `Game` zera `winner` no round novo. */
+  private vencedorDoRound: 0 | 1 | null = null;
+  private roundPorTempo = false;
+  /** O confronto (c1|c2|cenário) da luta anterior desta cena: igual = continue, reinício ou revanche (a provocação do round 1 vira CURTA). */
+  private ultimoConfronto: string | null = null;
+  private confrontoRepetido = false;
+  /** Última fala de cada lutador nesta sessão (para não repetir). */
+  private readonly memoriaDeFalas = criarMemoriaDeFalas();
+  /**
+   * GANCHO DE TESTE (`tests/e2e/_luta.ts` → `SEM_PROVOCACAO`): desliga a provocação pelo resto desta luta (round 1, round 2+ e vitória). Não é preferência do
+   * jogador (essa é `Configuracoes.provocacoes`); volta a falso em cada `enter()`.
+   */
+  semProvocacao = false;
   /** O DRENO do ZENON (TRIBUTO/DECRETO) visível: moedas do golpe até a barra SUPER de quem drenou. */
   readonly moedas = new MoedasDeDreno();
   /** A entrada ainda não começou nesta luta (espera a arte ficar pronta)? */
@@ -67,6 +105,12 @@ export class CenaFight implements Cena {
     this.entrada = new EntradaDoChefe({
       aoSom: (som) => tocarReceita(sintetizador(), som === 'faixas' ? SOM_DAS_FAIXAS : som === 'cartao' ? SOM_DO_CARTAO : somDoBraseiro(som.braseiro)),
     });
+    this.provocacao = new Provocacao({
+      aoSom: (som) => {
+        if (typeof som === 'object') tocarReceita(sintetizador(), blip(som.blip));
+        else tocarReceita(sintetizador(), som === 'faixas' ? SOM_DAS_FAIXAS : som === 'balao' ? SOM_DO_BALAO : SOM_DA_VITORIA);
+      },
+    });
     this.sessao = new SessaoEspecial({
       rng: ui.c.rngVisual,
       aoSom: (momento, id, dono, nivel) => {
@@ -85,10 +129,15 @@ export class CenaFight implements Cena {
     });
   }
 
+  /** O aparelho pede menos movimento? A consulta do contexto (a mesma da casa aleatória da seleção); sem ela (testes), o `matchMedia`. */
+  private reduzMovimento(): boolean {
+    if (this.ui.c.reduzirMovimento) return this.ui.c.reduzirMovimento();
+    return typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+  }
+
   /** O modo da cinemática agora (preferência + regras + movimento reduzido), ou null se não há cinemática. */
   private modoDaCine(): ModoCine | null {
-    const reduz = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
-    return modoDaCinematica(this.ui.c.persist.settings.cinematica, this.ui.c.regras, reduz);
+    return modoDaCinematica(this.ui.c.persist.settings.cinematica, this.ui.c.regras, this.reduzMovimento());
   }
 
   /**
@@ -98,8 +147,7 @@ export class CenaFight implements Cena {
    */
   private modoDaEntrada(a: ArgsFight): ModoEntrada | null {
     if (!a.cfg.chefe || !APRESENTACAO[a.cfg.c2]?.entradaDramatica || !this.ui.c.regras.cinematica) return null;
-    const reduz = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
-    const pref = this.ui.c.persist.settings.cinematica ?? (reduz ? 'curta' : CINEMATICA_PADRAO);
+    const pref = this.ui.c.persist.settings.cinematica ?? (this.reduzMovimento() ? 'curta' : CINEMATICA_PADRAO);
     return pref === 'completa' && !a.run?.entradaDoChefeVista ? 'completa' : 'curta';
   }
 
@@ -112,6 +160,62 @@ export class CenaFight implements Cena {
     if (!a || !modo || !ap?.entradaDramatica) return;
     if (a.run) a.run.entradaDoChefeVista = true;
     this.entrada.iniciar(modo, ap.entradaDramatica, ap.falas?.entrada ?? '');
+  }
+
+  /** Esta luta pode ter provocação neste momento? (regras, opção PROVOCAÇÕES, tipo de luta e o gancho de teste.) */
+  private queroProvocar(momento: 'prerround' | 'vitoria'): boolean {
+    const cfg = this.a?.cfg;
+    if (!cfg || this.semProvocacao) return false;
+    return provocacaoLigada(
+      { regras: this.ui.c.regras, ligadas: provocacoesLigadas(this.ui.c.persist.settings.provocacoes), modo: cfg.mode, p1cpu: cfg.p1cpu, cpu: cfg.cpu, chefe: cfg.chefe },
+      momento,
+    );
+  }
+
+  /** Abre a provocação do tipo `tipo` (a luta já está no ponto certo: antes do 1º update, no `intro` t 0 do round 2+ ou no `matchend`). Não anda o relógio dela. */
+  private comecarProvocacao(tipo: TipoProvocacao): void {
+    if (tipo === 'abertura') this.aberturaPendente = false;
+    else if (tipo === 'vitoria') this.vitoriaDisparada = true;
+    if (!this.a || !this.queroProvocar(tipo === 'vitoria' ? 'vitoria' : 'prerround')) return;
+    const reduz = this.reduzMovimento();
+    const modo = modoDaProvocacao(tipo, this.ui.c.persist.settings.cinematica, reduz, this.confrontoRepetido);
+    const { game, elenco } = this.ui.m;
+    const ids = [game.p1.id, game.p2.id] as const;
+    const dados: DadosDeFala = { ids, nomes: [elenco[ids[0]].ch.name, elenco[ids[1]].ch.name] };
+    const sorteio = { rng: this.ui.c.sorteioDeFalas, memoria: this.memoriaDeFalas };
+    let falas: FalaDoRoteiro[];
+    if (tipo === 'abertura') falas = falasDaAbertura(dados, sorteio);
+    else if (tipo === 'rodada') {
+      falas = falaDaRodada(dados, { round: game.round, vencedorAnterior: this.vencedorDoRound, vitorias: [game.p1.wins, game.p2.wins], vitoriasParaVencer: game.winsNeeded }, sorteio);
+    } else {
+      if (game.matchWinner === null) return;
+      falas = falaDaVitoria(dados, game.matchWinner, { perfeita: game.perfect, porTempo: this.roundPorTempo }, sorteio);
+    }
+    this.provocacao.iniciar(montarRoteiro(tipo, modo, reduz, falas), {
+      pitch: [elenco[ids[0]].ch.pitch, elenco[ids[1]].ch.pitch],
+      nomes: dados.nomes,
+      cores: [this.corDoLutador(0), this.corDoLutador(1)],
+    });
+    this.baixarMusica(true);
+  }
+
+  /** Um tick da provocação: a luta NÃO anda. Pular = ataque de um humano (a borda), ENTER ou toque. O fim da VITÓRIA fecha a luta (`matchDone`, como o ENTER). */
+  private passoDaProvocacao(): void {
+    const { game } = this.ui.m;
+    if (this.alguemPulou()) this.provocacao.pular();
+    this.provocacao.avancar();
+    // as tarjas dos especiais se pintam durante a provocação, como na entrada (sobra tempo e o 1º especial não paga o custo de primeira vez)
+    if (this.aquecendo && this.modoDaCine() !== null) this.aquecendo = this.cine.aquecer(game, this.ui.m.elenco);
+    if (this.provocacao.ativa) return;
+    const tipo = this.provocacao.roteiro?.tipo;
+    this.baixarMusica(false);
+    if (tipo === 'vitoria') {
+      game.matchDone = true;
+      if (!this.ended) {
+        this.ended = true;
+        this.finish();
+      }
+    }
   }
 
   /** A música cai para 50% enquanto a cinemática roda (e a pausa a devolve). */
@@ -148,6 +252,15 @@ export class CenaFight implements Cena {
     this.botaoEsqSem = null;
     this.atualizarBotaoEsquiva();
     this.entrada.zerar();
+    this.provocacao.zerar();
+    this.semProvocacao = false;
+    this.vitoriaDisparada = false;
+    this.vencedorDoRound = null;
+    this.roundPorTempo = false;
+    const confronto = `${a.cfg.c1}|${a.cfg.c2}|${a.cfg.stage ?? ''}`;
+    this.confrontoRepetido = confronto === this.ultimoConfronto;
+    this.ultimoConfronto = confronto;
+    this.aberturaPendente = this.queroProvocar('prerround');
     this.moedas.zerar();
     this.entradaPendente = this.modoDaEntrada(a) !== null;
     // a trilha do chefão (valsa 3/4) é uma flag do def: tirar `trilha` de `ConfigChefe` é o rollback para a música de luta
@@ -252,7 +365,7 @@ export class CenaFight implements Cena {
 
   private resume(): void {
     this.paused = false;
-    if (this.cine.ativa) this.baixarMusica(true);
+    if (this.cine.ativa || this.provocacao.ativa) this.baixarMusica(true);
     this.ui.c.audio.uiPause();
   }
 
@@ -303,6 +416,12 @@ export class CenaFight implements Cena {
       if (this.aquecendo && this.modoDaCine() !== null) this.aquecendo = this.cine.aquecer(this.ui.m.game, this.ui.m.elenco);
       return;
     }
+    // PROVOCAÇÃO do round 1: antes do 1º `game.update` (o motor fica em `intro` t 0; o `round start` segue pendente e sai no 1º update depois dela)
+    if (this.aberturaPendente) this.comecarProvocacao('abertura');
+    if (this.provocacao.ativa) {
+      this.passoDaProvocacao();
+      return;
+    }
     if (this.cine.ativa) {
       this.passoDaCinematica();
       return;
@@ -318,6 +437,7 @@ export class CenaFight implements Cena {
     reagirAosEventos(audio as unknown as { [m: string]: unknown }, game.events);
     for (const ev of game.events) {
       if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
+      this.anotarRound(ev);
       efeitos.reagir(ev, (i) => game.fighters[i], (i) => this.corDoLutador(i));
       this.reagirAoEspecial(ev);
       this.moedas.reagir(ev, game);
@@ -332,9 +452,24 @@ export class CenaFight implements Cena {
       this.moedas.avancar();
     }
     this.atualizarBotaoEsquiva();
+    // PROVOCAÇÃO da vitória: do tick 56 do `matchend` (o título já apareceu), com o vencedor em `win` (ou t >= 100, a garantia). Depois o motor fica parado.
+    if (!this.vitoriaDisparada && !game.matchDone && game.phase === 'matchend' && game.matchWinner !== null && game.t >= 56 && (game.t >= 100 || game.fighters[game.matchWinner].state === 'win')) {
+      this.comecarProvocacao('vitoria');
+    }
     if (game.matchDone && !this.ended) {
       this.ended = true;
       this.finish();
+    }
+  }
+
+  /** Guarda o que a provocação precisa dos eventos: quem ganhou o round, se foi por tempo e a abertura do round 2+ (abre no mesmo tick, com o motor parado). */
+  private anotarRound(ev: EventoLuta): void {
+    if (ev.tipo !== 'round') return;
+    if (ev.fase === 'end') this.vencedorDoRound = ev.vencedor ?? null;
+    else if (ev.fase === 'timeover') this.roundPorTempo = true;
+    else if (ev.fase === 'start') {
+      this.roundPorTempo = false;
+      if (ev.round >= 2) this.comecarProvocacao('rodada');
     }
   }
 
@@ -423,6 +558,11 @@ export class CenaFight implements Cena {
       this.entrada.pular();
       return true;
     }
+    // ENTER durante a provocação pula (depois do tick 10 / 24); antes disso é consumido: não vira "pular o fim da luta" por engano
+    if (k === 'Enter' && this.provocacao.ativa) {
+      this.provocacao.pular();
+      return true;
+    }
     if (k === 'Enter' && game.phase === 'matchend' && game.t > 40) {
       game.matchDone = true;
       return true;
@@ -453,8 +593,16 @@ export class CenaFight implements Cena {
     if (this.paused) this.menuFor()?.hover(x, y);
   }
 
+  /** O Navegador só entrega clique/toque à luta em andamento quando isto é verdade: a provocação ativa (pular com o mouse ou o dedo no canvas). */
+  aceitaToqueNaLuta(): boolean {
+    return this.provocacao.ativa;
+  }
+
   click(x: number, y: number): void {
-    if (!this.paused) return;
+    if (!this.paused) {
+      if (this.provocacao.ativa) this.provocacao.pular();
+      return;
+    }
     const m = this.menuFor();
     if (m) m.click(x, y);
     else this.view = 'main';
@@ -472,6 +620,7 @@ export class CenaFight implements Cena {
     const H = ALTURA;
     // entrada dramática: o mundo sem HUD, o chefe na pose da vez e os braseiros acendendo; as faixas, o cartão e a fala vêm por cima
     const q = this.entrada.ativa ? this.entrada.quadro() : null;
+    const pv = this.provocacao.ativa ? this.provocacao.vista(game, m.elenco) : null;
     const chefe = q ? chefeDaLeitura(game) : null;
     const poseDaEntrada = q && chefe ? APRESENTACAO[chefe.id]?.entrada?.poses[q.pose] : undefined;
     desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, {
@@ -479,20 +628,24 @@ export class CenaFight implements Cena {
       alvoTreino: game.dummy,
       esquiva: this.ui.c.regras.esquiva,
       ...(q ? { hud: false, acesos: q.acesos } : {}),
+      ...(pv ? { hud: pv.quadro.hud, overlay: pv.quadro.overlay, poses: pv.poses, deslocamento: pv.deslocamento, ...(pv.zoom ? { zoom: pv.zoom } : {}) } : {}),
       ...(chefe && poseDaEntrada ? { poses: { [chefe.indice]: poseDaEntrada } } : {}),
     });
     if (q) this.entrada.desenhar(ctx);
-    else this.moedas.desenhar(ctx, game);
+    else if (!pv) this.moedas.desenhar(ctx, game);
     if (!this.espera.pronta) {
       f.T(this.espera.falhou ? 'Não foi possível carregar os lutadores.' : `Carregando lutadores... ${this.espera.percentual}%`, W / 2, H / 2, 20, '#fff', 'center');
     }
     // a cinemática por cima do mundo; fora dela, a sessão dos acertos (números, "N HITS" e a vinheta de 20%)
-    if (this.cine.ativa) this.cine.desenhar(ctx, game, m.elenco);
+    if (pv) this.provocacao.desenhar(ctx, game, m.elenco, pv);
+    else if (this.cine.ativa) this.cine.desenhar(ctx, game, m.elenco);
     else if (!q) {
       this.sessao.desenhar(ctx, game, m.elenco);
       // fala do chefão em legenda: fase 2 (na cena), vitória (matchend) e derrota (no KO final)
       const c = chefeDaLeitura(game);
-      const fala = c ? falaDoChefe(game, c) : null;
+      let fala = c ? falaDoChefe(game, c) : null;
+      // o ZENON vencendo fala pelo balão da provocação (decisão do dono): a legenda de vitória dele só fica se a provocação não vai existir
+      if (fala && c && game.phase === 'matchend' && game.matchWinner === c.indice && !game.matchDone && this.queroProvocar('vitoria')) fala = null;
       if (fala) desenharLegenda(ctx, fala, Math.min(1, game.t / 12));
     }
     if (!this.paused) {

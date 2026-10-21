@@ -71,4 +71,6 @@ export interface Cena {
   blur?(): void;
   /** Só a cena de luta: está pausada? (o mouse só age na pausa) */
   readonly paused?: boolean;
+  /** Só a cena de luta: aceita clique/toque agora, mesmo sem pausa? (a provocação pula por toque) */
+  aceitaToqueNaLuta?(): boolean;
 }

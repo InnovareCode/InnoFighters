@@ -52,6 +52,15 @@ export type PreferenciaCinematica = (typeof CINEMATICAS_VALIDAS)[number];
 /** Padrão quando não há preferência salva (decisão do dono). A UI aplica; B15 pode baixar para 'curta' com reduced-motion. */
 export const CINEMATICA_PADRAO: PreferenciaCinematica = 'completa';
 
+/**
+ * Preferência do jogador para as PROVOCAÇÕES (balões antes do round e na vitória; docs/spec-provocacao-prerround-e-vitoria.md).
+ * Opção PRÓPRIA, separada da cinemática do especial (decisão do dono). 'ligadas' = fala; 'desligadas' = nenhuma.
+ */
+export const PROVOCACOES_VALIDAS = ['ligadas', 'desligadas'] as const;
+export type PreferenciaProvocacoes = (typeof PROVOCACOES_VALIDAS)[number];
+/** Padrão quando não há preferência salva (decisão do dono): ligadas. */
+export const PROVOCACOES_PADRAO: PreferenciaProvocacoes = 'ligadas';
+
 /** C4 — configurações salvas. Valores padrão = DEFAULTS do protótipo. */
 export type Configuracoes = {
   music: number;
@@ -63,6 +72,8 @@ export type Configuracoes = {
   controles?: Record<string, string>;
   /** Ausente = sem preferência salva (a UI resolve: `CINEMATICA_PADRAO`, ou 'curta' com reduced-motion, B15). */
   cinematica?: PreferenciaCinematica;
+  /** Ausente = sem preferência salva = `PROVOCACOES_PADRAO` ('ligadas'). Campo aditivo da v2 (sem bump de versão). */
+  provocacoes?: PreferenciaProvocacoes;
 };
 
 export const CONFIGURACOES_PADRAO: Readonly<Configuracoes> = Object.freeze({

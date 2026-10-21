@@ -1,4 +1,5 @@
 import type { Elenco } from '../assets/elenco';
+import { GROUND } from '../core/constantes';
 import type { LeituraLuta } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import { aplicarCamera } from './camera';
@@ -29,6 +30,15 @@ export interface OpcoesMundo extends OpcoesHud {
   readonly poses?: Partial<Record<0 | 1, string>>;
   /** Braseiros acesos da arena (0 a 6) durante a entrada dramática; ausente = todos acesos e sem véu. */
   readonly acesos?: number;
+  /** Desenhar o texto de fase (ROUND N, FIGHT!, K.O., X VENCE!) por cima do HUD (padrão: sim). A provocação o esconde sem esconder o HUD. */
+  readonly overlay?: boolean;
+  /** Deslocamento horizontal VISUAL (px lógicos) por lutador: a andada da provocação. O motor não vê; a sombra e a aura vão junto. Ausente = 0. */
+  readonly deslocamento?: Partial<Record<0 | 1, number>>;
+  /**
+   * Zoom de apresentação (push-in da vitória): `fator` em torno do ponto (`x` da TELA, chão). Fica por fora da câmera da luta (que não muda) e por baixo do HUD.
+   * Ancorado no chão e com fator >= 1, nenhuma borda do cenário aparece. Ausente (ou fator 1) = o desenho de hoje.
+   */
+  readonly zoom?: { readonly fator: number; readonly x: number };
 }
 
 /**
@@ -48,6 +58,12 @@ export function desenharMundo(
 ): void {
   limparQuadro(ctx);
   ctx.save();
+  const zoom = opcoes.zoom;
+  if (zoom && zoom.fator !== 1) {
+    ctx.translate(zoom.x, GROUND);
+    ctx.scale(zoom.fator, zoom.fator);
+    ctx.translate(-zoom.x, -GROUND);
+  }
   aplicarCamera(ctx, luta.cam, opcoes.tremor === false ? 0 : luta.shake, rngVisual);
   desenharCenarioLuta(ctx, rec.cenarios.get(luta.stage) ?? rec.cenarioPadrao, luta.cam.x);
   // fase 2 do chefão: a rampa vem do ESTADO (barras < barrasMax), não de um evento; só o chefe tem aura e só a arena registrada muda
@@ -63,7 +79,13 @@ export function desenharMundo(
     // pose de entrada/vitória (apresentação) ou a imposta pela entrada dramática; o motor e a leitura não mudam
     const imposta = opcoes.poses?.[f.indice];
     const vista = imposta ? comPose(f, imposta) : leituraApresentada(luta, f);
+    const dx = opcoes.deslocamento?.[f.indice] ?? 0;
+    if (dx !== 0) {
+      ctx.save();
+      ctx.translate(dx, 0);
+    }
     desenharLutador(ctx, vista, r.ch, r.arte, f === chefe ? rampa : 0);
+    if (dx !== 0) ctx.restore();
   }
   for (const p of luta.projectiles) {
     const dono = luta.fighters[p.dono];
@@ -78,6 +100,6 @@ export function desenharMundo(
   desenharVinheta(ctx, rec.vinheta);
   if (opcoes.hud !== false) {
     desenharHUD(ctx, luta, rec.elenco, opcoes);
-    desenharOverlay(ctx, luta, rec.elenco);
+    if (opcoes.overlay !== false) desenharOverlay(ctx, luta, rec.elenco);
   }
 }

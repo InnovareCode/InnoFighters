@@ -116,7 +116,8 @@ export class Navegador {
   /** Clique/toque no canvas: não age na luta em andamento nem durante a troca de cena. */
   click(x: number, y: number): void {
     if (this.fadeTo || !this.scene) return;
-    if (this.name === 'fight' && !this.scene.paused) return;
+    // a luta em andamento não age no clique, EXCETO enquanto a provocação roda (pular com o mouse ou o dedo)
+    if (this.name === 'fight' && !this.scene.paused && !this.scene.aceitaToqueNaLuta?.()) return;
     this.scene.click?.(x, y);
   }
 

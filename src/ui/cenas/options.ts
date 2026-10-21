@@ -1,5 +1,6 @@
 import { LARGURA } from '../../core/constantes';
 import { CINEMATICA_PADRAO, CINEMATICAS_VALIDAS, CONFIGURACOES_PADRAO, type Configuracoes, type PreferenciaCinematica } from '../../core/contratos';
+import { provocacoesLigadas } from '../../data/provocacoes';
 import { clamp } from '../../core/math';
 import { AI_LEVELS } from '../../fight/cpu';
 import { desenharFundoMenu } from '../../render/cenario';
@@ -84,6 +85,19 @@ export class CenaOptions implements Cena {
               },
             ]
           : []),
+        // PROVOCAÇÕES (balões antes do round e na vitória): opção PRÓPRIA, separada da cinemática. Sem `Regras.cinematica` (?expansao=4) ela não existe (a tela é a do protótipo).
+        ...(this.ui.c.regras.cinematica
+          ? [
+              {
+                label: 'PROVOCAÇÕES',
+                value: () => (provocacoesLigadas(S.provocacoes) ? 'LIGADAS' : 'DESLIGADAS'),
+                onAdjust: () => {
+                  S.provocacoes = provocacoesLigadas(S.provocacoes) ? 'desligadas' : 'ligadas';
+                  persist.salvar();
+                },
+              },
+            ]
+          : []),
         {
           label: 'TELA CHEIA (F)',
           value: () => (document.fullscreenElement ? 'LIGADA' : 'DESLIGADA'),
@@ -95,6 +109,7 @@ export class CenaOptions implements Cena {
             Object.assign(S, CONFIGURACOES_PADRAO);
             // o padrão NÃO tem `cinematica` (ausente = o padrão do aparelho): o Object.assign não a apaga, então apaga aqui
             delete S.cinematica;
+            delete S.provocacoes; // idem: o padrão (ligadas) é a AUSÊNCIA do campo
             audio.setMusicVol(S.music);
             audio.setSfxVol(S.sfx);
             persist.salvar();
@@ -116,8 +131,8 @@ export class CenaOptions implements Cena {
     desenharFundoMenu(ctx, m.rec.cenarioPadrao, m.rec.vinheta, this.ui.t, 0.6);
     this.ui.desenharPetalas();
     f.A('OPÇÕES', LARGURA / 2, 52, 52, ['#ffffff', '#ffc27a'], '#1a0a00');
-    // 10 linhas (com a cinemática) não cabem a 46 px de altura na tela de 540: 40 px
-    this.m.draw(LARGURA / 2 - 330, 100, 660, this.linhas > 9 ? 40 : 46, { size: 21 });
+    // 10 linhas (com a cinemática) não cabem a 46 px de altura na tela de 540: 40 px; as 11 (com as provocações), 36 px
+    this.m.draw(LARGURA / 2 - 330, this.linhas > 10 ? 98 : 100, 660, this.linhas > 10 ? 36 : this.linhas > 9 ? 40 : 46, { size: this.linhas > 10 ? 20 : 21 });
     f.hint('↑ ↓ escolher     ← → ajustar     ESC voltar');
   }
 

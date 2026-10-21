@@ -2,6 +2,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
+import { SEM_PROVOCACAO } from './_luta';
 
 /*
  * Tipografia (2026-10-21): Barlow Condensed (títulos) + Barlow (corpo), auto-hospedadas. Provas no navegador: as fontes CARREGAM antes do 1º quadro (nenhum texto
@@ -137,7 +138,7 @@ test.describe('Tipografia do jogo (Barlow Condensed + Barlow, auto-hospedadas)',
     await cena('options', "{ from: 'menu' }", 'texto-depois-opcoes');
     await cena('diff', "{ mode: 'cpu', c1: 'hayato', c2: 'wei-long' }", 'texto-depois-dificuldade');
     await cena('title', '{ fromIntro: false }', 'texto-depois-titulo', 'S.t = 120;');
-    await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'aminu', c2: 'baatar', cpu: null, esquiva: true } }); }");
+    await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'aminu', c2: 'baatar', cpu: null, esquiva: true } }); (${SEM_PROVOCACAO})(h); }`);
     await page.waitForFunction(() => (window as any).__inno.ui.scene.espera?.pronta === true, undefined, { timeout: 30_000 });
     await hook(page, '(h) => h.avancar(120)');
     await capturar(page, 'texto-depois-luta');

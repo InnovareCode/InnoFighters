@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect, test, type Page } from '@playwright/test';
+import { SEM_PROVOCACAO } from './_luta';
 
 /** Gancho de teste exposto só no servidor de desenvolvimento (main.ts). */
 const hook = (page: Page, corpo: string): Promise<any> => page.evaluate(`(() => { const h = window.__inno; return (${corpo})(h); })()`);
@@ -66,6 +67,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     await page.waitForTimeout(700);
     await page.keyboard.press('Enter'); // pula o confronto
     await esperarCena(page, 'fight');
+    await hook(page, SEM_PROVOCACAO); // a provocação (balões) é outro assunto: o gancho de teste a desliga (spec da provocação, auditoria da P2)
 
     const cfg = await hook(page, '(h) => { const g = h.mundo().game; return { c1: g.p1.id, c2: g.p2.id, cpu: g.p2.cpu, mode: g.mode, stage: g.stage }; }');
     expect(cfg).toEqual({ c1: 'hayato', c2: 'wei-long', cpu: 0, mode: 'cpu', stage: 'cn' });
@@ -121,7 +123,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     await page.goto('/?seed=3');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     // atalho: vai direto para a luta pelo gancho (o fluxo por teclas já é coberto acima)
-    await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'caio', c2: 'min-ji', cpu: null } }); }");
+    await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'caio', c2: 'min-ji', cpu: null } }); (${SEM_PROVOCACAO})(h); }`);
     await page.waitForFunction(() => (window as any).__inno.mundo().game.phase === 'fight', undefined, { timeout: 15_000 });
 
     await page.keyboard.press('Escape');
@@ -276,7 +278,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     expect(await hook(page, '(h) => h.ui.scene.mode')).toBe('training');
 
     // luta: o botão II da tela de toque pausa
-    await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'hayato', c2: 'caio', cpu: null } }); }");
+    await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'hayato', c2: 'caio', cpu: null } }); (${SEM_PROVOCACAO})(h); }`);
     await page.waitForFunction(() => (window as any).__inno.mundo().game.phase === 'fight', undefined, { timeout: 15_000 });
     const bp = (await page.locator('#bp').boundingBox())!;
     await tocar(bp.x + bp.width / 2, bp.y + bp.height / 2);

@@ -21,7 +21,8 @@ const arte = { pronta: true, imagemDe: () => IMG, silhuetaDe: () => IMG, retrato
 const elenco = Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { ch, arte }])) as unknown as Elenco;
 
 function montar(settings: Partial<Configuracoes> = {}, regras: Regras = REGRAS_PADRAO, c1: IdLutador = 'hayato', c2: IdLutador = 'caio', mode: 'versus' | 'training' = 'versus') {
-  const n = navegadorFalso(settings, regras);
+  // a cinemática do ESPECIAL é o assunto aqui: a PROVOCAÇÃO (balões do round 1, que levariam ~300 ticks antes da luta) fica desligada pela opção
+  const n = navegadorFalso({ provocacoes: 'desligadas', ...settings }, regras);
   const frames: { p1: InputFrame; p2: InputFrame } = { p1: { ...INPUT_VAZIO }, p2: { ...INPUT_VAZIO } };
   const entrada = {
     lerP1: () => ({ ...frames.p1 }),

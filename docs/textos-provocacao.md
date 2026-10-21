@@ -1,23 +1,71 @@
 # Textos de provocação: pré-round e vitória
 
-Autor: Apolo (direção de arte e texto) · 2026-10-21 · missão cmvij55hc00a301p7blrd00lh
+> **Transcrito em 2026-10-21 para `src/data/provocacoes.pt-BR.ts`; editar o .ts.** Este documento fica como registro da autoria
+> (Apolo) e do raciocínio de voz; a fonte de verdade das falas é o `.ts`. Mudou uma fala? Mude lá (a validação roda no boot).
 
-Pedido do dono: antes dos rounds os lutadores provocam o oponente com texto na tela, e quem vence provoca quem perdeu.
-Cada lutador tem voz própria, autoral. Este documento é a **fonte do texto**; o contrato de exibição (quando, onde, por
-quanto tempo, como sortear) é da Nova em `docs/spec-provocacao-prerround-e-vitoria.md`. Se o contrato mudar a forma, o
-texto se adapta sem reescrita (ver §4).
+Autor: Apolo (direção de arte e texto) · 1ª versão 2026-10-21 (missão cmvij55hc00a301p7blrd00lh) · reformatado e completado
+2026-10-21 (missão cmvijlhqf00bk01p7w7dbyz8m) no formato da `docs/spec-provocacao-prerround-e-vitoria.md` §7.3, dentro dos
+limites da §7.2.
 
-## 1. Regras que todas as falas cumprem
+Este documento é a fonte do texto **até a transcrição** para `src/data/provocacoes.pt-BR.ts` (fase P3, Vega). Depois dela, a
+fonte de verdade passa a ser o `.ts`, e este topo ganha a nota "transcrito em <data>; editar o .ts".
 
-| Regra | Como foi aplicada | Conferido |
+## 1. Como ler os blocos (a transcrição é mecânica)
+
+- Um bloco `## NOME (`id`)` por lutador, na ordem de `IDS_LUTADORES`. A linha `>` logo abaixo é só a voz (não é fala).
+- Os títulos `###` são exatamente as chaves do tipo `FalasDeProvocacao`. **Cada item de lista é um balão.**
+- ` / ` dentro de um item = `\n` (quebra escolhida pelo autor, no ponto de respiração da frase).
+- ` †` no fim de um item = **marca de revisão de nativo, não faz parte do texto** (o `†` nem é caractere permitido). Lista no §3.
+- `{rival}` é a única marcação: vira o `ch.name` do oponente (sempre em caixa alta, ex. "WEI LONG").
+- Em `### contra: <id>`, os itens começam com `abertura:` ou `vitoria:` e viram `contra[id].abertura[]` / `contra[id].vitoria[]`.
+- O JSON do §5 é a mesma coisa já limpa (sem `†`, com `\n`), gerado pelo mesmo script que gerou os blocos. **Transcreva do JSON.**
+
+**O que cada chave significa aqui** (precedência da spec §7.1):
+
+| Chave | Quando sai | Escrito para |
 |---|---|---|
-| Até 38 caracteres por linha, no máximo 2 linhas, ~64 no total | a quebra já vem escolhida por mim (`\n` no JSON), no ponto de respiração da frase | por script: 148 falas, 0 fora do limite, maior linha 30, maior fala 51 caracteres |
-| Falas de "rounds seguintes" curtas | todas em **1 linha só** (até 30 caracteres) | por script |
-| Sem palavrão, sem ofensa a nacionalidade, etnia, religião ou corpo | o alvo da provocação é sempre a **técnica, a pressa, a guarda, o resultado**; nunca a origem nem o corpo do rival | revisão manual, fala a fala |
-| Sem marca ou pessoa real | nenhuma; cidades e artes marciais são as do próprio elenco | revisão manual |
-| Falas genéricas servem contra qualquer rival | nenhuma fala genérica usa gênero do rival ("menino", "ele", "ela"); gênero só aparece em fala dirigida a um rival específico | revisão manual |
-| Nenhuma fala repete outra | todas diferentes | por script |
-| Cada voz inconfundível | cada lutador tem um "território" de palavras que ninguém mais usa (tabela abaixo) | revisão manual |
+| `abertura` | round 1 | provocar antes do primeiro golpe; serve contra qualquer rival |
+| `revanche` | round ≥ 2, fala **quem perdeu o round anterior** | reação de quem acabou de perder um round: orgulho ferido, nunca derrota |
+| `decisivo` | round final (os dois a 1 vitória do fim) | "tudo ou nada"; não supõe quem estava na frente |
+| `vitoria` | fim da luta, quem venceu | provocação de vitória genérica |
+| `vitoriaPerfeita` | venceu com `perfect` | fala da limpeza do round final; nenhuma afirma "a luta inteira sem dano" |
+| `vitoriaPorTempo` | venceu no relógio | o tempo acabou e ele estava na frente |
+| `contra: zenon` (9 lutadores) | rival é o ZENON (chefão ou jogável) | abertura e vitória dirigidas ao Arconte |
+| `contra: <id>` (no ZENON) | ZENON contra cada um, e o espelho | a `vitoria` é o **balão do chefão quando ele vence** (decisão do dono); por isso cada rival tem 2 variantes, para o jogador que tenta de novo não ler a mesma fala duas vezes seguidas |
+
+## 2. Regras e verificação
+
+| Regra | Conferido |
+|---|---|
+| `abertura`, `vitoria*`, `contra.*`: até 2 linhas, até 34 caracteres por linha, até 64 no total (alvo 40-56) | por script: maior linha 31, maior fala 51, 0 fora do limite |
+| `revanche`, `decisivo`: 1 linha, até 34 (alvo 20-30) | por script, 0 fora do limite |
+| `{rival}` conta 8 caracteres (WEI LONG, CENTELLA) | por script, nas 10 falas que o usam |
+| Mínimos: abertura 3, revanche 2, vitória 3, para cada id de `IDS_LUTADORES` | por script; ids lidos de `src/core/contratos.ts` e conferidos contra `src/data/lutadores` |
+| Só Latin-1 mais — … “ ” ‘ ’; sem emoji; só o token `{rival}` | por script |
+| Todo caractere usado existe na fonte do balão | por script, lendo o `cmap` de `public/assets/fontes/barlow-600-latin.woff2` (usados: ¡ É Í Ó Ú à á â ã ç é ê í ó ô õ ú) |
+| Nenhuma fala repete outra (comparação sem acento, caixa e pontuação) | por script, 232 falas |
+| Fala genérica sem gênero do rival (ele, ela, menino...) | por script; gênero só em `contra` |
+| Sem exclamação em WEI LONG, CAMILLE e ZENON; "Plateia," só no AMINU; "público" só na CENTELLA | por script |
+| Sem palavrão, sem ofensa a origem, etnia, religião ou corpo; alvo é a técnica, a pressa, a guarda, o resultado | revisão manual, fala a fala |
+| A máscara da CENTELLA nunca sai; a Dança da Águia do BAATAR segue sem fala | revisão manual |
+
+O limite de caracteres é o guia de redação. O portão de verdade é a medida em pixels da spec §10 item 11 (≤ 372 px por linha em
+`FB(20)`), que é da Íris no navegador. A maior linha tem 31 caracteres (as com `{rival}` contadas a 8). Os casos a medir primeiro são as linhas com `{rival}` = WEI LONG ou CENTELLA, em caixa alta, que são as mais largas em pixels.
+
+**Contagem por lutador** (total: 232 balões, 41 com †):
+
+| id | abertura | revanche | decisivo | vitoria | vitoriaPerfeita | vitoriaPorTempo | contra (balões) |
+|---|---|---|---|---|---|---|---|
+| `hayato` | 4 | 4 | 3 | 4 | 2 | 2 | 2 |
+| `wei-long` | 4 | 4 | 3 | 4 | 2 | 2 | 2 |
+| `min-ji` | 4 | 3 | 3 | 4 | 2 | 2 | 2 |
+| `caio` | 4 | 4 | 2 | 4 | 2 | 2 | 2 |
+| `aminu` | 4 | 4 | 2 | 4 | 2 | 2 | 2 |
+| `centella` | 4 | 4 | 3 | 4 | 2 | 2 | 2 |
+| `camille` | 4 | 4 | 3 | 4 | 2 | 2 | 2 |
+| `nila` | 4 | 4 | 2 | 4 | 2 | 2 | 2 |
+| `baatar` | 4 | 4 | 2 | 4 | 2 | 2 | 2 |
+| `zenon` | 4 | 5 | 2 | 4 | 2 | 2 | 29 |
 
 **Territórios de voz (o teste de cegueira: tapar o nome e saber quem falou).**
 
@@ -27,258 +75,379 @@ texto se adapta sem reescrita (ver §4).
 | WEI LONG | montanha, ferro, raiz, chá, lição | nunca exclamação | sentencioso, mestre |
 | MIN-JI | placar, nota, ponto, chute, revanche | muita exclamação | alegre, esportivo |
 | CAIO | roda, ginga, jogo, berimbau, camará | coloquial (tá, pra, né) | malandro carioca |
-| AMINU | plateia, nível, carga, lança, escudo, índigo | exclamação de showman | bem-humorado |
-| CENTELLA | público, cordas, lona, voo, máscara, abuela | ¡exclamação! | promo de luta livre |
-| CAMILLE | erro, golpe, plano, previsão; termos de esgrima | nunca exclamação | seco, analítico |
-| NILA | ponto, respiração, postura, repouso, serpente, elefante | calma | clínico, sereno |
-| BAATAR | chão, céu, estepe, raiz, firme | frases de 3 a 6 palavras | gentil, lacônico |
-| ZENON | casa, convidado, mesa, tributo, cortesia, ilha | elegante, sem exclamação | anfitrião cruel |
+| AMINU | "Plateia,", nível, carga, lança, escudo, índigo | exclamação de showman | bem-humorado |
+| CENTELLA | público, cordas, lona, voo, máscara, abuela, caídas | ¡exclamação! | promo de luta livre |
+| CAMILLE | erro, toque, assalto, plano; termos de esgrima | nunca exclamação | seco, analítico |
+| NILA | ponto, respiração, postura, consulta, serpente, elefante | calma | clínico, sereno |
+| BAATAR | chão, céu, estepe, firme, de pé | frases de 3 a 6 palavras | gentil, lacônico |
+| ZENON | casa, convidado, mesa, jantar, tributo, cortesia, ilha | elegante, sem exclamação | anfitrião cruel |
 
-## 2. Os lutadores
+## HAYATO (`hayato`)
 
-Legenda: † = a fala tem palavra de outro idioma que **pede revisão de nativo** (lista no §3). Os números da última
-coluna são os caracteres de cada linha.
+> O Punho do Trovão · Japão · karatê · ~24 anos. Jovem, confiante, frases de impacto. Mede tudo em velocidade e trovão. Nunca filosofa, nunca fala com a plateia.
 
-### HAYATO · "O Punho do Trovão" · Japão · karatê · ~24 anos
+### abertura
+- Ikuzo! O trovão não / espera ninguém. †
+- Treinei sozinho por isso. / Não me decepcione.
+- Pisca, e já acabou.
+- Pronto, {rival}? / O raio cai uma vez só.
+### revanche
+- Agora eu esquentei.
+- Outro raio? Tenho de sobra.
+- Esse round é meu.
+- Errei uma vez. Não erro duas.
+### decisivo
+- Último round. Último raio.
+- Um trovão decide. O meu.
+- Guarda alta. Lá vou eu.
+### vitoria
+- Rápido demais pra você? / Volta quando trovejar.
+- Nem precisei do / segundo raio.
+- Treina mais. Eu continuo / esperando no topo.
+- Ouviu o estrondo? / Foi você caindo.
+### vitoriaPerfeita
+- Nem me tocou. / Rápido demais, eu disse.
+- Raio não se pega. / Agora você sabe.
+### vitoriaPorTempo
+- Faltou tempo pra você. / Pra mim, sobrou.
+- Tempo esgotado? / Eu ainda tinha raio.
+### contra: zenon
+- abertura: Sua ilha, suas regras. / Meu trovão.
+- vitoria: Seu cinturão agora mora / no dojo do meu avô.
 
-**Voz:** Jovem, confiante, sorriso de canto. Fala curto e em frases de impacto, como quem já está em movimento. Mede tudo em velocidade e trovão. Treinou sozinho no dojo do avô e quer provar que o esforço basta.
+## WEI LONG (`wei-long`)
 
-**Cuidado:** nunca filosofa (isso é do WEI LONG) nem fala com a plateia (isso é da CENTELLA e do AMINU).
+> O Dragão de Ferro · China · kung fu · ~65 anos. Mestre sentencioso: trata a luta como aula. Montanha, ferro, raiz, chá, dragão. Nunca usa gíria nem exclamação.
 
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Ikuzo! O trovão não / espera ninguém. † | 19 + 15 |
-| Abertura (round 1) | 2 | Treinei sozinho por isso. / Não me decepcione. | 25 + 18 |
-| Abertura (round 1) | 3 | Pisca, e já acabou. | 19 |
-| Rounds seguintes | 1 | Agora eu esquentei. | 19 |
-| Rounds seguintes | 2 | Outro raio? Tenho de sobra. | 27 |
-| Rounds seguintes | 3 | Guarda alta. Lá vou eu. | 23 |
-| Rounds seguintes | 4 | Esse round é meu. | 17 |
-| Vitória | 1 | Rápido demais pra você? / Volta quando trovejar. | 23 + 22 |
-| Vitória | 2 | Nem precisei do / segundo raio. | 15 + 13 |
-| Vitória | 3 | Treina mais. Eu continuo / esperando no topo. | 24 + 18 |
-| Vitória | 4 | Ouviu o estrondo? / Foi você caindo. | 17 + 16 |
-| Contra ZENON, abertura | - | Sua ilha, suas regras. / Meu trovão. | 22 + 11 |
-| Contra ZENON, vitória | - | Seu cinturão agora mora / no dojo do meu avô. | 23 + 19 |
+### abertura
+- Lái ba. A montanha não / se move por você. †
+- Respire fundo. Depois / não haverá tempo.
+- Ferro se forja devagar. / Você vai sentir cada golpe.
+- {rival}, a aula começa. / Tome notas.
+### revanche
+- O chá ainda nem esfriou.
+- Paciência. A palma vem.
+- Um tropeço não move montanha.
+- Mais uma lição, então.
+### decisivo
+- A última lição é a mais longa.
+- Agora, o ferro decide.
+- Ainda de pé? Bom sinal.
+### vitoria
+- Volte daqui a dez anos. / Traga um professor.
+- O dragão nem acordou / direito.
+- Pressa é para quem / não tem raízes.
+- Lição encerrada. / Pode se curvar ao sair.
+### vitoriaPerfeita
+- Nenhum golpe tocou o mestre. / Anote isso.
+- A montanha nem tremeu.
+### vitoriaPorTempo
+- O tempo acabou. A lição / continua amanhã.
+- Paciência vence o relógio. / Sempre venceu.
+### contra: zenon
+- abertura: Vi este torneio nascer. / Hoje o vejo mudar de mãos.
+- vitoria: Seu mármore racha, Arconte. / O ferro, não.
 
-### WEI LONG · "O Dragão de Ferro" · China · kung fu · ~65 anos
+## MIN-JI (`min-ji`)
 
-**Voz:** O mestre mais velho do torneio. Calmo, sentencioso, superior sem levantar a voz: trata a luta como aula e o rival como aluno. Imagens de montanha, ferro, raiz, chá, dragão. Nunca usa gíria nem exclamação.
+> A Tempestade de Seul · Coreia do Sul · taekwondo · ~22 anos. Campeã alegre e rápida, arrogância brincalhona de pódio. Placar, nota, ponto, revanche. Muita exclamação, nunca rancor.
 
-**Cuidado:** não usa "menino/menina" nas falas genéricas, porque o rival pode ser qualquer um.
+### abertura
+- Gaja! Tenta acompanhar / meus pés. †
+- Três chutes por segundo. / Conta comigo!
+- Sorria! Vai ser rapidinho.
+- Placar zerado, {rival}! / Por pouco tempo.
+### revanche
+- Hwaiting! Eu, não você. †
+- Ponto seu? Sorte. Agora é meu!
+- Mais alto? Pode deixar.
+### decisivo
+- Ponto decisivo! Adoro isso!
+- Desempate! Melhor parte!
+- Cansou? Eu nem suei.
+### vitoria
+- Nota dez pro chute. / Zero pra sua guarda.
+- Viu? Nem precisei / do terceiro chute.
+- Bom treino! Pra mim.
+- Pede revanche. Eu adoro / revanche.
+### vitoriaPerfeita
+- Round perfeito! / Nota máxima, sem desconto!
+- Nem encostou! / Recorde pessoal!
+### vitoriaPorTempo
+- Venci no placar! / Conta os pontos, conta!
+- Acabou o tempo! / O placar não mente!
+### contra: zenon
+- abertura: Dono do torneio? Legal. / Eu sou dona do placar.
+- vitoria: Hwaiting! O cinturão vai / pra academia de Seul. †
 
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Lái ba. A montanha não / se move por você. † | 22 + 17 |
-| Abertura (round 1) | 2 | Respire fundo. Depois / não haverá tempo. | 21 + 17 |
-| Abertura (round 1) | 3 | Ferro se forja devagar. / Você vai sentir cada golpe. | 23 + 27 |
-| Rounds seguintes | 1 | O chá ainda nem esfriou. | 24 |
-| Rounds seguintes | 2 | Paciência. A palma vem. | 23 |
-| Rounds seguintes | 3 | Ainda de pé? Bom sinal. | 23 |
-| Rounds seguintes | 4 | Mais uma lição, então. | 22 |
-| Vitória | 1 | Volte daqui a dez anos. / Traga um professor. | 23 + 19 |
-| Vitória | 2 | O dragão nem acordou / direito. | 20 + 8 |
-| Vitória | 3 | Pressa é para quem / não tem raízes. | 18 + 15 |
-| Vitória | 4 | Lição encerrada. / Pode se curvar ao sair. | 16 + 23 |
-| Contra ZENON, abertura | - | Vi este torneio nascer. / Hoje o vejo mudar de mãos. | 23 + 26 |
-| Contra ZENON, vitória | - | Seu mármore racha, Arconte. / O ferro, não. | 27 + 13 |
+## CAIO (`caio`)
 
-### MIN-JI · "A Tempestade de Seul" · Coreia do Sul · taekwondo · ~22 anos
+> Mestre da Ginga · Brasil · capoeira · ~25 anos. Malandro boa-praça da roda do Rio: luta é "jogo", rival é "camará". Único com registro coloquial (tá, pra, né, bora).
 
-**Voz:** Campeã jovem, alegre e rápida, arrogância brincalhona de atleta de pódio. Fala em placar, nota e ponto (o taekwondo é esporte de pontuação). Muita exclamação, frases que parecem um chute: curtas e em sequência.
+### abertura
+- Bora jogar, camará? / A roda tá aberta. †
+- Quem não ginga, apanha. / Simples assim.
+- Relaxa. Vai doer / com estilo.
+- Chega mais, {rival}. / A ginga tá te esperando.
+### revanche
+- O berimbau mudou o toque.
+- Agora é jogo de dentro.
+- Achou que tinha acabado?
+- Tomei uma? Faz parte da roda.
+### decisivo
+- Agora o jogo fica bom, camará. †
+- Ih, tá nervoso? Ginga!
+### vitoria
+- Iê! Volta pra roda / quando aprender a gingar. †
+- Nem viu de onde veio, / né, camará? †
+- Malandragem não se treina. / Se vive.
+- Valeu o jogo. Pena que / você só assistiu.
+### vitoriaPerfeita
+- Ginga limpa, camará. / Não pegou nenhuma. †
+- Saí da roda sem / um arranhão. Iê! †
+### vitoriaPorTempo
+- Deu o tempo, camará. / Ganhei no jogo. †
+- Parou o berimbau. / E eu tava na frente.
+### contra: zenon
+- abertura: Mansão bonita, chefe. / Cabe uma roda aqui?
+- vitoria: A roda é de todo mundo. / O cinturão também.
 
-**Cuidado:** é provocação de quem se diverte, nunca rancorosa.
+## AMINU (`aminu`)
 
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Gaja! Tenta acompanhar / meus pés. † | 22 + 9 |
-| Abertura (round 1) | 2 | Três chutes por segundo. / Conta comigo! | 24 + 13 |
-| Abertura (round 1) | 3 | Sorria! Vai ser rapidinho. | 26 |
-| Rounds seguintes | 1 | Hwaiting! Eu, não você. † | 23 |
-| Rounds seguintes | 2 | Ponto meu. De novo. | 19 |
-| Rounds seguintes | 3 | Mais alto? Pode deixar. | 23 |
-| Rounds seguintes | 4 | Cansou? Eu nem suei. | 20 |
-| Vitória | 1 | Nota dez pro chute. / Zero pra sua guarda. | 19 + 20 |
-| Vitória | 2 | Viu? Nem precisei / do terceiro chute. | 17 + 18 |
-| Vitória | 3 | Bom treino! Pra mim. | 20 |
-| Vitória | 4 | Pede revanche. Eu adoro / revanche. | 23 + 9 |
-| Contra ZENON, abertura | - | Dono do torneio? Legal. / Eu sou dona do placar. | 23 + 22 |
-| Contra ZENON, vitória | - | Hwaiting! O cinturão vai / pra academia de Seul. † | 24 + 21 |
+> A Lança de Kano · Nigéria · dambe · 26 anos. Showman bem-humorado: fala com a "Plateia", conta, pede barulho. Dambe é esporte de elite. Nível, carga, lança, escudo, índigo.
 
-### CAIO · "Mestre da Ginga" · Brasil · capoeira · ~25 anos
+### abertura
+- Sannu! Bem-vindo à / minha mão de lança. †
+- Plateia, contem até três. / No três, acabou.
+- Defende à vontade. / Meu soco gosta de esperar.
+- Plateia, conheçam {rival}! / Agora, se despeçam.
+### revanche
+- Kai! Esse doeu, né? †
+- A carga tá subindo...
+- Escudo na frente, lança atrás.
+- Plateia, mais barulho!
+### decisivo
+- Nível três guardado pra agora!
+- Plateia, agora é pra valer!
+### vitoria
+- Isso foi o nível um. / Quer ver o três?
+- Índigo não sai na lavagem. / Esse soco também não.
+- Briga de feira? Isso foi / esporte de elite.
+- Yauwa! Palmas pra quem / ficou de pé um tempo. †
+### vitoriaPerfeita
+- Plateia, viram algum golpe / em mim? Nem eu!
+- Escudo intacto! / O índigo saiu sem mancha!
+### vitoriaPorTempo
+- Plateia, o relógio parou! / A lança, não.
+- Tempo! E a carga ainda / tava no nível dois.
+### contra: zenon
+- abertura: Cobra tributo, é? Hoje / a conta vem de Kano.
+- vitoria: Kai! O dono caiu. / Plateia, isso é dambe! †
 
-**Voz:** Malandro boa-praça da roda do Rio. Chama a luta de "jogo", o rival de "camará", e provoca rindo. Registro coloquial carioca (tá, pra, né, bora). Vocabulário da roda: ginga, berimbau, jogo de dentro, Iê.
+## CENTELLA (`centella`)
 
-**Cuidado:** é o único com fala coloquial brasileira; os outros falam português neutro.
+> A Faísca da Arena · México · lucha libre · técnica, 3ª geração. Promo de luta livre: fala ao "público", heroína técnica contra vilão. Cordas, lona, voo, máscara, abuela, ¡exclamação! A máscara nunca sai.
 
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Bora jogar, camará? / A roda tá aberta. † | 19 + 17 |
-| Abertura (round 1) | 2 | Quem não ginga, apanha. / Simples assim. | 23 + 14 |
-| Abertura (round 1) | 3 | Relaxa. Vai doer / com estilo. | 16 + 11 |
-| Rounds seguintes | 1 | Ih, tá nervoso? Ginga! | 22 |
-| Rounds seguintes | 2 | O berimbau mudou o toque. | 25 |
-| Rounds seguintes | 3 | Agora é jogo de dentro. | 23 |
-| Rounds seguintes | 4 | Achou que tinha acabado? | 24 |
-| Vitória | 1 | Iê! Volta pra roda / quando aprender a gingar. † | 18 + 25 |
-| Vitória | 2 | Nem viu de onde veio, / né, camará? † | 21 + 11 |
-| Vitória | 3 | Malandragem não se treina. / Se vive. | 26 + 8 |
-| Vitória | 4 | Valeu o jogo. Pena que / você só assistiu. | 22 + 17 |
-| Contra ZENON, abertura | - | Mansão bonita, chefe. / Cabe uma roda aqui? | 21 + 19 |
-| Contra ZENON, vitória | - | A roda é de todo mundo. / O cinturão também. | 23 + 18 |
+### abertura
+- ¡Órale, público! Hoje / a faísca vira incêndio. †
+- Três gerações de lucha / contra uma só. Boa sorte.
+- As cordas são minhas. / O canto é seu.
+- ¡Público, recebam {rival}! / Vai durar pouco.
+### revanche
+- ¡Arriba! Ainda tenho corda. †
+- A lona chama seu nome.
+- Mais alto, público!
+- Caí. A técnica sempre levanta!
+### decisivo
+- ¡Dos de tres caídas, público! †
+- Agora vem o voo.
+- Do alto das cordas. Agora.
+### vitoria
+- ¡Uno, dos, tres! Já pode / se levantar. †
+- Essa vai pra você, abuela. †
+- A máscara fica. / O cinturão vem comigo.
+- Os técnicos sempre / vencem no final.
+### vitoriaPerfeita
+- ¡Nem tocou na máscara! / Público, isso é técnica!
+- Lona limpa, cordas minhas. / ¡Perfecto! †
+### vitoriaPorTempo
+- ¡Tiempo! O público já / tinha escolhido. †
+- O sino tocou, e a faísca / ainda brilhava.
+### contra: zenon
+- abertura: Lá em casa, o vilão / sempre perde no final.
+- vitoria: ¡Órale! A plateia agora / é minha, Arconte. †
 
-### AMINU · "A Lança de Kano" · Nigéria · dambe · 26 anos
+## CAMILLE (`camille`)
 
-**Voz:** Bem-humorado e showman: fala com a plateia, conta, pede barulho. Leva o ofício a sério: o dambe é esporte de elite, não "briga de feira". A mecânica vira fala (nível um, nível três, carga). Lança e escudo; o índigo da família tintureira.
+> A Riposte de Marselha · França · savate · 29 anos. Cerebral, seca, comenta o erro do rival como professora de esgrima. Ponto final, nunca exclamação: a frieza é a provocação.
 
-**Cuidado:** o "Plateia, ..." é marca dele; a CENTELLA diz "público", com sotaque de arena.
+### abertura
+- En garde. E, por favor, / ataque primeiro. †
+- Já vi seus três golpes. / Nenhum me preocupa.
+- Ataque quando quiser. / Eu respondo antes.
+- {rival}. Mostre o primeiro / erro. Não tenho pressa.
+### revanche
+- Anotado. Próximo.
+- Seu ombro avisa o golpe.
+- Um ponto seu. Entendi o resto.
+- Paciência. Você vai errar.
+### decisivo
+- Último assalto. Mesma precisão.
+- Agora, a riposte certa. †
+- Mesmo erro. De novo.
+### vitoria
+- Touché. Era o óbvio. †
+- Atacou na hora errada. / Como eu previ.
+- Seu golpe mais forte? / Foi o meu, de volta.
+- Voilà. Volte com / um plano. †
+### vitoriaPerfeita
+- Parade, riposte, fim. / Limpo como na aula. †
+- Imaculado. Seu ataque / nunca chegou.
+### vitoriaPorTempo
+- Cronômetro zerado. / Dois toques à frente.
+- Venci no relógio. / Também é esgrima.
+### contra: zenon
+- abertura: Todo estilo descende do / seu? Prove. En garde. †
+- vitoria: Riposte. Até o dono / do torneio ataca mal. †
 
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Sannu! Bem-vindo à / minha mão de lança. † | 18 + 19 |
-| Abertura (round 1) | 2 | Plateia, contem até três. / No três, acabou. | 25 + 16 |
-| Abertura (round 1) | 3 | Defende à vontade. / Meu soco gosta de esperar. | 18 + 26 |
-| Rounds seguintes | 1 | Kai! Esse doeu, né? † | 19 |
-| Rounds seguintes | 2 | A carga tá subindo... | 21 |
-| Rounds seguintes | 3 | Escudo na frente, lança atrás. | 30 |
-| Rounds seguintes | 4 | Plateia, mais barulho! | 22 |
-| Vitória | 1 | Isso foi o nível um. / Quer ver o três? | 20 + 16 |
-| Vitória | 2 | Índigo não sai na lavagem. / Esse soco também não. | 26 + 21 |
-| Vitória | 3 | Briga de feira? Isso foi / esporte de elite. | 24 + 17 |
-| Vitória | 4 | Yauwa! Palmas pra quem / ficou de pé um tempo. † | 22 + 21 |
-| Contra ZENON, abertura | - | Cobra tributo, é? Hoje / a conta vem de Kano. | 22 + 20 |
-| Contra ZENON, vitória | - | Kai! O dono caiu. / Plateia, isso é dambe! † | 17 + 22 |
+## NILA (`nila`)
 
-### CENTELLA · "A Faísca da Arena" · México · lucha libre · técnica, 3ª geração
+> A Lua de Kerala · Índia · kalaripayattu · 31 anos. Serena e clínica (fisioterapeuta, pontos marma): provoca como quem dá diagnóstico. Respiração, postura, elefante, serpente. Ponto fraco é técnico, nunca o corpo.
 
-**Voz:** Estrela de ringue, fala como numa promo de luta livre: para o público, em tom de espetáculo, heroína (técnica) contra vilão (rudo). Cordas, lona, voo, máscara, a avó. Pitadas de espanhol.
+### abertura
+- Respire. Vou achar seu / ponto fraco com calma.
+- Elefante ou serpente? / Você escolhe como cair.
+- Vaa. Já sei onde dói. †
+- {rival}, sua postura / já me contou tudo.
+### revanche
+- Sua respiração te entrega.
+- Mudo a postura. E você?
+- Um ponto marma por vez. †
+- Diagnóstico revisto. Continue.
+### decisivo
+- Calma. Ainda nem comecei.
+- Última sessão. Sem anestesia.
+### vitoria
+- Gelo e repouso. / Volte quando sarar.
+- Não doeu tanto. / Eu escolhi o ponto.
+- Mathi. Já basta por hoje. †
+- Previsível. A serpente / viu tudo.
+### vitoriaPerfeita
+- A serpente não se pega. / Você tentou.
+- Respiração em ordem. / A sua, nem tanto.
+### vitoriaPorTempo
+- Fim da consulta. / O tempo deu o diagnóstico.
+- Não precisei terminar. / O tempo terminou por mim.
+### contra: zenon
+- abertura: Sua guarda tem um ponto / que nunca curou, Arconte.
+- vitoria: Repouso, Arconte. Seu / torneio precisa de cura.
 
-**Cuidado:** a máscara é honra: nenhuma fala dela ou contra ela sugere tirar a máscara.
+## BAATAR (`baatar`)
 
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | ¡Órale, público! Hoje / a faísca vira incêndio. † | 21 + 23 |
-| Abertura (round 1) | 2 | Três gerações de lucha / contra uma só. Boa sorte. | 22 + 25 |
-| Abertura (round 1) | 3 | As cordas são minhas. / O canto é seu. | 21 + 14 |
-| Rounds seguintes | 1 | ¡Arriba! Ainda tenho corda. † | 27 |
-| Rounds seguintes | 2 | A lona chama seu nome. | 22 |
-| Rounds seguintes | 3 | Mais alto, público! | 19 |
-| Rounds seguintes | 4 | Agora vem o voo. | 16 |
-| Vitória | 1 | ¡Uno, dos, tres! Já pode / se levantar. † | 24 + 12 |
-| Vitória | 2 | Essa vai pra você, abuela. † | 26 |
-| Vitória | 3 | A máscara fica. / O cinturão vem comigo. | 15 + 22 |
-| Vitória | 4 | Os técnicos sempre / vencem no final. | 18 + 16 |
-| Contra ZENON, abertura | - | Lá em casa, o vilão / sempre perde no final. | 19 + 22 |
-| Contra ZENON, vitória | - | ¡Órale! A plateia agora / é minha, Arconte. † | 23 + 17 |
+> O Avarga das Estepes · Mongólia · bökh · 44 anos. Gentil, lacônico, frases de 3 a 6 palavras. Céu, chão, estepe, firme. No bökh perde quem toca o chão. O peso vem da serenidade. A Dança da Águia segue sem fala.
 
-### CAMILLE · "A Riposte de Marselha" · França · savate · 29 anos
+### abertura
+- Za. Mostre o que trouxe. †
+- Só os pés tocam o chão. / Os seus, por enquanto.
+- O céu é grande. / O chão está perto.
+- {rival}. Bom adversário. / O chão decide.
+### revanche
+- Ainda de pé. Bom.
+- A estepe não tem pressa.
+- Venha. Eu espero.
+- Caí uma vez. Basta.
+### decisivo
+- Segure firme. Vou puxar.
+- Agora, só um fica de pé.
+### vitoria
+- Você lutou bem. / O chão lutou melhor.
+- Levante. Aperte minha mão. / Volte mais forte.
+- Nove edições invicto. / Hoje não foi diferente.
+- Força tem. Falta raiz.
+### vitoriaPerfeita
+- Nem me tirou do lugar.
+- Meus pés nunca saíram / do chão.
+### vitoriaPorTempo
+- O sol se pôs. / Eu continuei de pé.
+- Tempo. Eu ainda / estava firme.
+### contra: zenon
+- abertura: Devolvi seu cinturão nove / vezes. Hoje, não.
+- vitoria: A estepe não tem dono. / O torneio também não.
 
-**Voz:** Cerebral, precisa, humor seco. Lê o rival e comenta o erro dele como uma professora de esgrima. Frases curtas com ponto final. Termos de esgrima em francês (en garde, touché, riposte, voilà).
+## ZENON (`zenon`)
 
-**Cuidado:** nunca grita, nunca usa exclamação: a frieza é a provocação.
+> O Arconte · Grécia · pancrácio · 61 anos · chefão. Anfitrião elegante e cruel: rival é "convidado", luta é jantar, energia é "tributo". Nunca levanta a voz nem usa exclamação.
 
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | En garde. E, por favor, / ataque primeiro. † | 23 + 16 |
-| Abertura (round 1) | 2 | Já vi seus três golpes. / Nenhum me preocupa. | 23 + 19 |
-| Abertura (round 1) | 3 | Ataque quando quiser. / Eu respondo antes. | 21 + 18 |
-| Rounds seguintes | 1 | Mesmo erro. De novo. | 20 |
-| Rounds seguintes | 2 | Anotado. Próximo. | 17 |
-| Rounds seguintes | 3 | Seu ombro avisa o golpe. | 24 |
-| Rounds seguintes | 4 | Paciência. Você vai errar. | 26 |
-| Vitória | 1 | Touché. Era o óbvio. † | 20 |
-| Vitória | 2 | Atacou na hora errada. / Como eu previ. | 22 + 14 |
-| Vitória | 3 | Seu golpe mais forte? / Foi o meu, de volta. | 21 + 20 |
-| Vitória | 4 | Voilà. Volte com / um plano. † | 16 + 9 |
-| Contra ZENON, abertura | - | Todo estilo descende do / seu? Prove. En garde. † | 23 + 21 |
-| Contra ZENON, vitória | - | Riposte. Até o dono / do torneio ataca mal. † | 19 + 21 |
-
-### NILA · "A Lua de Kerala" · Índia · kalaripayattu · 31 anos
-
-**Voz:** Serena e clínica: é fisioterapeuta e conhece os pontos marma. Provoca como quem dá diagnóstico ("já sei onde dói", "gelo e repouso"). Fala em respiração, postura, elefante e serpente. Uma palavra em malaiala de vez em quando.
-
-**Cuidado:** o "ponto fraco" é técnico (guarda, respiração), nunca o corpo do rival.
-
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Respire. Vou achar seu / ponto fraco com calma. | 22 + 22 |
-| Abertura (round 1) | 2 | Elefante ou serpente? / Você escolhe como cair. | 21 + 23 |
-| Abertura (round 1) | 3 | Vaa. Já sei onde dói. † | 21 |
-| Rounds seguintes | 1 | Sua respiração te entrega. | 26 |
-| Rounds seguintes | 2 | Mudo a postura. E você? | 23 |
-| Rounds seguintes | 3 | Um ponto marma por vez. † | 23 |
-| Rounds seguintes | 4 | Calma. Ainda nem comecei. | 25 |
-| Vitória | 1 | Gelo e repouso. / Volte quando sarar. | 15 + 19 |
-| Vitória | 2 | Não doeu tanto. / Eu escolhi o ponto. | 15 + 19 |
-| Vitória | 3 | Mathi. Já basta por hoje. † | 25 |
-| Vitória | 4 | Previsível. A serpente / viu tudo. | 22 + 9 |
-| Contra ZENON, abertura | - | Sua guarda tem um ponto / que nunca curou, Arconte. | 23 + 25 |
-| Contra ZENON, vitória | - | Repouso, Arconte. Seu / torneio precisa de cura. | 21 + 24 |
-
-### BAATAR · "O Avarga das Estepes" · Mongólia · bökh · 44 anos
-
-**Voz:** Fala pouco, é gentil e respeitoso. A provocação dele é a calma de quem nunca perdeu: frases de 3 a 6 palavras, imagens de céu, chão, estepe, raiz. No bökh perde quem toca o chão, por isso "o chão" é o fio das falas.
-
-**Cuidado:** nada de arrogância verbal: o peso vem da serenidade. A Dança da Águia continua sem fala (decisão do dono).
-
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Za. Mostre o que trouxe. † | 24 |
-| Abertura (round 1) | 2 | Só os pés tocam o chão. / Os seus, por enquanto. | 23 + 22 |
-| Abertura (round 1) | 3 | O céu é grande. / O chão está perto. | 15 + 18 |
-| Rounds seguintes | 1 | Ainda de pé. Bom. | 17 |
-| Rounds seguintes | 2 | A estepe não tem pressa. | 24 |
-| Rounds seguintes | 3 | Venha. Eu espero. | 17 |
-| Rounds seguintes | 4 | Segure firme. Vou puxar. | 24 |
-| Vitória | 1 | Você lutou bem. / O chão lutou melhor. | 15 + 20 |
-| Vitória | 2 | Levante. Aperte minha mão. / Volte mais forte. | 26 + 17 |
-| Vitória | 3 | Nove edições invicto. / Hoje não foi diferente. | 21 + 23 |
-| Vitória | 4 | Força tem. Falta raiz. | 22 |
-| Contra ZENON, abertura | - | Devolvi seu cinturão nove / vezes. Hoje, não. | 25 + 17 |
-| Contra ZENON, vitória | - | A estepe não tem dono. / O torneio também não. | 22 + 21 |
-
-### ZENON · "O Arconte" · Grécia · pancrácio · 61 anos · chefão
-
-**Voz:** O anfitrião elegante e cruel. Trata o rival como "convidado", a luta como um jantar e a energia que toma como "tributo". Nunca levanta a voz; a crueldade vem da cortesia. A 1ª vitória repete a que já está no jogo ("Aplausos para o convidado...").
-
-**Cuidado:** as falas atuais dele (entrada dramática, fase 2, vitória, derrota) não mudam; estas são as do novo sistema de pré-round e vitória.
-
-| Momento | # | Fala (` / ` = quebra de linha) | Caracteres por linha |
-|---|---|---|---|
-| Abertura (round 1) | 1 | Kalós írthes. Sente-se / à minha mesa. † | 22 + 13 |
-| Abertura (round 1) | 2 | Meu torneio, minha ilha. / Sua última luta. | 24 + 16 |
-| Abertura (round 1) | 3 | Pode atacar primeiro. / É cortesia da casa. | 21 + 19 |
-| Rounds seguintes | 1 | O jantar nem começou. | 21 |
-| Rounds seguintes | 2 | Seu tributo, por favor. | 23 |
-| Rounds seguintes | 3 | Encantador. Continue. | 21 |
-| Rounds seguintes | 4 | A casa cobra no final. | 22 |
-| Vitória | 1 | Aplausos para o convidado. / A saída é pelos fundos. | 26 + 23 |
-| Vitória | 2 | Obrigado pela energia. / Ela agora é minha. | 22 + 18 |
-| Vitória | 3 | Todo estilo volta para / casa. A minha. | 22 + 14 |
-| Vitória | 4 | O prazer foi todo meu. / Literalmente. | 22 + 13 |
-| Contra ZENON (espelho), abertura | - | Um espelho? Só cabe / um anfitrião nesta casa. | 19 + 24 |
-| Contra ZENON (espelho), vitória | - | Dois anfitriões era / demais. Ficou um. | 19 + 17 |
-
-**ZENON contra cada um.** A abertura entra no round 1; a vitória é a que o jogador lê quando perde para o chefão.
-
-| Rival | Abertura do ZENON | Vitória do ZENON |
-|---|---|---|
-| HAYATO | Trovão bonito. Aqui, eu / decido quando chove. | Volte ao dojo, menino. / O trovão é meu agora. |
-| WEI LONG | Wei, meu velho rival. / Ainda de pé, que honra. | O ferro dobra, Wei. / Basta o fogo certo. |
-| MIN-JI | Tantos chutes. Cada um / me paga um tributo. | Nota dez na pressa. / Zero no resultado. |
-| CAIO | Uma roda na minha casa? / Aqui, o ritmo é meu. | Bela ginga. Eu cobro / o ingresso da roda. |
-| AMINU | Pode carregar à vontade. / Eu cobro em dobro. | Lança quebrada, escudo / no chão. Próximo. |
-| CENTELLA | Sua plateia é minha / esta noite, luchadora. † | Linda máscara. Guarde-a / para o próximo ano. |
-| CAMILLE | Esgrima e savate. Que / elegância. Que pena. | Riposte elegante. / Pena que veio de mim. † |
-| NILA | Uma terapeuta na minha / arena. Que conveniente. | Sem pontos fracos, Nila? / Acabo de achar o seu. |
-| BAATAR | O guardião do meu cinturão / quer ser o dono? | Volte para a estepe, / avarga. O cinturão fica. † |
+### abertura
+- Kalós írthes. Sente-se / à minha mesa. †
+- Meu torneio, minha ilha. / Sua última luta.
+- Pode atacar primeiro. / É cortesia da casa.
+- {rival}. Finalmente. / A casa estava à sua espera.
+### revanche
+- Encantador. Continue.
+- Seu tributo, por favor.
+- A casa cobra no final.
+- Uma cortesia. Não se repetirá.
+- O jantar nem começou.
+### decisivo
+- Sirvam a última rodada.
+- Agora, o prato principal.
+### vitoria
+- Aplausos para o convidado. / A saída é pelos fundos.
+- Obrigado pela energia. / Guardarei com carinho.
+- Todo estilo volta para / casa. A minha.
+- O prazer foi todo meu. / Literalmente.
+### vitoriaPerfeita
+- Nem amassou meu casaco. / Que convidado discreto.
+- Nenhuma mancha na toalha. / Volte sempre.
+### vitoriaPorTempo
+- O relógio é meu também. / Como tudo nesta ilha.
+- Fim do jantar. / A conta fica com você.
+### contra: hayato
+- abertura: Trovão bonito. Aqui, eu / decido quando chove.
+- vitoria: Volte ao dojo, menino. / O trovão é meu agora.
+- vitoria: Seu avô treinou bem você. / Eu treinei melhor.
+### contra: wei-long
+- abertura: Wei, meu velho rival. / Ainda de pé, que honra.
+- vitoria: O ferro dobra, Wei. / Basta o fogo certo.
+- vitoria: Envelheceu bem, Wei. / Mas envelheceu.
+### contra: min-ji
+- abertura: Tantos chutes. Cada um / me paga um tributo.
+- vitoria: Nota dez na pressa. / Zero no resultado.
+- vitoria: Revanche? Claro. A casa / adora clientes fiéis.
+### contra: caio
+- abertura: Uma roda na minha casa? / Aqui, o ritmo é meu.
+- vitoria: Bela ginga. Eu cobro / o ingresso da roda.
+- vitoria: A ginga cansa. / O anfitrião, não.
+### contra: aminu
+- abertura: Pode carregar à vontade. / Eu cobro em dobro.
+- vitoria: Lança quebrada, escudo / no chão. Próximo.
+- vitoria: Nível três? A casa / cobra nível dez.
+### contra: centella
+- abertura: Sua plateia é minha / esta noite, luchadora. †
+- vitoria: Linda máscara. Guarde-a / para o próximo ano.
+- vitoria: Três gerações de lucha. / Uma tarde comigo.
+### contra: camille
+- abertura: Esgrima e savate. Que / elegância. Que pena.
+- vitoria: Riposte elegante. / Pena que veio de mim. †
+- vitoria: Touché, Camille. Desta / vez, a lição foi minha. †
+### contra: nila
+- abertura: Uma terapeuta na minha / arena. Que conveniente.
+- vitoria: Sem pontos fracos, Nila? / Acabo de achar o seu.
+- vitoria: Diagnóstico, doutora? / Excesso de confiança.
+### contra: baatar
+- abertura: O guardião do meu cinturão / quer ser o dono?
+- vitoria: Volte para a estepe, / avarga. O cinturão fica. †
+- vitoria: Décima vez, avarga. / O cinturão volta para mim. †
+### contra: zenon
+- abertura: Um espelho? Só cabe / um anfitrião nesta casa.
+- vitoria: Dois anfitriões era / demais. Ficou um.
 
 ## 3. Palavras de outro idioma (pedem revisão de nativo)
 
-Todas são palavras comuns, de uso esportivo ou de saudação, escolhidas para não ter carga religiosa ou política. Mesmo
-assim, nenhuma foi validada por falante nativo: **revisar antes de publicar**. Se alguma cair, a troca é por português
-sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido precisam existir na fonte do letreiro
-(Lyra confere o glifo; o subset latino do jogo deve cobrir, mas é para medir, não supor).
+Todas são palavras comuns, de uso esportivo ou de saudação, escolhidas para não ter carga religiosa ou política. Nenhuma foi
+validada por falante nativo: **revisar antes de publicar**. Se alguma cair, a troca é por português sem mudar o sentido
+(ex.: "Ikuzo!" vira "Vamos!") e sem passar dos limites do §2.
 
 | Lutador | Termo | Língua e sentido |
 |---|---|---|
@@ -290,32 +459,32 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
 | AMINU | Sannu! | hauçá, saudação "olá" |
 | AMINU | Kai! | hauçá, interjeição de espanto |
 | AMINU | Yauwa! | hauçá, "muito bem / isso!" |
-| CENTELLA | ¡Órale!, ¡Arriba!, ¡Uno, dos, tres!, abuela, luchadora | espanhol do México; "¡Órale!" é coloquial mexicano |
-| CAMILLE | En garde, Touché, Riposte, Voilà | francês, termos de esgrima de uso internacional |
+| CENTELLA | ¡Órale!, ¡Arriba!, ¡Uno, dos, tres!, abuela | espanhol do México; "¡Órale!" é coloquial mexicano |
+| CENTELLA | ¡Dos de tres caídas! | espanhol, a fórmula "duas de três quedas" da lucha libre (novo) |
+| CENTELLA | ¡Perfecto!, ¡Tiempo! | espanhol, "perfeito" e "tempo" (novos) |
+| CENTELLA / ZENON | luchadora | espanhol, "lutadora" (só em fala dirigida a ela) |
+| CAMILLE / ZENON | En garde, Touché, Riposte, Voilà, Parade | francês, termos de esgrima de uso internacional ("Parade" também é o nome do golpe dela) |
 | NILA | Vaa | malaiala വാ, "venha" |
 | NILA | Mathi | malaiala മതി, "basta" |
 | NILA | marma | pontos vitais do kalari (já usado no jogo: GOLPE MARMA) |
 | BAATAR | Za | mongol За, "bem / certo" (abre a fala como um aceno) |
-| BAATAR / ZENON | avarga | mongol, o título de "titã" (já usado no jogo) |
+| ZENON | avarga | mongol, o título de "titã" (já usado no jogo) |
 | ZENON | Kalós írthes | grego Καλώς ήρθες, "bem-vindo" |
 
-## 4. Para quem implementa (forma dos dados)
+## 4. Notas para quem implementa
 
-- **Chave** = `id` do lutador (`hayato`, `wei-long`, `min-ji`, `caio`, `aminu`, `centella`, `camille`, `nila`,
-  `baatar`, `zenon`), o mesmo de `src/data/lutadores`.
-- **`abertura`** (3): round 1, um por lutador, antes do FIGHT.
-- **`rounds`** (4): rounds 2 em diante. Todas funcionam com o lutador ganhando ou perdendo no placar.
-- **`vitoria`** (4): quem venceu a luta provoca quem perdeu.
-- **`contraZenon`** (`abertura`, `vitoria`): substitui a abertura do round 1 e a vitória quando o rival é o ZENON. No
-  próprio ZENON, é o espelho (ZENON contra ZENON jogável).
-- **`contraRival`** (só no `zenon`): abertura e vitória do chefão contra cada um dos 9. Quando o ZENON é o rival, a fala
-  DELE sai daqui; a vitória dele é a que o jogador lê ao perder.
-- **Quebra de linha**: `\n` já está no ponto certo. Não reembrulhar por largura; se o contrato da Nova pedir texto sem
-  quebra, basta trocar `\n` por espaço (todas cabem em 64).
-- **Sorteio**: com o RNG de apresentação, nunca o do motor (o texto é só desenho, como `APRESENTACAO`). Sugestão: não
-  repetir a mesma fala duas vezes seguidas para o mesmo lutador.
-- **Ordem sugerida em diálogo** (round 1): quem desafia fala primeiro, o outro responde. Nas aberturas contra o ZENON o
-  texto foi escrito para funcionar nas duas ordens.
+- **ZENON chefão vencendo:** usa o balão novo com `zenon.contra[perdedor].vitoria` (decisão do dono); a legenda antiga de vitória
+  dele deixa de aparecer. O texto de `APRESENTACAO.zenon.falas.vitoria` é igual ao 1º item de `zenon.vitoria` ("Aplausos para o
+  convidado..."), mas a legenda dele não é mais exibida nessa situação. A spec (§5 linha "Luta de chefão" e D-P3) foi alinhada em 2026-10-21.
+- **Pré-round do chefão:** não tem balão (spec §5); as `contra[id].abertura` do ZENON saem quando ele é **jogável**.
+- **Ordem em diálogo (round 1):** as aberturas contra o ZENON foram escritas para funcionar nas duas ordens.
+- **`decisivo`:** todos os 10 têm; a regra "ausente usa `revanche`" fica para lutador novo.
+- Os textos não dependem de pose: funcionam com o `win` provisório e com os quadros `provoca0/1` quando existirem (spec §6).
+
+## 5. JSON (fonte para `src/data/provocacoes.pt-BR.ts`)
+
+Forma: `Record<IdLutador, FalasDeProvocacao>` da spec §7.1, chaves na ordem de `IDS_LUTADORES`. Gerado pelo mesmo script dos
+blocos acima; os dois são idênticos.
 
 ```json
 {
@@ -323,13 +492,19 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
     "abertura": [
       "Ikuzo! O trovão não\nespera ninguém.",
       "Treinei sozinho por isso.\nNão me decepcione.",
-      "Pisca, e já acabou."
+      "Pisca, e já acabou.",
+      "Pronto, {rival}?\nO raio cai uma vez só."
     ],
-    "rounds": [
+    "revanche": [
       "Agora eu esquentei.",
       "Outro raio? Tenho de sobra.",
-      "Guarda alta. Lá vou eu.",
-      "Esse round é meu."
+      "Esse round é meu.",
+      "Errei uma vez. Não erro duas."
+    ],
+    "decisivo": [
+      "Último round. Último raio.",
+      "Um trovão decide. O meu.",
+      "Guarda alta. Lá vou eu."
     ],
     "vitoria": [
       "Rápido demais pra você?\nVolta quando trovejar.",
@@ -337,22 +512,42 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Treina mais. Eu continuo\nesperando no topo.",
       "Ouviu o estrondo?\nFoi você caindo."
     ],
-    "contraZenon": {
-      "abertura": "Sua ilha, suas regras.\nMeu trovão.",
-      "vitoria": "Seu cinturão agora mora\nno dojo do meu avô."
+    "vitoriaPerfeita": [
+      "Nem me tocou.\nRápido demais, eu disse.",
+      "Raio não se pega.\nAgora você sabe."
+    ],
+    "vitoriaPorTempo": [
+      "Faltou tempo pra você.\nPra mim, sobrou.",
+      "Tempo esgotado?\nEu ainda tinha raio."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Sua ilha, suas regras.\nMeu trovão."
+        ],
+        "vitoria": [
+          "Seu cinturão agora mora\nno dojo do meu avô."
+        ]
+      }
     }
   },
   "wei-long": {
     "abertura": [
       "Lái ba. A montanha não\nse move por você.",
       "Respire fundo. Depois\nnão haverá tempo.",
-      "Ferro se forja devagar.\nVocê vai sentir cada golpe."
+      "Ferro se forja devagar.\nVocê vai sentir cada golpe.",
+      "{rival}, a aula começa.\nTome notas."
     ],
-    "rounds": [
+    "revanche": [
       "O chá ainda nem esfriou.",
       "Paciência. A palma vem.",
-      "Ainda de pé? Bom sinal.",
+      "Um tropeço não move montanha.",
       "Mais uma lição, então."
+    ],
+    "decisivo": [
+      "A última lição é a mais longa.",
+      "Agora, o ferro decide.",
+      "Ainda de pé? Bom sinal."
     ],
     "vitoria": [
       "Volte daqui a dez anos.\nTraga um professor.",
@@ -360,21 +555,40 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Pressa é para quem\nnão tem raízes.",
       "Lição encerrada.\nPode se curvar ao sair."
     ],
-    "contraZenon": {
-      "abertura": "Vi este torneio nascer.\nHoje o vejo mudar de mãos.",
-      "vitoria": "Seu mármore racha, Arconte.\nO ferro, não."
+    "vitoriaPerfeita": [
+      "Nenhum golpe tocou o mestre.\nAnote isso.",
+      "A montanha nem tremeu."
+    ],
+    "vitoriaPorTempo": [
+      "O tempo acabou. A lição\ncontinua amanhã.",
+      "Paciência vence o relógio.\nSempre venceu."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Vi este torneio nascer.\nHoje o vejo mudar de mãos."
+        ],
+        "vitoria": [
+          "Seu mármore racha, Arconte.\nO ferro, não."
+        ]
+      }
     }
   },
   "min-ji": {
     "abertura": [
       "Gaja! Tenta acompanhar\nmeus pés.",
       "Três chutes por segundo.\nConta comigo!",
-      "Sorria! Vai ser rapidinho."
+      "Sorria! Vai ser rapidinho.",
+      "Placar zerado, {rival}!\nPor pouco tempo."
     ],
-    "rounds": [
+    "revanche": [
       "Hwaiting! Eu, não você.",
-      "Ponto meu. De novo.",
-      "Mais alto? Pode deixar.",
+      "Ponto seu? Sorte. Agora é meu!",
+      "Mais alto? Pode deixar."
+    ],
+    "decisivo": [
+      "Ponto decisivo! Adoro isso!",
+      "Desempate! Melhor parte!",
       "Cansou? Eu nem suei."
     ],
     "vitoria": [
@@ -383,22 +597,41 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Bom treino! Pra mim.",
       "Pede revanche. Eu adoro\nrevanche."
     ],
-    "contraZenon": {
-      "abertura": "Dono do torneio? Legal.\nEu sou dona do placar.",
-      "vitoria": "Hwaiting! O cinturão vai\npra academia de Seul."
+    "vitoriaPerfeita": [
+      "Round perfeito!\nNota máxima, sem desconto!",
+      "Nem encostou!\nRecorde pessoal!"
+    ],
+    "vitoriaPorTempo": [
+      "Venci no placar!\nConta os pontos, conta!",
+      "Acabou o tempo!\nO placar não mente!"
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Dono do torneio? Legal.\nEu sou dona do placar."
+        ],
+        "vitoria": [
+          "Hwaiting! O cinturão vai\npra academia de Seul."
+        ]
+      }
     }
   },
   "caio": {
     "abertura": [
       "Bora jogar, camará?\nA roda tá aberta.",
       "Quem não ginga, apanha.\nSimples assim.",
-      "Relaxa. Vai doer\ncom estilo."
+      "Relaxa. Vai doer\ncom estilo.",
+      "Chega mais, {rival}.\nA ginga tá te esperando."
     ],
-    "rounds": [
-      "Ih, tá nervoso? Ginga!",
+    "revanche": [
       "O berimbau mudou o toque.",
       "Agora é jogo de dentro.",
-      "Achou que tinha acabado?"
+      "Achou que tinha acabado?",
+      "Tomei uma? Faz parte da roda."
+    ],
+    "decisivo": [
+      "Agora o jogo fica bom, camará.",
+      "Ih, tá nervoso? Ginga!"
     ],
     "vitoria": [
       "Iê! Volta pra roda\nquando aprender a gingar.",
@@ -406,22 +639,41 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Malandragem não se treina.\nSe vive.",
       "Valeu o jogo. Pena que\nvocê só assistiu."
     ],
-    "contraZenon": {
-      "abertura": "Mansão bonita, chefe.\nCabe uma roda aqui?",
-      "vitoria": "A roda é de todo mundo.\nO cinturão também."
+    "vitoriaPerfeita": [
+      "Ginga limpa, camará.\nNão pegou nenhuma.",
+      "Saí da roda sem\num arranhão. Iê!"
+    ],
+    "vitoriaPorTempo": [
+      "Deu o tempo, camará.\nGanhei no jogo.",
+      "Parou o berimbau.\nE eu tava na frente."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Mansão bonita, chefe.\nCabe uma roda aqui?"
+        ],
+        "vitoria": [
+          "A roda é de todo mundo.\nO cinturão também."
+        ]
+      }
     }
   },
   "aminu": {
     "abertura": [
       "Sannu! Bem-vindo à\nminha mão de lança.",
       "Plateia, contem até três.\nNo três, acabou.",
-      "Defende à vontade.\nMeu soco gosta de esperar."
+      "Defende à vontade.\nMeu soco gosta de esperar.",
+      "Plateia, conheçam {rival}!\nAgora, se despeçam."
     ],
-    "rounds": [
+    "revanche": [
       "Kai! Esse doeu, né?",
       "A carga tá subindo...",
       "Escudo na frente, lança atrás.",
       "Plateia, mais barulho!"
+    ],
+    "decisivo": [
+      "Nível três guardado pra agora!",
+      "Plateia, agora é pra valer!"
     ],
     "vitoria": [
       "Isso foi o nível um.\nQuer ver o três?",
@@ -429,22 +681,42 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Briga de feira? Isso foi\nesporte de elite.",
       "Yauwa! Palmas pra quem\nficou de pé um tempo."
     ],
-    "contraZenon": {
-      "abertura": "Cobra tributo, é? Hoje\na conta vem de Kano.",
-      "vitoria": "Kai! O dono caiu.\nPlateia, isso é dambe!"
+    "vitoriaPerfeita": [
+      "Plateia, viram algum golpe\nem mim? Nem eu!",
+      "Escudo intacto!\nO índigo saiu sem mancha!"
+    ],
+    "vitoriaPorTempo": [
+      "Plateia, o relógio parou!\nA lança, não.",
+      "Tempo! E a carga ainda\ntava no nível dois."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Cobra tributo, é? Hoje\na conta vem de Kano."
+        ],
+        "vitoria": [
+          "Kai! O dono caiu.\nPlateia, isso é dambe!"
+        ]
+      }
     }
   },
   "centella": {
     "abertura": [
       "¡Órale, público! Hoje\na faísca vira incêndio.",
       "Três gerações de lucha\ncontra uma só. Boa sorte.",
-      "As cordas são minhas.\nO canto é seu."
+      "As cordas são minhas.\nO canto é seu.",
+      "¡Público, recebam {rival}!\nVai durar pouco."
     ],
-    "rounds": [
+    "revanche": [
       "¡Arriba! Ainda tenho corda.",
       "A lona chama seu nome.",
       "Mais alto, público!",
-      "Agora vem o voo."
+      "Caí. A técnica sempre levanta!"
+    ],
+    "decisivo": [
+      "¡Dos de tres caídas, público!",
+      "Agora vem o voo.",
+      "Do alto das cordas. Agora."
     ],
     "vitoria": [
       "¡Uno, dos, tres! Já pode\nse levantar.",
@@ -452,22 +724,42 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "A máscara fica.\nO cinturão vem comigo.",
       "Os técnicos sempre\nvencem no final."
     ],
-    "contraZenon": {
-      "abertura": "Lá em casa, o vilão\nsempre perde no final.",
-      "vitoria": "¡Órale! A plateia agora\né minha, Arconte."
+    "vitoriaPerfeita": [
+      "¡Nem tocou na máscara!\nPúblico, isso é técnica!",
+      "Lona limpa, cordas minhas.\n¡Perfecto!"
+    ],
+    "vitoriaPorTempo": [
+      "¡Tiempo! O público já\ntinha escolhido.",
+      "O sino tocou, e a faísca\nainda brilhava."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Lá em casa, o vilão\nsempre perde no final."
+        ],
+        "vitoria": [
+          "¡Órale! A plateia agora\né minha, Arconte."
+        ]
+      }
     }
   },
   "camille": {
     "abertura": [
       "En garde. E, por favor,\nataque primeiro.",
       "Já vi seus três golpes.\nNenhum me preocupa.",
-      "Ataque quando quiser.\nEu respondo antes."
+      "Ataque quando quiser.\nEu respondo antes.",
+      "{rival}. Mostre o primeiro\nerro. Não tenho pressa."
     ],
-    "rounds": [
-      "Mesmo erro. De novo.",
+    "revanche": [
       "Anotado. Próximo.",
       "Seu ombro avisa o golpe.",
+      "Um ponto seu. Entendi o resto.",
       "Paciência. Você vai errar."
+    ],
+    "decisivo": [
+      "Último assalto. Mesma precisão.",
+      "Agora, a riposte certa.",
+      "Mesmo erro. De novo."
     ],
     "vitoria": [
       "Touché. Era o óbvio.",
@@ -475,22 +767,41 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Seu golpe mais forte?\nFoi o meu, de volta.",
       "Voilà. Volte com\num plano."
     ],
-    "contraZenon": {
-      "abertura": "Todo estilo descende do\nseu? Prove. En garde.",
-      "vitoria": "Riposte. Até o dono\ndo torneio ataca mal."
+    "vitoriaPerfeita": [
+      "Parade, riposte, fim.\nLimpo como na aula.",
+      "Imaculado. Seu ataque\nnunca chegou."
+    ],
+    "vitoriaPorTempo": [
+      "Cronômetro zerado.\nDois toques à frente.",
+      "Venci no relógio.\nTambém é esgrima."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Todo estilo descende do\nseu? Prove. En garde."
+        ],
+        "vitoria": [
+          "Riposte. Até o dono\ndo torneio ataca mal."
+        ]
+      }
     }
   },
   "nila": {
     "abertura": [
       "Respire. Vou achar seu\nponto fraco com calma.",
       "Elefante ou serpente?\nVocê escolhe como cair.",
-      "Vaa. Já sei onde dói."
+      "Vaa. Já sei onde dói.",
+      "{rival}, sua postura\njá me contou tudo."
     ],
-    "rounds": [
+    "revanche": [
       "Sua respiração te entrega.",
       "Mudo a postura. E você?",
       "Um ponto marma por vez.",
-      "Calma. Ainda nem comecei."
+      "Diagnóstico revisto. Continue."
+    ],
+    "decisivo": [
+      "Calma. Ainda nem comecei.",
+      "Última sessão. Sem anestesia."
     ],
     "vitoria": [
       "Gelo e repouso.\nVolte quando sarar.",
@@ -498,22 +809,41 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Mathi. Já basta por hoje.",
       "Previsível. A serpente\nviu tudo."
     ],
-    "contraZenon": {
-      "abertura": "Sua guarda tem um ponto\nque nunca curou, Arconte.",
-      "vitoria": "Repouso, Arconte. Seu\ntorneio precisa de cura."
+    "vitoriaPerfeita": [
+      "A serpente não se pega.\nVocê tentou.",
+      "Respiração em ordem.\nA sua, nem tanto."
+    ],
+    "vitoriaPorTempo": [
+      "Fim da consulta.\nO tempo deu o diagnóstico.",
+      "Não precisei terminar.\nO tempo terminou por mim."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Sua guarda tem um ponto\nque nunca curou, Arconte."
+        ],
+        "vitoria": [
+          "Repouso, Arconte. Seu\ntorneio precisa de cura."
+        ]
+      }
     }
   },
   "baatar": {
     "abertura": [
       "Za. Mostre o que trouxe.",
       "Só os pés tocam o chão.\nOs seus, por enquanto.",
-      "O céu é grande.\nO chão está perto."
+      "O céu é grande.\nO chão está perto.",
+      "{rival}. Bom adversário.\nO chão decide."
     ],
-    "rounds": [
+    "revanche": [
       "Ainda de pé. Bom.",
       "A estepe não tem pressa.",
       "Venha. Eu espero.",
-      "Segure firme. Vou puxar."
+      "Caí uma vez. Basta."
+    ],
+    "decisivo": [
+      "Segure firme. Vou puxar.",
+      "Agora, só um fica de pé."
     ],
     "vitoria": [
       "Você lutou bem.\nO chão lutou melhor.",
@@ -521,69 +851,146 @@ sem mudar o sentido (ex.: "Ikuzo!" vira "Vamos!"). Acentos e o "¡" invertido pr
       "Nove edições invicto.\nHoje não foi diferente.",
       "Força tem. Falta raiz."
     ],
-    "contraZenon": {
-      "abertura": "Devolvi seu cinturão nove\nvezes. Hoje, não.",
-      "vitoria": "A estepe não tem dono.\nO torneio também não."
+    "vitoriaPerfeita": [
+      "Nem me tirou do lugar.",
+      "Meus pés nunca saíram\ndo chão."
+    ],
+    "vitoriaPorTempo": [
+      "O sol se pôs.\nEu continuei de pé.",
+      "Tempo. Eu ainda\nestava firme."
+    ],
+    "contra": {
+      "zenon": {
+        "abertura": [
+          "Devolvi seu cinturão nove\nvezes. Hoje, não."
+        ],
+        "vitoria": [
+          "A estepe não tem dono.\nO torneio também não."
+        ]
+      }
     }
   },
   "zenon": {
     "abertura": [
       "Kalós írthes. Sente-se\nà minha mesa.",
       "Meu torneio, minha ilha.\nSua última luta.",
-      "Pode atacar primeiro.\nÉ cortesia da casa."
+      "Pode atacar primeiro.\nÉ cortesia da casa.",
+      "{rival}. Finalmente.\nA casa estava à sua espera."
     ],
-    "rounds": [
-      "O jantar nem começou.",
-      "Seu tributo, por favor.",
+    "revanche": [
       "Encantador. Continue.",
-      "A casa cobra no final."
+      "Seu tributo, por favor.",
+      "A casa cobra no final.",
+      "Uma cortesia. Não se repetirá.",
+      "O jantar nem começou."
+    ],
+    "decisivo": [
+      "Sirvam a última rodada.",
+      "Agora, o prato principal."
     ],
     "vitoria": [
       "Aplausos para o convidado.\nA saída é pelos fundos.",
-      "Obrigado pela energia.\nEla agora é minha.",
+      "Obrigado pela energia.\nGuardarei com carinho.",
       "Todo estilo volta para\ncasa. A minha.",
       "O prazer foi todo meu.\nLiteralmente."
     ],
-    "contraZenon": {
-      "abertura": "Um espelho? Só cabe\num anfitrião nesta casa.",
-      "vitoria": "Dois anfitriões era\ndemais. Ficou um."
-    },
-    "contraRival": {
+    "vitoriaPerfeita": [
+      "Nem amassou meu casaco.\nQue convidado discreto.",
+      "Nenhuma mancha na toalha.\nVolte sempre."
+    ],
+    "vitoriaPorTempo": [
+      "O relógio é meu também.\nComo tudo nesta ilha.",
+      "Fim do jantar.\nA conta fica com você."
+    ],
+    "contra": {
       "hayato": {
-        "abertura": "Trovão bonito. Aqui, eu\ndecido quando chove.",
-        "vitoria": "Volte ao dojo, menino.\nO trovão é meu agora."
+        "abertura": [
+          "Trovão bonito. Aqui, eu\ndecido quando chove."
+        ],
+        "vitoria": [
+          "Volte ao dojo, menino.\nO trovão é meu agora.",
+          "Seu avô treinou bem você.\nEu treinei melhor."
+        ]
       },
       "wei-long": {
-        "abertura": "Wei, meu velho rival.\nAinda de pé, que honra.",
-        "vitoria": "O ferro dobra, Wei.\nBasta o fogo certo."
+        "abertura": [
+          "Wei, meu velho rival.\nAinda de pé, que honra."
+        ],
+        "vitoria": [
+          "O ferro dobra, Wei.\nBasta o fogo certo.",
+          "Envelheceu bem, Wei.\nMas envelheceu."
+        ]
       },
       "min-ji": {
-        "abertura": "Tantos chutes. Cada um\nme paga um tributo.",
-        "vitoria": "Nota dez na pressa.\nZero no resultado."
+        "abertura": [
+          "Tantos chutes. Cada um\nme paga um tributo."
+        ],
+        "vitoria": [
+          "Nota dez na pressa.\nZero no resultado.",
+          "Revanche? Claro. A casa\nadora clientes fiéis."
+        ]
       },
       "caio": {
-        "abertura": "Uma roda na minha casa?\nAqui, o ritmo é meu.",
-        "vitoria": "Bela ginga. Eu cobro\no ingresso da roda."
+        "abertura": [
+          "Uma roda na minha casa?\nAqui, o ritmo é meu."
+        ],
+        "vitoria": [
+          "Bela ginga. Eu cobro\no ingresso da roda.",
+          "A ginga cansa.\nO anfitrião, não."
+        ]
       },
       "aminu": {
-        "abertura": "Pode carregar à vontade.\nEu cobro em dobro.",
-        "vitoria": "Lança quebrada, escudo\nno chão. Próximo."
+        "abertura": [
+          "Pode carregar à vontade.\nEu cobro em dobro."
+        ],
+        "vitoria": [
+          "Lança quebrada, escudo\nno chão. Próximo.",
+          "Nível três? A casa\ncobra nível dez."
+        ]
       },
       "centella": {
-        "abertura": "Sua plateia é minha\nesta noite, luchadora.",
-        "vitoria": "Linda máscara. Guarde-a\npara o próximo ano."
+        "abertura": [
+          "Sua plateia é minha\nesta noite, luchadora."
+        ],
+        "vitoria": [
+          "Linda máscara. Guarde-a\npara o próximo ano.",
+          "Três gerações de lucha.\nUma tarde comigo."
+        ]
       },
       "camille": {
-        "abertura": "Esgrima e savate. Que\nelegância. Que pena.",
-        "vitoria": "Riposte elegante.\nPena que veio de mim."
+        "abertura": [
+          "Esgrima e savate. Que\nelegância. Que pena."
+        ],
+        "vitoria": [
+          "Riposte elegante.\nPena que veio de mim.",
+          "Touché, Camille. Desta\nvez, a lição foi minha."
+        ]
       },
       "nila": {
-        "abertura": "Uma terapeuta na minha\narena. Que conveniente.",
-        "vitoria": "Sem pontos fracos, Nila?\nAcabo de achar o seu."
+        "abertura": [
+          "Uma terapeuta na minha\narena. Que conveniente."
+        ],
+        "vitoria": [
+          "Sem pontos fracos, Nila?\nAcabo de achar o seu.",
+          "Diagnóstico, doutora?\nExcesso de confiança."
+        ]
       },
       "baatar": {
-        "abertura": "O guardião do meu cinturão\nquer ser o dono?",
-        "vitoria": "Volte para a estepe,\navarga. O cinturão fica."
+        "abertura": [
+          "O guardião do meu cinturão\nquer ser o dono?"
+        ],
+        "vitoria": [
+          "Volte para a estepe,\navarga. O cinturão fica.",
+          "Décima vez, avarga.\nO cinturão volta para mim."
+        ]
+      },
+      "zenon": {
+        "abertura": [
+          "Um espelho? Só cabe\num anfitrião nesta casa."
+        ],
+        "vitoria": [
+          "Dois anfitriões era\ndemais. Ficou um."
+        ]
       }
     }
   }

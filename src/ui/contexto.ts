@@ -50,6 +50,11 @@ export interface Contexto {
    * Ausente (testes antigos): a cena usa o `rngUI`.
    */
   readonly sorteioDaSelecao?: Rng;
+  /**
+   * Sorteio das FALAS das provocações (semente + 5): fora do RNG da luta (lock-step/replay), do `rngVisual`, do `rngUI` (ordem dos rivais) e do
+   * `sorteioDaSelecao`. Consumir daqui não desloca nenhuma outra sequência. Ausente (testes antigos): `escolherFala` sem rng, determinística.
+   */
+  readonly sorteioDeFalas?: Rng;
   /** O jogador pediu menos movimento (`prefers-reduced-motion`)? A casa aleatória fica num "?" fixo e o sorteio sai sem rolagem. Ausente = não. */
   readonly reduzirMovimento?: () => boolean;
   /** Regras do desbloqueio e do elenco (padrão: `REGRAS_PADRAO`; testes injetam outras, ex.: 9 ids falsos). */

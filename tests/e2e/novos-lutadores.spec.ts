@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { CHEFE, GRADE_DE_PRODUCAO } from './_chefe';
+import { SEM_PROVOCACAO } from './_luta';
 
 /*
  * F3a: os cinco lutadores novos (AMINU, CENTELLA, CAMILLE, NILA, BAATAR) e os seis cenários, com a arte real, no
@@ -53,7 +54,7 @@ async function abrirJogo(page: Page, query: string): Promise<void> {
 
 /** Abre uma luta de treino (HAYATO x `c2`) e anda até a fase de luta, com a arte já na memória. */
 async function abrirLuta(page: Page, c2: string, extra: Record<string, unknown> = {}): Promise<void> {
-  await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: ${JSON.stringify({ mode: 'training', c1: 'hayato', c2, cpu: null, ...extra })} }); }`);
+  await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: ${JSON.stringify({ mode: 'training', c1: 'hayato', c2, cpu: null, ...extra })} }); (${SEM_PROVOCACAO})(h); }`);
   await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 30_000 });
   for (let i = 0; i < 200; i++) {
     const fase = await hook(page, '(h) => { h.avancar(2); return h.mundo().game.phase; }');

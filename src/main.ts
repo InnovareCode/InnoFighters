@@ -7,6 +7,8 @@ import { carregarDadosV2, type ArmazenamentoLike } from './core/storage';
 import type { IdLutador } from './core/contratos';
 import { criarRng, sementeAleatoria } from './core/rng';
 import { CENARIO_PADRAO } from './data/cenarios';
+// efeito colateral PROPOSITAL: valida as falas das provocações no carregamento (lutador sem falas ou fora dos limites derruba o boot, alto e cedo)
+import './data/provocacoes';
 import { Game } from './fight/game';
 import { REGRAS_PADRAO } from './meta';
 import { criarEntrada } from './input/entrada';
@@ -116,6 +118,7 @@ async function iniciar(): Promise<void> {
     rngVisual,
     rngUI,
     sorteioDaSelecao: criarRng(semente + 4),
+    sorteioDeFalas: criarRng(semente + 5),
     reduzirMovimento: reduzirMovimento(),
     regras,
     alternarTelaCheia,

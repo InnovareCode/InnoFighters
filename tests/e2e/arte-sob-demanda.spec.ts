@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { deflateSync } from 'node:zlib';
 import { expect, test, type Page } from '@playwright/test';
+import { SEM_PROVOCACAO } from './_luta';
 
 test.describe.configure({ timeout: 120_000 });
 
@@ -90,6 +91,7 @@ test.describe('retratos e carga de arte', () => {
     await page.waitForTimeout(700);
     await page.keyboard.press('Enter');
     await esperarCena(page, 'fight');
+    await hook(page, SEM_PROVOCACAO); // a provocação (balões) é outro assunto: o gancho de teste a desliga (spec da provocação, auditoria da P2)
     await page.waitForFunction(() => (window as any).__inno.mundo().game.phase === 'fight', undefined, { timeout: 20_000 });
 
     // a luta desenha os dois lutadores de verdade (a arte chegou) e cada arquivo foi baixado uma vez

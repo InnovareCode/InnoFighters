@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { CHEFE, PULAR_ENTRADA } from './_chefe';
+import { SEM_PROVOCACAO } from './_luta';
 
 /*
  * Z2 + Z3 (Lyra): o chefão ZENON medido no navegador, com a arte real: a ENTRADA DRAMÁTICA (o motor não anda; pular; HUD escondido), a fase 2
@@ -82,7 +83,7 @@ async function abrirJogo(page: Page, query = '', viewport?: { width: number; hei
 /** Abre a luta de ARCADE do HAYATO contra o chefão (sem CPU: os dois parados) e espera a arte. NÃO anda nenhum tick. */
 async function abrirChefe(page: Page, extra: Record<string, unknown> = {}, run?: Record<string, unknown>): Promise<void> {
   const cfg = { mode: 'arcade', c1: 'hayato', c2: CHEFE.id, cpu: null, chefe: true, esquiva: true, ...extra };
-  await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: ${JSON.stringify(cfg)}${run ? `, run: ${JSON.stringify(run)}` : ''} }); }`);
+  await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: ${JSON.stringify(cfg)}${run ? `, run: ${JSON.stringify(run)}` : ''} }); (${SEM_PROVOCACAO})(h); }`);
   await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 30_000 });
 }
 
@@ -465,7 +466,7 @@ test.describe('Z2: a cinemática E12 dos 5 especiais do ZENON (brilho, núcleo �
     await semear(page);
     await abrirJogo(page, '&expansao=1');
     await espiarTextos(page);
-    await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'zenon', c2: 'hayato', cpu: null, esquiva: true } }); }");
+    await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: 'zenon', c2: 'hayato', cpu: null, esquiva: true } }); (${SEM_PROVOCACAO})(h); }`);
     await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 30_000 });
     for (let i = 0; i < 300; i++) if ((await hook(page, '(h) => { h.avancar(2); return h.mundo().game.phase; }')) === 'fight') break;
     const casos: Array<[string | null, string, string, string]> = [

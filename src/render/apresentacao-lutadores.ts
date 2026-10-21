@@ -27,6 +27,8 @@ export type CartaoDeEntrada = { readonly nome: string; readonly titulo: string; 
 export type Apresentacao = {
   readonly entrada?: CenaDef;
   readonly vitoria?: CenaDef;
+  /** Pose de quem FALA na provocação (balão do pré-round e da vitória). Ausente = `provoca0` (alias de `win` até o Apolo entregar o quadro). */
+  readonly provoca?: CenaDef;
   readonly falas?: Falas;
   /** Aviso "UM DESAFIANTE SE APROXIMA": as duas linhas de baixo do título, no lugar do texto fixo. */
   readonly aviso?: readonly [string, string];
@@ -35,16 +37,19 @@ export type Apresentacao = {
 };
 
 export const APRESENTACAO: Readonly<Record<string, Apresentacao>> = {
-  // A Dança da Águia, que era a cena do chefão, virou só entrada e vitória do BAATAR (decisão do dono, 2026-10-21): sem provocação.
+  // A Dança da Águia, que era a cena do chefão, virou só entrada e vitória do BAATAR (decisão do dono, 2026-10-21). A PROVOCAÇÃO com balão (render/provocacao.ts) é outra coisa: usa `provoca` e `vitoria` daqui.
   baatar: {
     entrada: { duracao: 90, poses: ['devekh0', 'devekh1', 'devekh2'] },
     vitoria: { duracao: 60, poses: ['devekh0', 'win'] },
+    provoca: { duracao: 30, poses: ['devekh2'] },
   },
   zenon: {
     // Jogável (derrotado o chefão): as três poses de S10 linha 1, em 90 ticks. Como CHEFE ele já fez a entrada dramática: fica em `entrada2`.
     entrada: { duracao: 90, poses: ['entrada0', 'entrada1', 'entrada2'] },
     // S9 linha 2, células 2 e 3: aplaude devagar, depois fecha os olhos com a mão no ombro do casaco.
     vitoria: { duracao: 80, poses: ['vitoria0', 'vitoria1'] },
+    // aperta a tira sorrindo (a pose da entrada dramática): é o gesto de quem provoca
+    provoca: { duracao: 30, poses: ['entrada2'] },
     falas: {
       entrada: 'Bem-vindo à minha casa. Todo torneio precisa de um anfitrião... e de um último convidado.',
       fase2: 'Chega de cortesia.',

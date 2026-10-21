@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
+import { SEM_PROVOCACAO } from './_luta';
 import { mkdirSync } from 'node:fs';
 
 /*
@@ -29,7 +30,7 @@ async function abrir(page: Page, query = '', viewport?: { width: number; height:
 }
 
 async function abrirLuta(page: Page, cfg: Record<string, unknown>): Promise<void> {
-  await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: ${JSON.stringify(cfg)} }); }`);
+  await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: ${JSON.stringify(cfg)} }); (${SEM_PROVOCACAO})(h); }`);
   await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 30_000 });
   for (let i = 0; i < 200; i++) {
     if ((await hook(page, '(h) => { h.avancar(2); return h.mundo().game.phase; }')) === 'fight') break;

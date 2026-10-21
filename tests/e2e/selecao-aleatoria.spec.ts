@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { GRADE_DE_PRODUCAO } from './_chefe';
+import { SEM_PROVOCACAO } from './_luta';
 
 /*
  * Seleção (2026-10-21, três pedidos do dono): a casa ALEATÓRIA ("RANDOM") da grade de 10, a etiqueta do jogador (VOCÊ...) que cobria o rosto e a tipografia nova.
@@ -423,7 +424,7 @@ test.describe('A casa aleatória (RANDOM) da grade de 10', () => {
       // P2 escolhe direto o HAYATO; a tela segue para o VS e a luta começa: mesma semente, mesmos lutadores
       await hook(page, '(h) => { const S = h.ui.scene; S.cur[1] = 0; S.key("j"); h.avancar(200); }');
       expect(await hook(page, '(h) => h.ui.name'), 'foi para o VS').toBe('vs');
-      await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: '${id}', c2: 'hayato', cpu: null, esquiva: h.ui.c.regras.esquiva } }); }`);
+      await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', { cfg: { mode: 'versus', c1: '${id}', c2: 'hayato', cpu: null, esquiva: h.ui.c.regras.esquiva } }); (${SEM_PROVOCACAO})(h); }`);
       await page.waitForFunction(() => (window as any).__inno.ui.scene.espera?.pronta === true, undefined, { timeout: 30_000 });
       await hook(page, '(h) => h.avancar(150)');
       const fim = await hook(

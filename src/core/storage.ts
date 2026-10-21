@@ -7,6 +7,8 @@ import {
   type ArmazenamentoV1,
   type Configuracoes,
   type PreferenciaCinematica,
+  PROVOCACOES_VALIDAS,
+  type PreferenciaProvocacoes,
 } from './contratos';
 import { progressoVazio, sanearProgresso } from '../meta/progresso';
 import { REGRAS_PADRAO } from '../meta/regras';
@@ -58,6 +60,11 @@ export function sanearConfiguracoes(bruto: unknown): Configuracoes {
   const cine = bruto['cinematica'];
   if (typeof cine === 'string' && (CINEMATICAS_VALIDAS as readonly string[]).includes(cine)) {
     r.cinematica = cine as PreferenciaCinematica;
+  }
+  // PROVOCAÇÕES: campo aditivo da v2 (sem bump). Valor desconhecido/lixo -> ausente (= padrão 'ligadas'); save antigo sem o campo segue igual.
+  const prov = bruto['provocacoes'];
+  if (typeof prov === 'string' && (PROVOCACOES_VALIDAS as readonly string[]).includes(prov)) {
+    r.provocacoes = prov as PreferenciaProvocacoes;
   }
   const ctl = bruto['controles'];
   if (ehObjeto(ctl)) {

@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { CHEFE, DESCRICAO_DO_ARCADE, GRADE_DE_PRODUCAO, PULAR_ENTRADA, urlComChefe } from './_chefe';
+import { SEM_PROVOCACAO } from './_luta';
 
 /*
  * E4/E5/Z2 — Arcade, seleção (3x3 + a CASA DE HONRA do chefão) e desbloqueio, no jogo REAL de 10 lutadores (AMINU, CENTELLA, CAMILLE, NILA e
@@ -216,6 +217,7 @@ test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (tecla
       await page.waitForTimeout(700);
       await page.keyboard.press('Enter');
       await esperarCena(page, 'fight', 20_000);
+      await hook(page, SEM_PROVOCACAO); // a provocação (balões) é outro assunto: o gancho de teste a desliga (spec da provocação, auditoria da P2)
       await page.waitForFunction(() => (window as any).__inno.mundo().game.phase === 'fight', undefined, { timeout: 20_000 });
       // o rival cai com poucos golpes; o chefão tem 2 barras e uma Dança no meio (fase 'cena-chefe'): derruba a 2ª também
       const fotografado = new Set<string>();

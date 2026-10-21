@@ -3,6 +3,19 @@
 Marcos do InnoFighters, do mais recente para o mais antigo. Datas e hashes vêm do `git log` (fuso -03:00).
 Os nomes de fase (F0, E1a, E3 S2...) são os de `PLANO.md` e `docs/plano-expansao.md`.
 
+## 2026-10-21: chefão ZENON ARGYROS, esquiva, cinemática do especial e balanço (`0684548`)
+
+- **Chefão final ZENON** (`CHEFE = 'zenon'`, `src/meta/regras.ts`): 10º lutador (`IDS_LUTADORES`, 10 ids). Luta em duas barras de 50, cena da fase 2 de 90 ticks, trilha da valsa 3/4 (`TRILHAS.chefe`, 138 bpm; +12% na fase 2), armadura nos golpes fortes da fase 2, projétil SELO com altura de nascimento própria (`alturaDoProjetil`).
+- **Dreno de energia** (`Golpe.drenaEnergia`): TRIBUTO e DECRETO tiram energia do rival no acerto e no bloqueio. Dado inválido falha no boot (`src/data/montar.ts`).
+- **Entrada dramática do chefão:** 156 ticks na primeira luta de cada Arcade, 60 depois de um continue. Pulável por ataque ou ESP de um humano a partir do tick 10. Não chama o motor: o lock-step não muda.
+- **Fase 2 e arena:** a aura e a arena `gr` sobem de 0 a 1 pelo estado da luta (`rampaDaFase2`), não por evento.
+- **Grade de 10:** casa de honra (256x44) embaixo da 3x3 para o chefão. A vitrine encolhe só quem passa de escala 1,1 (`escalaDeVitrine`).
+- **BAATAR virou lutador comum** (5º da fila), por decisão do dono em 2026-10-21. A Dança da Águia virou só a entrada e a vitória dele.
+- **Esquiva** (`ESQUIVA_PADRAO`, custo 20, janela invulnerável): teclas N (P1) e O (P2), L1/L2 no controle, botão ESQ no toque. Ligada em `Regras.esquiva`.
+- **Cinemática do especial:** COMPLETA (48 ticks) e CURTA (20 ticks), com identidade visual por especial (`src/render/identidade-especiais.ts`). Padrão COMPLETA; CURTA com `prefers-reduced-motion`.
+- **Balanço:** `npm run balanco` com `docs/balanco/` (100 sementes, NORMAL e DIFÍCIL). ZENON jogável com 52,9% de vitória geral. Chefão sem esquiva: 31,4% (NORMAL) e 19,1% (DIFÍCIL). A rodada com esquiva (produção) está fora do git.
+- **Correção:** o import duplicado de `separarFundidas` em `ferramentas/sprites/executar.mjs` não está mais no HEAD. `npm test`: 66 arquivos, 1475 testes verdes.
+
 ## 2026-10-21: elenco de 9 lutadores no jogo (`c7437c1`)
 
 - **E3 S3, S4, S5** (Vega): mecânicas da CENTELLA (RESORTE e HURACANRANA), da CAMILLE (PARADE, contragolpe e REVERS) e da NILA (VADIVU, troca de postura GAJA/SARPA).
@@ -62,12 +75,14 @@ Os nomes de fase (F0, E1a, E3 S2...) são os de `PLANO.md` e `docs/plano-expansa
 
 - **Expansão** (2026-10-20): elenco aprovado (AMINU, CENTELLA, CAMILLE, NILA; chefão BAATAR); ordem de desbloqueio; 1ª zerada do Arcade libera o próximo da fila e o chefão; escada de 5 rivais mais o chefão; chefão em round único com duas barras; máximo de uma mecânica nova por lutador. Lista completa em `PROGRESSO.md`.
 - **Repositório público** (2026-10-21): fica público até a entrada no EasyPanel.
+- **Chefão** (2026-10-21): o chefão final é o ZENON. O BAATAR vira lutador comum (5º da fila), e a Dança da Águia vira só entrada e vitória dele, sem provocação (`src/render/apresentacao-lutadores.ts`).
+- **Cinemática** (2026-10-21): padrão COMPLETA; CURTA se o aparelho pede menos movimento (`src/render/cinematica.ts`).
 
 ## Pendente (não entregue)
 
-- **E6, balanceamento:** harness de frame data e simulação em construção (`ferramentas/balanco/`, ainda não commitado; `docs/balanco/` ainda não existe). Os números do BAATAR e da AMINU são provisórios.
-- **E7, celular:** portão de desempenho com o chefão em cena e 9 retratos.
+- **E6, balanceamento:** harness commitado e `docs/balanco/` existe, mas a referência versionada é sem esquiva. Falta a rodada de produção (com esquiva) versionada e as decisões de `PROGRESSO.md`, "Decisões em aberto".
+- **E7, celular:** revisão do ZENON e da grade de 10 em aparelho real. Medido só em navegador emulado.
 - **E8, segurança e deploy:** revisão do saneamento do storage v2 pelo Órion; publicação com rollback pelo Vulcano; documentação (esta fase).
 - **F4, celular e PWA**, **F5, QA**, **F6, deploy definitivo** no EasyPanel, **F7, documentação final**.
-- **Não provado:** som, gamepad em aparelho real, iOS e Safari (`PROGRESSO.md`, F1).
-- **Quebrado no estado atual:** `npm run sprites` (import duplicado em `ferramentas/sprites/executar.mjs:15`). E `npm test` com 2 falhas em `tests/unit/gamepad.test.ts`, por alteração não commitada.
+- **Não provado:** som (nenhuma receita do chefão foi ouvida; só as chamadas foram conferidas), gamepad em aparelho real, iOS e Safari, `prefers-reduced-motion` em aparelho real.
+- **Conhecido, não corrigido:** nomes de especiais que estouram o painel da seleção (13 de 30); `scale` 1,36 do ZENON encosta 2 a 4,5 px nos nomes do HUD na pose de vitória (`PROGRESSO.md`).

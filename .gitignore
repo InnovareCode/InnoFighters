@@ -4,7 +4,7 @@
 node_modules/
 
 # D5: arte bruta fora do git (backup em nuvem). sprites/ vira arte-fonte/ na F0.
-sprites/
+/sprites/
 arte-fonte/
 dist/
 
@@ -13,3 +13,6 @@ playwright-report/
 test-results/
 coverage/
 *.tsbuildinfo
+
+# F2: saida do pipeline de sprites (atlas gerados; a F3 decide o que entra em public/assets)
+sprites-gerados/

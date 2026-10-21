@@ -1,0 +1,8 @@
+{
+  "_doc": "Excecoes por lutador ao padrao do pipeline. ponta: { pose: 'cima'|'direita' } sobrescreve MODO_PONTA (poses.mjs).",
+  "hayato": {
+    "ponta": {
+      "sb2": "cima"
+    }
+  }
+}

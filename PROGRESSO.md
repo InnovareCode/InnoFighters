@@ -1,11 +1,12 @@
 # InnoFighters — Progresso
 
-Atualizado em 2026-10-20 por Atlas.
+Atualizado em 2026-10-21 por Atlas.
 
-## Estado atual
-- Protótipo importado do artefato "Inno Fighters" (claude.ai) para `prototipo/inno-fighters-artefato.html` (9,1 MB, arquivo único, sem alterações).
-- Plano de transformação pronto: `PLANO.md` (Nova). Nada implementado ainda.
-- Painel de missões ligado (prefixo `INNOFIGHTERS`, id público PM-VG9U). Repositório git iniciado, sem commits.
+## Estado atual (2026-10-21)
+- Código na `main` do GitHub (commit `3af66cc`): F1 porte fiel, logo, E1 a E4 da expansão, E3 S0+S1a (contratos C3 e primitiva do chefão, só em teste; produção segue com 4 lutadores e CHEFE null), persistência por ondas (ids desconhecidos preservados, `hi = max(v1, v2)`), UI pós-E3 (FASE 2! só na etapa `troca`, `spSeg`, render por ficha). 434 testes unitários, e2e 70 passam. Site de teste no GitHub Pages.
+- Arte: ver o bloco "Arte em 2026-10-21" abaixo. Saldo Runway: 176 créditos.
+- Em andamento: F2 pipeline de sprites (Vega), curadoria e correção das folhas (Apolo). Seguem: E3 S1b a S5, E5 a E8, F3.
+- Regra do dono (2026-10-21): TODO trabalho abre missão no painel e vai para o agente competente, sem exceção. O Atlas só executa o que os agentes não alcançam (ex.: MCP da Runway).
 
 ## Concluído
 - Importação do protótipo.
@@ -81,6 +82,12 @@ Atualizado em 2026-10-20 por Atlas.
 - Permissão do dono (2026-10-20): o Atlas salva sozinho em `arte-fonte/` SÓ arquivos novos, com a versão no nome, nunca sobrescrevendo; continua parando para o OK do dono na imagem-mestra e na folha 1 de cada lutador.
 - Observação para o Apolo: os prompts 3 a 5 mandam anexar DUAS imagens (mestra e folha 1); a lição do WEI LONG diz que duas anexadas podem fazer o modelo devolver a referência. Testar no Runway com tags e verificar.
 - Regra de gasto: seguir a ordem de `docs/prompts/00-indice.md`, informar o saldo a cada lote e parar antes de zerar. Nada de gerar sem o dono saber.
+
+### Arte em 2026-10-21 (tudo em `arte-fonte/lutadores/<id>/folhas/`, nomes com versão; os prompts agora vêm de `docs/prompts-arte.md` + `ferramentas/prompts/montar-prompts.mjs`, nunca editar `docs/prompts/` à mão)
+- HAYATO completo (mestra A2 + f1 a f4; f2 v2 com nocaute espelhado por código). Os 4 novos têm mestra + f1 a f4 geradas; as 3 folhas dos novos que o Apolo mandou CORRIGIR foram devolvidas a ele para correção por código (espelhar "arremessado no ar" da CENTELLA f2 e da NILA f2, apagar linha de chão da CAMILLE f2 e traços da CAMILLE f4 e da NILA f2, juntar NILA f1: respiração da v1 + andar da v2). AMINU: f2 v2 (nocaute espelhado), f3 v2 regerada (corda só na mão de trás, jab com punho nu, soco agachado de fato agachado), f4 aprovada.
+- BAATAR: mestra aprovada pelo dono em 2026-10-21 (`baatar-mestra-v1.png`); folhas B1 a B9 (3x2) geradas e salvas, em curadoria do Apolo.
+- Lições novas: o modelo desenha linha de chão e traços de movimento mesmo com "NO effects" (detectar por contagem de componentes: tem que dar 12, ou 6 nas folhas do BAATAR); a pose "arremessado no ar" sai com a cabeça à direita (conferir como o nocaute); "crouching X" pode sair de pé (comparar alturas); em golpe de jab o modelo enfaixa os dois punhos (dizer "the BARE lead fist"); respiração de 4 quadros quase iguais só se acha medindo o topo da cabeça por figura; versões da mesma folha vêm em escalas diferentes (normalizar cada uma pela própria referência); cuidado ao copiar a URL assinada das imagens (um caractere errado dá 401).
+- Ressalvas aceitas (decisão do dono se quiser refazer): chute em salto do AMINU e da NILA f4 saiu como joelhada; vitória do AMINU com o punho erguido sem corda; luva aberta da CAMILLE na rasteira; agachado pouco profundo da CENTELLA f2.
 
 ## Hospedagem de teste — GitHub Pages TEMPORÁRIO (decisão do dono em 2026-10-20)
 - Site público de teste em `https://innovarecode.github.io/InnoFighters/`, atualizado a cada push na `main` por `.github/workflows/pages.yml` (`npm run build -- --base=/InnoFighters/`). Repositório e site são PÚBLICOS.

@@ -11,6 +11,8 @@ import type {
 } from '../core/contratos';
 import { INPUT_VAZIO } from '../core/contratos';
 import { clamp, lerp } from '../core/math';
+import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
+import { ESQUIVA_PADRAO, type TrechoEsquiva } from '../data/esquiva';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
 import type { CargaDef, ConfigChefe, GolpeMontado, NomeGolpe, ReboteDef } from '../data/tipos';
@@ -35,8 +37,13 @@ export type EstadoIa = {
   chain: number;
   /** (dica `carga`) ticks restantes segurando ESP (`spSeg`) depois do primeiro. 0 = não segura. */
   segurar: number;
-  /** (dica `defesa-projetil`) golpe a soltar quando o projétil que a CPU viu estiver chegando; `espera` em ticks. */
-  reacao: { golpe: NomeGolpe; espera: number } | null;
+  /**
+   * (dica `defesa-projetil`/`defesa`) golpe a soltar quando o projétil/golpe que a CPU viu estiver chegando; `espera` em ticks.
+   * Variante da ESQUIVA: `esquiva` = 1 (avanço) ou -1 (recuo), apertada depois de `espera` ticks.
+   */
+  reacao: { golpe: NomeGolpe; espera: number } | { esquiva: 1 | -1; espera: number } | null;
+  /** (ESQUIVA) `esquivaId` do rival cuja recuperação a CPU já considerou punir (um sorteio por esquiva). */
+  puniuEsquiva: number;
 };
 export type PlanoIa = Partial<Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp', boolean>> & { dur?: number };
 
@@ -49,9 +56,14 @@ export interface PartidaParaLutador {
   lancarProjetil(f: Fighter, mv: GolpeMontado, i: number, n: number): void;
   /** Queda no chão após ser derrubado (onKnock: tremor + poeira). */
   aoCair(f: Fighter): void;
+  /**
+   * ESQUIVA ligada nesta partida (`ConfigPartida.esquiva`). Opcional: dublê de teste sem o campo = desligada. Desligada, o `Fighter`
+   * ignora `inp.esq` ANTES de qualquer conta (nenhum estado, energia, `deny` ou RNG).
+   */
+  readonly esquivaLigada?: boolean;
 }
 
-const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null });
+const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0 });
 
 /** Nível (1..3) de uma carga com `carga` ticks segurados: o maior i+1 tal que carga >= niveis[i]. */
 function nivelDaCarga(def: CargaDef, carga: number): 1 | 2 | 3 {
@@ -109,6 +121,13 @@ export class Fighter {
   /** REVERS (S4, golpe `through`): sentido em que a corrida anda (o `facing` do início) e o `mt` em que cruzou o rival (−1 = ainda não). */
   private dirCorrida: 1 | -1 = 1;
   private cruzouEm = -1;
+  /** ESQUIVA (V2): sentido (1 = avanço, -1 = recuo), tick dentro dela, botão guardado (ticks restantes) e golpes/projéteis já "esquivados". */
+  private esqDir: 1 | -1 = -1;
+  private esqT = 0;
+  private bufEsq = 0;
+  /** Quantas esquivas este lutador já começou (a CPU rival usa para punir cada recuperação uma vez). Zera em `reset`. */
+  esquivaId = 0;
+  private readonly esquivados = new Set<string>();
 
   x = 0;
   y = GROUND;
@@ -182,6 +201,10 @@ export class Fighter {
   get id(): IdLutador {
     return this.ch.id;
   }
+  /** C3 `LutadorLeitura.esquiva`: 1 = avanço, -1 = recuo, 0 = não está esquivando. */
+  get esquiva(): 0 | 1 | -1 {
+    return this.state === 'esquiva' ? this.esqDir : 0;
+  }
   /** Compatível com LutadorLeitura.cpu. */
   get pdy(): number {
     return this.pose.dy;
@@ -215,6 +238,14 @@ export class Fighter {
     this.reboteTicks = 0;
     this.cruzouEm = -1;
     this.dirCorrida = this.facing;
+  }
+
+  private zerarEsquiva(): void {
+    this.esqDir = -1;
+    this.esqT = 0;
+    this.bufEsq = 0;
+    this.esquivaId = 0;
+    this.esquivados.clear();
   }
 
   /**
@@ -260,6 +291,7 @@ export class Fighter {
     this.cenaPendente = false;
     this.zerarCarga();
     this.zerarMovimentoE3();
+    this.zerarEsquiva();
     this.maxHp = this.cfgChefe ? this.cfgChefe.hpPorBarra : this.ch.hp;
     this.hp = this.maxHp;
     this.hpShown = this.hp;
@@ -370,7 +402,7 @@ export class Fighter {
     const o = this.opp;
     if (!o || o.untouchable || o.stun > 0) return false;
     if (Math.abs(o.x - this.x) >= (golpe?.agarrao?.alcance ?? 108)) return false;
-    const noChao = o.grounded && ['idle', 'walk', 'crouch', 'land', 'prejump', 'dash', 'move'].includes(o.state);
+    const noChao = o.grounded && ['idle', 'walk', 'crouch', 'land', 'prejump', 'dash', 'move', 'esquiva'].includes(o.state);
     const alvo = golpe?.agarrao?.alvo ?? 'chao';
     if (alvo === 'chao') return noChao;
     const noAr = !o.grounded && Math.abs(o.y - this.y) < 120 && (o.state === 'jump' || o.state === 'move');
@@ -395,7 +427,18 @@ export class Fighter {
     if (this.grounded) this.vx = 0;
     if (mv.cost) {
       this.en -= mv.cost;
-      jogo.emitir({ tipo: 'special', lutador: this.indice, pitch: this.ch.pitch });
+      // V1 (cinemática): o evento leva o golpe, a ficha e a apresentação (quadro/entrada/momento); o som continua o de sempre.
+      const ap = apresentacaoDoEspecial(this.ch.id, this.ficha, name);
+      jogo.emitir({
+        tipo: 'special',
+        lutador: this.indice,
+        pitch: this.ch.pitch,
+        golpe: name,
+        ficha: this.ficha,
+        momento: ap?.momento ?? 'inicio',
+        ...(ap ? { quadro: ap.quadro } : {}),
+        ...(ap?.entrada ? { entrada: ap.entrada } : {}),
+      });
     } else {
       jogo.emitir({ tipo: 'swing', lutador: this.indice, golpe: mv.kind === 'punch' ? 'punch' : 'kick' });
     }
@@ -450,6 +493,11 @@ export class Fighter {
       }
     }
     if (this.armor > 0) this.armor--;
+    // ESQUIVA: o botão fica guardado `buffer` ticks. Com a flag desligada nada disto roda (ignorado antes de qualquer conta).
+    if (jogo.esquivaLigada === true) {
+      if (this.bufEsq > 0) this.bufEsq--;
+      if (inp.esq === true) this.bufEsq = ESQUIVA_PADRAO.buffer;
+    }
     const back = this.facing > 0 ? inp.left : inp.right;
     this.holdBack = !!back;
     this.inp = inp;
@@ -460,7 +508,7 @@ export class Fighter {
     const tapped = hdir && hdir !== this.prevH;
     this.prevH = hdir;
     const cm = this.state === 'move' ? this.golpeAtual() : null;
-    const trailing = this.state === 'dash' || (cm && (cm.type === 'rush' || cm.type === 'leap' || cm.type === 'rebote') && this.mt >= cm.S);
+    const trailing = this.state === 'dash' || this.state === 'esquiva' || (cm && (cm.type === 'rush' || cm.type === 'leap' || cm.type === 'rebote') && this.mt >= cm.S);
     if (trailing && this.age % 2 === 0) {
       this.trail.push({ x: this.x, y: this.y, name: this.poseT().name, f: this.facing, life: 10 });
     }
@@ -482,6 +530,9 @@ export class Fighter {
           this.gotHits = 0;
           this.setState(this.grounded ? (inp.down ? 'crouch' : 'idle') : 'jump');
         }
+        return;
+      case 'esquiva': // sem regen (igual ao dash)
+        this.updateEsquiva(jogo);
         return;
       case 'win':
       case 'cena': // Dança da Águia: parado no lugar até o Game devolver o controle
@@ -519,6 +570,8 @@ export class Fighter {
     if (this.grounded) {
       this.facing = opp.x >= this.x ? 1 : -1;
       this.crouching = !!inp.down;
+      // ESQUIVA vem ANTES do buffer de ataque: se as duas coisas saem no mesmo tick, a esquiva vence e zera `buf`.
+      if (jogo.esquivaLigada === true && this.bufEsq > 0 && this.tentarEsquivar(inp, jogo)) return;
       if (this.buf) {
         const nm = this.resolveAttack(this.buf.k, inp);
         this.buf = null;
@@ -579,6 +632,71 @@ export class Fighter {
     }
     this.physics(jogo);
     this.regen();
+  }
+
+  /** A esquiva está na RECUPERAÇÃO (já sem invulnerabilidade; punível por golpe, arremesso e contragolpe)? Para a CPU. */
+  get esquivaPunivel(): boolean {
+    return this.state === 'esquiva' && this.invuln <= 0 && this.esqT >= this.trechoDaEsquiva.invFim;
+  }
+
+  private get trechoDaEsquiva(): TrechoEsquiva {
+    return this.esqDir > 0 ? ESQUIVA_PADRAO.frente : ESQUIVA_PADRAO.tras;
+  }
+
+  /**
+   * Começa a esquiva se há energia (`en >= custo`). Sem energia: um `deny` (o som do especial sem barra), nada é gasto e o botão guardado
+   * é descartado. Frente segurada = avanço; trás, neutro, ↓ ou ↑ = recuo. Devolve true se começou (o tick já andou o 1º passo).
+   */
+  private tentarEsquivar(inp: InputFrame, jogo: PartidaParaLutador): boolean {
+    if (this.en < ESQUIVA_PADRAO.custo) {
+      this.bufEsq = 0;
+      jogo.emitir({ tipo: 'deny', lutador: this.indice });
+      return false;
+    }
+    const frente = this.facing > 0 ? inp.right : inp.left;
+    this.esqDir = frente ? 1 : -1;
+    this.en -= ESQUIVA_PADRAO.custo;
+    this.bufEsq = 0;
+    this.buf = null;
+    this.crouching = false;
+    this.esqT = 0;
+    this.esquivaId++;
+    this.esquivados.clear();
+    this.vx = 0;
+    this.setState('esquiva');
+    const tr = this.trechoDaEsquiva;
+    if (tr.invIni === 0) this.invuln = Math.max(this.invuln, tr.invFim);
+    jogo.emitir({ tipo: 'esquiva', lutador: this.indice, dir: this.esqDir, x: this.x });
+    this.poeira(jogo, this.x - this.facing * 20, 7, 1);
+    this.updateEsquiva(jogo);
+    return true;
+  }
+
+  /**
+   * Um tick da esquiva. Anda `dist` px em `invFim` ticks com velocidade decrescente (v = k·(1 − t/T), integral = dist, escalada por
+   * `spd`), fica invulnerável em [invIni, invFim) e depois só espera a recuperação (vulnerável, sem bloquear). Sem pulo: `y` fixo.
+   */
+  private updateEsquiva(jogo: PartidaParaLutador): void {
+    const tr = this.trechoDaEsquiva;
+    const t = this.esqT;
+    if (t < tr.invFim) {
+      const k = (2 * tr.dist) / (tr.invFim + 1);
+      this.vx = this.esqDir * this.facing * k * (1 - t / tr.invFim) * this.ch.spd;
+    } else this.vx = 0;
+    if (t === tr.invIni && tr.invIni > 0) this.invuln = Math.max(this.invuln, tr.invFim - tr.invIni);
+    this.physics(jogo);
+    this.esqT++;
+    if (this.esqT >= tr.dur) {
+      this.vx = 0;
+      this.setState('idle');
+    }
+  }
+
+  /** Registra (uma vez por golpe/projétil nesta esquiva) que `chave` teria acertado quem está na janela invulnerável. */
+  registrarEsquivada(chave: string): boolean {
+    if (this.esquivados.has(chave)) return false;
+    this.esquivados.add(chave);
+    return true;
   }
 
   regen(): void {
@@ -736,6 +854,8 @@ export class Fighter {
   }
 
   get passing(): boolean {
+    // O AVANÇO da esquiva atravessa o corpo do rival durante todo o movimento (o arranque vulnerável também): sem empurrão.
+    if (this.state === 'esquiva') return this.esqDir > 0 && this.esqT < ESQUIVA_PADRAO.frente.invFim;
     if (this.state !== 'move') return false;
     const mv = this.golpeAtual();
     return !!mv.through && this.mt < mv.S + mv.A + 4;
@@ -813,6 +933,7 @@ export class Fighter {
       baixo: this.isLow(),
       noChao: this.grounded,
       rente: this.state === 'move' && !!this.golpeAtual().rente,
+      ...(this.ch.alturaEmPe !== undefined ? { escalaEmPe: this.ch.alturaEmPe } : {}),
     });
   }
 
@@ -911,6 +1032,15 @@ export class Fighter {
         // devekh0..2 (folha B9) em terços da duração; sem a arte (atlas provisório) cai em `win`/`guard` via getPD
         const dur = this.cfgChefe?.danca.duracao ?? 90;
         P.name = 'devekh' + Math.min(2, Math.floor((this.st * 3) / dur));
+        break;
+      }
+      case 'esquiva': {
+        // janela invulnerável: corpo baixo inclinado (crouch, rot ∓0,12); recuperação: land. Os dois quadros existem em todo atlas.
+        const tr = this.trechoDaEsquiva;
+        if (this.esqT <= tr.invFim) {
+          P.name = 'crouch';
+          P.rot = this.esqDir * 0.12;
+        } else P.name = 'land';
         break;
       }
       case 'win':

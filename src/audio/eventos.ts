@@ -78,6 +78,11 @@ export function sonsDoEvento(ev: EventoLuta): ChamadaSom[] {
       return [{ metodo: 'land', args: [] }];
     case 'troca-ficha':
       return [{ metodo: 'jump', args: [] }];
+    // --- V1: esquiva (só com a flag ligada). Sem método novo: reusa swing e uiSelect ---
+    case 'esquiva':
+      return [{ metodo: 'swing', args: [1] }];
+    case 'esquivou':
+      return [{ metodo: 'uiSelect', args: [1.4] }];
   }
 }
 

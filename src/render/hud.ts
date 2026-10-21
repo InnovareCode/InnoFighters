@@ -29,6 +29,9 @@ export interface OpcoesHud {
 /** Máximo de marcadores de round por lado (a UI oferece 1 a 3; o resto é defesa em profundidade). */
 export const MAX_MARCADORES_ROUND = 5;
 
+/** Corpo (px lógicos) do rótulo "CHEFÃO  000000": 14 dava 10,7 px CSS no celular deitado (E7a); 18 dá 13,7 / 13,0. Só o chefão: as linhas dos lutadores comuns seguem as do protótipo. */
+export const FONTE_ROTULO_CHEFE = 18;
+
 const DOURADO: readonly [string, string] = ['#fff6b0', '#ff9a1a'];
 
 /** Barra de vida, energia, nome, placar e rounds de UM lado. Porte do `bar()` de drawHUD. */
@@ -93,7 +96,8 @@ function desenharLado(
   textoArcade(ctx, nome, ancora, 66, 22, '#fff', '#05060f', alinha);
   const rotulo = ext.chefe === true ? 'CHEFÃO' : p.cpu !== null ? 'CPU' : lado === 1 ? '1P' : '2P';
   const placar = String(p.score).padStart(6, '0');
-  textoArcade(ctx, lado === 1 ? `${rotulo}  ${placar}` : `${placar}  ${rotulo}`, ancora, 11, 14, '#cfe6ff', '#05060f', alinha);
+  const chefao = ext.chefe === true;
+  textoArcade(ctx, lado === 1 ? `${rotulo}  ${placar}` : `${placar}  ${rotulo}`, ancora, chefao ? 12 : 11, chefao ? FONTE_ROTULO_CHEFE : 14, '#cfe6ff', '#05060f', alinha);
 
   if (postura) {
     // postura atual (NILA: GAJA/SARPA), na faixa livre entre o nome e as bolinhas de round

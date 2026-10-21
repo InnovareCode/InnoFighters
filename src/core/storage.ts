@@ -1,10 +1,12 @@
 import {
+  CINEMATICAS_VALIDAS,
   CHAVE_STORAGE,
   CHAVE_STORAGE_LEGADA,
   CHAVE_STORAGE_V2,
   CONFIGURACOES_PADRAO,
   type ArmazenamentoV1,
   type Configuracoes,
+  type PreferenciaCinematica,
 } from './contratos';
 import { progressoVazio, sanearProgresso } from '../meta/progresso';
 import { REGRAS_PADRAO } from '../meta/regras';
@@ -53,6 +55,10 @@ export function sanearConfiguracoes(bruto: unknown): Configuracoes {
   r.time = dentroDe(bruto['time'], TEMPO_VALIDO) ?? r.time;
   r.diff = dentroDe(bruto['diff'], DIFF_VALIDA) ?? r.diff;
   if (typeof bruto['shake'] === 'boolean') r.shake = bruto['shake'];
+  const cine = bruto['cinematica'];
+  if (typeof cine === 'string' && (CINEMATICAS_VALIDAS as readonly string[]).includes(cine)) {
+    r.cinematica = cine as PreferenciaCinematica;
+  }
   const ctl = bruto['controles'];
   if (ehObjeto(ctl)) {
     const limpo: Record<string, string> = {};

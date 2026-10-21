@@ -253,6 +253,13 @@ export type LutadorDef = {
    * se o atlas tem a pose; senão `getPD` segue a cadeia de sempre. Diferente de `alias` (que só entra quando falta).
    */
   poseDaFicha?: Readonly<Record<string, string>>;
+  /**
+   * (E6a) Fração da altura da hurtbox EM PÉ (idle, walk e block em pé) para quem tem o corpo mais baixo que a guarda: a
+   * SARPA (ficha da NILA) mede ~79% da GAJA nesses quadros (`sarpaIdle*`, `sarpaWalk*`, `sarpaBlock`) e a caixa de 96% de SH
+   * deixava projéteis e golpes altos acertando o ar acima da cabeça dela. Ausente = 1 (a caixa de sempre, bit a bit).
+   * Não vale agachado, `rente`, no ar nem em golpe: esses estados usam poses que não mudam de tamanho.
+   */
+  alturaEmPe?: number;
   // --- E3 ---
   /** Golpes extras que nenhuma entrada alcança (ex.: `sResp` da CAMILLE). */
   extras?: Partial<Record<'sResp', Golpe>>;

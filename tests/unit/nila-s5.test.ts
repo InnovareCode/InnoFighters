@@ -139,7 +139,7 @@ describe('S5 · VADIVU: troca de ficha GAJA <-> SARPA', () => {
   it('SARPA tem os golpes fortes e o pow dela (mods por ficha)', () => {
     expect(nila.moves.hp.dmg).toBe(11);
     expect(sarpa.moves.hp.dmg).toBe(7);
-    expect([nila.pow, sarpa.pow]).toEqual([1.1, 0.9]);
+    expect([nila.pow, sarpa.pow]).toEqual([1.18, 0.9]);
     expect(sarpa.id).toBe(nila.id);
   });
 });
@@ -195,13 +195,16 @@ describe('S5 · BOTE: golpe BAIXO `rente` (hurtbox no 3º nível de altura)', ()
     expect(hurtbox({ ...base, rente: false }).h).toBeCloseTo(SH * 0.56, 6);
     const l = pronta();
     l.g.p1.trocarFicha('sarpa');
-    expect(l.g.p1.hurtbox().h).toBeCloseTo(SH * 0.96, 6);
+    // E6a: em pé a SARPA tem a caixa proporcional ao sprite (`alturaEmPe`, 79%), não a de pé da GAJA (e6a-sarpa.test.ts mede a arte).
+    const emPe = SH * 0.96 * (sarpa.alturaEmPe as number);
+    expect(sarpa.alturaEmPe).toBe(0.79);
+    expect(l.g.p1.hurtbox().h).toBeCloseTo(emPe, 6);
     l.frame.p1.sp = true;
     l.passo();
     l.frame.p1.sp = false;
     expect(l.g.p1.hurtbox().h).toBeCloseTo(SH * 0.3, 6);
     l.passo(bote.S + bote.A + bote.R + 5);
-    expect(l.g.p1.hurtbox().h).toBeCloseTo(SH * 0.96, 6);
+    expect(l.g.p1.hurtbox().h).toBeCloseTo(emPe, 6);
   });
 
   it('é golpe baixo: contra o rival em pé defendendo (block) acerta; contra o agachado defendendo (crouchblock) é bloqueado', () => {

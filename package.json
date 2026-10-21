@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:build": "playwright test -c playwright.build.config.ts",
-    "sprites": "node ferramentas/sprites/cli.mjs"
+    "sprites": "node ferramentas/sprites/cli.mjs",
+    "balanco": "node ferramentas/balanco/cli.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

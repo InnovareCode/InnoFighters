@@ -1,24 +1,41 @@
 /*
- * Camada de toque (celular). Porte literal do CSS do protótipo; o HTML está em index.html.
- * --u é a unidade de tamanho: 15% do menor lado da janela.
+ * Camada de toque (celular): controle virtual compacto, no estilo gamepad de console. O HTML está em index.html.
+ * (E7a: o porte literal do protótipo tinha botões de 65 px e um losango que ocupava 66% da altura e cobria a arena; ver
+ * docs/handoff-lyra-e7a.md. Os ids e os data-k continuam os mesmos: #joy, #knob, #pad .hp/.lp/.hk/.lk, #r1, #bp.)
+ *
+ * --m = o MENOR lado da janela (a altura no celular deitado, a largura em pé): tudo escala por ele.
+ * --hit = lado da área de toque de um botão (>= 44 px CSS); o desenho visível é menor que a área de toque (::before).
+ * Esquerda: joystick analógico (base fixa; a zona morta é 25%/35%/30% do raio, em toque.ts).
+ * Direita: aglomerado 2 colunas x 3 linhas, soco à esquerda e chute à direita, leve embaixo e forte no meio:
+ *            [ESQUIVA reservada] [ESP]
+ *            [soco forte      ] [chute forte]
+ *            [soco fraco      ] [chute fraco]
+ * A casa da ESQUIVA (#esq) está vazia de propósito: só guarda o lugar do futuro botão (nada é tocável nela).
  */
-#touch { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 5; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; --u: min(15vh, 15vw); }
+#touch { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 5; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; --m: min(100vh, 100vw); --hit: max(44px, calc(var(--m) * .115)); --joy: calc(var(--m) * .235); --pad-gap: 2px; }
 body.touch #touch { display: block; }
-#joy { position: absolute; pointer-events: auto; touch-action: none; left: calc(3vw + env(safe-area-inset-left,0px)); bottom: calc(10vh + env(safe-area-inset-bottom,0px)); width: calc(var(--u) * 2.1); height: calc(var(--u) * 2.1); border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.06) 0%, rgba(255,255,255,.14) 100%); border: 2px solid rgba(255,255,255,.35); }
-#joy::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from -45deg, transparent 0 20%, rgba(255,255,255,.0) 0) ; }
-#knob { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 0.95); height: calc(var(--u) * 0.95); margin: calc(var(--u) * -0.475) 0 0 calc(var(--u) * -0.475); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.55), rgba(255,255,255,.22)); border: 2px solid rgba(255,255,255,.7); box-shadow: 0 3px 10px rgba(0,0,0,.5); pointer-events: none; }
-#touch .b { position: absolute; pointer-events: auto; touch-action: none; border-radius: 50%; width: calc(var(--u) * 1.05); height: calc(var(--u) * 1.05); display: flex; align-items: center; justify-content: center; font: bold calc(var(--u) * .2) sans-serif; letter-spacing: .5px; color: #fff; border: 2px solid rgba(255,255,255,.7); box-shadow: 0 3px 10px rgba(0,0,0,.5); text-shadow: 0 1px 3px #000; }
-#touch .b.on { transform: scale(.92); filter: brightness(1.4); }
-#pad { position: absolute; right: calc(3vw + env(safe-area-inset-right,0px)); bottom: calc(10vh + env(safe-area-inset-bottom,0px)); width: calc(var(--u) * 3.35); height: calc(var(--u) * 3.35); pointer-events: none; }
-#pad .b { width: calc(var(--u) * 1.05); height: calc(var(--u) * 1.05); flex-direction: column; line-height: 1; }
-#pad .b b { font-size: calc(var(--u) * .46); font-weight: 900; }
-#pad .b i { font-style: normal; font-size: calc(var(--u) * .14); margin-top: calc(var(--u) * .03); letter-spacing: .2px; text-align: center; width: 90%; white-space: normal; }
-#pad .hp { left: calc(var(--u) * 1.15); top: 0; background: rgba(40,190,120,.42); }
-#pad .lp { left: 0; top: calc(var(--u) * 1.15); background: rgba(225,100,185,.42); }
-#pad .hk { left: calc(var(--u) * 2.3); top: calc(var(--u) * 1.15); background: rgba(240,80,80,.42); }
-#pad .lk { left: calc(var(--u) * 1.15); top: calc(var(--u) * 2.3); background: rgba(80,140,250,.42); }
-#r1 { width: calc(var(--u) * 2.4) !important; height: calc(var(--u) * .8) !important; border-radius: calc(var(--u) * .4) !important; right: calc(3vw + env(safe-area-inset-right,0px)); bottom: calc(10vh + var(--u) * 3.5 + env(safe-area-inset-bottom,0px)); background: rgba(250,200,60,.42); font-size: calc(var(--u) * .24) !important; }
-#bp { background: rgba(0,0,0,.4); width: calc(var(--u) * .6) !important; height: calc(var(--u) * .6) !important; font-size: calc(var(--u) * .24) !important; right: calc(2vw + env(safe-area-inset-right,0px)); top: calc(2vh + env(safe-area-inset-top,0px)); }
+
+#joy { position: absolute; pointer-events: auto; touch-action: none; box-sizing: border-box; left: calc(1vw + env(safe-area-inset-left,0px)); bottom: calc(10vh + env(safe-area-inset-bottom,0px)); width: var(--joy); height: var(--joy); border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.03) 0%, rgba(255,255,255,.10) 100%); border: 2px solid rgba(255,255,255,.30); }
+#knob { position: absolute; box-sizing: border-box; left: 50%; top: 50%; width: calc(var(--joy) * .44); height: calc(var(--joy) * .44); margin: calc(var(--joy) * -.22) 0 0 calc(var(--joy) * -.22); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.45), rgba(255,255,255,.16)); border: 2px solid rgba(255,255,255,.55); box-shadow: 0 2px 6px rgba(0,0,0,.4); pointer-events: none; }
+
+#pad { position: absolute; pointer-events: none; right: calc(1.2vw + env(safe-area-inset-right,0px)); bottom: calc(10vh + env(safe-area-inset-bottom,0px)); display: grid; grid-template-columns: repeat(2, var(--hit)); grid-template-rows: repeat(3, var(--hit)); gap: var(--pad-gap); }
+#touch .b { position: relative; box-sizing: border-box; pointer-events: auto; touch-action: none; display: flex; align-items: center; justify-content: center; width: var(--hit); height: var(--hit); font: bold calc(var(--hit) * .24) sans-serif; letter-spacing: .3px; color: #fff; text-shadow: 0 1px 3px #000; }
+/* o desenho do botão: menor que a área de toque, semitransparente */
+#touch .b::before { content: ""; position: absolute; z-index: -1; inset: calc(var(--hit) * .09); border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: var(--cor, rgba(0,0,0,.3)); box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: transform .05s; }
+#touch .b > b, #touch .b > span { position: relative; }
+#pad .b > b { font-size: calc(var(--hit) * .42); font-weight: 900; line-height: 1; }
+#touch .b.on::before { transform: scale(.92); filter: brightness(1.5); }
+#touch #pad .hp { grid-area: 2 / 1; --cor: rgba(40,190,120,.30); }
+#touch #pad .lp { grid-area: 3 / 1; --cor: rgba(225,100,185,.30); }
+#touch #pad .hk { grid-area: 2 / 2; --cor: rgba(240,80,80,.30); }
+#touch #pad .lk { grid-area: 3 / 2; --cor: rgba(80,140,250,.30); }
+#touch #r1 { grid-area: 1 / 2; --cor: rgba(250,200,60,.34); font-size: calc(var(--hit) * .26); }
+#touch #r1::before { inset: calc(var(--hit) * .04); }
+/* casa reservada ao botão de ESQUIVA (ainda não existe): ocupa o lugar, não se vê e não recebe toque */
+#esq { grid-area: 1 / 1; visibility: hidden; pointer-events: none; }
+#touch #bp { position: absolute; --cor: rgba(0,0,0,.35); width: max(44px, calc(var(--m) * .1)); height: max(44px, calc(var(--m) * .1)); right: calc(1.2vw + env(safe-area-inset-right,0px)); top: calc(2vh + env(safe-area-inset-top,0px)); font-size: calc(var(--m) * .04); }
+#touch #bp::before { inset: 14%; }
+
 #rot { display: none; position: fixed; left: 0; right: 0; bottom: 12px; text-align: center; color: #ddd; font: 14px sans-serif; z-index: 4; pointer-events: none; }
 /* DESVIO DO PROTOTIPO: la esta regra vinha ANTES do #rot { display: none }, que a anulava, e o aviso nunca aparecia. Aqui vem depois, como era a intencao. */
 @media (orientation: portrait) { #rot { display: block; } }

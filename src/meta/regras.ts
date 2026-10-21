@@ -23,4 +23,6 @@ export const REGRAS_PADRAO: Regras = {
   chefe: CHEFE,
   tamanhoEscada: TAMANHO_ESCADA,
   travadosNaEscada: true, // ED5: vitrine, da vontade de liberar
+  esquiva: true,
+  cinematica: true,
 };

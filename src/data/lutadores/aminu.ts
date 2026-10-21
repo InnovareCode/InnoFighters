@@ -18,9 +18,10 @@ export const AMINU: LutadorDef = {
   desc: 'Dambe hauçá. Quanto mais paciência, mais pesado o soco.',
   fire: ['#6f7dff', '#eef0ff', '#2b2fa6'],
   accent: '#d9822b',
-  pow: 1.06,
+  // E6b: hp 102 -> 112 e pow 1,06 -> 1,18 (harness: 20,7% de vitória antes).
+  pow: 1.18,
   spd: 0.98,
-  hp: 102,
+  hp: 112,
   jump: 0.92,
   scale: 1.06,
   stride: 12,
@@ -58,6 +59,6 @@ export const AMINU: LutadorDef = {
       vx: 9, dmg: 10, kb: 14, hs: 26, bs: 16, lvl: 'mid', bh: 90, rm: 1, heavy: 1,
     },
   },
-  // Pose de preparação/golpe da MASHI: a arte própria vem na E5; aqui as que qualquer atlas resolve.
+  // Pose de preparação/golpe da MASHI: a arte própria entrou na E5 (atlas de produção); estas são as poses canônicas que todo atlas resolve.
   anim: { sFire: { s: ['hp0'], a: ['hp1'], r: ['hp1', 'hp0'] } },
 };

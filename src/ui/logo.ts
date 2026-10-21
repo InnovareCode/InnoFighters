@@ -23,21 +23,23 @@ type Logo = { art: HTMLCanvasElement; mask: HTMLCanvasElement; tmp: HTMLCanvasEl
 let logoCache: Logo | null = null;
 
 /**
- * Paleta A, "Ouro Forjado" (docs/proposta-expansao.md 1.3): INNO é ouro polido, FIGHTERS é o mesmo metal em
- * brasa. Uma família quente só, um contorno interno só, volume em vinho-ferrugem. É a cor da marca do torneio:
- * não pertence a nenhum lutador e não muda quando o elenco crescer.
+ * Paleta D1, "Cobalto Real" (docs/proposta-logo-paleta-d.md, escolhida pelo dono): INNO é azul-royal escuro metálico com aro
+ * de ouro; FIGHTERS continua em brasa (os stops da paleta A). Um contorno interno só (ouro, o piso do contraste da borda: o aro
+ * TEM que ser claro), contorno externo e volume comuns às duas palavras (índigo profundo), anel do emblema de um tom só (azul).
+ * É a cor da marca do torneio: não pertence a nenhum lutador e não muda quando o elenco crescer. As brasas do título ficam
+ * quentes (são o fogo de FIGHTERS).
  */
 export const PALETA_MARCA = {
   contornoInterno: '#ffe08a',
-  contornoExterno: '#0b0306',
-  volumeLonge: '#0a0204',
-  volumePerto: '#4a0e0c',
-  fioDeLuz: '#fff6dc',
-  brilho: [255, 246, 214] as const,
-  /** Anel do emblema: dourado -> laranja -> dourado. */
-  anel: ['#ffe08a', '#ff8a1e', '#ffe08a'] as const,
-  anelInterno: 'rgba(255,240,200,.55)',
-  halo: 'rgba(255,150,60,.30)',
+  contornoExterno: '#07060f',
+  volumeLonge: '#04040c',
+  volumePerto: '#1b1650',
+  fioDeLuz: '#f2f6ff',
+  brilho: [236, 244, 255] as const,
+  /** Anel do emblema: gelo -> cobalto -> gelo (um tom só). */
+  anel: ['#a8c8ff', '#2f63ff', '#a8c8ff'] as const,
+  anelInterno: 'rgba(205,225,255,.55)',
+  halo: 'rgba(60,110,255,.30)',
   /** Brasas do título e faíscas do impacto do logo: família brasa, sem relação com os lutadores. */
   brasas: ['#ffd27a', '#ff9a3d', '#ff5a12'] as readonly string[],
 } as const;
@@ -46,7 +48,7 @@ type Palavra = { s: string; y: number; size: number; fill: ReadonlyArray<readonl
 const PALAVRAS: readonly Palavra[] = [
   {
     s: 'INNO', y: 150, size: 168, edge: PALETA_MARCA.contornoInterno,
-    fill: [[0, '#fffdf2'], [0.4, '#ffe7a3'], [0.5, '#9a5a12'], [0.55, '#ffcf5c'], [0.82, '#ffb83a'], [1, '#fff0c2']],
+    fill: [[0, '#e8f0ff'], [0.4, '#93b4ff'], [0.5, '#0c2068'], [0.55, '#4f80ff'], [0.82, '#2452e2'], [1, '#aac6ff']],
   },
   {
     s: 'FIGHTERS', y: 262, size: 104, edge: PALETA_MARCA.contornoInterno,

@@ -15,4 +15,6 @@ export type ProjetilLuta = ProjetilLeitura & {
   acc: number;
   /** Derruba ao acertar (kdLast: só o último tiro). */
   kd: boolean;
+  /** V1: chave do golpe que o lançou (`sFire`...). `especial` (herdado de ProjetilLeitura) só existe quando o golpe é de ESPECIAL. */
+  golpe: string;
 };

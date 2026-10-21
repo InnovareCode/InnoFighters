@@ -1,4 +1,6 @@
 - [Curadoria de sprites](project_curadoria_sprites.md) — WEI LONG; novos; BAATAR; NILA f5 (postura no CHARACTER); componentes; chão; cabeça-queixo
 - [Prompts no Runway](project_prompts_runway.md) — docs/prompts é gerado (mude fonte+script); 1 referência; SPACING; KO à esquerda; HAYATO A2
 - [Curadoria de cenários](project_curadoria_cenarios.md) — pés a 84,5% da imagem (não 87%); composição em escala; limpar canto por translação
+- [Logo paleta D (INNO azul)](project_logo_paleta_d.md) — D1 Cobalto Real recomendada; aro claro obrigatório; Vite com paleta em memória
+- [Identidade dos especiais](project_identidade_especiais.md) — 1 estilo exclusivo por lutador; contraste 3:1; lacunas throw/sResp/MASHI
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

@@ -59,16 +59,28 @@ export class Gamepads {
         const mapa = PAD_MAP[i === 0 ? 0 : 1];
         const atual = lerEstadoPad(pad);
         const antes = this.anterior[i === 0 ? 0 : 1];
-        for (const botao of BOTOES) {
-          if (atual[botao] !== !!antes[botao]) {
-            this.teclas.definir(mapa[botao], atual[botao]);
-            if (atual[botao]) this.aoTecla(mapa[botao]);
+        // mais de um botão pode virar a MESMA tecla (R1 e R2 = especial): a tecla fica segurada enquanto QUALQUER um estiver
+        // apertado; tratar cada botão sozinho soltava o especial (e o MASHI da S2, que carrega segurando) ao soltar só um deles
+        for (const tecla of new Set(BOTOES.map((botao) => mapa[botao]))) {
+          const daTecla = BOTOES.filter((botao) => mapa[botao] === tecla);
+          const agora = daTecla.some((botao) => atual[botao]);
+          if (agora !== daTecla.some((botao) => !!antes[botao])) {
+            this.teclas.definir(tecla, agora);
+            if (agora) this.aoTecla(tecla);
           }
         }
         this.anterior[i === 0 ? 0 : 1] = atual;
       });
+      // controle desconectado com botão apertado: solta o que ele segurava (senão o especial fica 'segurado' para sempre)
+      for (let i = Math.min(pads.length, 2); i < 2; i++) this.soltarSlot(i === 0 ? 0 : 1);
     } catch {
       this.quebrado = true;
     }
+  }
+
+  private soltarSlot(i: 0 | 1): void {
+    const antes = this.anterior[i];
+    for (const botao of BOTOES) if (antes[botao]) this.teclas.definir(PAD_MAP[i][botao], false);
+    this.anterior[i] = {};
   }
 }

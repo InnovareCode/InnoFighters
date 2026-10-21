@@ -40,6 +40,10 @@ export type Regras = {
   readonly tamanhoEscada: number;
   /** ED5: lutador ainda travado pode aparecer como rival no Arcade? */
   readonly travadosNaEscada: boolean;
+  /** Esquiva (N / O / L1 / botao ESQ). `false` = o jogo sem ela (4 originais / fidelidade): sem botao, selo nem evento. */
+  readonly esquiva: boolean;
+  /** Cinematica do especial. `false` = nunca roda, nem com a preferencia do jogador em 'completa'. */
+  readonly cinematica: boolean;
 };
 
 /** Uma luta da escada do Arcade. */

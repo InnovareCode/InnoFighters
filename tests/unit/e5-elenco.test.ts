@@ -139,8 +139,8 @@ describe('E5 · escada do Arcade (ED4: 5 rivais + chefão)', () => {
 describe('E5 · BAATAR: ConfigChefe real sobre o atlas real', () => {
   const cfg = LUTADORES.baatar.chefe;
 
-  it('ConfigChefe provisório (E6 fecha): 2 barras de 75, fichas chefe/chefe2, Dança de 90 ticks, bônus 5000', () => {
-    expect(cfg).toEqual({ barras: 2, hpPorBarra: 75, fichaFase1: 'chefe', fichaFase2: 'chefe2', danca: { duracao: 90 }, bonusVitoria: 5000 });
+  it('ConfigChefe (E6b: 2 barras de 40, medido no harness), fichas chefe/chefe2, Dança de 90 ticks, bônus 5000', () => {
+    expect(cfg).toEqual({ barras: 2, hpPorBarra: 40, fichaFase1: 'chefe', fichaFase2: 'chefe2', danca: { duracao: 90 }, bonusVitoria: 5000 });
     expect(Object.keys(real.baatar.fichas).sort()).toEqual(['chefe', 'chefe2']);
   });
 
@@ -150,18 +150,18 @@ describe('E5 · BAATAR: ConfigChefe real sobre o atlas real', () => {
     expect(l.g.stage).toBe('mn');
   });
 
-  it('setup de chefe: P2 com 2 barras de 75, ficha da fase 1, round único e perfil de CPU do chefe', () => {
+  it('setup de chefe: P2 com 2 barras de 40, ficha da fase 1, round único e perfil de CPU do chefe', () => {
     const l = criarLuta({ mode: 'cpu', c1: 'hayato', c2: 'baatar', chefe: true, cpu: 1 }, real);
     const c = l.g.p2;
-    expect([c.barras, c.barrasMax, c.maxHp, c.hp, c.ficha, c.chefe]).toEqual([2, 2, 75, 75, 'chefe', true]);
+    expect([c.barras, c.barrasMax, c.maxHp, c.hp, c.ficha, c.chefe]).toEqual([2, 2, 40, 40, 'chefe', true]);
     expect(l.g.winsNeeded).toBe(1);
     expect(c.perfilIa).toEqual(perfilChefe(1, false));
   });
 
-  it('BAATAR jogável (sem cfg.chefe): 1 barra, hp 118, ficha base', () => {
+  it('BAATAR jogável (sem cfg.chefe): 1 barra, hp 92 (E6b), ficha base', () => {
     const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar' }, real);
     const c = l.g.p2;
-    expect([c.barras, c.barrasMax, c.maxHp, c.ficha, c.chefe]).toEqual([1, 1, 118, null, false]);
+    expect([c.barras, c.barrasMax, c.maxHp, c.ficha, c.chefe]).toEqual([1, 1, 92, null, false]);
   });
 
   it('luta de chefe inteira com a arte real: troca de barra, Dança (devekh0..2 do atlas) e ficha da fase 2 com MERGULHO', () => {
@@ -171,7 +171,7 @@ describe('E5 · BAATAR: ConfigChefe real sobre o atlas real', () => {
     const c = g.p2;
     c.hp = 0;
     expect(g.resolverVidaZerada(c, g.p1)).toBe(false);
-    expect([c.barras, c.hp, c.cenaPendente]).toEqual([1, 75, true]);
+    expect([c.barras, c.hp, c.cenaPendente]).toEqual([1, 40, true]);
     const evs = [];
     for (let i = 0; i < 400 && g.phase !== 'cena-chefe'; i++) evs.push(...l.passo());
     expect(g.phase).toBe('cena-chefe');

@@ -103,11 +103,14 @@ test.describe('camada de toque', () => {
     await expect(page.locator('#rot')).toHaveText('Vire o aparelho para o modo paisagem');
   });
 
-  // Medido no navegador (skill medir-antes-de-afirmar): previsão para u = min(15vh, 15vw).
+  // E7a: controle virtual compacto. Medido no navegador (skill medir-antes-de-afirmar). --m = menor lado da janela;
+  // área de toque do botão = max(44, 0,115 m); joystick = 0,235 m; casa da ESQUIVA reservada (vazia) ao lado do ESP.
+  // Limites de tamanho: nenhum controle passa de 12% da LARGURA da janela (deitado) e os controles juntos cobrem pouco da arena.
+  const LIMITE_LARGURA = 0.12;
   for (const tela of [
     { nome: 'Pixel 7 deitado', width: 915, height: 412 },
-    { nome: 'celular pequeno deitado', width: 667, height: 375 },
     { nome: 'celular largo deitado', width: 844, height: 390 },
+    { nome: 'celular pequeno deitado', width: 667, height: 375 },
   ]) {
     test(`layout dos controles: ${tela.nome} (${tela.width}x${tela.height})`, async ({ page }, info) => {
       test.skip(info.project.name !== 'celular', 'só no celular');
@@ -115,70 +118,106 @@ test.describe('camada de toque', () => {
       await expect(page.locator('#touch')).toBeVisible();
       await expect(page.locator('#rot')).toBeHidden();
 
-      const u = Math.min(0.15 * tela.height, 0.15 * tela.width);
-      const caixa = async (seletor: string) => {
-        const b = await page.locator(seletor).boundingBox();
-        if (!b) throw new Error(`${seletor} sem caixa`);
-        return b;
-      };
+      type Caixa = { x: number; y: number; w: number; h: number };
+      const caixa = (seletor: string): Promise<Caixa> =>
+        page.evaluate((s) => {
+          const r = document.querySelector(s)!.getBoundingClientRect();
+          return { x: r.x, y: r.y, w: r.width, h: r.height };
+        }, seletor);
+      const m = Math.min(tela.width, tela.height);
+      const hit = Math.max(44, 0.115 * m);
       const joy = await caixa('#joy');
       const knob = await caixa('#knob');
-      const botoes = {
-        hp: await caixa('#pad .hp'),
-        lp: await caixa('#pad .lp'),
-        hk: await caixa('#pad .hk'),
-        lk: await caixa('#pad .lk'),
-      };
+      const botoes = { hp: await caixa('#pad .hp'), lp: await caixa('#pad .lp'), hk: await caixa('#pad .hk'), lk: await caixa('#pad .lk') };
       const r1 = await caixa('#r1');
+      const esq = await caixa('#esq');
+      const pad = await caixa('#pad');
       const pausa = await caixa('#bp');
+      const cv = await caixa('canvas#jogo');
 
-      // tamanhos previstos: o CSS do protótipo é content-box com borda de 2px, então a caixa medida soma 4px
-      const B = 4;
-      expect(joy.width).toBeCloseTo(2.1 * u + B, 0);
-      expect(joy.height).toBeCloseTo(2.1 * u + B, 0);
-      expect(knob.width).toBeCloseTo(0.95 * u + B, 0);
-      for (const b of Object.values(botoes)) {
-        expect(b.width).toBeCloseTo(1.05 * u + B, 0);
-        expect(b.height).toBeCloseTo(1.05 * u + B, 0);
-        expect(b.width).toBeGreaterThanOrEqual(44); // alvo de toque mínimo
+      // tamanhos previstos (border-box: a caixa medida é o tamanho calculado)
+      expect(joy.w).toBeCloseTo(0.235 * m, 0);
+      expect(knob.w).toBeCloseTo(0.44 * 0.235 * m, 0);
+      for (const [nome, b] of Object.entries({ ...botoes, r1, esq })) {
+        expect(b.w, nome).toBeCloseTo(hit, 0);
+        expect(b.h, nome).toBeCloseTo(hit, 0);
+        expect(b.w, `${nome}: área de toque mínima`).toBeGreaterThanOrEqual(44);
       }
-      expect(r1.width).toBeCloseTo(2.4 * u + B, 0);
-      expect(r1.height).toBeCloseTo(0.8 * u + B, 0);
-      expect(pausa.width).toBeCloseTo(0.6 * u + B, 0);
+      expect(pausa.w).toBeGreaterThanOrEqual(44);
+      // o desenho visível é MENOR que a área de toque (semitransparente): confere pela caixa do ::before
+      const visual = await page.evaluate(() => {
+        const el = document.querySelector('#pad .hk')!;
+        const s = getComputedStyle(el, '::before');
+        return { largura: parseFloat(s.width), alfa: s.backgroundColor };
+      });
+      expect(visual.largura).toBeLessThan(hit - 4);
+      expect(visual.alfa).toMatch(/rgba\(.*0\.\d+\)/);
 
       // tudo dentro da janela
-      for (const [nome, b] of Object.entries({ joy, ...botoes, r1, pausa })) {
+      for (const [nome, b] of Object.entries({ joy, pad, pausa })) {
         expect(b.x, `${nome} x`).toBeGreaterThanOrEqual(0);
         expect(b.y, `${nome} y`).toBeGreaterThanOrEqual(0);
-        expect(b.x + b.width, `${nome} direita`).toBeLessThanOrEqual(tela.width);
-        expect(b.y + b.height, `${nome} base`).toBeLessThanOrEqual(tela.height);
+        expect(b.x + b.w, `${nome} direita`).toBeLessThanOrEqual(tela.width);
+        expect(b.y + b.h, `${nome} base`).toBeLessThanOrEqual(tela.height);
       }
 
-      // joystick à esquerda, botões à direita; o knob começa centrado no joystick (a menos dos 2px
-      // que a borda de 2px do protótipo desloca: a margem negativa centra a caixa de conteúdo)
-      expect(joy.x + joy.width).toBeLessThan(botoes.lp.x);
-      expect(Math.abs(knob.x + knob.width / 2 - (joy.x + joy.width / 2))).toBeLessThanOrEqual(2.5);
-      expect(Math.abs(knob.y + knob.height / 2 - (joy.y + joy.height / 2))).toBeLessThanOrEqual(2.5);
+      // o knob começa centrado no joystick
+      expect(Math.abs(knob.x + knob.w / 2 - (joy.x + joy.w / 2))).toBeLessThanOrEqual(1);
+      expect(Math.abs(knob.y + knob.h / 2 - (joy.y + joy.h / 2))).toBeLessThanOrEqual(1);
 
-      // losango dos quatro botões sem sobreposição: hp em cima, lk embaixo, lp esquerda, hk direita
-      const sobrepoe = (a: typeof joy, b: typeof joy) =>
-        a.x < b.x + b.width - 0.5 && a.x + a.width - 0.5 > b.x && a.y < b.y + b.height - 0.5 && a.y + a.height - 0.5 > b.y;
-      const lista = Object.entries(botoes);
-      for (let i = 0; i < lista.length; i++) {
-        for (let j = i + 1; j < lista.length; j++) {
-          expect(sobrepoe(lista[i]![1], lista[j]![1]), `${lista[i]![0]} x ${lista[j]![0]}`).toBe(false);
-        }
-      }
-      expect(botoes.hp.y).toBeLessThan(botoes.lp.y);
-      expect(botoes.lk.y).toBeGreaterThan(botoes.lp.y);
+      // ordem do aglomerado: [ESQUIVA][ESP] / [soco forte][chute forte] / [soco fraco][chute fraco]; sem sobreposição de áreas de toque
+      expect(joy.x + joy.w).toBeLessThan(pad.x);
+      expect(esq.x).toBeLessThan(r1.x);
+      expect(Math.abs(esq.y - r1.y)).toBeLessThanOrEqual(1);
+      expect(r1.y + r1.h).toBeLessThanOrEqual(botoes.hk.y + 0.5);
+      expect(botoes.hp.y + botoes.hp.h).toBeLessThanOrEqual(botoes.lp.y + 0.5);
       expect(botoes.lp.x).toBeLessThan(botoes.lk.x);
-      expect(botoes.hk.x).toBeGreaterThan(botoes.lk.x);
+      const sobrepoe = (a: Caixa, b: Caixa) => a.x < b.x + b.w - 0.5 && a.x + a.w - 0.5 > b.x && a.y < b.y + b.h - 0.5 && a.y + a.h - 0.5 > b.y;
+      const todos = { ...botoes, r1, esq };
+      const lista = Object.entries(todos);
+      for (let i = 0; i < lista.length; i++) for (let j = i + 1; j < lista.length; j++) expect(sobrepoe(lista[i]![1], lista[j]![1]), `${lista[i]![0]} x ${lista[j]![0]}`).toBe(false);
+      // a casa da ESQUIVA é só espaço: não recebe toque e nenhum elemento tocável está no ponto dela
+      expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.id ?? '', [esq.x + esq.w / 2, esq.y + esq.h / 2])).not.toMatch(/^(r1|hp|lp|hk|lk)$/);
 
-      // R1 acima do losango, pausa no canto superior direito
-      expect(r1.y + r1.height).toBeLessThan(botoes.hp.y);
-      expect(sobrepoe(r1, botoes.hp)).toBe(false);
-      expect(pausa.y).toBeLessThan(tela.height * 0.1);
-      expect(pausa.x + pausa.width).toBeGreaterThan(tela.width * 0.9);
+      // TAMANHO: % da LARGURA da janela e % da área do jogo (canvas), medidos e limitados
+      const pct = (v: number, total: number) => +((100 * v) / total).toFixed(1);
+      const areaCanvas = cv.w * cv.h;
+      const sobreCanvas = (b: Caixa): number => {
+        const w = Math.max(0, Math.min(b.x + b.w, cv.x + cv.w) - Math.max(b.x, cv.x));
+        const h = Math.max(0, Math.min(b.y + b.h, cv.y + cv.h) - Math.max(b.y, cv.y));
+        return w * h;
+      };
+      const medidas = {
+        janela: `${tela.width}x${tela.height}`,
+        canvas: `${Math.round(cv.w)}x${Math.round(cv.h)} em x=${Math.round(cv.x)}`,
+        joystickCss: Math.round(joy.w),
+        joystickPctLargura: pct(joy.w, tela.width),
+        botaoToqueCss: Math.round(hit),
+        botaoPctLargura: pct(hit, tela.width),
+        aglomeradoCss: `${Math.round(pad.w)}x${Math.round(pad.h)}`,
+        aglomeradoPctLargura: pct(pad.w, tela.width),
+        aglomeradoPctAltura: pct(pad.h, tela.height),
+        joystickSobreArenaPct: pct(sobreCanvas(joy), areaCanvas),
+        aglomeradoSobreArenaPct: pct(sobreCanvas(pad), areaCanvas),
+        controlesSobreArenaPct: pct(sobreCanvas(joy) + sobreCanvas(pad), areaCanvas),
+      };
+      info.annotations.push({ type: 'medido', description: JSON.stringify(medidas) });
+      if (tela.width > tela.height * 1.8) {
+        // telas com margem preta dos lados (16:9 não preenche a janela): é onde o limite vale com folga
+        expect(joy.w / tela.width, 'joystick').toBeLessThanOrEqual(LIMITE_LARGURA);
+        expect(pad.w / tela.width, 'aglomerado').toBeLessThanOrEqual(LIMITE_LARGURA);
+        expect(hit / tela.width, 'botão').toBeLessThanOrEqual(0.06);
+        expect(pad.h / tela.height, 'altura do aglomerado').toBeLessThanOrEqual(0.4);
+        // não cobre o HUD: faixa de cima (retratos/barras, até 100 lógicos) e faixa de baixo (SUPER, a partir de 490 lógicos)
+        const k = cv.w / 960;
+        for (const [nome, b] of Object.entries({ joy, pad, pausa })) {
+          if (sobreCanvas(b) === 0) continue;
+          expect(b.y, `${nome} sobre o HUD de cima`).toBeGreaterThanOrEqual(cv.y + 100 * k);
+          expect(b.y + b.h, `${nome} sobre o HUD de baixo`).toBeLessThanOrEqual(cv.y + 490 * k + 0.5);
+        }
+        // e cobre pouco da arena: junto, no máximo 6% da área do jogo (antes da E7a: ver o handoff)
+        expect((sobreCanvas(joy) + sobreCanvas(pad)) / areaCanvas, 'controles sobre a arena').toBeLessThanOrEqual(0.06);
+      }
 
       await page.screenshot({ path: info.outputPath(`toque-${tela.width}x${tela.height}.png`) });
     });

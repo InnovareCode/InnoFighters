@@ -63,10 +63,11 @@ export const BAATAR: LutadorDef = {
   desc: 'Campeão invicto do bökh. Agarra, esmaga e não se abala com golpes leves.',
   fire: ['#ff4a2e', '#fff0d6', '#9c140f'],
   accent: '#e0402a',
-  // jogável (após ser derrotado): hp 118 · pow 1.18. O modo chefão usa as fichas abaixo e `chefe.hpPorBarra`.
-  pow: 1.18,
+  // jogável (após ser derrotado). E6b: hp 118 -> 92 e pow 1,18 -> 0,90 (harness: 90,3% de vitória com os números da proposta).
+  // O modo chefão usa as fichas abaixo e `chefe.hpPorBarra`.
+  pow: 0.9,
   spd: 0.9,
-  hp: 118,
+  hp: 92,
   jump: 0.8,
   scale: 1.28,
   stride: 16,
@@ -82,10 +83,11 @@ export const BAATAR: LutadorDef = {
   especiais: ESPECIAIS_BAATAR,
   fichas: {
     // Atributos do modo chefão (§3.1). `hp` não vale aqui: o chefe usa `chefe.hpPorBarra`.
-    chefe: { pow: 1.3, spd: 0.82 },
+    // E6b: pow 1,3 -> 1,0 nas duas fases (chefão: jogador-CPU vencia 1% no NORMAL; agora ~25%).
+    chefe: { pow: 1.0, spd: 0.82 },
     // Fase 2: energia mais saturada e o MERGULHO no lugar do ABRAÇO (ED-M5).
     chefe2: {
-      pow: 1.3,
+      pow: 1.0,
       spd: 0.82,
       fire: ['#ff2a10', '#ffe08a', '#c4120a'],
       especiais: { ...ESPECIAIS_BAATAR, sFwd: MERGULHO_DA_AGUIA },
@@ -95,13 +97,13 @@ export const BAATAR: LutadorDef = {
       poseDaFicha: { sc0: 'dive0', sc1: 'dive1' },
     },
   },
-  // Só vale com `ConfigPartida.chefe`. PROVISÓRIOS (E6 fecha com o harness e o dono): `hpPorBarra` 75 (150 no total, os
-  // "50%" do Apolo caem na troca de barra), `danca.duracao` 90 ticks (~1,5 s), `bonusVitoria` 5000 e o perfil de CPU
+  // Só vale com `ConfigPartida.chefe`. E6b: `hpPorBarra` 75 -> 40 (80 no total; medido no harness). Ainda PROVISÓRIOS (a sessão de
+  // jogo do dono fecha): `danca.duracao` 90 ticks (~1,5 s), `bonusVitoria` 5000 e o perfil de CPU
   // (`IA_CHEFE` em src/fight/cpu.ts: +0,15 em react/block; fase 2 com aggr 1 e anti +0,2), que são os valores do doc.
   // O cenário é o `stage` 'mn' (luta-se na casa do rival: contra o chefe, a Estepe do Naadam).
   chefe: {
     barras: 2,
-    hpPorBarra: 75,
+    hpPorBarra: 40,
     fichaFase1: 'chefe',
     fichaFase2: 'chefe2',
     danca: { duracao: 90 },

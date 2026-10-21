@@ -5,30 +5,35 @@ import { pathToFileURL } from 'node:url';
 import { expect, test } from '@playwright/test';
 
 /*
- * Logo novo (paleta A, "Ouro Forjado"): medido no navegador, à parte da comparação com o protótipo
- * (fidelidade-ui.spec.ts desliga logo, emblema e brasas dos dois lados de propósito).
+ * Logo novo (paleta D1, "Cobalto Real", docs/proposta-logo-paleta-d.md seção 4): medido no navegador, à parte da comparação com o
+ * protótipo (fidelidade-ui.spec.ts desliga logo, emblema e brasas dos dois lados de propósito).
  *
- * Mede: (1) só família quente, sem pixel frio; (2) o horizonte de INNO é o marrom-ouro #9a5a12, não cinza;
- * (3) contraste do contorno externo escuro e do contorno interno dourado contra os fundos reais (cenários jp e br
- * sem e com a gradação do título, o fundo do menu e o fundo escuro da abertura); (4) o emblema é de cor única.
+ * Mede: (1) INNO é azul (mais de 50% dos pixels CLAROS dele, sem contorno preto e volume, caem em 195-250 graus) e FIGHTERS não tem
+ * nenhum pixel claro azul (continua brasa); (2) o horizonte de INNO é cobalto saturado (saturação > 0,6, matiz 215-235), não cinza;
+ * (3) contraste da borda POR PALAVRA: 0 pixels abaixo de 3:1 (WCAG 1.4.11) contra os fundos reais (cenários jp e br sem e com a
+ * gradação do título, o fundo do menu e o fundo escuro da abertura); (4) o emblema é de um tom só, azul (matizes 210-235).
  * O logo ANTIGO do protótipo é medido ao lado só para registro (o antigo tinha pixels frios).
  */
 
 const URL_PROTOTIPO = pathToFileURL(resolve('prototipo/inno-fighters-artefato.html')).href;
 test.describe.configure({ timeout: 120_000 });
 
+type Borda = { anel: number; minimo: number; mediana: number; abaixoDe3: number };
 type Resumo = {
-  frios: number;
   opacos: number;
+  /** pixels CLAROS (luminância > 0,03: preenchimento e aro, sem contorno preto e volume) de cada palavra e quantos são azuis (195-250 graus, s > 0,2) */
+  innoClaros: number;
+  innoAzuis: number;
+  fightersClaros: number;
+  fightersAzuis: number;
   horizonte: number;
   contrasteBordas: number;
-  fundos: Array<{ nome: string; anel: number; minimo: number; mediana: number; abaixoDe3: number }>;
-  emblemaFrios: number;
+  fundos: Array<{ nome: string; inno: Borda; fighters: Borda }>;
   emblemaOpacos: number;
   emblemaMatizes: number[];
 };
 
-test('logo Ouro Forjado: só quente, horizonte marrom-ouro e legível sobre jp, br e o fundo escuro', async ({ page, browser }, info) => {
+test('logo Cobalto Real (D1): INNO azul, FIGHTERS brasa, horizonte cobalto e borda legível por palavra sobre jp, br e o fundo escuro', async ({ page, browser }, info) => {
   test.skip(info.project.name !== 'desktop', 'medição só no desktop');
   await page.goto('/?seed=5&manual=1');
   await page.waitForSelector('html[data-pronto]', { timeout: 60_000 });
@@ -70,25 +75,37 @@ test('logo Ouro Forjado: só quente, horizonte marrom-ouro e legível sobre jp, 
     const cg = camada.getContext('2d')!;
     L.desenharLogo(cg, 380, 150, 1, -1);
     const dados = cg.getImageData(0, 0, 760, 300).data;
-    let frios = 0, opacos = 0;
+    // corte entre as palavras: INNO acima, FIGHTERS abaixo (y = 176 na camada de 760x300, como na proposta)
+    const CORTE = 176;
+    let opacos = 0, innoClaros = 0, innoAzuis = 0, fightersClaros = 0, fightersAzuis = 0;
     for (let i = 0; i < dados.length; i += 4) {
       if (dados[i + 3]! < 128) continue;
       opacos++;
+      if (lum(dados[i]!, dados[i + 1]!, dados[i + 2]!) <= 0.03) continue; // contorno preto e volume índigo não contam: só preenchimento e aro
+      const y = Math.floor(i / 4 / 760);
       const { h: mh, s } = matiz(dados[i]!, dados[i + 1]!, dados[i + 2]!);
-      if (s > 0.2 && mh >= 150 && mh <= 300) frios++;
+      const azul = s > 0.2 && mh >= 195 && mh <= 250;
+      if (y < CORTE) {
+        innoClaros++;
+        if (azul) innoAzuis++;
+      } else {
+        fightersClaros++;
+        if (azul) fightersAzuis++;
+      }
     }
-    // horizonte de INNO: linha em que o degradê chega a 50% (y = 150 - 168*0.82 + 0.5*(168*0.82 + 4))
+    // horizonte de INNO: linha em que o degradê chega a 50% (y = 150 - 168*0.82 + 0.5*(168*0.82 + 4)): cobalto saturado, não cinza
     const yHor = Math.round(150 - 168 * 0.82 + 0.5 * (168 * 0.82 + 4));
     let horizonte = 0;
     for (let x = 0; x < 760; x++) {
       const i = (yHor * 760 + x) * 4;
       if (dados[i + 3]! < 250) continue;
-      const d = Math.hypot(dados[i]! - 0x9a, dados[i + 1]! - 0x5a, dados[i + 2]! - 0x12);
-      if (d < 40) horizonte++;
+      const { h: mh, s } = matiz(dados[i]!, dados[i + 1]!, dados[i + 2]!);
+      if (s > 0.6 && mh >= 215 && mh <= 235) horizonte++;
     }
     // contraste entre o contorno interno dourado e o externo escuro (o que segura a leitura sobre qualquer fundo)
-    const LE = lum(0xff, 0xe0, 0x8a);
-    const LO = lum(0x0b, 0x03, 0x06);
+    const hex = (c: string): [number, number, number] => [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16)) as [number, number, number];
+    const LE = lum(...hex(L.PALETA_MARCA.contornoInterno));
+    const LO = lum(...hex(L.PALETA_MARCA.contornoExterno));
     const contrasteBordas = contraste(LE, LO);
 
     // ---- fundos reais ----
@@ -121,7 +138,8 @@ test('logo Ouro Forjado: só quente, horizonte marrom-ouro e legível sobre jp, 
       const B = fg.getImageData(0, 0, W, H).data;
       // anel: pixel de fundo (sem logo) a até 5 px de um pixel do logo
       const alfa = (px: number, py: number): number => (px < 0 || py < 0 || px >= W || py >= H ? 0 : A[(py * W + px) * 4 + 3]!);
-      const razoes: number[] = [];
+      const corte = y + (CORTE - 150) * sc; // linha entre as palavras no fundo
+      const razoes: { inno: number[]; fighters: number[] } = { inno: [], fighters: [] };
       for (let py = 0; py < H; py++) {
         for (let px = 0; px < W; px++) {
           if (alfa(px, py) > 0) continue;
@@ -131,17 +149,14 @@ test('logo Ouro Forjado: só quente, horizonte marrom-ouro e legível sobre jp, 
           const i = (py * W + px) * 4;
           const Lb = lum(B[i]!, B[i + 1]!, B[i + 2]!);
           // o contorno externo escuro encosta no fundo; o dourado vem logo dentro: vale o melhor dos dois
-          razoes.push(Math.max(contraste(Lb, LO), contraste(Lb, LE)));
+          razoes[py < corte ? 'inno' : 'fighters'].push(Math.max(contraste(Lb, LO), contraste(Lb, LE)));
         }
       }
-      razoes.sort((a, b) => a - b);
-      saida.push({
-        nome,
-        anel: razoes.length,
-        minimo: razoes[0] ?? 0,
-        mediana: razoes[Math.floor(razoes.length / 2)] ?? 0,
-        abaixoDe3: razoes.filter((v) => v < 3).length,
-      });
+      const resumir = (v: number[]): Borda => {
+        v.sort((p, q) => p - q);
+        return { anel: v.length, minimo: v[0] ?? 0, mediana: v[Math.floor(v.length / 2)] ?? 0, abaixoDe3: v.filter((r) => r < 3).length };
+      };
+      saida.push({ nome, inno: resumir(razoes.inno), fighters: resumir(razoes.fighters) });
       // foto composta para inspeção visual
       const foto = novo();
       const fo = foto.getContext('2d')!;
@@ -155,18 +170,17 @@ test('logo Ouro Forjado: só quente, horizonte marrom-ouro e legível sobre jp, 
     const eg = em.getContext('2d')!;
     L.desenharEmblema(eg, 240, 240, 132, 77, 1);
     const E = eg.getImageData(0, 0, 480, 480).data;
-    let emFrios = 0, emOpacos = 0;
+    let emOpacos = 0;
     const matizes: number[] = [];
     for (let i = 0; i < E.length; i += 4) {
       if (E[i + 3]! < 40) continue;
       emOpacos++;
       const { h: mh, s } = matiz(E[i]!, E[i + 1]!, E[i + 2]!);
-      if (s > 0.2 && mh >= 150 && mh <= 300) emFrios++;
       if (s > 0.2) matizes.push(mh);
     }
     matizes.sort((a, b) => a - b);
     return {
-      frios, opacos, horizonte, contrasteBordas, fundos: saida, emblemaFrios: emFrios, emblemaOpacos: emOpacos,
+      opacos, innoClaros, innoAzuis, fightersClaros, fightersAzuis, horizonte, contrasteBordas, fundos: saida, emblemaOpacos: emOpacos,
       emblemaMatizes: [matizes[0] ?? 0, matizes[matizes.length - 1] ?? 0],
       fotos,
     };
@@ -204,10 +218,14 @@ test('logo Ouro Forjado: só quente, horizonte marrom-ouro e legível sobre jp, 
     return v;
   })();
 
+  const pct = (n: number, d: number): string => (d ? ((100 * n) / d).toFixed(0) : '0') + '%';
   const resumo = [
-    `novo: ${r.opacos} px opacos, ${r.frios} frios; horizonte #9a5a12 em ${r.horizonte} px da linha; contraste dourado/escuro ${r.contrasteBordas.toFixed(1)}:1`,
-    ...r.fundos.map((f) => `${f.nome}: anel ${f.anel} px, pior ${f.minimo.toFixed(2)}:1, mediana ${f.mediana.toFixed(2)}:1, abaixo de 3:1 = ${f.abaixoDe3}`),
-    `emblema: ${r.emblemaOpacos} px, ${r.emblemaFrios} frios, matizes ${r.emblemaMatizes.map((v) => v.toFixed(0)).join('..')}`,
+    `novo: ${r.opacos} px opacos; INNO ${r.innoAzuis}/${r.innoClaros} claros azuis (${pct(r.innoAzuis, r.innoClaros)}); FIGHTERS ${r.fightersAzuis}/${r.fightersClaros} claros azuis; horizonte cobalto em ${r.horizonte} px da linha; contraste ouro/escuro ${r.contrasteBordas.toFixed(1)}:1`,
+    ...r.fundos.map(
+      (f) =>
+        `${f.nome}: INNO pior ${f.inno.minimo.toFixed(2)}:1 med ${f.inno.mediana.toFixed(2)}:1 <3:1 = ${f.inno.abaixoDe3} (anel ${f.inno.anel}); FIGHTERS pior ${f.fighters.minimo.toFixed(2)}:1 med ${f.fighters.mediana.toFixed(2)}:1 <3:1 = ${f.fighters.abaixoDe3} (anel ${f.fighters.anel})`,
+    ),
+    `emblema: ${r.emblemaOpacos} px, matizes ${r.emblemaMatizes.map((v) => v.toFixed(0)).join('..')}`,
     `antigo (protótipo): ${antigo.opacos} px opacos, ${antigo.frios} frios`,
   ].join('\n');
   info.annotations.push({ type: 'logo', description: resumo });
@@ -219,23 +237,27 @@ test('logo Ouro Forjado: só quente, horizonte marrom-ouro e legível sobre jp, 
     for (const [nome, png] of Object.entries(r.fotos)) writeFileSync(resolve(pasta, `logo_${nome.replace(/\W+/g, '_')}.png`), Buffer.from(png.split(',')[1]!, 'base64'));
   }
 
-  // (1) família quente única
+  // (1) INNO é azul (mais da metade dos pixels claros dele) e FIGHTERS continua brasa (nenhum pixel claro azul)
   expect(r.opacos).toBeGreaterThan(20_000);
-  expect(r.frios, 'pixels frios (azul/ciano/roxo) no logo').toBe(0);
-  // o antigo tinha o cromo azulado; a medição tem que enxergar a diferença
+  expect(r.innoClaros).toBeGreaterThan(5000);
+  expect(r.innoAzuis / r.innoClaros, 'fração de pixels claros de INNO na faixa 195-250 graus').toBeGreaterThan(0.5);
+  expect(r.fightersClaros).toBeGreaterThan(3000);
+  expect(r.fightersAzuis, 'pixels claros azuis em FIGHTERS').toBe(0);
+  // o antigo tinha o cromo azulado com horizonte cinza; a medição tem que enxergar o azul do protótipo
   expect(antigo.frios).toBeGreaterThan(1000);
-  // (2) o horizonte de INNO é ouro escuro, não cinza-ardósia
+  // (2) o horizonte de INNO é cobalto saturado (s > 0,6, matiz 215-235), não cinza-ardósia
   expect(r.horizonte).toBeGreaterThan(40);
-  // (3) legibilidade
-  expect(r.contrasteBordas).toBeGreaterThan(7);
+  // (3) legibilidade: borda com 3:1 ou mais, por palavra, em todos os fundos (o aro claro é o piso)
+  expect(r.contrasteBordas).toBeGreaterThan(15);
   for (const f of r.fundos) {
-    expect(f.anel, `${f.nome}: sem anel`).toBeGreaterThan(500);
-    expect(f.abaixoDe3, `${f.nome}: pixels do contorno com menos de 3:1 contra o fundo (pior ${f.minimo.toFixed(2)})`).toBe(0);
-    expect(f.mediana, `${f.nome}: mediana`).toBeGreaterThan(4);
+    for (const [palavra, b] of [['INNO', f.inno], ['FIGHTERS', f.fighters]] as const) {
+      expect(b.anel, `${f.nome} ${palavra}: sem anel`).toBeGreaterThan(250);
+      expect(b.abaixoDe3, `${f.nome} ${palavra}: pixels do contorno com menos de 3:1 contra o fundo (pior ${b.minimo.toFixed(2)})`).toBe(0);
+      expect(b.mediana, `${f.nome} ${palavra}: mediana`).toBeGreaterThan(4);
+    }
   }
-  // (4) emblema de cor única (matiz entre vermelho-alaranjado e amarelo), e desenhado de verdade
+  // (4) emblema de um tom só, azul (matizes entre 210 e 235 graus), e desenhado de verdade
   expect(r.emblemaOpacos).toBeGreaterThan(3000);
-  expect(r.emblemaFrios).toBe(0);
-  expect(r.emblemaMatizes[0]).toBeGreaterThanOrEqual(15);
-  expect(r.emblemaMatizes[1]).toBeLessThanOrEqual(60);
+  expect(r.emblemaMatizes[0]).toBeGreaterThanOrEqual(210);
+  expect(r.emblemaMatizes[1]).toBeLessThanOrEqual(235);
 });

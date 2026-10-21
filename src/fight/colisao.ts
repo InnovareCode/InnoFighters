@@ -16,7 +16,11 @@ export type PartesDaCaixaDeDano = {
   noChao: boolean;
   /** (E3 S5) Golpe `rente` em curso (BOTE da NILA): terceiro nível de altura, abaixo do agachado. */
   rente?: boolean;
+  /** (E6a) `LutadorDef.alturaEmPe`: multiplica a altura da caixa EM PÉ (idle, walk, block). Ausente = a caixa padrão. */
+  escalaEmPe?: number;
 };
+
+const ESTADOS_EM_PE: ReadonlySet<string> = new Set(['idle', 'walk', 'block']);
 
 /**
  * Caixa de dano. Caído/KO: faixa larga rente ao chão; senão 76 px de largura, 96% de SH em pé, 56% agachado, 30% `rente`
@@ -24,7 +28,8 @@ export type PartesDaCaixaDeDano = {
  * 148 px, não passa).
  */
 export function hurtbox(f: PartesDaCaixaDeDano): Retangulo {
-  const top = f.rente ? SH * 0.3 : f.baixo ? SH * 0.56 : SH * 0.96;
+  let top = f.rente ? SH * 0.3 : f.baixo ? SH * 0.56 : SH * 0.96;
+  if (f.escalaEmPe !== undefined && !f.rente && !f.baixo && ESTADOS_EM_PE.has(f.state)) top *= f.escalaEmPe;
   if (f.state === 'down' || f.state === 'ko') return { x: f.x - 70, y: f.y - 60, w: 140, h: 60 };
   return { x: f.x - 38, y: f.y - top, w: 76, h: top - (f.noChao ? 0 : 50) };
 }

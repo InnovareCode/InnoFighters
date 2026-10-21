@@ -268,7 +268,7 @@ test.describe('chefão na tela (cenas e HUD de barras)', () => {
     await abrirCena(page, 'fight', { cfg }, 100);
     const roxo = 'b > 150 && r > 60 && r < 235 && g < 150 && b > r + 20';
     const regiaoBarra = [1048, 48, 664, 52] as const; // barra do lado direito (P2), px do canvas real
-    await hook(page, '(h) => { const f = h.mundo().game.p2; f.hp = f.hpShown = 50; f.barras = 2; f.barrasMax = 2; f.chefe = true; h.desenhar(); }');
+    await hook(page, '(h) => { const f = h.mundo().game.p2; f.hp = f.hpShown = f.maxHp / 2; f.barras = 2; f.barrasMax = 2; f.chefe = true; h.desenhar(); }');
     await foto(page, 'e4-hud-2-barras');
     const comDuas = await contar(...regiaoBarra, roxo);
     expect(comDuas).toBeGreaterThan(300);

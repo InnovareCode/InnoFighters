@@ -12,7 +12,7 @@ import { empacotar, validarEmpacotamento } from './empacotar.mjs';
 import {
   acolchoarRgb, agruparFiguras, caixaOpaca, calcularAlfa, centroDeMassaX, cortarBorda, cortarRgba, despill, detectarChave,
   espelharRgba, estimarFundo, janelaRgba, mascaraDeAlfa, medirHalo, montarManifesto, ordenarGrade, pontaCima, pontaDireita,
-  recortarFigura, rostoDoQuadro, rotular, separarFundidas, separarFundidas,
+  recortarFigura, rostoDoQuadro, rotular, separarFundidas,
 } from './nucleo.mjs';
 import { COM_PONTA, FAIXA_DOS_PES, FRACAO_PE, GRADE_PADRAO, MINIMAS, MODO_PONTA, ORDEM_COMPLETA, nomesDaCelula, resolverLayout } from './poses.mjs';
 

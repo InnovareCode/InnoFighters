@@ -26,11 +26,23 @@ export function regrasExpansao(): Regras {
     chefe: REGRAS_PADRAO.chefe,
     tamanhoEscada: REGRAS_PADRAO.tamanhoEscada,
     travadosNaEscada: REGRAS_PADRAO.travadosNaEscada,
+    esquiva: REGRAS_PADRAO.esquiva,
+    cinematica: REGRAS_PADRAO.cinematica,
   };
 }
 
 /** `?expansao=4`: o jogo de 4 lutadores (sem fila nem chefão). */
 export function regrasDeQuatro(): Regras {
   const quatro = [...INICIAIS_DE_FABRICA];
-  return { roster: quatro, iniciais: quatro, fila: [], chefe: null, tamanhoEscada: REGRAS_PADRAO.tamanhoEscada, travadosNaEscada: true };
+  // Fidelidade com o protótipo: sem esquiva nem cinemática (spec esquiva/cinemática, B14).
+  return {
+    roster: quatro,
+    iniciais: quatro,
+    fila: [],
+    chefe: null,
+    tamanhoEscada: REGRAS_PADRAO.tamanhoEscada,
+    travadosNaEscada: true,
+    esquiva: false,
+    cinematica: false,
+  };
 }

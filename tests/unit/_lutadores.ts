@@ -4,6 +4,7 @@ import type { IdLutador } from '../../src/core/contratos';
 import { manifestoParaPoses, type ManifestoAtlas } from '../../src/data/atlas';
 import { LUTADORES, ROSTER } from '../../src/data/lutadores';
 import { montarLutador, type LutadorMontado } from '../../src/data/montar';
+import type { LutadorDef, ModsGolpes } from '../../src/data/tipos';
 import { paraManifestoV1, validarManifesto } from '../../src/assets/manifesto';
 import type { ManifestoC1 } from '../../src/assets/tipos';
 
@@ -35,6 +36,21 @@ export function lerManifesto(id: string): ManifestoAtlas {
  */
 export const ORIGINAIS_COM_ATLAS_DE_PROTOTIPO: readonly IdLutador[] = ['hayato', 'min-ji'];
 
+/**
+ * Dados ORIGINAIS dos 4 do protótipo (hp, pow, mods): `tests/fixtures/dados-prototipo/originais.json`. Desde a E6b a produção
+ * (`src/data/lutadores`) foi afastada deles para equilibrar o jogo; o oráculo (dados.test, luta-fidelidade, snapshot CPU x CPU)
+ * segue comparando o motor com o protótipo montando os 4 com ESTES números. Lutadores fora do arquivo (os 5 novos) não têm
+ * oráculo: usam a definição de produção.
+ */
+export type DadosOriginais = Record<string, { hp: number; pow: number; mods: ModsGolpes }>;
+export const DADOS_ORIGINAIS: DadosOriginais = JSON.parse(readFileSync(caminho('tests/fixtures/dados-prototipo/originais.json'), 'utf8')) as DadosOriginais;
+
+/** A definição do lutador com os números do protótipo por cima (se ele tem oráculo); senão, a de produção. */
+export function defDoOraculo(id: IdLutador): LutadorDef {
+  const o = DADOS_ORIGINAIS[id];
+  return o ? { ...LUTADORES[id], hp: o.hp, pow: o.pow, mods: o.mods } : LUTADORES[id];
+}
+
 function manifestoParaMontar(id: IdLutador, arteReal: boolean): ManifestoAtlas {
   if (!arteReal && ORIGINAIS_COM_ATLAS_DE_PROTOTIPO.includes(id)) {
     const arquivo = caminho(`tests/fixtures/atlas-prototipo/${id}/atlas.json`);
@@ -43,9 +59,16 @@ function manifestoParaMontar(id: IdLutador, arteReal: boolean): ManifestoAtlas {
   return lerManifesto(id);
 }
 
-/** Os lutadores do ROSTER montados a partir dos atlas.json (mesmo caminho do jogo, v1 e v2); ver `ORIGINAIS_COM_ATLAS_DE_PROTOTIPO`. */
-export function montarTodos(opcoes: { arteReal?: boolean } = {}): Record<IdLutador, LutadorMontado> {
+/**
+ * Os lutadores do ROSTER montados a partir dos atlas.json (mesmo caminho do jogo, v1 e v2). PADRÃO = o ORÁCLE: atlas original de
+ * HAYATO/MIN-JI (`ORIGINAIS_COM_ATLAS_DE_PROTOTIPO`) e dados originais dos 4 (`defDoOraculo`). `arteReal: true` = atlas de produção;
+ * `dadosDeProducao: true` = os números balanceados do jogo.
+ */
+export function montarTodos(opcoes: { arteReal?: boolean; dadosDeProducao?: boolean } = {}): Record<IdLutador, LutadorMontado> {
   const r = {} as Record<IdLutador, LutadorMontado>;
-  for (const id of ROSTER) r[id] = montarLutador(LUTADORES[id], manifestoParaPoses(manifestoParaMontar(id, opcoes.arteReal === true)));
+  for (const id of ROSTER) {
+    const def = opcoes.dadosDeProducao === true ? LUTADORES[id] : defDoOraculo(id);
+    r[id] = montarLutador(def, manifestoParaPoses(manifestoParaMontar(id, opcoes.arteReal === true)));
+  }
   return r;
 }

@@ -7,3 +7,5 @@
 - [E3 S3-S5 CENTELLA/CAMILLE/NILA](project_e3_s3_s5.md) — fidelidade trava TYPE_ANIM, activeMove é o portão da caixa, through não cruza, combo ignora ia, flag por tick
 - [E5 ligação de dados](project_e5_ligacao_dados.md) — 9 ids, atlas novo só canônico (ponte jpunch), "produção=4" quebra testes
 - [NILA f5 + HAYATO/MIN-JI arte nova](project_nila_f5_hayato_minji.md) — folhasExtras, pe:fração, fatorFolha medido (f2/f3 NILA destoam), fixture do atlas original p/ oráculo
+- [E6a harness de balanço + SARPA](project_e6a_harness_balanco.md) — npm run balanco, --ajustes "e se", o que move a taxa, fidelidade dos originais, bug do sprites
+- [E6b balanceamento + V1/V2 esquiva](project_e6b_v1v2.md) — fixture dos 4 originais como oráculo, campos opcionais nos eventos, CPU da esquiva

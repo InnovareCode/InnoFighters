@@ -1,0 +1,36 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CPU x CPU com esquiva (fumaça e snapshot) > CPU x CPU de 6000 ticks, semente 42, COM esquiva, tem resultado fixo (regressão; o snapshot antigo SEM esquiva fica no fight.test.ts) 1`] = `
+{
+  "contagem": {
+    "block": 32,
+    "dust": 182,
+    "esquiva": 13,
+    "esquivou": 4,
+    "hit": 41,
+    "jump": 20,
+    "ko": 2,
+    "land": 33,
+    "projectile": 15,
+    "round": 6,
+    "special": 25,
+    "swing": 98,
+    "throw": 1,
+  },
+  "fase": "matchend",
+  "hp": [
+    0,
+    1,
+  ],
+  "round": 2,
+  "tick": 5716,
+  "wins": [
+    0,
+    2,
+  ],
+  "x": [
+    783.233,
+    595.279,
+  ],
+}
+`;

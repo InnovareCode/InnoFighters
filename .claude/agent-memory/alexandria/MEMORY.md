@@ -1,0 +1,2 @@
+- [Docs do InnoFighters](project_docs-innofighters.md) — onde ficam as docs, convenções e o que é gerado
+- [Verificar antes de documentar](feedback-alexandria-verificar.md) — comandos que precisam ser rodados; o que a suíte não cobre

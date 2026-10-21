@@ -1,1 +1,2 @@
+- [C1 cinematica/esquiva](project_c1-cinematica-esquiva.md) — Configuracoes.cinematica? ausente por padrao; UI resolve; Regras.esquiva/cinematica
 - [Progresso v2 / storage](project_progresso-v2.md) — E2: chave inno-fighters-v2, src/meta puro, rollback, v>2/corrompida, saneamento (Orion)

@@ -11,10 +11,13 @@ import { usarArteDoPrototipo } from './_jp-prototipo';
  * pixel a pixel. Só o sorteio visual (pétalas, brasas) difere por natureza: o estado sorteado do jogo
  * novo é copiado para o protótipo antes de desenhar.
  *
- * EXCEÇÃO INTENCIONAL (paleta A, "Ouro Forjado"): o logo, o emblema e as brasas do título mudaram de propósito. Dos dois
+ * EXCEÇÃO INTENCIONAL (logo da marca: paleta D1 "Cobalto Real", antes A "Ouro Forjado"): o logo, o emblema e as brasas do título mudaram de propósito. Dos dois
  * lados esses três elementos são desligados (protótipo: drawLogo/drawEmblem viram no-ops e EMBERS fica vazio; jogo novo:
  * `marca.*` vira no-op e a lista de brasas é esvaziada), então TODO o resto continua comparado pixel a pixel, sem
  * máscara que esconda outras regiões. O logo novo é medido à parte em logo.spec.ts.
+ *
+ * SEGUNDA EXCEÇÃO INTENCIONAL (decisão 17 do dono): o "Como jogar" não cita mais a tecla H (caixas de colisão, debug). No protótipo
+ * trocamos só essa frase (initScript do beforeAll); a tecla H continua valendo no jogo.
  *
  * Os nomes dos campos das cenas foram mantidos de propósito, então o mesmo trecho de código (`codigo`)
  * roda dos dois lados com S = cena, U = navegador/UI, G = partida, SET = configurações.
@@ -76,7 +79,7 @@ const CASOS: Caso[] = [
   { nome: 'final do arcade: sem recorde', cena: 'ending', args: { run: run(3, 0, 800) }, t: 75, hi: 5000 },
   { nome: 'luta: ROUND 1', cena: 'fight', args: { cfg: cfgVs }, ticks: 20, t: 20 },
   { nome: 'luta: FIGHT!', cena: 'fight', args: { cfg: cfgVs }, ticks: 100, t: 100 },
-  { nome: 'luta: cpu, tempo e rounds', cena: 'fight', args: { cfg: { mode: 'cpu', c1: 'hayato', c2: 'min-ji', cpu: 0 } }, ticks: 50, t: 50, codigo: 'G.p1.hp = 60; G.p1.hpShown = 80; G.p2.en = 70;' },
+  { nome: 'luta: cpu, tempo e rounds', cena: 'fight', args: { cfg: { mode: 'cpu', c1: 'hayato', c2: 'min-ji', cpu: 0 } }, ticks: 50, t: 50, codigo: 'G.p1.hp = G.p1.maxHp * 0.6; G.p1.hpShown = G.p1.maxHp * 0.8; G.p2.en = 70;' },
   { nome: 'luta: treino com dica', cena: 'fight', args: { cfg: cfgTreino }, ticks: 60, t: 60 },
   { nome: 'pausa: menu', cena: 'fight', args: { cfg: cfgVs }, ticks: 110, t: 110, codigo: 'S.paused = true; S.view = "main";' },
   { nome: 'pausa: menu com 3º item', cena: 'fight', args: { cfg: cfgVs }, ticks: 110, t: 110, codigo: 'S.paused = true; S.view = "main"; S.m.sel = 2;' },
@@ -231,6 +234,16 @@ test.describe('fidelidade das telas: ui/ novo x protótipo (pixel a pixel)', () 
     // o protótipo não pode andar sozinho entre uma captura e outra: o teste dá cada tick
     await proto.addInitScript(() => {
       window.requestAnimationFrame = () => 0;
+      // EXCECAO INTENCIONAL (decisao 17 do dono): o 'Como jogar' deixou de citar a tecla H (caixas de colisao, debug). O protótipo
+      // ainda a cita; trocamos SÓ essa frase no protótipo, sem máscara, e o resto da tela segue comparado pixel a pixel.
+      const ANTIGA = 'ESC ou P — pausar     M — mudo     F — tela cheia     H — mostrar caixas de colisão (debug)';
+      const NOVA = 'ESC ou P — pausar     M — mudo     F — tela cheia';
+      for (const metodo of ['fillText', 'strokeText'] as const) {
+        const original = CanvasRenderingContext2D.prototype[metodo];
+        CanvasRenderingContext2D.prototype[metodo] = function (this: CanvasRenderingContext2D, t: string, ...r: [number, number, number?]) {
+          return original.call(this, t === ANTIGA ? NOVA : t, ...r);
+        };
+      }
     });
     await proto.goto(URL_PROTOTIPO);
     await proto.waitForFunction(() => !!(window as any).SF && (window as any).SF.UI.ready, undefined, { timeout: 60_000 });

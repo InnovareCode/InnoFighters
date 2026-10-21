@@ -27,6 +27,8 @@ const REGRAS: Regras = {
   chefe: BOSS,
   tamanhoEscada: 5,
   travadosNaEscada: true,
+  esquiva: true,
+  cinematica: true,
 };
 
 const prog = (p: Partial<Progresso> = {}): Progresso => ({ ...progressoVazio(), ...p });

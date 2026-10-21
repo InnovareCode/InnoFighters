@@ -8,7 +8,7 @@ import type { Poses } from '../../src/data/tipos';
 import { Efeitos } from '../../src/render/efeitos';
 import { desenharHUD } from '../../src/render/hud';
 import { chDaFicha, desenharLutador } from '../../src/render/lutador';
-import { posturaDe } from '../../src/render/postura';
+import { ETIQUETA_POSTURA, posturaDe } from '../../src/render/postura';
 import type { Ctx } from '../../src/render/tela';
 
 /*
@@ -224,5 +224,61 @@ describe('HUD: postura da NILA (GAJA/SARPA)', () => {
 
   it('a NILA no lado 2 também mostra a postura', () => {
     expect(textosDoHud(lutador('hayato', 0, null), lutador('nila', 1, 'sarpa'))).toContain('SARPA');
+  });
+});
+
+describe('HUD: legibilidade no celular deitado (E7a)', () => {
+  // menor tela deitada medida: 844x390 -> o canvas 960x540 vira 693x390 CSS (0,722 por px lógico); alvo ~12 px CSS
+  const ESCALA_MIN = 390 / 540;
+  const poses: Poses = { guard: { x: 8, y: 8, w: 289, h: 410, ax: 137 }, idle0: { x: 8, y: 8, w: 289, h: 410, ax: 137 } };
+  const elenco = {
+    nila: { ch: montarLutador(NILA, poses), arte: { retrato: () => null } },
+    baatar: { ch: montarLutador(BAATAR, poses), arte: { retrato: () => null } },
+  } as unknown as Elenco;
+  const lutador = (id: string, indice: 0 | 1, extra: Partial<LutadorLeitura>): LutadorLeitura =>
+    ({
+      id, indice, x: 300, y: 470, facing: 1, state: 'idle', pose: { name: 'idle0', dx: 0, dy: 0, sx: 1, sy: 1, rot: 0, glow: 0, flip: 1 },
+      move: null, mt: 0, hp: 100, maxHp: 100, hpShown: 100, en: 0, flash: 0, invuln: 0, age: 0, score: 0, wins: 0, maxCombo: 0, dmgTaken: 0,
+      combo: { hits: 0, dmg: 0, t: 0 }, trail: [], cpu: null, barras: 1, barrasMax: 1, chefe: false, ficha: null, nivelCarga: 0, ...extra,
+    }) as unknown as LutadorLeitura;
+
+  /** Corpo (px lógicos) com que cada texto foi desenhado. */
+  function fontes(a: LutadorLeitura, b: LutadorLeitura): Map<string, number> {
+    const vistas = new Map<string, number>();
+    const estado: Record<string, unknown> = {};
+    const ctx = new Proxy(estado, {
+      get(_, n: string) {
+        if (n === 'measureText') return () => ({ width: 10 });
+        if (n === 'createLinearGradient' || n === 'createRadialGradient') return () => ({ addColorStop: () => undefined });
+        if (n === 'fillText') return (t: string) => vistas.set(t, parseFloat(/([\d.]+)px/.exec(String(estado['font']))?.[1] ?? '0'));
+        return estado[n] ?? (() => undefined);
+      },
+      set(_, n: string, v) {
+        estado[n] = v;
+        return true;
+      },
+    }) as unknown as CanvasRenderingContext2D;
+    const luta = {
+      fighters: [a, b], projectiles: [], timer: 99, timerMax: 99, round: 1, winsNeeded: 2, cam: { z: 1, x: 480 }, phase: 'fight', t: 100, tick: 100,
+      shake: 0, hitstop: 0, mode: 'arcade', training: false, stage: 'jp', winner: null, matchWinner: null, matchDone: false, perfect: false,
+      trainInfo: { hits: 0, dmg: 0 }, events: [],
+    } as unknown as LeituraLuta;
+    desenharHUD(ctx, luta, elenco);
+    return vistas;
+  }
+
+  it('etiqueta GAJA/SARPA e rótulo CHEFÃO passam de 12 px CSS na menor tela deitada; a etiqueta cabe antes das bolinhas', () => {
+    const f = fontes(lutador('nila', 0, {}), lutador('baatar', 1, { chefe: true, barras: 2, barrasMax: 2 }));
+    expect((f.get('GAJA') ?? 0) * ESCALA_MIN).toBeGreaterThanOrEqual(12);
+    expect((f.get('000000  CHEFÃO') ?? 0) * ESCALA_MIN).toBeGreaterThanOrEqual(12);
+    expect((f.get('×2') ?? 0) * ESCALA_MIN).toBeGreaterThanOrEqual(12);
+    // lado 1: etiqueta de 236 a 236+w; a bolinha mais à esquerda de 3 rounds começa em 424-2*20-7 = 377
+    expect(236 + ETIQUETA_POSTURA.w).toBeLessThan(377);
+  });
+
+  it('as linhas dos lutadores comuns seguem as do protótipo (14 px): fidelidade pixel a pixel', () => {
+    const f = fontes(lutador('nila', 0, {}), lutador('baatar', 1, {}));
+    expect(f.get('000000  CPU') ?? f.get('000000  2P')).toBe(14);
+    expect(f.get('1P  000000')).toBe(14);
   });
 });

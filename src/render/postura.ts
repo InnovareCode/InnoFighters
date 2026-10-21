@@ -19,8 +19,13 @@ const VISUAL: Readonly<Record<Postura, { rotulo: string; cor: string; fundo: str
   sarpa: { rotulo: 'SARPA', cor: '#7dffb0', fundo: '#04301b' },
 };
 
-/** Largura e altura da etiqueta (px lógicos). */
-export const ETIQUETA_POSTURA = { w: 88, h: 24 } as const;
+/**
+ * Largura e altura da etiqueta e corpo do texto (px lógicos). Medido no celular deitado (E7a): o canvas 960x540 vira 732x412 CSS em
+ * 915x412 (x0,76) e 693x390 em 844x390 (x0,72); com 14 px lógicos o nome da postura ficava com 10,7 / 10,1 px CSS, abaixo dos
+ * ~12 px legíveis. Com 18 fica com 13,7 / 13,0.
+ */
+export const ETIQUETA_POSTURA = { w: 112, h: 30 } as const;
+export const FONTE_POSTURA = 18;
 
 function iconeGaja(ctx: Ctx, cx: number, cy: number, cor: string): void {
   // cabeça de perfil olhando para a direita: orelha grande, tromba caída e presa
@@ -84,7 +89,7 @@ export function desenharPostura(ctx: Ctx, postura: Postura, x: number, y: number
   ctx.lineWidth = 2;
   ctx.strokeStyle = v.cor;
   ctx.stroke();
-  (postura === 'gaja' ? iconeGaja : iconeSarpa)(ctx, x + 15, y + h / 2, v.cor);
-  textoArcade(ctx, v.rotulo, x + 29, y + h / 2 + 1, 14, '#fff', '#05060f', 'left');
+  (postura === 'gaja' ? iconeGaja : iconeSarpa)(ctx, x + 17, y + h / 2, v.cor);
+  textoArcade(ctx, v.rotulo, x + 33, y + h / 2 + 1, FONTE_POSTURA, '#fff', '#05060f', 'left');
   ctx.restore();
 }

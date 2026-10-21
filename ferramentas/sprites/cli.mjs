@@ -55,6 +55,11 @@ function lerArgumentos(argv) {
 }
 
 async function principal() {
+  if (process.argv.slice(2).some((t) => t === '--ajuda' || t === '-h' || t === '--help')) {
+    // Só imprime o uso e sai: não lê folhas, não carrega o `sharp` além do import e não grava nada (o teste de fumaça usa isto).
+    console.log('uso: npm run sprites -- <id> [--folhas f1,f4] [--folha f2=arq.png] [--espelhar f2:pose] [--saida <pasta>] [--altura-ref n] [--escala n] [--tolerancia n] [--sem-contato]');
+    return;
+  }
   const a = lerArgumentos(process.argv.slice(2));
   const saida = a.saida ?? join(RAIZ, 'sprites-gerados', a.id);
   if (/public[\\/]assets/.test(saida)) throw new Error('recuso gravar em public/assets: gere em sprites-gerados/ e a integracao (F3) copia');

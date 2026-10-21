@@ -1,4 +1,5 @@
 - [Arquitetura do MVP](project_arquitetura-mvp.md) — Vite+TS+Canvas 2D (porte), Pixi como plano B; decisões D1–D9 pendentes em PLANO.md
 - [Plano da expansão](project_plano-expansao.md) — chave storage -v2 (rollback), lista explícita de desbloqueados, chefão por bloco `chefe`, carga sob demanda
 - [Mecânicas da E3](project_mecanicas-e3.md) — primitiva x parâmetro, 4 primitivas, cortes (CORDAS, MARMA), C2 spSeg, ED-M1..10
+- [Esquiva e cinemática do especial](project_esquiva-cinematica.md) — esquiva no motor com flag; cinemática só na UI; DD1–DD5 pendentes
 - [Armadilhas da arte e do protótipo](project_armadilhas-arte.md) — linha 320 de 9 MB, tipX já escalado, chave magenta, FX rosa MIN-JI

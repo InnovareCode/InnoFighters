@@ -8,6 +8,7 @@ import { LUTADORES, ROSTER } from '../../src/data/lutadores';
 import { montarLutador } from '../../src/data/montar';
 import { ALIAS, FALLBACK, NEEDS_TILT, getPD, hasPose } from '../../src/data/poses';
 import { TEM_PROTOTIPO, diferencas, posedataOriginal, trecho, type Obj } from './_prototipo';
+import { defDoOraculo } from './_lutadores';
 
 /**
  * Prova de fidelidade (nível: executado contra o protótipo real): roda no Node os trechos de
@@ -51,7 +52,8 @@ describe.skipIf(!TEM_PROTOTIPO)('src/data == protótipo', () => {
 
   // lutadores novos (sem idPrototipo) não existem no protótipo: só quem tem entra na prova de fidelidade
   for (const id of ROSTER) {
-    const def = LUTADORES[id];
+    // Oráculo: os números do PROTÓTIPO (tests/fixtures/dados-prototipo), não os balanceados de produção (E6b).
+    const def = defDoOraculo(id);
     const f = def.idPrototipo;
     if (!f) continue;
 

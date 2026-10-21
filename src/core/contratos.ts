@@ -22,6 +22,13 @@ export type InputFrame = {
    * (`segurada.has(mapa.sp)`); a CPU não precisa preencher.
    */
   spSeg?: boolean;
+  /**
+   * ESQUIVA (docs/spec-esquiva-e-cinematica-especial.md A1): borda de descida do botão dedicado (teclado `n`/`o`, L1/L2, botão ESQ
+   * no toque). A direção vem do estado segurado: frente = avanço; trás, neutro, ↓ ou ↑ = recuo. Opcional de propósito: ausente =
+   * false, então os quadros do protótipo e a CPU antiga seguem iguais. Só vale com `ConfigPartida.esquiva` ligada; desligada, o
+   * motor ignora o campo antes de qualquer conta.
+   */
+  esq?: boolean;
 };
 
 export const INPUT_VAZIO: Readonly<InputFrame> = Object.freeze({
@@ -36,6 +43,15 @@ export const INPUT_VAZIO: Readonly<InputFrame> = Object.freeze({
   sp: false,
 });
 
+/**
+ * Preferência do jogador para a cinemática do especial (spec esquiva/cinemática, C4/B14).
+ * 'completa' = animação premium inteira; 'curta' = versão reduzida; 'desligada' = sem cinemática.
+ */
+export const CINEMATICAS_VALIDAS = ['completa', 'curta', 'desligada'] as const;
+export type PreferenciaCinematica = (typeof CINEMATICAS_VALIDAS)[number];
+/** Padrão quando não há preferência salva (decisão do dono). A UI aplica; B15 pode baixar para 'curta' com reduced-motion. */
+export const CINEMATICA_PADRAO: PreferenciaCinematica = 'completa';
+
 /** C4 — configurações salvas. Valores padrão = DEFAULTS do protótipo. */
 export type Configuracoes = {
   music: number;
@@ -45,6 +61,8 @@ export type Configuracoes = {
   diff: number;
   shake: boolean;
   controles?: Record<string, string>;
+  /** Ausente = sem preferência salva (a UI resolve: `CINEMATICA_PADRAO`, ou 'curta' com reduced-motion, B15). */
+  cinematica?: PreferenciaCinematica;
 };
 
 export const CONFIGURACOES_PADRAO: Readonly<Configuracoes> = Object.freeze({
@@ -123,7 +141,9 @@ export type EstadoLutador =
   | 'ko'
   | 'win'
   /** E3: o chefe está na Dança da Águia (cena entre as fases). Nunca ocorre fora de luta de chefe. */
-  | 'cena';
+  | 'cena'
+  /** ESQUIVA: no chão, invulnerável na janela e vulnerável na recuperação. Nunca ocorre com `ConfigPartida.esquiva` desligada. */
+  | 'esquiva';
 
 /**
  * Quadro escolhido por `poseT()` + ajustes de transformação. `name` é o nome do
@@ -200,6 +220,11 @@ export type LutadorLeitura = {
   ficha: string | null;
   /** Nível de carga do MASHI (AMINU, S2): 0 = sem carga. */
   nivelCarga: 0 | 1 | 2 | 3;
+  /**
+   * ESQUIVA: 1 = avanço, -1 = recuo, 0 = não está esquivando (sempre 0 com a esquiva desligada). Invulnerável agora = `invuln > 0`
+   * (já publicado). Opcional no tipo só para não quebrar leituras fabricadas em teste; o `Fighter` sempre publica.
+   */
+  esquiva?: 0 | 1 | -1;
 };
 
 export type EstiloProjetil = 'orb' | 'wave' | 'blade' | 'boomerang';
@@ -219,6 +244,8 @@ export type ProjetilLeitura = {
   sy: number;
   /** Ticks desde o lançamento (animação). */
   frame: number;
+  /** Lançado por um ESPECIAL (golpe cujo nome começa com 's'). Ausente = projétil de golpe comum. A sessão do especial usa. */
+  especial?: true;
 };
 
 export type FaseLuta =
@@ -285,18 +312,39 @@ export type SomImpacto = 'punch' | 'kick' | 'fireballHit';
  *  hit.contraEspecial -> (S4) COUP D'ARRÊT na preparação do rival: o `texto` já vem como "COUP D'ARRÊT!" no lugar de 'COUNTER!'
  *                  (`contragolpe` também é true); a render pode dar efeito próprio. Ausente nos demais acertos.
  *
+ * Eventos da ESQUIVA (V1/V2, só com `ConfigPartida.esquiva` ligada) e campos da cinemática do especial (V1, sempre emitidos):
+ *
+ *  esquiva   -> o lutador começou uma esquiva (`dir` 1 = avanço, -1 = recuo). Poeira em (x, 7, 1), flash curto na cor `fire[0]`, swing(1).
+ *  esquivou  -> um golpe/projétil teria acertado quem está na janela INVULNERÁVEL da esquiva. Uma vez por golpe (atkId) / projétil (id) por
+ *               esquiva. Texto 'ESQUIVOU!' (#bfe9ff, 20) em `lutador` + uiSelect(1.4). Não dá energia nem pontos.
+ *  hit/throw/armor .dano, .especial, .golpe -> cinemática: número de dano e contador de acertos do ESPECIAL (só `hit`/`throw` com `especial`;
+ *               `armor` mostra o `dano` em cinza e não conta; `block`, `parry` e `quebra-guarda` de especial não mostram nada).
+ *  special   -> ver `EventoSpecial`.
+ *
  * O tremor de tela e o hitstop NÃO viajam no evento: ficam em `LeituraLuta.shake` /
  * `.hitstop` (o protótipo os lê/decrementa como estado).
  */
 export type EventoLuta =
   | { tipo: 'swing'; lutador: IndiceLutador; golpe: 'punch' | 'kick' }
-  | { tipo: 'special'; lutador: IndiceLutador; pitch: number }
+  | EventoSpecial
   | { tipo: 'deny'; lutador: IndiceLutador }
   | { tipo: 'jump'; lutador: IndiceLutador }
   | { tipo: 'land'; lutador: IndiceLutador }
   | { tipo: 'dust'; x: number; n: number; power: number }
   | { tipo: 'projectile'; lutador: IndiceLutador; x: number; y: number; style: EstiloProjetil }
-  | { tipo: 'clash'; x: number; y: number }
+  | {
+      tipo: 'clash';
+      x: number;
+      y: number;
+      /**
+       * Só no escudo da GARKUWA (AMINU) que absorveu um projétil: dono do escudo e golpe (`sDown`). Ausente no choque de dois
+       * projéteis. É o SUCESSO que dispara a cinemática desse golpe (`special.momento === 'sucesso'`).
+       */
+      lutador?: IndiceLutador;
+      golpe?: string;
+      quadro?: string;
+      entrada?: EntradaTarja;
+    }
   | {
       tipo: 'block';
       atacante: IndiceLutador;
@@ -306,6 +354,9 @@ export type EventoLuta =
       /** Sentido da rajada de bloqueio (= -facing do atacante). */
       dir: 1 | -1;
       texto: TextoFlutuante | null;
+      /** Defesa de um ESPECIAL: o golpe (chave de ch.moves ou do projétil) e `especial: true`. Sem número, sem contador (B11). */
+      golpe?: string;
+      especial?: true;
     }
   | {
       tipo: 'armor';
@@ -315,6 +366,10 @@ export type EventoLuta =
       y: number;
       snd: SomImpacto;
       texto: TextoFlutuante;
+      /** Vida absorvida pela armadura neste acerto (60% do dano cheio). Mostra-se em cinza e NÃO conta como acerto. */
+      dano?: number;
+      golpe?: string;
+      especial?: true;
     }
   | {
       tipo: 'hit';
@@ -337,8 +392,30 @@ export type EventoLuta =
       texto: TextoFlutuante | null;
       /** E3 (S4): contragolpe especial (ex.: COUP D'ARRÊT na preparação do rival). Ausente = comum. */
       contraEspecial?: boolean;
+      /**
+       * V1 (cinemática do especial): vida tirada por ESTE acerto (= hp do defensor antes − depois, já com escala de combo e
+       * contragolpe; na troca de barra do chefe, o que saiu da barra que acabou). Sempre presente nos eventos do motor.
+       */
+      dano?: number;
+      /** Acerto de especial: golpe corpo a corpo cujo nome começa com 's' (inclusive o FOUETTÉ `sResp`) ou projétil lançado por um. Ausente = golpe comum. */
+      especial?: true;
+      /** Golpe que acertou (chave de ch.moves do atacante; num projétil, o golpe que o lançou). */
+      golpe?: string;
+      /** Nível da carga do MASHI neste acerto (1..3). Só em golpe `carga`. */
+      nivelCarga?: 1 | 2 | 3;
     }
-  | { tipo: 'throw'; atacante: IndiceLutador; defensor: IndiceLutador; pitch: number; texto: TextoFlutuante }
+  | {
+      tipo: 'throw';
+      atacante: IndiceLutador;
+      defensor: IndiceLutador;
+      pitch: number;
+      texto: TextoFlutuante;
+      /** V1: vida tirada pelo agarrão. Sempre presente nos eventos do motor. */
+      dano?: number;
+      /** Agarrão de ESPECIAL (ARREMESSO DO AVARGA, ABRAÇO DA ESTEPE, HURACANRANA). O arremesso comum (→+HP) não leva a marca. */
+      especial?: true;
+      golpe?: string;
+    }
   | { tipo: 'ko'; defensor: IndiceLutador; pitch: number }
   | {
       tipo: 'round';
@@ -357,6 +434,14 @@ export type EventoLuta =
       x: number;
       y: number;
       texto: TextoFlutuante;
+      /**
+       * V1: o golpe do DEFENSOR que aparou (`sFire`, a PARADE). É o SUCESSO que dispara a cinemática dele (`special.momento ===
+       * 'sucesso'`), e `continua` (`sResp`, o FOUETTÉ) é o golpe que segue a mesma sessão do especial.
+       */
+      golpe?: string;
+      continua?: string;
+      quadro?: string;
+      entrada?: EntradaTarja;
     }
   | {
       tipo: 'quebra-guarda';
@@ -365,10 +450,40 @@ export type EventoLuta =
       x: number;
       y: number;
       texto: TextoFlutuante;
+      golpe?: string;
+      especial?: true;
     }
   | { tipo: 'carga'; lutador: IndiceLutador; nivel: 1 | 2 | 3 }
   | { tipo: 'rebote'; lutador: IndiceLutador; x: number }
-  | { tipo: 'troca-ficha'; lutador: IndiceLutador; ficha: string | null };
+  | { tipo: 'troca-ficha'; lutador: IndiceLutador; ficha: string | null }
+  | { tipo: 'esquiva'; lutador: IndiceLutador; dir: 1 | -1; x: number }
+  | { tipo: 'esquivou'; lutador: IndiceLutador; atacante: IndiceLutador; x: number; y: number; projetil: boolean };
+
+/** Como a tarja da cinemática entra (docs/identidade-visual-especiais.md 1.3). `lateral` = do lado de quem atacou (o padrão). */
+export type EntradaTarja = 'lateral' | 'cima' | 'baixo' | 'rival';
+
+/** Quando a cinemática de um especial dispara: ao começar o golpe (padrão) ou só no SUCESSO (PARADE e GARKUWA: o rival não pode ser avisado). */
+export type MomentoCinematica = 'inicio' | 'sucesso';
+
+/**
+ * `special` (V1). O evento de sempre (gasto de energia, som) mais o que a cinemática precisa. O motor SEMPRE preenche `golpe`, `ficha` e
+ * `momento`; `quadro`/`entrada` só quando `src/data/apresentacao-especiais.ts` tem registro.
+ *  - `golpe`: chave de ch.moves do golpe que começou (`sFire`, `sDown`, `sFwd`). Nome, pose e cor: `chDaFicha(ch, ficha).moves[golpe]`.
+ *  - `ficha`: ficha ativa de quem atacou (null = base), para `chDaFicha` (NILA em SARPA, BAATAR na fase 2).
+ *  - `momento: 'sucesso'` (PARADE, GARKUWA): a UI NÃO abre a cinemática neste evento; abre no `parry` / `clash` (com `lutador`) do mesmo golpe.
+ *    A MASHI dispara ao começar a carga (`inicio`); o nível aparece em `hit.nivelCarga`.
+ *  - `quadro`: nome do quadro do atlas para o recorte da tarja (troca da pose do golpe, quando o Apolo pede outra). `entrada`: ver `EntradaTarja`.
+ */
+export type EventoSpecial = {
+  tipo: 'special';
+  lutador: IndiceLutador;
+  pitch: number;
+  golpe?: string;
+  ficha?: string | null;
+  momento?: MomentoCinematica;
+  quadro?: string;
+  entrada?: EntradaTarja;
+};
 
 /** Tudo o que render/ui/audio podem ler de uma luta em andamento. */
 export type LeituraLuta = {

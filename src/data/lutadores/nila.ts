@@ -35,9 +35,10 @@ export const NILA: LutadorDef = {
   fire: ['#ffb02e', '#fff6dc', '#d9720b'],
   accent: '#ffa21f',
   // GAJA (ficha base)
-  pow: 1.1,
+  // E6b: GAJA hp 98 -> 108 e pow 1,10 -> 1,18 (harness: 29,7% de vitória antes). A SARPA mantém o pow 0,9.
+  pow: 1.18,
   spd: 0.92,
-  hp: 98,
+  hp: 108,
   jump: 1.06,
   scale: 0.98,
   stride: 12,
@@ -69,6 +70,8 @@ export const NILA: LutadorDef = {
     sarpa: {
       pow: 0.9,
       spd: 1.15,
+      // Hurtbox em pé a 79% (E6a): os quadros `sarpaIdle*`/`sarpaWalk*`/`sarpaBlock` medem 76-81% dos da GAJA (tests/unit/e6a-sarpa.test.ts mede de novo contra o atlas).
+      alturaEmPe: 0.79,
       mods: {
         hp: { S: 5, dmg: 7, kb: 6 },
         hk: { S: 8, dmg: 10, kb: 8 },
@@ -85,11 +88,14 @@ export const NILA: LutadorDef = {
         },
         sDown: vadivu(null, 'Troca de postura: serpente (SARPA) volta a elefante (GAJA). Sem custo.'),
         // →+ESP (SARPA): salto alto em parafuso com chute descendente (golpe ALTO).
+        // E6a: o ápice ficava acima do HUD por ~12 ticks (vy -19: a cabeça chegava a y ~6 na tela com o zoom máximo, cobrindo o relógio).
+        // vy -14.5 deixa o topo do sprite em y ~99 (abaixo do relógio, que termina em ~98); vx 7,8 mantém o alcance horizontal (~264 px
+        // de decolagem a pouso, como antes). tests/unit/e6a-sarpa.test.ts mede o voo tick a tick.
         sFwd: {
           name: 'SALTO DA SERPENTE', info: 'Salto altíssimo em parafuso com chute descendente. Golpe ALTO: só se defende em pé.',
           pose: 'jumpKick', pre: 'crouch', type: 'leap', kind: 'kick', snd: 'kick',
           S: 10, A: 80, R: 0, cost: 25, rank: 9,
-          vy: -19, vx: 6, lag: 20, dmg: 14, kb: 8, hs: 0, bs: 16, kd: 1, lvl: 'over', air: 1, spin: 1, bh: 96, rm: 1, heavy: 1,
+          vy: -14.5, vx: 7.8, lag: 20, dmg: 14, kb: 8, hs: 0, bs: 16, kd: 1, lvl: 'over', air: 1, spin: 1, bh: 96, rm: 1, heavy: 1,
         },
       },
       // O BOTE desliza baixo: pose de preparação `crouchPunch` (sarpaSlide0, engatinhando) e ativa `sweep` (sarpaSlide1, chapado no

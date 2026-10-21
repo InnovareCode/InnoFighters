@@ -1,8 +1,10 @@
 // Monta docs/prompts/*.md a partir dos blocos de docs/prompts-arte.md (fonte única), sem transcrição manual.
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const RAIZ = 'C:/Projetos/Web/InnoGames/InnoFighters';
+// Relativo a este arquivo (ferramentas/prompts/ -> raiz do repositório), não a um caminho fixo da máquina de alguém.
+const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const FONTE = path.join(RAIZ, 'docs/prompts-arte.md');
 const SAIDA = path.join(RAIZ, 'docs/prompts');
 const md = fs.readFileSync(FONTE, 'utf8').replace(/\r\n/g, '\n');

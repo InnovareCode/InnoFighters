@@ -2,18 +2,30 @@ import { GROUND, LARGURA } from '../core/constantes';
 import type { InputFrame } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import type { NomeGolpe, PapelIa } from '../data/tipos';
+import { ESQUIVA_PADRAO } from '../data/esquiva';
 import type { Fighter, PlanoIa } from './fighter';
 import type { ProjetilLuta } from './projetil';
 
 /** Níveis da CPU (AI_LEVELS do protótipo, linhas 925-929). `diff` das configurações = índice aqui. */
 export const AI_LEVELS = [
-  { name: 'FÁCIL', desc: 'Reage devagar e erra muito. Para aprender os golpes.', think: 24, react: 0.35, block: 0.3, aggr: 0.5, fire: 0.1, anti: 0.1, combo: 0.15 },
-  { name: 'NORMAL', desc: 'Equilibrada. Bloqueia, usa especiais e encadeia golpes.', think: 14, react: 0.65, block: 0.6, aggr: 0.8, fire: 0.22, anti: 0.4, combo: 0.5 },
-  { name: 'DIFÍCIL', desc: 'Rápida, agressiva e punitiva. Só para veteranos.', think: 8, react: 0.92, block: 0.88, aggr: 1, fire: 0.3, anti: 0.75, combo: 0.85 },
+  { name: 'FÁCIL', desc: 'Reage devagar e erra muito. Para aprender os golpes.', think: 24, react: 0.35, block: 0.3, aggr: 0.5, fire: 0.1, anti: 0.1, combo: 0.15, esq: 0, punir: 0 },
+  { name: 'NORMAL', desc: 'Equilibrada. Bloqueia, usa especiais e encadeia golpes.', think: 14, react: 0.65, block: 0.6, aggr: 0.8, fire: 0.22, anti: 0.4, combo: 0.5, esq: 0.25, punir: 0.35 },
+  { name: 'DIFÍCIL', desc: 'Rápida, agressiva e punitiva. Só para veteranos.', think: 8, react: 0.92, block: 0.88, aggr: 1, fire: 0.3, anti: 0.75, combo: 0.85, esq: 0.5, punir: 0.7 },
 ] as const;
 
 /** Os números que a CPU usa para decidir (o que `AI_LEVELS[n]` tem, sem nome nem descrição). */
-export type PerfilCpu = { think: number; react: number; block: number; aggr: number; fire: number; anti: number; combo: number };
+export type PerfilCpu = {
+  think: number;
+  react: number;
+  block: number;
+  aggr: number;
+  fire: number;
+  anti: number;
+  combo: number;
+  /** ESQUIVA (V2): chance de trocar a defesa por uma esquiva e de punir a recuperação da esquiva do rival. Só contam com `esquivaLigada`. */
+  esq: number;
+  punir: number;
+};
 
 /**
  * IA do CHEFE (docs/mecanicas-e3.md §3.5). Fica FORA de `AI_LEVELS` porque essa lista é o menu de dificuldade
@@ -38,6 +50,8 @@ export function perfilChefe(nivel: number, fase2: boolean): PerfilCpu {
     fire: base.fire,
     anti: base.anti,
     combo: base.combo,
+    esq: Math.min(1, base.esq + IA_CHEFE.bonusReacao),
+    punir: Math.min(1, base.punir + IA_CHEFE.bonusReacao),
   };
   if (fase2) {
     p.aggr = IA_CHEFE.fase2.aggr;
@@ -51,6 +65,8 @@ export const NO_INPUT = (): InputFrame => ({ left: false, right: false, up: fals
 /** O que a CPU precisa enxergar da partida. */
 export interface VistaParaCpu {
   readonly projectiles: readonly ProjetilLuta[];
+  /** ESQUIVA ligada na partida. Desligada, a CPU não sorteia nada por causa dela (o RNG fica idêntico ao de antes). */
+  readonly esquivaLigada?: boolean;
 }
 
 type TeclaIa = 'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp';
@@ -129,6 +145,13 @@ function planoPorDica(
   return null;
 }
 
+/** A CPU pode esquivar agora? Flag ligada, nível que esquiva, no chão, em estado livre e com a barra do custo. Não sorteia nada. */
+function podeEsquivar(me: Fighter, game: VistaParaCpu, L: PerfilCpu): boolean {
+  if (game.esquivaLigada !== true || L.esq <= 0 || !me.grounded) return false;
+  if (me.state !== 'idle' && me.state !== 'walk' && me.state !== 'crouch') return false;
+  return me.en >= ESQUIVA_PADRAO.custo;
+}
+
 /** Distância (px) de `me` até a margem da parede ATRÁS dela (o lado oposto ao rival, que está na direção `dir`). */
 function espacoAtras(me: Fighter, dir: number): number {
   return dir > 0 ? me.x - MARGEM_PAREDE : LARGURA - MARGEM_PAREDE - me.x;
@@ -189,9 +212,19 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     ai.seen = opp.atkId;
     if (rnd() < L.react) {
       if (rnd() < L.block) {
+        // ESQUIVA (V2): só depois de decidir defender, só contra especial ou golpe pesado, só com barra e em estado livre, e o `rnd()` a mais
+        // só existe quando tudo isso vale e o nível esquiva (FÁCIL: L.esq = 0, nada é sorteado). Recua com a janela cobrindo o impacto.
+        const especialOuPesado = oppMv.id[0] === 's' || !!oppMv.heavy;
+        let esquivando = false;
+        if (podeEsquivar(me, game, L) && especialOuPesado && rnd() < L.esq) {
+          const viagem = oppMv.type === 'rush' ? Math.max(0, (ad - 70) / Math.max(1, oppMv.vx ?? 1)) : 0;
+          const chega = Math.max(0, oppMv.S - opp.mt + Math.floor(viagem));
+          ai.reacao = { esquiva: -1, espera: Math.max(0, chega - 5) };
+          esquivando = true;
+        }
         // Quem tem PARADE (`defesa`) a usa no lugar do bloqueio contra golpe de nível aparável, com a MESMA chance de
         // defender (nenhum rnd a mais; quem a CPU poupa é o `rnd() < 0.3` do agachar, que só o bloqueio sorteia).
-        const parada = me.ch.dicasIa.length > 0 && ad < 190 ? golpeComPapel(me, 'defesa') : null;
+        const parada = !esquivando && me.ch.dicasIa.length > 0 && ad < 190 ? golpeComPapel(me, 'defesa') : null;
         const nivelAparavel = parada !== null && !!M[parada].parry?.niveis.includes(oppMv.lvl ?? 'mid');
         if (parada !== null && nivelAparavel) {
           const g = M[parada];
@@ -199,7 +232,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
           const viagem = oppMv.type === 'rush' ? Math.max(0, (ad - 70) / Math.max(1, oppMv.vx ?? 1)) : 0;
           const chega = Math.max(0, oppMv.S - opp.mt + Math.floor(viagem));
           ai.reacao = { golpe: parada, espera: Math.max(0, chega - g.S - Math.floor(g.A / 3)) };
-        } else {
+        } else if (!esquivando) {
           ai.hold = oppMv.S + Math.min(oppMv.A, 12) + 8;
           ai.holdInp = { back: true, down: oppMv.lvl === 'low' || (oppMv.lvl === 'mid' && rnd() < 0.3) };
         }
@@ -216,10 +249,15 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
           toward(ai.plan);
           ai.t = 10; // tremor baixo: pula por cima
         } else if (rnd() < L.block) {
+          // ESQUIVA (V2): depois de decidir defender, o AVANÇO atravessa o projétil. Aperta quando ele está a ~170 px (o arranque de 3 ticks
+          // é vulnerável). O `rnd()` só existe se a esquiva é possível (flag, nível, barra, estado livre).
+          const esquiva = podeEsquivar(me, game, L) && rnd() < L.esq;
           // Quem tem escudo (`defesa-projetil`) usa o escudo no lugar do bloqueio, sem sortear nada a mais: a decisão de
           // defender já saiu dos rnd() acima. Espera o projétil chegar para a janela ativa cobrir o impacto.
-          const escudo = me.ch.dicasIa.length > 0 ? golpeComPapel(me, 'defesa-projetil') : null;
-          if (escudo) {
+          const escudo = !esquiva && me.ch.dicasIa.length > 0 ? golpeComPapel(me, 'defesa-projetil') : null;
+          if (esquiva) {
+            ai.reacao = { esquiva: 1, espera: Math.max(0, Math.floor((Math.abs(me.x - pr.x) - 170) / Math.max(1, Math.abs(pr.vx)))) };
+          } else if (escudo) {
             const g = M[escudo];
             const chega = (Math.abs(me.x - pr.x) - 60) / Math.max(1, Math.abs(pr.vx));
             ai.reacao = { golpe: escudo, espera: Math.max(0, Math.floor(chega - g.S - g.A / 2)) };
@@ -246,7 +284,14 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
       ai.reacao.espera--;
       return inp;
     }
-    Object.assign(inp, moveInput(ai.reacao.golpe, dir));
+    if ('esquiva' in ai.reacao) {
+      inp.esq = true;
+      if (ai.reacao.esquiva > 0) {
+        if (dir > 0) inp.right = true;
+        else inp.left = true;
+      } else if (dir > 0) inp.left = true;
+      else inp.right = true;
+    } else Object.assign(inp, moveInput(ai.reacao.golpe, dir));
     ai.reacao = null;
     ai.plan = null;
     ai.t = 0;
@@ -286,6 +331,15 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   // Golpe com dica (`ia`) só entra pelo plug de dicas; os ramos de sempre o tratam como "sem energia". Sem dica, `livre`
   // é exatamente `canAfford` (nenhuma conta nova, nenhum rnd).
   const livre = (n: NomeGolpe): boolean => me.canAfford(n) && !M[n].ia;
+  // ESQUIVA (V2): punir a recuperação da esquiva do rival (arremesso se der, senão o soco forte). Um sorteio por esquiva do rival.
+  if (game.esquivaLigada === true && L.punir > 0 && me.grounded && ad < 110 && opp.esquivaPunivel && ai.puniuEsquiva !== opp.esquivaId) {
+    ai.puniuEsquiva = opp.esquivaId;
+    if (rnd() < L.punir) {
+      if (me.canThrow()) Object.assign(inp, moveInput('throw', dir));
+      else Object.assign(inp, moveInput('hp', dir));
+      return inp;
+    }
+  }
   // 3) anti-aéreo
   if (opp.y < GROUND - 50 && ad < 190 && ad > 30 && me.grounded && rnd() < L.anti * 0.25) {
     // Quem tem golpe `antiaereo` (HURACANRANA) usa o dele no lugar do ↓+ESP genérico, sorteando o mesmo `rnd() < 0.5`.

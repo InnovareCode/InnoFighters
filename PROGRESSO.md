@@ -2,7 +2,15 @@
 
 Atualizado em 2026-10-21 por Atlas.
 
-## Estado atual (2026-10-21)
+## Estado em 2026-10-21 (noite) — o mais novo
+- NO AR e no `main` (commit `c7437c1`, Pages #6 verde): os 9 lutadores (HAYATO A2, WEI LONG, MIN-JI nova, CAIO + AMINU, CENTELLA, CAMILLE, NILA e o chefão BAATAR), 6 cenários novos, escada do Arcade com 5 rivais + chefão, fila de desbloqueio AMINU > CENTELLA > CAMILLE > NILA, mecânicas E3 S0 a S5, pipeline de sprites F2, correções do Órion (storage, CSP, workflows). 833 testes unitários, e2e 95, e2e:build 5.
+- Em andamento: E6a (harness `npm run balanco` + correções da SARPA, Vega), E7a (celular, Lyra), correção do import duplicado em `ferramentas/sprites/executar.mjs` (achado da Alexandria; `npm run sprites` está quebrado no HEAD).
+- Docs novos (Alexandria): `README.md`, `docs/como-adicionar-um-lutador.md`, `docs/arquitetura.md`, `CHANGELOG.md`.
+- Decisões que dependem do dono: licença do repositório (`LICENSE`); `sourcemap` público (virar `hidden` ao privar o repo); ressalvas de arte (joelhada no chute em salto do AMINU e da NILA f4, vitória do AMINU sem a corda, luva aberta da CAMILLE, agachado raso da CENTELLA, soco aéreo e golpe de antebraço do BAATAR); cor do efeito do HAYATO (amarelo-elétrico, a confirmar); Secret Scanning/Push Protection/2FA no GitHub. Balanceamento dos 9 e do chefão: E6, com o dono jogando.
+- Fonte de geração de arte: Runway (Nano Banana 2.1); `docs/prompts-arte.md` ainda cita Gemini em §0 e §11 (nota no topo).
+- Saldo Runway: 152 créditos.
+
+## Estado atual (2026-10-21, mais cedo)
 - Código na `main` do GitHub (commit `3af66cc`): F1 porte fiel, logo, E1 a E4 da expansão, E3 S0+S1a (contratos C3 e primitiva do chefão, só em teste; produção segue com 4 lutadores e CHEFE null), persistência por ondas (ids desconhecidos preservados, `hi = max(v1, v2)`), UI pós-E3 (FASE 2! só na etapa `troca`, `spSeg`, render por ficha). 434 testes unitários, e2e 70 passam. Site de teste no GitHub Pages.
 - Arte: ver o bloco "Arte em 2026-10-21" abaixo. Saldo Runway: 176 créditos.
 - Em andamento: F2 pipeline de sprites (Vega), curadoria e correção das folhas (Apolo). Seguem: E3 S1b a S5, E5 a E8, F3.

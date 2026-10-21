@@ -14,6 +14,7 @@ import type {
 } from '../core/contratos';
 import { clamp, lerp, overlap, type Retangulo } from '../core/math';
 import type { Rng } from '../core/rng';
+import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { PROJ_BASE } from '../data/base-moves';
 import type { LutadorMontado } from '../data/montar';
 import type { ContraDef, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
@@ -41,6 +42,11 @@ export type ConfigPartida = {
    * (é o lutador normal). Round único (`winsNeeded = 1`), seja qual for `ajustes.rounds`, e IA própria.
    */
   chefe?: boolean;
+  /**
+   * ESQUIVA (V1/V2): liga a mecânica nesta partida. Padrão false: desligada, `InputFrame.esq` é ignorado antes de qualquer conta e
+   * nada muda (nem o RNG da CPU). Quem liga é a UI, a partir de `Regras.esquiva`.
+   */
+  esquiva?: boolean;
 };
 
 /** Parte das configurações que a luta lê. Passe o MESMO objeto que a UI altera (shake é lido ao vivo). */
@@ -76,7 +82,17 @@ type AtaqueAcerto = {
   rank: number | undefined;
   /** E3 (S4): contragolpe reforçado se o rival estava na PREPARAÇÃO do golpe dele (COUP D'ARRÊT). */
   contra: ContraDef | undefined;
+  /** V1 (cinemática): chave do golpe (num projétil, do golpe que o lançou), se é de ESPECIAL (nome começa com 's') e o nível da carga (MASHI). */
+  golpe: string | undefined;
+  especial: boolean;
+  nivelCarga: 0 | 1 | 2 | 3;
 };
+
+/** Campos de cinemática que os eventos de acerto/defesa levam (só o que existe: `exactOptionalPropertyTypes`). */
+const marcaDoGolpe = (mv: AtaqueAcerto): { golpe?: string; especial?: true } => ({
+  ...(mv.golpe !== undefined ? { golpe: mv.golpe } : {}),
+  ...(mv.especial ? { especial: true as const } : {}),
+});
 
 const textoFlutuante = (x: number, y: number, s: string, col: string, size: number): TextoFlutuante => ({ x, y, s, col, size });
 
@@ -103,6 +119,9 @@ const noAtaque = (mv: GolpeMontado, atacante: Fighter): AtaqueAcerto => {
     quebraGuarda: nivel?.quebraGuarda ?? mv.quebraGuarda,
     rank: mv.rank,
     contra: mv.contra,
+    golpe: mv.id,
+    especial: mv.id[0] === 's',
+    nivelCarga: mv.carga ? atacante.nivelCarga : 0,
   };
 };
 
@@ -146,6 +165,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
 
   /** Troca de barra no tick: o `hitstop`/`shake` dela têm que sobreviver ao que o chamador grava depois. */
   private trocaDeBarraNoTick = false;
+  /** ESQUIVA ligada nesta partida (`ConfigPartida.esquiva`). Lida pelo `Fighter` (via `PartidaParaLutador`) e pela CPU. */
+  esquivaLigada = false;
   private pid = 0;
   private tick60 = 0;
   private refillT = 0;
@@ -197,6 +218,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     if (cfgChefe) this.p2.virarChefe(cfgChefe);
     this.p1.cpu = cfg.p1cpu != null ? cfg.p1cpu : null;
     this.p2.cpu = cfg.cpu != null ? cfg.cpu : null;
+    this.esquivaLigada = cfg.esquiva === true;
     this.winsNeeded = cfgChefe ? 1 : ajustes.rounds;
     this.timeMax = this.training ? 0 : ajustes.time;
     this.dummy = 'stand';
@@ -256,7 +278,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   /** Arremesso: joga o rival por cima do ombro. */
   arremessar(a: Fighter, d: Fighter, golpe?: GolpeMontado): void {
     const dmg = (golpe?.agarrao?.dmg ?? 12) * a.ch.pow;
+    const hpAntes = d.hp;
     d.hp = Math.max(this.training ? 1 : 0, d.hp - dmg);
+    const dano = hpAntes - d.hp;
     d.dmgTaken += dmg;
     a.score += Math.round(dmg * 100);
     d.move = null;
@@ -282,6 +306,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       defensor: d.indice,
       pitch: d.ch.pitch,
       texto: textoFlutuante(a.x, a.y - SH, 'ARREMESSO!', '#ffd23f', 22),
+      // V1: o agarrão de ESPECIAL (BAATAR sFire/sFwd, CENTELLA sDown) conta acerto na sessão do especial; o arremesso comum não.
+      dano,
+      ...(golpe ? { golpe: golpe.id } : {}),
+      ...(golpe && golpe.id[0] === 's' ? { especial: true as const } : {}),
     });
   }
 
@@ -305,6 +333,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       style: sp.style || 'orb',
       acc: sp.acc || 0,
       kd: sp.kdLast ? i === n - 1 : sp.kd !== false,
+      golpe: mv.id,
+      ...(mv.id[0] === 's' ? { especial: true as const } : {}),
     };
     this.projectiles.push(pr);
     this.emitir({ tipo: 'projectile', lutador: f.indice, x: pr.x, y: pr.y, style: pr.style });
@@ -521,7 +551,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       [this.p2, this.p1],
     ] as const) {
       const mv = a.activeMove();
-      if (!mv || a.hitDone || d.untouchable) continue;
+      if (!mv || a.hitDone) continue;
+      if (d.untouchable) {
+        // ESQUIVA: quem está na janela invulnerável e levaria o golpe "esquivou" (uma vez por golpe). Fora disso, sem efeito, como sempre.
+        if (d.state === 'esquiva') this.verEsquivada(a, d, mv.box ? a.ch.boxes[mv.box] : undefined, `a${a.atkId}`, false);
+        continue;
+      }
       const caixa = mv.box ? a.ch.boxes[mv.box] : undefined;
       if (!caixa) continue;
       const box = a.attackBox(caixa);
@@ -539,8 +574,23 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       // some como num choque de projéteis (evento `clash`); não há dano nem applyHit. Pelas costas ou fora da janela: acerta.
       if (this.absorve(d, pr) && overlap(box, d.hurtbox())) {
         pr.life = 0;
-        this.emitir({ tipo: 'clash', x: pr.x, y: pr.y });
+        // V1: o escudo (GARKUWA) que absorve é o SUCESSO do golpe: leva o dono, o golpe e a apresentação para a cinemática.
+        const golpeDoEscudo = d.move as string;
+        const ap = apresentacaoDoEspecial(d.ch.id, d.ficha, golpeDoEscudo);
+        this.emitir({
+          tipo: 'clash',
+          x: pr.x,
+          y: pr.y,
+          lutador: d.indice,
+          golpe: golpeDoEscudo,
+          ...(ap ? { quadro: ap.quadro } : {}),
+          ...(ap?.entrada ? { entrada: ap.entrada } : {}),
+        });
         continue;
+      }
+      if (d.untouchable && d.state === 'esquiva') {
+        // o projétil atravessa quem esquiva (segue voando) e a esquiva é anunciada uma vez por projétil
+        this.verEsquivada(o, d, { fx: 0, fy: 0, w: 0, h: 0 }, `p${pr.id}`, true, box);
       }
       if (!d.untouchable && overlap(box, d.hurtbox())) {
         pr.life = 0;
@@ -564,6 +614,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
             quebraGuarda: undefined,
             rank: undefined,
             contra: undefined,
+            golpe: pr.golpe,
+            especial: pr.especial === true,
+            nivelCarga: 0,
           },
           box,
         );
@@ -578,6 +631,26 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         }
       }
     }
+  }
+
+  /**
+   * ESQUIVA: o golpe `a` (caixa `caixa`) ou o projétil (`box`) sobrepõe a hurtbox de `d`, que está na janela invulnerável da esquiva.
+   * Emite `esquivou` uma vez por `chave` (atkId do golpe ou id do projétil) por esquiva.
+   */
+  private verEsquivada(a: Fighter, d: Fighter, caixa: { fx: number; fy: number; w: number; h: number } | undefined, chave: string, projetil: boolean, boxProj?: Retangulo): void {
+    if (!caixa) return;
+    const box = boxProj ?? a.attackBox(caixa);
+    const hb = d.hurtbox();
+    if (!overlap(box, hb)) return;
+    if (!d.registrarEsquivada(chave)) return;
+    this.emitir({
+      tipo: 'esquivou',
+      lutador: d.indice,
+      atacante: a.indice,
+      x: (Math.max(box.x, hb.x) + Math.min(box.x + box.w, hb.x + hb.w)) / 2,
+      y: (Math.max(box.y, hb.y) + Math.min(box.y + box.h, hb.y + hb.h)) / 2,
+      projetil,
+    });
   }
 
   /** `d` está com o escudo levantado (golpe `absorveProj` na janela ativa) contra um projétil que vem de frente? */
@@ -607,6 +680,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       a.setState('hit');
       a.stun = parry.atordoaAtacante;
       a.vx = 0;
+      const golpeDaParada = d.move as string; // antes do `startMove('sResp')`: o golpe do defensor que aparou
+      const ap = apresentacaoDoEspecial(d.ch.id, d.ficha, golpeDaParada);
       d.startMove('sResp', this);
       this.hitstop = 8;
       this.shake = this.ajustes.shake ? 3 : 0;
@@ -617,6 +692,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         x,
         y,
         texto: textoFlutuante(d.x, d.y - SH * 0.95, 'PARADA!', '#e6ebf7', 22),
+        // V1: SUCESSO da PARADE = gatilho da cinemática dela; o FOUETTÉ (`sResp`) segue a mesma sessão
+        golpe: golpeDaParada,
+        ...(ap?.continua ? { continua: ap.continua } : {}),
+        ...(ap ? { quadro: ap.quadro } : {}),
+        ...(ap?.entrada ? { entrada: ap.entrada } : {}),
       });
       return;
     }
@@ -658,6 +738,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
           x: ox,
           y: oy,
           texto: textoFlutuante(d.x, d.y - SH * 0.95, 'GUARDA QUEBRADA!', '#ff5a4a', 22),
+          ...marcaDoGolpe(mv),
         });
         return;
       }
@@ -669,13 +750,14 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         y: oy,
         dir: (-a.facing) as 1 | -1,
         texto: d.gotHits === 0 ? textoFlutuante(d.x, d.y - SH * 0.95, 'BLOQUEOU', '#9ad8ff', 18) : null,
+        ...marcaDoGolpe(mv),
       });
       return;
     }
     d.hitKind = mv.kind === 'punch' || mv.lvl === 'over' || mv.proj ? 'H' : 'B';
-    const counter = d.state === 'move';
+    const counter = d.state === 'move' || d.state === 'esquiva'; // acerto na recuperação da esquiva = contragolpe
     // E3 (S4): contragolpe na PREPARAÇÃO do golpe do rival (lido ANTES de `d.move = null`). Só reforça se o golpe tem `contra`.
-    const emPreparo = counter && mv.contra !== undefined && d.mt < d.golpeAtual().S;
+    const emPreparo = d.state === 'move' && mv.contra !== undefined && d.mt < d.golpeAtual().S;
     // E3: `armadura.rankMax` (PESO DA MONTANHA) limita a armadura a golpes de rank <= rankMax; projétil (sem rank) e
     // golpe forte a interrompem. Sem `armadura` no def, qualquer golpe é absorvido como sempre.
     const rankMax = d.ch.armadura?.rankMax;
@@ -696,6 +778,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         y: oy,
         snd: mv.snd,
         texto: textoFlutuante(d.x, d.y - SH * 0.95, 'ARMADURA', '#ffd23f', 18),
+        dano: ad,
+        ...marcaDoGolpe(mv),
       });
       return;
     }
@@ -703,7 +787,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     let dmg = danoDoGolpe(mv.dmg, a.ch.pow, mv.proj, d.gotHits, counter, emPreparo ? mv.contra?.mult : undefined);
     const stunExtra = emPreparo ? (mv.contra?.hs ?? 0) : 0;
     if (this.training) dmg = Math.min(dmg, d.hp - 1 > 0 ? dmg : 0);
+    const hpAntes = d.hp;
     d.hp = Math.max(0, d.hp - dmg);
+    const danoCausado = hpAntes - d.hp; // V1: o que saiu da barra (antes de a troca de barra do chefe enchê-la de novo)
     d.gotHits++;
     d.comboDmg += dmg;
     d.dmgTaken += dmg;
@@ -756,6 +842,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
           ? textoFlutuante(ox, oy - 40, 'COUNTER!', '#ff9a3a', 24)
           : null,
       ...(emPreparo ? { contraEspecial: true } : {}),
+      dano: danoCausado,
+      ...marcaDoGolpe(mv),
+      ...(mv.nivelCarga > 0 ? { nivelCarga: mv.nivelCarga as 1 | 2 | 3 } : {}),
     });
   }
 

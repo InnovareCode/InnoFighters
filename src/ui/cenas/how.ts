@@ -149,7 +149,7 @@ export class CenaHow implements Cena {
         f.T(s === 1 ? '1 jogador: as duas configurações funcionam.' : '', x + 24, y0 + 241, 11, '#9fa6c9', 'left');
       });
       f.panel(40, y0 + 262, 880, 110, { r: 8 });
-      f.T('ESC ou P — pausar     M — mudo     F — tela cheia     H — mostrar caixas de colisão (debug)', 60, y0 + 288, 15, '#e8ecff', 'left');
+      f.T('ESC ou P — pausar     M — mudo     F — tela cheia', 60, y0 + 288, 15, '#e8ecff', 'left');
       f.T('Controle (PlayStation): □ soco fraco • △ soco forte • ✕ chute fraco • ○ chute forte • R1 especial • START pausa • 2 controles = 2 jogadores.', 60, y0 + 318, 13, '#cfd6f5', 'left');
       f.T('Menus: setas / WASD navegam • ENTER / Z confirmam • ESC / X voltam • o mouse também funciona.', 60, y0 + 346, 14, '#cfd6f5', 'left');
     } else if (this.tab === 2) {

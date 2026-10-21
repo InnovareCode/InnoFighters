@@ -1,8 +1,10 @@
 import { LARGURA } from '../../core/constantes';
 import type { IdLutador } from '../../core/contratos';
+import type { Rng } from '../../core/rng';
 import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
 import { liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
+import { embaralhar, passoDaRolagem, rostoEmRepouso, rostosDaRolagem, sortear, TICKS_DA_REVELACAO, TICKS_DA_ROLAGEM } from '../aleatoria';
 import { dicaArcadeSelecao } from '../escada-texto';
 import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa, retanguloDeToque, temCasaDeHonra, type EstadoCasa } from '../grade';
 import type { Navegador } from '../navegador';
@@ -11,12 +13,30 @@ import type { ArgsSelect, Cena, ModoMenu } from '../tipos';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
 
+/** O sorteio de um jogador na casa ALEATÓRIA: rola os rostos, pousa no escolhido, mostra e só então a escolha vale. */
+export interface Rolagem {
+  /** O sorteado (decidido no Enter, antes de a roleta girar). */
+  readonly id: IdLutador;
+  /** Ticks desde o Enter. */
+  t: number;
+  /** Os rostos que a roleta mostra, um por passo, o último é o sorteado (vazio com movimento reduzido: sem roleta). */
+  readonly rostos: readonly IdLutador[];
+  /** Tick (de `t`) em que a roleta pousou e o escolhido foi para a grade; null = ainda girando. */
+  pousouEm: number | null;
+}
+
+/** Texto do painel da casa aleatória (nome e descrição, o mesmo para a lateral do jogador e o painel central). */
+export const TEXTO_DA_ALEATORIA = { nome: 'ALEATÓRIO', linhas: ['Sorteia um lutador entre', 'os liberados.'], descricao: 'Sorteia um lutador entre os liberados. Confirme e o sistema escolhe por você.' } as const;
+
+/** A etiqueta do jogador no painel do lutador (px lógicos): a direita da linha do nome, que está em y 394. */
+export const ETIQUETA = { tamanho: 20, y: 394 } as const;
+
 const TECLAS_P1: Readonly<Record<string, Dir>> = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
 const TECLAS_P2: Readonly<Record<string, Dir>> = { w: 'up', s: 'down', a: 'left', d: 'right' };
 
 /**
  * Seleção de lutador(es): grade de 2 colunas até 4 lutadores (layout de hoje), 3x3 com o chefão no centro (9) ou 3x3 de regulares com a CASA DE
- * HONRA do chefão embaixo (10, o ZENON), estados liberado / NOVO! / travado / chefão oculto, 1 ou 2 jogadores, etapa de alvo/adversário.
+ * HONRA do chefão embaixo (10, o ZENON; a faixa de baixo também tem a casa ALEATÓRIA, que sorteia entre os liberados), estados liberado / NOVO! / travado / chefão oculto, 1 ou 2 jogadores, etapa de alvo/adversário.
  * Tudo deriva de `regras.roster` (nada de "4" fixo) e do progresso do jogador.
  */
 export class CenaSelect implements Cena {
@@ -35,6 +55,10 @@ export class CenaSelect implements Cena {
   /** Há a casa de honra do chefão (10 casas: 3x3 + o chefão numa faixa embaixo)? */
   private honra = false;
   private libs: ReadonlySet<IdLutador> = new Set();
+  /** O sorteio em curso de cada jogador na casa aleatória (null = parado). */
+  rolando: [Rolagem | null, Rolagem | null] = [null, null];
+  /** Os liberados numa ordem embaralhada (decidida ao abrir a tela): é a ordem em que a casa aleatória "passa" os rostos. */
+  private ordemVisual: IdLutador[] = [];
   /** Liberados que ainda não tinham sido vistos ao abrir a tela (selo NOVO!). */
   novos: ReadonlySet<IdLutador> = new Set();
 
@@ -61,10 +85,36 @@ export class CenaSelect implements Cena {
     this.pick = [0, 1];
     this.flash = [0, 0];
     this.done = 0;
+    this.rolando = [null, null];
+    this.ordemVisual = embaralhar(this.elegiveis(), this.rng());
   }
 
   private get n(): number {
     return this.grade.length;
+  }
+
+  /** O índice da casa aleatória (`n`, depois do último lutador); -1 se a grade não tem a casa (só a de 10 tem). */
+  get aleatoria(): number {
+    return this.honra ? this.n : -1;
+  }
+
+  /** Quantas casas o cursor percorre (os lutadores mais a aleatória, se houver). */
+  private get casas(): number {
+    return this.n + (this.honra ? 1 : 0);
+  }
+
+  private ehAleatoria(i: number): boolean {
+    return this.honra && i === this.n;
+  }
+
+  /** Sorteio da seleção: o RNG PRÓPRIO dela (nunca o da luta; ver `ui/aleatoria.ts`). */
+  private rng(): Rng {
+    return this.ui.c.sorteioDaSelecao ?? this.ui.c.rngUI;
+  }
+
+  /** Os lutadores que podem ser sorteados: os liberados (o chefão só depois de derrotado), na ordem da grade. */
+  elegiveis(): IdLutador[] {
+    return this.grade.filter((id) => podeEscolher(this.estado(id)));
   }
 
   private idEm(i: number): IdLutador {
@@ -88,21 +138,54 @@ export class CenaSelect implements Cena {
 
   /** O cursor anda por TODAS as casas (inclusive travadas, para mostrar o que falta); só a confirmação é barrada. */
   private moveCursor(p: 0 | 1, a: Dir): void {
+    if (this.rolando[p]) return; // sorteando: o cursor espera a roleta
     this.cur[p] = moverNaGrade(this.cur[p], a, this.n, this.colunas);
     this.ui.c.audio.uiMove();
   }
 
   private confirm(p: 0 | 1): void {
-    if (this.lock[p] || this.done) return;
+    if (this.lock[p] || this.done || this.rolando[p]) return;
+    if (this.ehAleatoria(this.cur[p])) {
+      this.iniciarSorteio(p);
+      return;
+    }
     const id = this.idEm(this.cur[p]);
     if (!podeEscolher(this.estado(id))) {
       this.ui.c.audio.deny(); // travado não confirma, em nenhum modo
       return;
     }
+    this.ui.c.audio.uiSelect(this.ui.m.elenco[id].ch.pitch);
+    this.escolher(p);
+  }
+
+  /** Enter na casa aleatória: sorteia JÁ (fora do RNG da luta) e deixa a roleta girar até o escolhido; sem movimento (reduced-motion) pousa direto. */
+  private iniciarSorteio(p: 0 | 1): void {
+    const id = sortear(this.elegiveis(), this.rng());
+    if (id === null) {
+      this.ui.c.audio.deny();
+      return;
+    }
+    this.ui.m.arte.pedir(id); // aquece o atlas: a roleta leva ~0,7 s e o lutador já está pronto quando a grade o mostra
+    const reduzir = this.ui.c.reduzirMovimento?.() ?? false;
+    const r: Rolagem = { id, t: 0, rostos: reduzir ? [] : rostosDaRolagem(this.ordemVisual, id), pousouEm: null };
+    this.rolando[p] = r;
+    if (reduzir) this.pousar(p, r);
+    else this.ui.c.audio.uiMove();
+  }
+
+  /** A roleta pousou: o cursor vai para a casa do sorteado (rosto, painel e brilho dele), com o som de seleção. A escolha só vale depois da revelação. */
+  private pousar(p: 0 | 1, r: Rolagem): void {
+    r.pousouEm = r.t;
+    this.cur[p] = Math.max(0, this.grade.indexOf(r.id));
+    this.flash[p] = 36;
+    this.ui.c.audio.uiSelect(this.ui.m.elenco[r.id].ch.pitch);
+  }
+
+  /** Aplica a escolha do jogador `p` na casa onde o cursor dele está (travada, brilho e o resto do fluxo do modo). */
+  private escolher(p: 0 | 1): void {
     this.lock[p] = true;
     this.pick[p] = this.cur[p];
     this.flash[p] = 36;
-    this.ui.c.audio.uiSelect(this.ui.m.elenco[id].ch.pitch);
     if (this.versus) {
       if (this.lock[0] && this.lock[1]) this.done = 70;
       return;
@@ -123,6 +206,12 @@ export class CenaSelect implements Cena {
   private back(p: 0 | 1): void {
     const { audio } = this.ui.c;
     if (this.done) return;
+    const quem = this.versus ? p : (this.active() ?? 0);
+    if (this.rolando[quem]) {
+      this.rolando[quem] = null; // desistiu do sorteio: volta a escolher (o cursor fica onde a roleta o deixou)
+      audio.uiBack();
+      return;
+    }
     if (this.versus) {
       if (this.lock[p]) {
         this.lock[p] = false;
@@ -184,10 +273,10 @@ export class CenaSelect implements Cena {
   }
 
   hover(mx: number, my: number): void {
-    for (let i = 0; i < this.n; i++) {
+    for (let i = 0; i < this.casas; i++) {
       const r = this.toqueRect(i);
       const p = this.jogadorDoMouse();
-      if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h && !this.lock[p] && this.cur[p] !== i) {
+      if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h && !this.lock[p] && !this.rolando[p] && this.cur[p] !== i) {
         this.cur[p] = i;
         this.ui.c.audio.uiMove();
       }
@@ -195,10 +284,11 @@ export class CenaSelect implements Cena {
   }
 
   click(mx: number, my: number): void {
-    for (let i = 0; i < this.n; i++) {
+    for (let i = 0; i < this.casas; i++) {
       const r = this.toqueRect(i);
       if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
         const p = this.jogadorDoMouse();
+        if (this.rolando[p]) return; // sorteando: a roleta manda
         this.cur[p] = i;
         this.confirm(p);
       }
@@ -207,12 +297,30 @@ export class CenaSelect implements Cena {
 
   update(): void {
     for (let p = 0; p < 2; p++) if ((this.flash[p as 0 | 1] ?? 0) > 0) this.flash[p as 0 | 1]--;
+    for (const p of [0, 1] as const) this.avancarSorteio(p);
     if (this.done > 0 && --this.done === 0) {
       const c1 = this.idEm(this.pick[0]);
       const c2 = this.idEm(this.pick[1]);
       if (this.mode === 'arcade' || this.mode === 'cpu') this.ui.go('diff', { mode: this.mode, c1, c2 });
       else if (this.mode === 'versus') this.ui.go('vs', { cfg: { mode: 'versus', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva } });
       else this.ui.go('fight', { cfg: { mode: 'training', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva } });
+    }
+  }
+
+  /** Um tick da roleta do jogador `p`: troca de rosto (com o tique), pousa no fim e, passada a revelação, a escolha vale. */
+  private avancarSorteio(p: 0 | 1): void {
+    const r = this.rolando[p];
+    if (!r) return;
+    const antes = r.t;
+    r.t++;
+    if (r.pousouEm === null) {
+      if (r.t >= TICKS_DA_ROLAGEM) this.pousar(p, r);
+      else if (passoDaRolagem(r.t) !== passoDaRolagem(antes)) this.ui.c.audio.uiMove();
+      return;
+    }
+    if (r.t - r.pousouEm >= TICKS_DA_REVELACAO) {
+      this.rolando[p] = null;
+      this.escolher(p);
     }
   }
 
@@ -233,6 +341,16 @@ export class CenaSelect implements Cena {
     const id = this.idEm(idx);
     const px = p === 0 ? 20 : LARGURA - 20 - 284;
     const tag = this.versus ? (p === 0 ? 'JOGADOR 1' : 'JOGADOR 2') : p === 0 ? 'VOCÊ' : this.mode === 'training' ? 'ALVO' : 'ADVERSÁRIO';
+    if (this.ehAleatoria(idx)) {
+      // casa aleatória sob o cursor (ou roleta girando): ninguém ainda; só o "?" e o que a casa faz
+      f.spotlight(x, 300, 190, p === 0 ? 'rgba(63,169,255,.28)' : 'rgba(255,79,94,.28)');
+      f.A('?', x, 260, 170, ['#ffe9a8', '#ffb347'], '#1a0a00');
+      f.panel(px, 374, 284, 132, { stroke: P_COL[p] });
+      f.A(TEXTO_DA_ALEATORIA.nome, px + 14, 394, 28, '#fff', '#000', 'left');
+      TEXTO_DA_ALEATORIA.linhas.forEach((l, i) => f.T(l, px + 14, 424 + i * 20, 14, i === 0 ? '#e8ecff' : '#ffd23f', 'left'));
+      this.etiqueta(p, px, tag);
+      return;
+    }
     if (!podeEscolher(this.estado(id))) {
       // casa fechada: nada de lutador (nem carrega o atlas): só um ponto de interrogação e o que falta
       f.spotlight(x, 300, 190, p === 0 ? 'rgba(63,169,255,.28)' : 'rgba(255,79,94,.28)');
@@ -241,7 +359,7 @@ export class CenaSelect implements Cena {
       f.panel(px, 374, 284, 132, { stroke: P_COL[p] });
       f.A(tx.nome, px + 14, 394, 28, '#fff', '#000', 'left');
       tx.linhas.forEach((l, i) => f.T(l, px + 14, 424 + i * 20, 14, i === 0 ? '#e8ecff' : '#ffd23f', 'left'));
-      f.A(tag, px + 142, 72, 22, P_COL[p], '#000', 'center');
+      this.etiqueta(p, px, tag);
       return;
     }
     const ch = m.elenco[id].ch;
@@ -267,7 +385,16 @@ export class CenaSelect implements Cena {
       // só os NOVOS encolhem o que estoura a borda do painel; os 4 do protótipo ficam a 13 px, pixel a pixel
       f.T(rotulo, px + 180, 456 + i * 17, tamanhoDoNomeNoContexto(ctx, ch.id, rotulo), i === 0 ? ch.fire[0] : '#e8ecff', 'left');
     });
-    f.A(tag, px + 142, 72, 22, P_COL[p], '#000', 'center');
+    this.etiqueta(p, px, tag);
+  }
+
+  /**
+   * A etiqueta do jogador (VOCÊ, ALVO, ADVERSÁRIO, JOGADOR 1/2). Ficava no alto (y 72), em cima do rosto: o topo da cabeça de quem tem escala alta chega a
+   * y 27 (BAATAR) e 28 (ZENON), então não há faixa livre acima de todos. Agora fica NO PAINEL do lutador, alinhada à direita da linha do nome (y 394),
+   * logo abaixo dos pés (os pés vão até y 361 e o painel começa em 374): nunca cobre um rosto, em nenhum lutador ou aparelho.
+   */
+  private etiqueta(p: 0 | 1, px: number, tag: string): void {
+    this.ui.c.f.A(tag, px + 284 - 14, ETIQUETA.y, ETIQUETA.tamanho, P_COL[p], '#000', 'right');
   }
 
   /** Cadeado simples (corpo + argola) centrado em (cx, cy). */
@@ -340,12 +467,17 @@ export class CenaSelect implements Cena {
     this.marcadores(r, esc, aqui);
   }
 
-  /** Os marcadores dos jogadores sobre a casa (moldura pulsante, etiqueta 1P/2P/CPU e o OK de quem já travou). Na casa de honra (faixa 256x44) a etiqueta é fixa e legível. */
-  private marcadores(r: { x: number; y: number; w: number; h: number }, esc: number, aqui: readonly (0 | 1)[], honra = false): void {
+  /**
+   * Os marcadores dos jogadores sobre a casa (moldura pulsante, etiqueta 1P/2P/CPU e o OK de quem já travou). Na casa de honra (faixa 204x44) a etiqueta é
+   * fixa e legível; na casa aleatória (quadrado de 44 px) é "mini" (a moldura é a mesma; ninguém trava nela: o sorteado vai para a casa dele).
+   */
+  private marcadores(r: { x: number; y: number; w: number; h: number }, esc: number, aqui: readonly (0 | 1)[], fixa?: 'honra' | 'mini'): void {
     const { ctx, f } = this.ui.c;
-    const tw = honra ? 32 : 34 * esc;
-    const th = honra ? 18 : 20 * esc;
-    const ts = honra ? 12 : 13 * esc;
+    const honra = fixa === 'honra';
+    const mini = fixa === 'mini';
+    const tw = honra ? 32 : mini ? 22 : 34 * esc;
+    const th = honra ? 18 : mini ? 14 : 20 * esc;
+    const ts = honra ? 12 : mini ? 10 : 13 * esc;
     aqui.forEach((p, n) => {
       const pulse = this.lock[p] ? 1 : 0.6 + 0.4 * Math.sin(this.ui.t / 6);
       ctx.save();
@@ -396,7 +528,37 @@ export class CenaSelect implements Cena {
     ctx.lineWidth = 3;
     ctx.strokeStyle = '#d9b25a';
     ctx.strokeRect(r.x, r.y, r.w, r.h);
-    this.marcadores(r, 1, aqui, true);
+    this.marcadores(r, 1, aqui, 'honra');
+  }
+
+  /**
+   * A casa ALEATÓRIA: quadrado de 44 px à esquerda da casa de honra. Em repouso os rostos de TODOS os liberados passam, um a um, numa ordem embaralhada
+   * (nunca um travado ou o chefão oculto: a lista é a dos liberados), sob um véu e um "?" dourado. Com o Enter a roleta acelera e vai parando até o
+   * sorteado (o véu some para o rosto aparecer). Com movimento reduzido (`prefers-reduced-motion`) é só o "?" num fundo fixo, sem rosto algum.
+   */
+  private casaAleatoria(): void {
+    const { ctx, f } = this.ui.c;
+    const m = this.ui.m;
+    const i = this.n;
+    const r = this.tileRect(i);
+    const aqui = ([0, 1] as const).filter((p) => (this.versus || (p === 0 ? true : this.step === 2)) && this.cur[p] === i);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8);
+    ctx.restore();
+    const reduzir = this.ui.c.reduzirMovimento?.() ?? false;
+    const girando = this.rolando.find((x) => x && x.pousouEm === null && x.rostos.length > 0) ?? null;
+    const id = reduzir ? null : girando ? (girando.rostos[passoDaRolagem(girando.t)] ?? null) : rostoEmRepouso(this.ordemVisual, this.ui.t);
+    const rosto = id ? m.elenco[id].arte.retrato(m.elenco[id].ch.head) : null;
+    desenharRetrato(ctx, rosto, r.x, r.y, r.w, false, ['#3a2a6a', '#120a24']);
+    // o véu escurece o rosto em repouso (a casa é um "?"); girando, o véu clareia para o rosto aparecer
+    ctx.fillStyle = girando ? 'rgba(10,5,30,.2)' : id ? 'rgba(10,5,30,.5)' : 'rgba(10,5,30,.0)';
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    f.A('?', r.x + r.w / 2, r.y + r.h / 2, girando ? 22 : 30, ['#ffe9a8', '#ffb347'], '#1a0a00');
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#d9b25a';
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    this.marcadores(r, 1, aqui, 'mini');
   }
 
   draw(): void {
@@ -432,8 +594,10 @@ export class CenaSelect implements Cena {
     }
     // grade central
     for (let i = 0; i < this.n; i++) this.casa(i);
+    if (this.honra) this.casaAleatoria();
     const act = this.versus ? 0 : (this.active() ?? 0);
     const idc = this.idEm(this.cur[act]);
+    const sorteio = this.ehAleatoria(this.cur[act]);
     // com a casa de honra o painel desce 50 px (e encolhe 8): y 408 a 500, acima da faixa de dica (510)
     const py = this.honra ? 408 : 358;
     const ph = this.honra ? 92 : 100;
@@ -441,7 +605,10 @@ export class CenaSelect implements Cena {
     const textoY = py + (this.honra ? 38 : 44);
     const linha = this.honra ? 15 : 17;
     f.panel(352, py, 256, ph, { r: 8 });
-    if (podeEscolher(this.estado(idc))) {
+    if (sorteio) {
+      f.A(TEXTO_DA_ALEATORIA.nome, 480, nomeY, 22, '#fff', '#000');
+      f.wrap(TEXTO_DA_ALEATORIA.descricao, 366, textoY, 228, linha, 13, '#e8ecff');
+    } else if (podeEscolher(this.estado(idc))) {
       const hc = m.elenco[idc].ch;
       f.A(hc.name, 480, nomeY, 22, '#fff', '#000');
       f.wrap(hc.desc, 366, textoY, 228, linha, 13, '#e8ecff');

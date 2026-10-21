@@ -92,8 +92,7 @@ test.describe('render', () => {
       let x1 = -1;
       let y0 = 540;
       let y1 = -1;
-      let topoBranco = 0;
-      let baseVermelha = 0;
+      const pixels: Array<[number, number]> = []; // [y, verde] dos pixels de PREENCHIMENTO (vermelho alto: o contorno é quase preto)
       for (let y = 0; y < 540; y++) {
         for (let x = 0; x < 960; x++) {
           const i = (y * 960 + x) * 4;
@@ -102,13 +101,18 @@ test.describe('render', () => {
             x1 = Math.max(x1, x);
             y0 = Math.min(y0, y);
             y1 = Math.max(y1, y);
-            // preenchimento degradê: topo claro, base avermelhada
-            if (data[i]! > 240 && data[i + 1]! > 240 && data[i + 2]! > 240) topoBranco = Math.max(topoBranco, 540 - y);
-            if (data[i]! > 200 && data[i + 1]! < 90) baseVermelha = Math.max(baseVermelha, y);
+            // preenchimento degradê: topo claro, base avermelhada (o canal verde cai de cima para baixo)
+            if (data[i]! > 200) pixels.push([y, data[i + 1]!]);
           }
         }
       }
-      return { x0, x1, y0, y1, topoBranco, baseVermelha };
+      // o degradê é vertical sobre a caixa do EM (não sobre os glifos): mede a média do verde na faixa de cima e na de baixo do desenho (a tipografia muda a altura das letras, não a direção do degradê)
+      const faixa = (a: number, b: number): number => {
+        const v = pixels.filter(([y]) => y >= a && y <= b).map(([, g]) => g);
+        return v.reduce((t, g) => t + g, 0) / Math.max(1, v.length);
+      };
+      const altura = y1 - y0;
+      return { x0, x1, y0, y1, verdeNoTopo: faixa(y0, y0 + altura * 0.25), verdeNaBase: faixa(y1 - altura * 0.25, y1) };
     });
     expect(r.x1).toBeGreaterThan(r.x0); // desenhou algo
     expect((r.x0 + r.x1) / 2).toBeGreaterThan(470);
@@ -118,9 +122,8 @@ test.describe('render', () => {
     expect(r.x0).toBeGreaterThan(0);
     expect(r.x1).toBeLessThan(960);
     expect(r.y1 - r.y0).toBeGreaterThan(60); // texto de 130px tem altura de verdade
-    // degradê: o branco puro fica acima do vermelho
-    const ySuperiorBranco = 540 - r.topoBranco;
-    expect(ySuperiorBranco).toBeLessThan(r.baseVermelha);
+    // degradê: o topo é mais claro (mais verde) e a base mais vermelha
+    expect(r.verdeNoTopo - r.verdeNaBase).toBeGreaterThan(40);
   });
 
   test('vinheta: transparente no centro, escura nos cantos', async ({ page }) => {

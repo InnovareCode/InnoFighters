@@ -45,6 +45,13 @@ export interface Contexto {
   readonly rngVisual: Rng;
   /** Sorteio das decisões de interface (ordem dos rivais do ARCADE). */
   readonly rngUI: Rng;
+  /**
+   * Sorteio da casa ALEATÓRIA da seleção (semente + 4): fora do RNG da luta (lock-step/replay), dos efeitos visuais e do `rngUI` (ordem dos rivais).
+   * Ausente (testes antigos): a cena usa o `rngUI`.
+   */
+  readonly sorteioDaSelecao?: Rng;
+  /** O jogador pediu menos movimento (`prefers-reduced-motion`)? A casa aleatória fica num "?" fixo e o sorteio sai sem rolagem. Ausente = não. */
+  readonly reduzirMovimento?: () => boolean;
   /** Regras do desbloqueio e do elenco (padrão: `REGRAS_PADRAO`; testes injetam outras, ex.: 9 ids falsos). */
   readonly regras: Regras;
   alternarTelaCheia(): void;

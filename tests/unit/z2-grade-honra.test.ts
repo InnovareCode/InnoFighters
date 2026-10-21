@@ -61,7 +61,7 @@ describe('ordem da grade de 10', () => {
 });
 
 describe('geometria da casa de honra (interseção = 0 px²)', () => {
-  const casas = Array.from({ length: 10 }, (_, i) => retanguloDaCasa(i, 3, 10));
+  const casas = Array.from({ length: 11 }, (_, i) => retanguloDaCasa(i, 3, 10)); // 9 regulares, a honra (9) e a aleatória (10)
   const regulares = casas.slice(0, 9);
   /** O painel de descrição desce para y 408 (92 px) com a casa de honra, e a faixa de dica fica em y 510 a 540. */
   const painel = { x: 352, y: 408, w: 256, h: 92 };
@@ -71,15 +71,15 @@ describe('geometria da casa de honra (interseção = 0 px²)', () => {
   const ladoDir = { x: 656, y: 374, w: 284, h: 132 };
   const rivais = { x: 656, y: 100, w: 284, h: 250 };
 
-  it('a casa 9 é a faixa de 256x44 logo abaixo da 3x3; as outras 9 casas seguem iguais a antes', () => {
+  it('a casa 9 é a faixa de 204x44 logo abaixo da 3x3 (à direita da casa aleatória); as outras 9 casas seguem iguais a antes', () => {
     expect(casas[9]).toEqual(CASA_DE_HONRA);
-    expect(CASA_DE_HONRA).toEqual({ x: 352, y: 356, w: 256, h: 44 });
+    expect(CASA_DE_HONRA).toEqual({ x: 404, y: 356, w: 204, h: 44 });
     for (let i = 0; i < 9; i++) expect(casas[i]).toEqual(retanguloDaCasa(i, 3));
     expect(retanguloDaCasa(9, 3)).toEqual({ x: 352, y: 356, w: 80, h: 80 }); // sem `n` o resultado é o de sempre (o bug A5 era esta 10ª casa em cima do painel)
   });
 
   it('nenhuma casa cruza outra', () => {
-    for (let i = 0; i < 10; i++) for (let j = i + 1; j < 10; j++) expect(cruza(casas[i]!, casas[j]!), `${i} x ${j}`).toBe(0);
+    for (let i = 0; i < 11; i++) for (let j = i + 1; j < 11; j++) expect(cruza(casas[i]!, casas[j]!), `${i} x ${j}`).toBe(0);
   });
 
   it('a casa de honra (com a moldura de 4 px de cada lado que a casa desenha) não toca a 3ª linha, o painel nem a faixa de dica', () => {
@@ -91,6 +91,11 @@ describe('geometria da casa de honra (interseção = 0 px²)', () => {
     expect(cruza(comMoldura, dica)).toBe(0);
     expect(cruza(painel, dica)).toBe(0);
     for (const r of regulares) expect(cruza(painel, r)).toBe(0);
+    // a casa aleatória, com a mesma moldura, não toca a 3ª linha, o painel, a faixa de dica nem a honra com a moldura dela
+    const a = casas[10]!;
+    const aComMoldura = { x: a.x - 4, y: a.y - 4, w: a.w + 8, h: a.h + 8 };
+    for (const c of molduraDaTerceira) expect(cruza(aComMoldura, c)).toBe(0);
+    for (const alvo of [painel, dica, comMoldura]) expect(cruza(aComMoldura, alvo)).toBe(0);
   });
 
   it('nada do centro cruza os painéis dos lados', () => {
@@ -100,7 +105,7 @@ describe('geometria da casa de honra (interseção = 0 px²)', () => {
   });
 
   it('o painel e a casa cabem na tela de 960x540 e a faixa de dica sobra', () => {
-    for (const r of [casas[9]!, painel]) {
+    for (const r of [casas[9]!, casas[10]!, painel]) {
       expect(r.x).toBeGreaterThanOrEqual(0);
       expect(r.x + r.w).toBeLessThanOrEqual(960);
       expect(r.y + r.h).toBeLessThanOrEqual(510);
@@ -110,7 +115,7 @@ describe('geometria da casa de honra (interseção = 0 px²)', () => {
 
 describe('área de toque da casa de honra', () => {
   it('a honra ganha 4 px de folga em cima e 8 embaixo (56 px lógicos); as outras casas seguem iguais; sem honra nada muda', () => {
-    expect(retanguloDeToque(9, 3, 10)).toEqual({ x: 352, y: 352, w: 256, h: 56 });
+    expect(retanguloDeToque(9, 3, 10)).toEqual({ x: 404, y: 352, w: 204, h: 56 });
     for (let i = 0; i < 9; i++) expect(retanguloDeToque(i, 3, 10)).toEqual(retanguloDaCasa(i, 3, 10));
     expect(retanguloDeToque(8, 3, 9)).toEqual(retanguloDaCasa(8, 3));
     expect(retanguloDeToque(3, 2, 4)).toEqual(retanguloDaCasa(3, 2));
@@ -120,6 +125,15 @@ describe('área de toque da casa de honra', () => {
     const t = retanguloDeToque(9, 3, 10);
     for (let i = 0; i < 9; i++) expect(cruza(t, retanguloDaCasa(i, 3, 10)), `casa ${i}`).toBe(0);
     expect(cruza(t, { x: 352, y: 408, w: 256, h: 92 })).toBe(0);
+    expect(cruza(t, retanguloDeToque(10, 3, 10))).toBe(0); // nem a área da casa aleatória
+  });
+
+  it('a área de toque da casa aleatória: 52x56 (4 px de folga em cima, dos lados e 8 embaixo), sem tocar a 3ª linha, o painel nem a honra', () => {
+    expect(retanguloDeToque(10, 3, 10)).toEqual({ x: 348, y: 352, w: 52, h: 56 });
+    const t = retanguloDeToque(10, 3, 10);
+    for (let i = 0; i < 9; i++) expect(cruza(t, retanguloDaCasa(i, 3, 10)), `casa ${i}`).toBe(0);
+    expect(cruza(t, { x: 352, y: 408, w: 256, h: 92 })).toBe(0);
+    expect(cruza(t, { x: 20, y: 374, w: 284, h: 132 })).toBe(0); // o painel do lutador (termina em x 304)
   });
 });
 
@@ -129,18 +143,51 @@ describe('navegação com a casa de honra', () => {
   it('↓↓↓↑ a partir da casa 1 termina na 7 (o centro de baixo)', () => {
     expect(mover(1, 'down', 'down', 'down', 'up')).toBe(7);
     expect(mover(1, 'down', 'down', 'down')).toBe(9);
+    expect(mover(0, 'down', 'down', 'down')).toBe(10);
   });
 
-  it('para baixo, de qualquer casa da 3ª linha vai para a honra; para cima, da honra vai para a 7', () => {
-    for (const i of [6, 7, 8]) expect(mover(i, 'down'), `de ${i}`).toBe(9);
+  it('para baixo, da 3ª linha: a coluna 1 vai à casa ALEATÓRIA (10) e as colunas 2 e 3 vão à honra (9); para cima, da honra vai à 7 e da aleatória à 6', () => {
+    expect(mover(6, 'down')).toBe(10);
+    for (const i of [7, 8]) expect(mover(i, 'down'), `de ${i}`).toBe(9);
     expect(mover(9, 'up')).toBe(7);
+    expect(mover(10, 'up')).toBe(6);
   });
 
-  it('esquerda e direita na honra não mudam de casa; para baixo, da honra volta ao centro de cima; para cima da 1ª linha vai à honra (a volta)', () => {
-    expect(mover(9, 'left')).toBe(9);
-    expect(mover(9, 'right')).toBe(9);
+  it('esquerda e direita na faixa de baixo alternam entre a aleatória e a honra (com volta); para baixo, a honra volta à 1 e a aleatória à 0; da 1ª linha para cima vai à faixa de baixo (a volta)', () => {
+    expect(mover(9, 'left')).toBe(10);
+    expect(mover(9, 'right')).toBe(10);
+    expect(mover(10, 'left')).toBe(9);
+    expect(mover(10, 'right')).toBe(9);
     expect(mover(9, 'down')).toBe(1);
-    for (const i of [0, 1, 2]) expect(mover(i, 'up'), `de ${i}`).toBe(9);
+    expect(mover(10, 'down')).toBe(0);
+    expect(mover(0, 'up')).toBe(10);
+    for (const i of [1, 2]) expect(mover(i, 'up'), `de ${i}`).toBe(9);
+  });
+
+  it('não há beco: de qualquer casa (as 11) o cursor alcança todas as outras só com as 4 setas', () => {
+    const dirs = ['up', 'down', 'left', 'right'] as const;
+    for (let origem = 0; origem <= 10; origem++) {
+      const visto = new Set([origem]);
+      const fila = [origem];
+      while (fila.length > 0) {
+        const atual = fila.shift() ?? 0;
+        for (const d of dirs) {
+          const prox = moverNaGrade(atual, d, 10, 3);
+          if (!visto.has(prox)) {
+            visto.add(prox);
+            fila.push(prox);
+          }
+        }
+      }
+      expect(visto.size, `de ${origem}`).toBe(11);
+    }
+  });
+
+  it('esquerda e direita têm volta: ←→ e →← desfazem um ao outro nas 11 casas (←→ e →← voltam sempre)', () => {
+    for (let i = 0; i <= 10; i++) {
+      expect(moverNaGrade(moverNaGrade(i, 'left', 10, 3), 'right', 10, 3), `←→ de ${i}`).toBe(i);
+      expect(moverNaGrade(moverNaGrade(i, 'right', 10, 3), 'left', 10, 3), `→← de ${i}`).toBe(i);
+    }
   });
 
   it('nas 9 casas regulares anda como a 3x3 de sempre (com volta nas bordas da linha)', () => {

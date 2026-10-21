@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { usarArteDoPrototipo } from './_jp-prototipo';
+import { aguardarFontesNoPrototipo, urlDoPrototipoComFontesDoJogo, usarArteDoPrototipo } from './_jp-prototipo';
 
 /*
  * Fidelidade das TELAS (ui/): cada cena é montada no mesmo estado no protótipo original (página
@@ -18,6 +17,12 @@ import { usarArteDoPrototipo } from './_jp-prototipo';
  *
  * SEGUNDA EXCEÇÃO INTENCIONAL (decisão 17 do dono): o "Como jogar" não cita mais a tecla H (caixas de colisão, debug). No protótipo
  * trocamos só essa frase (initScript do beforeAll); a tecla H continua valendo no jogo.
+ *
+ * TERCEIRA EXCEÇÃO INTENCIONAL (decisão do dono, 2026-10-21, tipografia e etiqueta): o jogo desenha todo o texto em Barlow Condensed (títulos) e Barlow (corpo),
+ * auto-hospedadas, e a etiqueta do jogador (VOCÊ, ALVO, ADVERSÁRIO, JOGADOR 1/2) saiu de cima do rosto (y 72, centrada no painel) para a linha do nome do painel do lutador
+ * (y 394, à direita). O protótipo original não muda: a comparação roda contra uma CÓPIA dele (test-results/prototipo-fontes) em que SÓ as linhas FH/FB e a linha da
+ * etiqueta foram trocadas (ver urlDoPrototipoComFontesDoJogo em _jp-prototipo.ts). Todo o resto segue pixel a pixel. Os 5 casos "seleção ..." e todos os outros com texto
+ * têm baseline novo POR ISSO (fontes); a casa aleatória só existe na grade de 10, então a de 4 (que o protótipo tem) não mudou de layout.
  *
  * Os nomes dos campos das cenas foram mantidos de propósito, então o mesmo trecho de código (`codigo`)
  * roda dos dois lados com S = cena, U = navegador/UI, G = partida, SET = configurações.
@@ -90,7 +95,8 @@ const CASOS: Caso[] = [
   { nome: 'pausa: treino (alvo e reposicionar)', cena: 'fight', args: { cfg: cfgTreino }, ticks: 70, t: 70, codigo: 'S.paused = true; S.view = "main"; S.m.sel = 3;' },
 ];
 
-const URL_PROTOTIPO = pathToFileURL(resolve('prototipo/inno-fighters-artefato.html')).href;
+// cópia do protótipo com as fontes novas e a etiqueta do jogador no lugar novo (ver o cabeçalho e _jp-prototipo.ts)
+const URL_PROTOTIPO = urlDoPrototipoComFontesDoJogo();
 
 /** Estado de sorteio do jogo novo, copiado para o protótipo (as sequências aleatórias diferem por natureza). */
 type Sorteio = { petalas: unknown; brasas: unknown; petalasLuta: unknown };
@@ -247,6 +253,7 @@ test.describe('fidelidade das telas: ui/ novo x protótipo (pixel a pixel)', () 
     });
     await proto.goto(URL_PROTOTIPO);
     await proto.waitForFunction(() => !!(window as any).SF && (window as any).SF.UI.ready, undefined, { timeout: 60_000 });
+    await aguardarFontesNoPrototipo(proto);
     const ca = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     app = await ca.newPage();
     await usarArteDoPrototipo(ca);

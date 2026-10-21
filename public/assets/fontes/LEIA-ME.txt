@@ -1,0 +1,13 @@
+Fontes do InnoFighters (auto-hospedadas; nada de Google Fonts/CDN: a CSP so libera o proprio site e o jogo nao fala com terceiros).
+
+  barlow-condensed-800-italic-latin.woff2   Barlow Condensed ExtraBold Italic  -> titulos, nomes, numeros (FH em src/render/texto.ts)
+  barlow-600-latin.woff2                    Barlow SemiBold                    -> corpo, dicas, rotulos (FB) e botoes do toque (CSS)
+
+Familia: Barlow / Barlow Condensed, de Jeremy Tribby (The Barlow Project Authors, https://github.com/jpt/barlow).
+Licenca: SIL Open Font License 1.1 (livre para uso, inclusive comercial, e para redistribuir junto do jogo; o texto esta em
+OFL-barlow.txt e OFL-barlow-condensed.txt, nesta mesma pasta, e deve acompanhar os arquivos).
+Origem dos arquivos: pacotes npm @fontsource/barlow e @fontsource/barlow-condensed 5.3.0 (so o subset "latin" em woff2, ja subsetado:
+inclui o portugues inteiro - A com til, O com til, C cedilha, todos os acentos, aspas, travessoes, bullet, setas para cima e para baixo).
+
+Para trocar ou acrescentar um peso: copiar o woff2 do mesmo pacote, declarar em src/fontes.css, listar em FACES_DO_JOGO
+(src/platform/fontes.ts) e na precarga do index.html. tests/unit/fontes.test.ts confere os arquivos, as licencas e as referencias.

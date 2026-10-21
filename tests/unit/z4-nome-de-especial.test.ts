@@ -56,8 +56,8 @@ describe('tamanhoDoNomeDeEspecial', () => {
     };
     expect(tamanhoDoNomeNoContexto(ctx, 'zenon', '1234567890123')).toBe(12);
     expect(ctx.font).toBe('original');
-    expect(fontes[0]).toMatch(/^bold 13px "Segoe UI"/);
-    expect(fontes.at(-1)).toMatch(/^bold 12px "Segoe UI"/);
+    expect(fontes[0]).toMatch(/^600 13px Barlow,/);
+    expect(fontes.at(-1)).toMatch(/^600 12px Barlow,/);
     // original: não mede, não mexe na fonte
     fontes.length = 0;
     expect(tamanhoDoNomeNoContexto(ctx, 'hayato', '1234567890123456789')).toBe(13);

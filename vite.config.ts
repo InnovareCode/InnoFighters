@@ -9,6 +9,8 @@ import { defineConfig } from 'vitest/config';
  * Exceções à política mínima (cada uma com o motivo; qualquer nova entra aqui E no teste):
  *  - style-src 'unsafe-inline': o `<style>` do index.html (tamanho do canvas antes do JS subir) e o `style="..."`
  *    do `<pre id="err">`. Só estilo: scripts continuam travados em 'self'.
+ *  - font-src 'self' (explícita, não é exceção): as fontes do canvas (Barlow, OFL) são woff2 auto-hospedados em /assets/fontes; Google Fonts/CDN
+ *    ficam barrados por desenho (privacidade e CSP). Sem a diretiva valeria o default-src, o mesmo 'self': ela existe para o teste de build a fixar.
  *  - img-src data: blob: / media-src blob: / connect-src 'self': não são exceções de uso hoje (o jogo só carrega
  *    imagens e JSON do próprio site, e sintetiza o áudio por AudioContext), vêm da sugestão do Órion e deixam
  *    folga para createImageBitmap/blob sem afrouxar nada de script.
@@ -18,6 +20,7 @@ export const POLITICA_CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline'",
+  "font-src 'self'",
   "img-src 'self' data: blob:",
   "connect-src 'self'",
   "media-src 'self' blob:",

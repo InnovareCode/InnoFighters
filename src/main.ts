@@ -1,5 +1,6 @@
 import './input/toque.css';
 import './platform/aviso.css';
+import './fontes.css';
 import { iniciarArte } from './assets/elenco';
 import { AudioSys } from './audio/audio-sys';
 import { carregarDadosV2, type ArmazenamentoLike } from './core/storage';
@@ -13,6 +14,7 @@ import { ajustarEscala } from './platform/escala';
 import { mostrarErrosNaTela } from './platform/erros';
 import { observarFoco } from './platform/foco';
 import { criarAviso } from './platform/aviso';
+import { carregarFontes } from './platform/fontes';
 import { alternarTelaCheia } from './platform/tela-cheia';
 import { criarVinheta } from './render/cenario';
 import { CampoDePetalas, Efeitos } from './render/efeitos';
@@ -43,6 +45,12 @@ function lerSemente(): number {
   const bruto = new URLSearchParams(window.location.search).get('seed');
   const n = bruto === null ? Number.NaN : Number(bruto);
   return Number.isFinite(n) ? n >>> 0 : sementeAleatoria();
+}
+
+/** `prefers-reduced-motion: reduce` (consulta única, o navegador atualiza o `matches` sozinho). */
+function reduzirMovimento(): () => boolean {
+  const mq = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+  return () => mq?.matches ?? false;
 }
 
 async function iniciar(): Promise<void> {
@@ -107,10 +115,15 @@ async function iniciar(): Promise<void> {
     entrada,
     rngVisual,
     rngUI,
+    sorteioDaSelecao: criarRng(semente + 4),
+    reduzirMovimento: reduzirMovimento(),
     regras,
     alternarTelaCheia,
     temToque: () => document.body.classList.contains('touch'),
   };
+  // as fontes do canvas (Barlow, auto-hospedadas) ANTES do 1º quadro: sem isto o texto nasce na fonte de reserva e pisca ao trocar
+  const fontesOk = await carregarFontes();
+  document.documentElement.dataset['fontes'] = fontesOk ? 'ok' : 'reserva';
   const ui = new Navegador(contexto);
   nav = ui;
   ui.set('boot');

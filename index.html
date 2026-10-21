@@ -7,6 +7,9 @@
     <!-- site de TESTE publico (Pages temporario): nao indexar. Remover ao entrar no servidor definitivo. -->
     <meta name="robots" content="noindex" />
     <title>InnoFighters</title>
+    <!-- fontes do canvas (auto-hospedadas, OFL): precarga para a 1a cena nao esperar; declaradas em src/fontes.css -->
+    <link rel="preload" href="/assets/fontes/barlow-condensed-800-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fontes/barlow-600-latin.woff2" as="font" type="font/woff2" crossorigin />
     <style>
       html, body { margin: 0; height: 100%; background: #05030a; overflow: hidden; }
       body { display: grid; place-items: center; touch-action: none; }

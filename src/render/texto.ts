@@ -1,8 +1,15 @@
 import type { Ctx } from './tela';
 
-/** Fonte de títulos (arcade, itálico) e de corpo. Porte de FH/FB. */
-export const FH = (tamanho: number): string => `italic bold ${tamanho}px Impact, "Arial Black", "Segoe UI", sans-serif`;
-export const FB = (tamanho: number): string => `bold ${tamanho}px "Segoe UI", "Trebuchet MS", Arial, sans-serif`;
+/**
+ * Famílias do jogo, AUTO-HOSPEDADAS (public/assets/fontes, licença OFL; declaradas em src/fontes.css e carregadas antes do 1º quadro por
+ * platform/fontes.ts): Barlow Condensed ExtraBold Itálico nos títulos (clima de arcade de luta, combina com a caixa alta) e Barlow SemiBold no
+ * corpo (sans legível em minúsculas). Os fallbacks só valem se o arquivo não chegar; o arcade antigo (Impact / Segoe UI) fica no fim da lista.
+ */
+export const FAMILIA_TITULO = '"Barlow Condensed", "Arial Narrow", Impact, sans-serif';
+export const FAMILIA_CORPO = 'Barlow, "Segoe UI", "Trebuchet MS", Arial, sans-serif';
+/** Fonte de títulos (arcade, itálico condensado) e de corpo. Porte de FH/FB (famílias novas desde a tipografia do dono, 2026-10-21). */
+export const FH = (tamanho: number): string => `italic 800 ${tamanho}px ${FAMILIA_TITULO}`;
+export const FB = (tamanho: number): string => `600 ${tamanho}px ${FAMILIA_CORPO}`;
 
 export type Alinhamento = 'left' | 'center' | 'right';
 /** Cor sólida ou gradiente vertical [topo, base]. */

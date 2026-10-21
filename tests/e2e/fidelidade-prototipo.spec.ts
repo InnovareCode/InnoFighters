@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { usarArteDoPrototipo } from './_jp-prototipo';
+import { aguardarFontesNoPrototipo, urlDoPrototipoComFontesDoJogo, usarArteDoPrototipo } from './_jp-prototipo';
 
 /*
  * Fidelidade visual: o MESMO quadro de luta é desenhado pelo protótipo (arquivo original, rodando
@@ -312,8 +311,10 @@ test.describe('fidelidade visual: render/ novo x protótipo (pixel a pixel)', ()
     if (info.project.name !== 'desktop') return;
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     proto = await ctx.newPage();
-    await proto.goto(pathToFileURL(resolve('prototipo/inno-fighters-artefato.html')).href);
+    // cópia do protótipo com as fontes novas (o HUD e os textos da luta usam FH/FB; ver _jp-prototipo.ts)
+    await proto.goto(urlDoPrototipoComFontesDoJogo());
     await proto.waitForFunction(() => !!(window as any).SF && (window as any).SF.UI.ready, undefined, { timeout: 60_000 });
+    await aguardarFontesNoPrototipo(proto);
   });
   test.afterAll(async () => {
     await proto?.context().close();

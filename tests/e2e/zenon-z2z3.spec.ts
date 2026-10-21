@@ -587,7 +587,7 @@ test.describe('Z2: a ESCALA 1,32 do ZENON contra os nomes do HUD', () => {
 
 test.describe('Z2: a seleção de 10 com a casa de honra, medida no navegador', () => {
   for (const [perfil, viewport] of [['desktop', { width: 1280, height: 720 }], ['celular', { width: 915, height: 412 }]] as const) {
-    test(`${perfil}: honra 256x44 sem tocar a 3ª linha, o painel nem a faixa de dica; o texto cabe; ${perfil === 'celular' ? 'toque na honra seleciona a 10ª casa' : 'o clique na honra vai para ela'}`, async ({ page }, info) => {
+    test(`${perfil}: honra 204x44 (ao lado da casa aleatória) sem tocar a 3ª linha, o painel nem a faixa de dica; o texto cabe; ${perfil === 'celular' ? 'toque na honra seleciona a 10ª casa' : 'o clique na honra vai para ela'}`, async ({ page }, info) => {
       test.skip(info.project.name !== perfil, `só no ${perfil}`);
       const erros = coletarErros(page);
       await semear(page, { desbloqueados: ['aminu'], zeradas: 1 });
@@ -596,7 +596,7 @@ test.describe('Z2: a seleção de 10 com a casa de honra, medida no navegador', 
       await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); h.avancar(30); h.desenhar(); }");
       const caixas = await hook(page, '(h) => Array.from({ length: 10 }, (_, i) => h.ui.scene.tileRect(i))');
       const honra = caixas[9];
-      expect(honra).toEqual({ x: 352, y: 356, w: 256, h: 44 });
+      expect(honra).toEqual({ x: 404, y: 356, w: 204, h: 44 });
       const cv = (await page.locator('canvas#jogo').boundingBox())!;
       const k = cv.width / 960;
       info.annotations.push({ type: 'toque', description: `${perfil}: canvas ${cv.width.toFixed(0)}x${cv.height.toFixed(0)} CSS; casa de honra ${(honra.w * k).toFixed(0)}x${(honra.h * k).toFixed(1)} px CSS (área de toque ${(56 * k).toFixed(1)} px de altura)` });

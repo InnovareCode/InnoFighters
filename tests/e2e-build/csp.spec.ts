@@ -51,7 +51,7 @@ test.describe('CSP no build de produção', () => {
     expect(meta, 'meta CSP ausente no HTML do build').not.toBeNull();
     const politica = (meta?.[1] ?? '').replaceAll('&#39;', "'");
     expect(politica).toBe(
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:",
     );
     expect(html.indexOf('Content-Security-Policy')).toBeLessThan(html.indexOf('<script'));
     expect(html.indexOf('Content-Security-Policy')).toBeLessThan(html.indexOf('<link'));
@@ -100,6 +100,13 @@ test.describe('CSP no build de produção', () => {
     expect(arte.length).toBeGreaterThan(5);
     expect(arte.filter(([p]) => p.endsWith('.webp')).length).toBeGreaterThan(0);
     expect(arte.filter(([, s]) => s !== 200)).toEqual([]);
+
+    // as fontes do canvas (woff2 auto-hospedados) vieram do próprio site com 200, carregaram antes do 1º quadro e nenhuma violação de font-src
+    const fontes = [...recursos].filter(([p]) => p.endsWith('.woff2'));
+    expect(fontes.map(([p]) => p.split('/').pop()).sort()).toEqual(['barlow-600-latin.woff2', 'barlow-condensed-800-italic-latin.woff2']);
+    expect(fontes.filter(([, s]) => s !== 200)).toEqual([]);
+    await expect(page.locator('html')).toHaveAttribute('data-fontes', 'ok');
+    expect(await page.evaluate(() => document.fonts.check('italic 800 20px "Barlow Condensed"') && document.fonts.check('600 20px Barlow'))).toBe(true);
 
     // o áudio só nasce depois do primeiro gesto; o AudioContext não pode ser barrado por CSP
     await page.keyboard.press('Enter'); // boot -> intro (cria o AudioContext)

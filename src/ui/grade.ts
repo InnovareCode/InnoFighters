@@ -47,15 +47,32 @@ export interface RetanguloCasa {
   readonly h: number;
 }
 
-/** A casa de honra do chefão: logo abaixo da 3x3 (que termina em y 348), com os mesmos x e largura do painel de descrição. */
-export const CASA_DE_HONRA: RetanguloCasa = { x: 352, y: 356, w: 256, h: 44 };
+/**
+ * A faixa de baixo da grade de 10 (logo abaixo da 3x3, que termina em y 348) tem DUAS casas, com os mesmos x e largura do painel de descrição (352 a 608):
+ * a ALEATÓRIA (um quadrado de 44 px sob a 1ª coluna) e a casa de honra do chefão (o resto da faixa, sob as colunas 2 e 3).
+ */
+export const CASA_ALEATORIA: RetanguloCasa = { x: 352, y: 356, w: 44, h: 44 };
+/** A casa de honra do chefão: 204x44, à direita da casa aleatória (vão de 8 px). */
+export const CASA_DE_HONRA: RetanguloCasa = { x: 404, y: 356, w: 204, h: 44 };
+
+/**
+ * A casa ALEATÓRIA ("RANDOM"): confirmar nela sorteia um lutador liberado. Só existe na grade de 10 (a de produção: 3x3 + honra); nas de 4 e 9
+ * casas (fixtures de teste e fidelidade com o protótipo) o layout é o de sempre. Não é um lutador: o índice dela é `n` (o 1º depois do último
+ * lutador), então `grade[i]` não vale para ela. Os testes e a cena perguntam por aqui, nunca por `i === 10`.
+ */
+export const temCasaAleatoria = (n: number): boolean => temCasaDeHonra(n);
+/** Índice da casa aleatória (só vale se `temCasaAleatoria(n)`). */
+export const indiceDaAleatoria = (n: number): number => n;
 
 /**
  * Retângulo (px lógicos) da casa `i`: 2 colunas = 120 px com passo 132 (como o protótipo); 3 colunas = 80 px com passo 88. Com `n` = 10 a casa 9
  * é a CASA DE HONRA (`CASA_DE_HONRA`); sem `n` o resultado é o de sempre.
  */
 export function retanguloDaCasa(i: number, colunas: 2 | 3, n?: number): RetanguloCasa {
-  if (n !== undefined && temCasaDeHonra(n) && i === n - 1) return CASA_DE_HONRA;
+  if (n !== undefined && temCasaDeHonra(n)) {
+    if (i === n - 1) return CASA_DE_HONRA;
+    if (i === indiceDaAleatoria(n)) return CASA_ALEATORIA;
+  }
   const col = i % colunas;
   const lin = Math.floor(i / colunas);
   if (colunas === 2) return { x: 360 + col * 132, y: 92 + lin * 132, w: 120, h: 120 };
@@ -63,26 +80,34 @@ export function retanguloDaCasa(i: number, colunas: 2 | 3, n?: number): Retangul
 }
 
 /**
- * A área de toque/mouse da casa `i`: a mesma do desenho, e a casa de honra ganha 4 px de folga em cima (a moldura) e 8 embaixo (a moldura e o vão até o painel de
- * descrição, que começa em y 408): 256x56 lógicos = ~43 px CSS de altura no celular deitado de 915x412 (a faixa de 44 px lógicos daria ~34).
+ * A área de toque/mouse da casa `i`: a mesma do desenho, e as duas casas da faixa de baixo ganham 4 px de folga em cima (a moldura) e 8 embaixo (a moldura e o
+ * vão até o painel de descrição, que começa em y 408): 56 px lógicos de altura = ~43 px CSS no celular deitado de 915x412 (a faixa de 44 px lógicos daria ~34).
+ * A casa aleatória (quadrada, 44 px) também ganha 4 px de folga à esquerda e 4 à direita (o vão de 8 px até a honra é dividido entre as duas): 52 px lógicos
+ * de largura = ~39 px CSS.
  */
 export function retanguloDeToque(i: number, colunas: 2 | 3, n?: number): RetanguloCasa {
   const r = retanguloDaCasa(i, colunas, n);
-  return n !== undefined && temCasaDeHonra(n) && i === n - 1 ? { x: r.x, y: r.y - 4, w: r.w, h: r.h + 12 } : r;
+  if (n === undefined || !temCasaDeHonra(n)) return r;
+  if (i === n - 1) return { x: r.x, y: r.y - 4, w: r.w, h: r.h + 12 };
+  if (i === indiceDaAleatoria(n)) return { x: r.x - 4, y: r.y - 4, w: r.w + 8, h: r.h + 12 };
+  return r;
 }
 
 /**
- * Move o cursor com volta nas bordas; última linha incompleta cai na última casa existente. Com a CASA DE HONRA (n = 10): para baixo, de qualquer
- * casa da 3ª linha vai para a honra; para cima, da honra vai para a casa do centro de baixo (7); da 1ª linha para cima também vai à honra (a volta);
- * para baixo, da honra volta ao centro de cima (1); esquerda e direita na honra não mudam de casa.
+ * Move o cursor com volta nas bordas; última linha incompleta cai na última casa existente. Com a CASA DE HONRA (n = 10) a faixa de baixo tem duas casas,
+ * a ALEATÓRIA (índice `n`, sob a coluna 1) e a honra (`n - 1`, sob as colunas 2 e 3):
+ * - para baixo, da 3ª linha: coluna 1 vai à aleatória, colunas 2 e 3 vão à honra; para cima, da 1ª linha, o mesmo (a volta);
+ * - para cima, da aleatória vai à casa 6 (a coluna 1 de baixo) e da honra à 7 (o centro de baixo); para baixo, a aleatória volta à 0 e a honra à 1;
+ * - esquerda e direita na faixa de baixo alternam entre a aleatória e a honra (volta nas bordas).
  */
 export function moverNaGrade(i: number, direcao: 'up' | 'down' | 'left' | 'right', n: number, colunas: number): number {
   if (temCasaDeHonra(n) && colunas === 3) {
     const honra = n - 1;
-    if (i === honra) return direcao === 'up' ? 7 : direcao === 'down' ? 1 : honra;
+    const aleatoria = indiceDaAleatoria(n);
+    if (i === honra) return direcao === 'up' ? 7 : direcao === 'down' ? 1 : aleatoria;
+    if (i === aleatoria) return direcao === 'up' ? 6 : direcao === 'down' ? 0 : honra;
     const lin3 = Math.floor(i / 3);
-    if (direcao === 'down' && lin3 === 2) return honra;
-    if (direcao === 'up' && lin3 === 0) return honra;
+    if ((direcao === 'down' && lin3 === 2) || (direcao === 'up' && lin3 === 0)) return i % 3 === 0 ? aleatoria : honra;
     if (direcao === 'left' || direcao === 'right') return lin3 * 3 + (((i % 3) + (direcao === 'right' ? 1 : 2)) % 3);
     return i + (direcao === 'down' ? 3 : -3);
   }

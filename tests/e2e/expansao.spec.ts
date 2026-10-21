@@ -104,7 +104,7 @@ test.describe('seleção de 10 (3x3 + casa de honra) com estados', () => {
     expect(caixas[4].x + caixas[4].w / 2).toBe(480);
     for (const c of caixas.slice(0, 9)) expect(c.w).toBe(80);
     expect(caixas[8].x + caixas[8].w).toBeLessThanOrEqual(960);
-    expect(caixas[9]).toEqual({ x: 352, y: 356, w: 256, h: 44 });
+    expect(caixas[9]).toEqual({ x: 404, y: 356, w: 204, h: 44 }); // a honra dividiu a faixa com a casa aleatória (o quadradinho de 44 px, índice 10)
 
     // teclas reais: do HAYATO (índice 0) ↓ ↓ = CAMILLE (6) (travada: o cursor anda por cima, Enter não confirma)
     await page.keyboard.press('ArrowDown');
@@ -127,7 +127,7 @@ test.describe('seleção de 10 (3x3 + casa de honra) com estados', () => {
     expect((await hook(page, '(h) => h.ui.scene.lock'))[0]).toBe(false);
     await hook(page, '(h) => h.desenhar()');
     await foto(page, 'selecao-10-honra-oculto');
-    // esquerda e direita na honra não mudam de casa; ↑ da honra vai para a 7 (NILA), ↑ de novo para a 4 (AMINU: liberado, com selo NOVO!), que confirma
+    // ← vai à casa aleatória e → volta à honra (a faixa de baixo tem duas casas); ↑ da honra vai para a 7 (NILA), ↑ de novo para a 4 (AMINU: liberado, com selo NOVO!), que confirma
     await page.keyboard.press('ArrowLeft');
     await page.keyboard.press('ArrowRight');
     expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe(CHEFE.id);

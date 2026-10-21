@@ -19,7 +19,7 @@ body.touch #touch { display: block; }
 #knob { position: absolute; box-sizing: border-box; left: 50%; top: 50%; width: calc(var(--joy) * .44); height: calc(var(--joy) * .44); margin: calc(var(--joy) * -.22) 0 0 calc(var(--joy) * -.22); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.45), rgba(255,255,255,.16)); border: 2px solid rgba(255,255,255,.55); box-shadow: 0 2px 6px rgba(0,0,0,.4); pointer-events: none; }
 
 #pad { position: absolute; pointer-events: none; right: calc(1.2vw + env(safe-area-inset-right,0px)); bottom: calc(10vh + env(safe-area-inset-bottom,0px)); display: grid; grid-template-columns: repeat(2, var(--hit)); grid-template-rows: repeat(3, var(--hit)); gap: var(--pad-gap); }
-#touch .b { position: relative; box-sizing: border-box; pointer-events: auto; touch-action: none; display: flex; align-items: center; justify-content: center; width: var(--hit); height: var(--hit); font: bold calc(var(--hit) * .24) sans-serif; letter-spacing: .3px; color: #fff; text-shadow: 0 1px 3px #000; }
+#touch .b { position: relative; box-sizing: border-box; pointer-events: auto; touch-action: none; display: flex; align-items: center; justify-content: center; width: var(--hit); height: var(--hit); font: 600 calc(var(--hit) * .24) var(--fonte-corpo); letter-spacing: .3px; color: #fff; text-shadow: 0 1px 3px #000; }
 /* o desenho do botão: menor que a área de toque, semitransparente */
 #touch .b::before { content: ""; position: absolute; z-index: -1; inset: calc(var(--hit) * .09); border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: var(--cor, rgba(0,0,0,.3)); box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: transform .05s; }
 #touch .b > b, #touch .b > span { position: relative; }
@@ -39,6 +39,6 @@ body.sem-esquiva #touch #esq { visibility: hidden; pointer-events: none; }
 #touch #bp { position: absolute; --cor: rgba(0,0,0,.35); width: max(44px, calc(var(--m) * .1)); height: max(44px, calc(var(--m) * .1)); right: calc(1.2vw + env(safe-area-inset-right,0px)); top: calc(2vh + env(safe-area-inset-top,0px)); font-size: calc(var(--m) * .04); }
 #touch #bp::before { inset: 14%; }
 
-#rot { display: none; position: fixed; left: 0; right: 0; bottom: 12px; text-align: center; color: #ddd; font: 14px sans-serif; z-index: 4; pointer-events: none; }
+#rot { display: none; position: fixed; left: 0; right: 0; bottom: 12px; text-align: center; color: #ddd; font: 600 15px var(--fonte-corpo); z-index: 4; pointer-events: none; }
 /* DESVIO DO PROTOTIPO: la esta regra vinha ANTES do #rot { display: none }, que a anulava, e o aviso nunca aparecia. Aqui vem depois, como era a intencao. */
 @media (orientation: portrait) { #rot { display: block; } }

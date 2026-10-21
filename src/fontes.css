@@ -1,0 +1,23 @@
+/*
+ * Fontes AUTO-HOSPEDADAS (licença OFL, arquivos e licenças em public/assets/fontes). Nada de Google Fonts/CDN: a CSP (vite.config.ts) só
+ * libera 'self' e o jogo não fala com terceiros. Subset latino (inclui o português inteiro: ÃÕÇ, acentos, ordinais, travessões, •).
+ * O canvas só desenha com a fonte DEPOIS de carregada: platform/fontes.ts a pede antes do 1º quadro (document.fonts.load).
+ * font-display: block, porque um quadro com a fonte de reserva piscaria no canvas.
+ */
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: italic;
+  font-weight: 800;
+  font-display: block;
+  src: url("/assets/fontes/barlow-condensed-800-italic-latin.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("/assets/fontes/barlow-600-latin.woff2") format("woff2");
+}
+:root {
+  --fonte-corpo: Barlow, "Segoe UI", "Trebuchet MS", Arial, sans-serif;
+}

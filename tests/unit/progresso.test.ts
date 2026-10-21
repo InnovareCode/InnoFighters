@@ -45,10 +45,10 @@ describe('meta/progresso: liberados', () => {
     expect(l.has(B)).toBe(false);
   });
 
-  it('regras padrao (E5): so os 4 iniciais liberados; a fila e AMINU, CENTELLA, CAMILLE, NILA e o chefao e o BAATAR', () => {
+  it('regras padrao: so os 4 iniciais liberados; a fila e AMINU, CENTELLA, CAMILLE, NILA, BAATAR e NAO ha chefao (ate o Zenon entrar)', () => {
     expect([...liberados(progressoVazio())].sort()).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
-    expect(REGRAS_PADRAO.chefe).toBe('baatar');
-    expect(REGRAS_PADRAO.fila).toEqual(['aminu', 'centella', 'camille', 'nila']);
+    expect(REGRAS_PADRAO.chefe).toBeNull();
+    expect(REGRAS_PADRAO.fila).toEqual(['aminu', 'centella', 'camille', 'nila', 'baatar']);
     expect(REGRAS_PADRAO.roster).toHaveLength(9);
   });
 });
@@ -57,7 +57,7 @@ describe('meta/progresso: aplicarVitoriaArcade', () => {
   it('1a zerada libera FILA[0] E o chefao (ED3a), nessa ordem', () => {
     const r = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, REGRAS);
     expect(r.novos).toEqual([A, BOSS]);
-    expect(r.prog).toEqual({ desbloqueados: [A, BOSS], zeradas: 1, chefeDerrotado: true, vistos: [] });
+    expect(r.prog).toEqual({ desbloqueados: [A, BOSS], zeradas: 1, chefeDerrotado: true, chefesDerrotados: [BOSS], vistos: [] });
   });
 
   it('2a zerada libera FILA[1]; o chefao ja liberado nao repete', () => {
@@ -156,7 +156,7 @@ describe('meta/progresso: marcarVistos / naoVistos', () => {
 
 describe('meta/progresso: sanearProgresso (localStorage e dado externo)', () => {
   it('progresso valido passa intacto', () => {
-    const ok = { desbloqueados: [A, BOSS], zeradas: 3, chefeDerrotado: true, vistos: [A] };
+    const ok = { desbloqueados: [A, BOSS], zeradas: 3, chefeDerrotado: true, chefesDerrotados: [BOSS], vistos: [A] };
     expect(sanearProgresso(ok, REGRAS)).toEqual(ok);
   });
 
@@ -296,11 +296,13 @@ describe('meta/escada: montarEscada', () => {
     expect(e.filter((x) => !x.chefe).map((x) => x.id).sort()).toEqual([A, C, M, W].sort());
   });
 
-  it('com as regras padrao (E5, ED4): 5 rivais e o BAATAR por ultimo, sem o lutador do jogador', () => {
+  it('com as regras padrao (sem chefao): 5 rivais, nenhuma etapa de chefe, sem o lutador do jogador; o BAATAR pode ser rival', () => {
     const e = montarEscada({ c1: H, prog: progressoVazio(), rng: criarRng(1) });
-    expect(e).toHaveLength(6);
-    expect(e.slice(0, 5).some((x) => x.chefe || x.id === H || x.id === 'baatar')).toBe(false);
-    expect(e[5]).toEqual({ id: 'baatar', chefe: true });
+    expect(e).toHaveLength(5);
+    expect(e.some((x) => x.chefe || x.id === H)).toBe(false);
+    const rivais = new Set<string>();
+    for (let s = 1; s <= 30; s++) for (const x of montarEscada({ c1: H, prog: progressoVazio(), rng: criarRng(s) })) rivais.add(x.id);
+    expect(rivais.has('baatar')).toBe(true);
   });
 
   it('nao muta o roster das regras', () => {

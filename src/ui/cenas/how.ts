@@ -149,9 +149,12 @@ export class CenaHow implements Cena {
         f.T(s === 1 ? '1 jogador: as duas configurações funcionam.' : '', x + 24, y0 + 241, 11, '#9fa6c9', 'left');
       });
       f.panel(40, y0 + 262, 880, 110, { r: 8 });
-      f.T('ESC ou P — pausar     M — mudo     F — tela cheia', 60, y0 + 288, 15, '#e8ecff', 'left');
-      f.T('Controle (PlayStation): □ soco fraco • △ soco forte • ✕ chute fraco • ○ chute forte • R1 especial • START pausa • 2 controles = 2 jogadores.', 60, y0 + 318, 13, '#cfd6f5', 'left');
-      f.T('Menus: setas / WASD navegam • ENTER / Z confirmam • ESC / X voltam • o mouse também funciona.', 60, y0 + 346, 14, '#cfd6f5', 'left');
+      // com a ESQUIVA nas regras entra mais uma linha (4 linhas em vez de 3); sem ela o painel é o do protótipo
+      const esq = this.ui.c.regras.esquiva;
+      f.T('ESC ou P — pausar     M — mudo     F — tela cheia', 60, y0 + (esq ? 282 : 288), 15, '#e8ecff', 'left');
+      f.T('Controle (PlayStation): □ soco fraco • △ soco forte • ✕ chute fraco • ○ chute forte • R1 especial • ' + (esq ? 'L1 esquiva • ' : '') + 'START pausa • 2 controles = 2 jogadores.', 60, y0 + (esq ? 306 : 318), 13, '#cfd6f5', 'left');
+      if (esq) f.T('ESQUIVA: P1 tecla N • P2 tecla O • controle L1 ou L2 • celular botão ESQ. Com → avança, com ← ou parado recua. Custa 20 da barra SUPER.', 60, y0 + 330, 13, '#7fe3ff', 'left');
+      f.T('Menus: setas / WASD navegam • ENTER / Z confirmam • ESC / X voltam • o mouse também funciona.', 60, y0 + (esq ? 354 : 346), 14, '#cfd6f5', 'left');
     } else if (this.tab === 2) {
       const id = this.lista()[this.cid] ?? 'hayato';
       const ch = m.elenco[id].ch;
@@ -165,7 +168,7 @@ export class CenaHow implements Cena {
       this.bullet(64, y0 + 160, 400, 'COMBOS', 'Ao acertar (ou ser bloqueado), aperte o próximo botão e o golpe ENCADEIA: soco fraco → chute fraco → soco forte → chute forte → especial. O soco fraco pode se repetir. O dano cai ~10% por golpe.');
       this.bullet(500, y0 + 28, 400, 'MOVIMENTO', 'Toque 2x para frente: corrida. 2x para trás: recuo rápido. Colado no rival, → + soco forte: ARREMESSO (não dá para bloquear).');
       this.bullet(500, y0 + 122, 400, 'DERRUBADAS', 'Chute forte, rasteira, ↓ + soco forte e quase todos os especiais derrubam. Quem cai fica invulnerável por instantes ao levantar.');
-      this.bullet(500, y0 + 212, 400, 'ENERGIA', 'Cada especial tem um custo. Acertar golpes enche mais a barra.');
+      this.bullet(500, y0 + 212, 400, 'ENERGIA', 'Cada especial tem um custo. Acertar golpes enche mais a barra.' + (this.ui.c.regras.esquiva ? ' A esquiva custa 20 e deixa você invulnerável por um instante.' : ''));
       this.bullet(500, y0 + 288, 400, 'DICA', 'Pule por cima dos projéteis, use a rasteira contra quem só bloqueia em pé e alterne alto/baixo para furar a defesa.');
     } else {
       this.lista().slice(this.pagina * POR_PAGINA, (this.pagina + 1) * POR_PAGINA).forEach((id, i) => {

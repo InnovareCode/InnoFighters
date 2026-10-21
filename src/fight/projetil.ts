@@ -15,6 +15,8 @@ export type ProjetilLuta = ProjetilLeitura & {
   acc: number;
   /** Derruba ao acertar (kdLast: só o último tiro). */
   kd: boolean;
+  /** Já foi anunciado como ESQUIVADO pelo alvo: segue voando, mas não acerta mais este alvo (consumido, como um acerto). */
+  esquivou?: true;
   /** V1: chave do golpe que o lançou (`sFire`...). `especial` (herdado de ProjetilLeitura) só existe quando o golpe é de ESPECIAL. */
   golpe: string;
 };

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect, test, type CDPSession, type Page } from '@playwright/test';
+import { CHEFE } from './_chefe';
 
 /*
  * E7a (celular): (1) o especial SEGURADO (spSeg) vem do toque e do controle, não só do teclado: o MASHI do AMINU carrega do
@@ -24,6 +25,11 @@ async function abrir(page: Page, viewport: { width: number; height: number }, qu
   await page.setViewportSize(viewport);
   await page.goto(`/?seed=3&manual=1&expansao=1${query}`);
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+  // L2: o especial abriria a cinemática (48 ticks de cena parada) no meio da contagem tick a tick do MASHI; aqui ela fica desligada.
+  // A comparação teclado x toque x controle continua exatamente a mesma (níveis e ticks da carga).
+  await page.evaluate(() => {
+    (window as any).__inno.persist.settings.cinematica = 'desligada';
+  });
 }
 
 async function abrirLuta(page: Page, cfg: Record<string, unknown>): Promise<void> {
@@ -165,6 +171,37 @@ test.describe('especial segurado (spSeg) fora do teclado: o MASHI do AMINU carre
   });
 });
 
+/** Instala o espião de `fillText` do canvas: com `window.__textos` em lista, cada texto desenhado entra com o tamanho em px CSS. */
+async function instalarEspiaDeTextos(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    (window as any).__textos = null;
+    const o = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (this: CanvasRenderingContext2D, t: string, x: number, y: number, ...r: [number?]) {
+      const lista = (window as any).__textos as Array<{ t: string; css: number }> | null;
+      if (lista) {
+        const px = parseFloat(/([\d.]+)px/.exec(this.font)?.[1] ?? '0');
+        lista.push({ t: String(t), css: px * this.getTransform().a * (this.canvas.clientWidth / this.canvas.width) });
+      }
+      return o.call(this, t, x, y, ...(r as []));
+    };
+  });
+}
+
+/** Abre a luta `cfg` e mede os textos do HUD (px CSS), com `ficha` forçada no P1 se vier. */
+async function medirTextos(page: Page, cfg: Record<string, unknown>, ficha?: string): Promise<Record<string, number>> {
+  await abrirLuta(page, cfg);
+  const lista: Array<{ t: string; css: number }> = await page.evaluate((f) => {
+    const h = (window as any).__inno;
+    if (f) h.mundo().game.p1.ficha = f;
+    (window as any).__textos = [];
+    h.desenhar();
+    const r = (window as any).__textos;
+    (window as any).__textos = null;
+    return r;
+  }, ficha);
+  return Object.fromEntries(lista.map((x) => [x.t, +x.css.toFixed(2)]));
+}
+
 test.describe('legibilidade do HUD no celular deitado (tamanho real em px CSS)', () => {
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'celular', 'só no celular'));
 
@@ -172,49 +209,47 @@ test.describe('legibilidade do HUD no celular deitado (tamanho real em px CSS)',
     { width: 915, height: 412 },
     { width: 844, height: 390 },
   ]) {
-    test(`${tela.width}x${tela.height}: etiqueta GAJA/SARPA, CHEFÃO e contador de barras com ~12 px CSS ou mais`, async ({ page }, info) => {
+    test(`${tela.width}x${tela.height}: COM chefão de teste: etiqueta GAJA/SARPA, CHEFÃO e contador de barras com ~12 px CSS ou mais`, async ({ page }, info) => {
       const erros = coletarErros(page);
-      await abrir(page, tela);
-      await page.evaluate(() => {
-        (window as any).__textos = null;
-        const o = CanvasRenderingContext2D.prototype.fillText;
-        CanvasRenderingContext2D.prototype.fillText = function (this: CanvasRenderingContext2D, t: string, x: number, y: number, ...r: [number?]) {
-          const lista = (window as any).__textos as Array<{ t: string; css: number }> | null;
-          if (lista) {
-            const px = parseFloat(/([\d.]+)px/.exec(this.font)?.[1] ?? '0');
-            lista.push({ t: String(t), css: px * this.getTransform().a * (this.canvas.clientWidth / this.canvas.width) });
-          }
-          return o.call(this, t, x, y, ...(r as []));
-        };
-      });
-      const medir = async (cfg: Record<string, unknown>, ficha?: string): Promise<Record<string, number>> => {
-        await abrirLuta(page, cfg);
-        const lista: Array<{ t: string; css: number }> = await page.evaluate((f) => {
-          const h = (window as any).__inno;
-          if (f) h.mundo().game.p1.ficha = f;
-          (window as any).__textos = [];
-          h.desenhar();
-          const r = (window as any).__textos;
-          (window as any).__textos = null;
-          return r;
-        }, ficha);
-        return Object.fromEntries(lista.map((x) => [x.t, +x.css.toFixed(2)]));
-      };
+      await abrir(page, tela, `&${CHEFE.query}`);
+      await instalarEspiaDeTextos(page);
       const cv = await page.locator('canvas#jogo').boundingBox();
       // o canvas 960x540 cabe na janela sem distorcer: escala CSS por px lógico
       const escala = cv!.width / 960;
       expect(escala).toBeCloseTo(Math.min(tela.width / 960, tela.height / 540), 1);
 
-      const gaja = await medir({ mode: 'arcade', c1: 'nila', c2: 'baatar', cpu: 0, chefe: true });
-      const sarpa = await medir({ mode: 'arcade', c1: 'nila', c2: 'baatar', cpu: 0, chefe: true }, 'sarpa');
-      const comum = await medir({ mode: 'arcade', c1: 'hayato', c2: 'caio', cpu: 0 });
+      const gaja = await medirTextos(page, { mode: 'arcade', c1: 'nila', c2: CHEFE.id, cpu: 0, chefe: true });
+      const sarpa = await medirTextos(page, { mode: 'arcade', c1: 'nila', c2: CHEFE.id, cpu: 0, chefe: true }, 'sarpa');
+      const comum = await medirTextos(page, { mode: 'arcade', c1: 'hayato', c2: 'caio', cpu: 0 });
       info.annotations.push({ type: 'medido', description: `${tela.width}x${tela.height} canvas ${cv!.width}x${cv!.height}: ${JSON.stringify({ gaja, sarpa, comum })}` });
       expect(gaja['GAJA']).toBeGreaterThanOrEqual(12);
       expect(sarpa['SARPA']).toBeGreaterThanOrEqual(12);
       expect(gaja['000000  CHEFÃO']).toBeGreaterThanOrEqual(12);
       expect(gaja['×2']).toBeGreaterThanOrEqual(12);
-      expect(gaja['BAATAR']).toBeGreaterThanOrEqual(12);
+      expect(gaja[CHEFE.nome]).toBeGreaterThanOrEqual(12);
       // as linhas dos lutadores comuns seguem as do protótipo (14 lógicos): ficam abaixo de 12 de propósito (fidelidade pixel a pixel)
+      expect(comum['1P  000000']).toBeCloseTo(14 * escala, 1);
+      expect(erros).toEqual([]);
+    });
+
+    test(`${tela.width}x${tela.height}: PRODUÇÃO (BAATAR normal): etiqueta GAJA/SARPA legível e SEM a faixa CHEFÃO nem o contador ×2`, async ({ page }, info) => {
+      const erros = coletarErros(page);
+      await abrir(page, tela);
+      await instalarEspiaDeTextos(page);
+      const cv = await page.locator('canvas#jogo').boundingBox();
+      const escala = cv!.width / 960;
+      expect(escala).toBeCloseTo(Math.min(tela.width / 960, tela.height / 540), 1);
+
+      // luta de produção: o BAATAR é lutador comum (1 barra), então não há faixa CHEFÃO nem contador de barras
+      const gaja = await medirTextos(page, { mode: 'arcade', c1: 'nila', c2: 'baatar', cpu: 0 });
+      const sarpa = await medirTextos(page, { mode: 'arcade', c1: 'nila', c2: 'baatar', cpu: 0 }, 'sarpa');
+      const comum = await medirTextos(page, { mode: 'arcade', c1: 'hayato', c2: 'caio', cpu: 0 });
+      info.annotations.push({ type: 'medido', description: `${tela.width}x${tela.height} canvas ${cv!.width}x${cv!.height}: ${JSON.stringify({ gaja, sarpa, comum })}` });
+      expect(gaja['GAJA']).toBeGreaterThanOrEqual(12);
+      expect(sarpa['SARPA']).toBeGreaterThanOrEqual(12);
+      expect(gaja['BAATAR']).toBeGreaterThanOrEqual(12);
+      expect(gaja['000000  CHEFÃO']).toBeUndefined();
+      expect(gaja['×2']).toBeUndefined();
       expect(comum['1P  000000']).toBeCloseTo(14 * escala, 1);
       expect(erros).toEqual([]);
     });

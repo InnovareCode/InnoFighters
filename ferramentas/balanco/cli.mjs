@@ -8,7 +8,7 @@
  *   --niveis 1,2    níveis da CPU (1 = NORMAL, 2 = DIFÍCIL)
  *   --pares a:b,... filtro de pares (curinga *), ex.: aminu:*,*:nila
  *   --base N        muda TODAS as sementes de uma vez (padrão 1)
- *   --sem-chefe     pula as lutas contra o BAATAR chefão
+ *   --sem-chefe     pula as lutas contra o chefão (sem efeito enquanto CHEFE for null)
  *   --so frame|sim  só a frame data, ou só a simulação
  *   --jobs N        processos em paralelo (padrão: núcleos − 1, no máximo 8)
  *   --saida <pasta> onde gravar (padrão acima)

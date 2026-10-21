@@ -3,8 +3,8 @@ import { INPUT_VAZIO } from '../../src/core/contratos';
 import { CTRL_P1, CTRL_P2 } from '../../src/input/mapa';
 import { normalizarTecla, TeclasVirtuais } from '../../src/input/teclas';
 
-/** Quadro lido sem teclas: ler() sempre traz spSeg (segurado do especial), mesmo falso. */
-const VAZIO = { ...INPUT_VAZIO, spSeg: false };
+/** Quadro lido sem teclas: ler() sempre traz spSeg (segurado do especial) e esq (ESQUIVA), mesmo falsos. */
+const VAZIO = { ...INPUT_VAZIO, spSeg: false, esq: false };
 
 describe('TeclasVirtuais (C2 = readInput do protótipo)', () => {
   it('sem teclas, o InputFrame é vazio', () => {
@@ -85,10 +85,42 @@ describe('TeclasVirtuais (C2 = readInput do protótipo)', () => {
     expect(t.lerP1().right).toBe(false);
   });
 
-  it('os mapas cobrem as nove ações sem repetir tecla', () => {
+  it('os mapas cobrem as dez ações sem repetir tecla', () => {
     const todas = [...Object.values(CTRL_P1), ...Object.values(CTRL_P2)];
-    expect(todas).toHaveLength(18);
-    expect(new Set(todas).size).toBe(18);
+    expect(todas).toHaveLength(20);
+    expect(new Set(todas).size).toBe(20);
+  });
+
+  describe('ESQUIVA (esq): P1 = n, P2 = o', () => {
+    it('é borda de descida (como os golpes), por jogador', () => {
+      const t = new TeclasVirtuais();
+      t.definir('n', true);
+      expect(t.lerP1().esq).toBe(true);
+      expect(t.lerP2().esq).toBe(false);
+      t.fimDoTick();
+      expect(t.lerP1().esq).toBe(false); // segurada não repete
+      t.definir('o', true);
+      expect(t.lerP2().esq).toBe(true);
+      expect(t.lerP1().esq).toBe(false);
+    });
+
+    it('o mesclado (treino, 1 jogador) enxerga as duas teclas', () => {
+      const a = new TeclasVirtuais();
+      a.definir('n', true);
+      expect(a.lerMesclado().esq).toBe(true);
+      const b = new TeclasVirtuais();
+      b.definir('o', true);
+      expect(b.lerMesclado().esq).toBe(true);
+      expect(new TeclasVirtuais().lerMesclado().esq).toBe(false);
+    });
+
+    it('n e o não colidem com nenhuma outra ação', () => {
+      const outras = [...Object.entries(CTRL_P1), ...Object.entries(CTRL_P2)].filter(([acao]) => acao !== 'esq').map(([, tecla]) => tecla);
+      expect(outras).not.toContain('n');
+      expect(outras).not.toContain('o');
+      expect(CTRL_P1.esq).toBe('n');
+      expect(CTRL_P2.esq).toBe('o');
+    });
   });
 });
 

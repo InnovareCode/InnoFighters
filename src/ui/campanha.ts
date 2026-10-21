@@ -1,14 +1,15 @@
-import type { Etapa } from '../meta';
+import type { Etapa, Regras } from '../meta';
 import type { CampanhaArcade, ConfigPartidaUI } from './tipos';
 
 /** Configuração de partida da etapa `run.idx` do ARCADE (a 1ª não mantém pontuação; as seguintes sim). */
-export function cfgDaEtapa(run: CampanhaArcade, manterPontos: boolean): ConfigPartidaUI {
+export function cfgDaEtapa(run: CampanhaArcade, manterPontos: boolean, regras: Pick<Regras, 'esquiva'>): ConfigPartidaUI {
   const e = run.etapas[run.idx] as Etapa;
   return {
     mode: 'arcade',
     c1: run.c1,
     c2: e.id,
     cpu: run.diff,
+    esquiva: regras.esquiva,
     ...(manterPontos ? { keepScore: true } : {}),
     ...(e.chefe ? { chefe: true } : {}),
   };

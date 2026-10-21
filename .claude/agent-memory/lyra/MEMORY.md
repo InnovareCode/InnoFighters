@@ -1,1 +1,1 @@
-- [Armadilhas de UI do InnoFighters](armadilhas-ui-innofighters.md) — CSS do toque, RS=2, e2e com import de src, quirks de shell
+- [Armadilhas de UI do InnoFighters](armadilhas-ui-innofighters.md) — CSS do toque, RS=2, e2e com import de src, quirks de shell, cinemática/esquiva (L1+L2)

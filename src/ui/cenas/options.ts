@@ -1,5 +1,5 @@
 import { LARGURA } from '../../core/constantes';
-import { CONFIGURACOES_PADRAO, type Configuracoes } from '../../core/contratos';
+import { CINEMATICA_PADRAO, CINEMATICAS_VALIDAS, CONFIGURACOES_PADRAO, type Configuracoes, type PreferenciaCinematica } from '../../core/contratos';
 import { clamp } from '../../core/math';
 import { AI_LEVELS } from '../../fight/cpu';
 import { desenharFundoMenu } from '../../render/cenario';
@@ -9,9 +9,20 @@ import type { AcaoNav, ArgsComo, Cena } from '../tipos';
 
 type NumerosCiclicos = 'rounds' | 'time' | 'diff';
 
+const NOMES_CINEMATICA: Readonly<Record<PreferenciaCinematica, string>> = { completa: 'COMPLETA', curta: 'CURTA', desligada: 'DESLIGADA' };
+
+/** O que vale agora: o salvo, ou (sem preferência salva) COMPLETA — CURTA se o aparelho pede menos movimento (B15). */
+export function cinematicaResolvida(salva: PreferenciaCinematica | undefined, reduzMovimento: boolean): PreferenciaCinematica {
+  return salva ?? (reduzMovimento ? 'curta' : CINEMATICA_PADRAO);
+}
+
+const pedeMenosMovimento = (): boolean => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+
 /** Opções: volumes, rounds, tempo, dificuldade padrão, tremor, tela cheia e restaurar. */
 export class CenaOptions implements Cena {
   private m: MenuList;
+  /** Há a linha da cinemática (só com `Regras.cinematica`; sem ela, `?expansao=4`, a tela é a do protótipo). */
+  private linhas = 9;
 
   constructor(private readonly ui: Navegador) {
     this.m = this.criarMenu();
@@ -40,8 +51,7 @@ export class CenaOptions implements Cena {
       S[key] = lista[i] ?? S[key];
       persist.salvar();
     };
-    return new MenuList(
-      [
+    const itens: ConstructorParameters<typeof MenuList>[0] = [
         { label: 'MÚSICA', slider: () => S.music, onAdjust: (d) => vol('music', d), onSet: (v) => setv('music', v) },
         { label: 'EFEITOS SONOROS', slider: () => S.sfx, onAdjust: (d) => vol('sfx', d), onSet: (v) => setv('sfx', v) },
         {
@@ -59,6 +69,21 @@ export class CenaOptions implements Cena {
             persist.salvar();
           },
         },
+        ...(this.ui.c.regras.cinematica
+          ? [
+              {
+                label: 'CINEMÁTICA DO ESPECIAL',
+                value: () => NOMES_CINEMATICA[cinematicaResolvida(S.cinematica, pedeMenosMovimento())],
+                onAdjust: (d: number) => {
+                  // ao escolher, o valor passa a ser a preferência explícita (deixa de depender do movimento reduzido)
+                  const n = CINEMATICAS_VALIDAS.length;
+                  const i = (CINEMATICAS_VALIDAS.indexOf(cinematicaResolvida(S.cinematica, pedeMenosMovimento())) + d + n) % n;
+                  S.cinematica = CINEMATICAS_VALIDAS[i] ?? CINEMATICA_PADRAO;
+                  persist.salvar();
+                },
+              },
+            ]
+          : []),
         {
           label: 'TELA CHEIA (F)',
           value: () => (document.fullscreenElement ? 'LIGADA' : 'DESLIGADA'),
@@ -68,16 +93,17 @@ export class CenaOptions implements Cena {
           label: 'RESTAURAR PADRÕES',
           onOk: () => {
             Object.assign(S, CONFIGURACOES_PADRAO);
+            // o padrão NÃO tem `cinematica` (ausente = o padrão do aparelho): o Object.assign não a apaga, então apaga aqui
+            delete S.cinematica;
             audio.setMusicVol(S.music);
             audio.setSfxVol(S.sfx);
             persist.salvar();
           },
         },
         { label: 'VOLTAR', onOk: () => this.ui.go('menu') },
-      ],
-      audio,
-      f,
-    );
+    ];
+    this.linhas = itens.length;
+    return new MenuList(itens, audio, f);
   }
 
   enter(_a: ArgsComo): void {
@@ -90,7 +116,8 @@ export class CenaOptions implements Cena {
     desenharFundoMenu(ctx, m.rec.cenarioPadrao, m.rec.vinheta, this.ui.t, 0.6);
     this.ui.desenharPetalas();
     f.A('OPÇÕES', LARGURA / 2, 52, 52, ['#ffffff', '#ffc27a'], '#1a0a00');
-    this.m.draw(LARGURA / 2 - 330, 100, 660, 46, { size: 21 });
+    // 10 linhas (com a cinemática) não cabem a 46 px de altura na tela de 540: 40 px
+    this.m.draw(LARGURA / 2 - 330, 100, 660, this.linhas > 9 ? 40 : 46, { size: 21 });
     f.hint('↑ ↓ escolher     ← → ajustar     ESC voltar');
   }
 

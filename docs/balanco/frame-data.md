@@ -2,7 +2,7 @@
 
 > Arquivo GERADO por `npm run balanco`. Não edite à mão: rode o comando de novo.
 
-Gerado em 2026-10-21 · versão dos dados/motor `bef899c30289` · arte de PRODUÇÃO (`public/assets/lutadores`).
+Gerado em 2026-10-21 · versão dos dados/motor `7bd98ebdaa66` · arte de PRODUÇÃO (`public/assets/lutadores`).
 
 Como ler (todos os tempos em ticks de jogo, 60 por segundo; cada número foi medido numa `Game` em modo treino, não lido da tabela):
 
@@ -222,7 +222,7 @@ _pow 0.98_
 
 ## BAATAR
 
-### ficha base _(pow 0.9)_
+_pow 0.9_
 
 | Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -241,48 +241,6 @@ _pow 0.98_
 | throw |  | throw→– | 3/3/22 | 3/1/24 | 10.8 | – | KD +52 | – | – | 110 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
 | sFire | ARREMESSO DO AVARGA | throw→– | 14/3/36 | 14/1/38 | 19.8 | – | KD +38 | – | – | 110 | 78–161 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
 | sDown | QUEBRA-BASE | low | 10/5/22 | 10/5/22 | 12.6 | – | KD +44 | 14 | -13 | 182 | 78–219 |  |
-| sFwd | ABRAÇO DA ESTEPE | throw→– | 12/16/30 | 12/16/30 | 18.0 | – | KD +31 | – | – | 112 | 78–230 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
-
-### ficha chefe _(pow 1)_
-
-| Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 179 | 78–217 |  |
-| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 174 | 78–211 |  |
-| hp |  | mid (alto) | 9/4/14 | 9/4/14 | 11.0 | 24 | +6 | 12 | -6 | 193 | 78–244 |  |
-| hk |  | mid (alto) | 12/5/18 | 12/5/18 | 15.0 | – | KD +48 | 14 | -9 | 230 | 78–285 |  |
-| clp |  | mid (alto) | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 165 | 78–202 |  |
-| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 167 | 78–205 |  |
-| chp |  | mid | 6/4/17 | 6/4/17 | 12.0 | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
-| chk |  | low | 10/6/20 | 10/6/20 | 11.0 | – | KD +45 | 14 | -12 | 215 | 78–253 |  |
-| jlp |  | over | 2/80/0 | 2/10/0 | 5.0 | 15 | +5 | 10 | 0 | 151 | 78–189 | aéreo: ativos até pousar |
-| jhp |  | over | 4/80/0 | 4/8/0 | 8.0 | 20 | +12 | 12 | +4 | 159 | 78–196 | aéreo: ativos até pousar |
-| jlk |  | over | 3/80/0 | 3/9/0 | 6.0 | 17 | +8 | 11 | +2 | 145 | 78–182 | aéreo: ativos até pousar |
-| jhk |  | over | 5/80/0 | 5/7/0 | 10.0 | 22 | +15 | 13 | +6 | 159 | 78–197 | aéreo: ativos até pousar |
-| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 110 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
-| sFire | ARREMESSO DO AVARGA | throw→– | 14/3/36 | 14/1/38 | 22.0 | – | KD +38 | – | – | 110 | 78–161 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
-| sDown | QUEBRA-BASE | low | 10/5/22 | 10/5/22 | 14.0 | – | KD +44 | 14 | -13 | 182 | 78–219 |  |
-| sFwd | ABRAÇO DA ESTEPE | throw→– | 12/16/30 | 12/16/30 | 20.0 | – | KD +31 | – | – | 112 | 78–230 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
-
-### ficha chefe2 _(pow 1)_
-
-| Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.0 | 14 | +4 | 8 | -2 | 179 | 78–217 |  |
-| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.0 | 16 | +3 | 9 | -4 | 174 | 78–211 |  |
-| hp |  | mid (alto) | 9/4/14 | 9/4/14 | 11.0 | 24 | +6 | 12 | -6 | 193 | 78–244 |  |
-| hk |  | mid (alto) | 12/5/18 | 12/5/18 | 15.0 | – | KD +48 | 14 | -9 | 230 | 78–285 |  |
-| clp |  | mid (alto) | 4/3/8 | 4/3/8 | 4.0 | 15 | +4 | 8 | -3 | 165 | 78–202 |  |
-| clk |  | low | 6/3/10 | 6/3/10 | 5.0 | 15 | +2 | 9 | -4 | 167 | 78–205 |  |
-| chp |  | mid | 6/4/17 | 6/4/17 | 12.0 | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
-| chk |  | low | 10/6/20 | 10/6/20 | 11.0 | – | KD +45 | 14 | -12 | 215 | 78–253 |  |
-| jlp |  | over | 2/80/0 | 2/10/0 | 5.0 | 15 | +5 | 10 | 0 | 151 | 78–189 | aéreo: ativos até pousar |
-| jhp |  | over | 4/80/0 | 4/8/0 | 8.0 | 20 | +12 | 12 | +4 | 159 | 78–196 | aéreo: ativos até pousar |
-| jlk |  | over | 3/80/0 | 3/9/0 | 6.0 | 17 | +8 | 11 | +2 | 145 | 78–182 | aéreo: ativos até pousar |
-| jhk |  | over | 5/80/0 | 5/7/0 | 10.0 | 22 | +15 | 13 | +6 | 159 | 78–197 | aéreo: ativos até pousar |
-| throw |  | throw→– | 3/3/22 | 3/1/24 | 12.0 | – | KD +52 | – | – | 110 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
-| sFire | ARREMESSO DO AVARGA | throw→– | 14/3/36 | 14/1/38 | 22.0 | – | KD +38 | – | – | 110 | 78–161 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
-| sDown | QUEBRA-BASE | low | 10/5/22 | 10/5/22 | 14.0 | – | KD +44 | 14 | -13 | 182 | 78–219 |  |
-| sFwd | MERGULHO DA ÁGUIA | over | 12/80/0 | 12/39/26 | 20.0 | – | KD +6 | 16 | -49 | 195 | 78–780+ | aéreo: ativos até pousar; conecta até o teto da varredura (780) |
+| sFwd | MERGULHO DA ÁGUIA | over | 12/80/0 | 12/39/26 | 9.0 | – | KD +6 | 16 | -49 | 195 | 78–780+ | aéreo: ativos até pousar; conecta até o teto da varredura (780) |
 
 `*` = a faixa de alcance tem furos na varredura de 6 px (o golpe não conecta em todas as distâncias entre o mínimo e o máximo).

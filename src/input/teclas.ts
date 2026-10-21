@@ -47,6 +47,8 @@ export class TeclasVirtuais {
       lk: this.apertada.has(mapa.lk),
       hk: this.apertada.has(mapa.hk),
       sp: this.apertada.has(mapa.sp),
+      // ESQUIVA: borda de descida do botao dedicado (so vale com ConfigPartida.esquiva ligada; o motor ignora antes de qualquer conta)
+      esq: this.apertada.has(mapa.esq),
       // segurado (nível, não borda): o MASHI da S2 carrega enquanto o botão de especial estiver pressionado
       spSeg: this.segurada.has(mapa.sp),
     };
@@ -74,6 +76,7 @@ export class TeclasVirtuais {
       lk: a.lk || b.lk,
       hk: a.hk || b.hk,
       sp: a.sp || b.sp,
+      esq: a.esq === true || b.esq === true,
       spSeg: a.spSeg === true || b.spSeg === true,
     };
   }

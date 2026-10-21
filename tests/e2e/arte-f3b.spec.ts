@@ -51,6 +51,11 @@ function espiarAssets(page: Page): string[] {
 async function abrirJogo(page: Page, query: string): Promise<void> {
   await page.goto(`/?seed=3&manual=1&${query}`);
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+  // L2: cada especial congelaria a cena por 48 ticks (a cinemática); este spec mede o golpe quadro a quadro, então ela fica desligada AQUI
+  // (a cinemática tem o spec próprio, cinematica.spec.ts). Nada do que se mede aqui fica mais frouxo.
+  await page.evaluate(() => {
+    (window as any).__inno.persist.settings.cinematica = 'desligada';
+  });
 }
 
 /** Abre uma luta de treino `c1` x `c2` (os dois controlados à mão) e anda até a fase de luta. */

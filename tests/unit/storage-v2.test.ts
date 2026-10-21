@@ -414,7 +414,7 @@ describe('storage v2: idempotencia e ida e volta', () => {
     const dados: DadosSalvosV2 = {
       s: { ...CONFIGURACOES_PADRAO, rounds: 3, shake: false },
       hi: 12345,
-      prog: { desbloqueados: [A, BOSS], zeradas: 4, chefeDerrotado: true, vistos: [A] },
+      prog: { desbloqueados: [A, BOSS], zeradas: 4, chefeDerrotado: true, chefesDerrotados: [BOSS], vistos: [A] },
     };
     expect(salvarDadosV2(st, dados, REGRAS)).toBe(true);
     expect(carregarDadosV2(st, REGRAS)).toEqual(dados);

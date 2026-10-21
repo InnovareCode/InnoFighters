@@ -59,12 +59,18 @@ async function iniciar(): Promise<void> {
   const rngVisual = criarRng(semente + 1);
   const rngUI = criarRng(semente + 2);
 
-  // `?expansao=1` (SÓ em desenvolvimento): os 9 lutadores reais TODOS liberados (BAATAR jogável, e ainda chefão do ARCADE),
-  // para ver os novos jogando sem zerar o ARCADE. `?expansao=4`: só os 4 de antes da E5 (fidelidade com o protótipo e o
-  // ARCADE de 3 lutas). O import dinâmico fica fora do bundle de produção.
-  const modoExpansao = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('expansao') : null;
+  // `?expansao=1` (SÓ em desenvolvimento): os 9 lutadores reais TODOS liberados, para ver os novos jogando sem zerar o
+  // ARCADE. `?expansao=4`: só os 4 de antes da E5 (fidelidade com o protótipo e o ARCADE de 3 lutas). `?chefe=teste`: põe um
+  // CHEFÃO DE TESTE (o BAATAR antigo) no fim do ARCADE, para os e2e exercitarem a mecânica de chefão enquanto a produção
+  // não tem um (`REGRAS_PADRAO.chefe === null`). Os imports dinâmicos ficam fora do bundle de produção.
+  const params = new URLSearchParams(window.location.search);
+  const modoExpansao = import.meta.env.DEV ? params.get('expansao') : null;
   const fixture = modoExpansao === '1' || modoExpansao === '4' ? await import('./ui/dev-expansao') : null;
-  const regras = !fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao();
+  const chefeTeste = import.meta.env.DEV && params.get('chefe') === 'teste' ? await import('./ui/dev-chefe-teste') : null;
+  const regrasBase = !fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao();
+  const regras = chefeTeste ? chefeTeste.comChefeDeTeste(regrasBase) : regrasBase;
+  // sem a mecânica da ESQUIVA (?expansao=4) o botão ESQ do toque some (a casa fica; ver toque.css)
+  document.body.classList.toggle('sem-esquiva', !regras.esquiva);
 
   // ---- configurações, recorde e progresso (C4 v2, com a migração da v1 e da chave antiga) ----
   const armazenamento = obterArmazenamento();
@@ -118,7 +124,7 @@ async function iniciar(): Promise<void> {
   const precarga = import.meta.env.DEV && new URLSearchParams(window.location.search).get('precarga') === 'minima' ? [] : undefined;
   void iniciarArte({ baseUrl: import.meta.env.BASE_URL, aoProgredir: (p) => (ui.loadProg = p), ...(precarga ? { precarregar: precarga } : {}) })
     .then(({ elenco: elencoReal, arte }) => {
-      const elenco = elencoReal;
+      const elenco = chefeTeste ? chefeTeste.elencoComChefeDeTeste(elencoReal) : elencoReal;
       const lutadores = {} as Record<IdLutador, (typeof elenco)[IdLutador]['ch']>;
       for (const id of Object.keys(elenco) as IdLutador[]) lutadores[id] = elenco[id].ch;
       const mundo: Mundo = {

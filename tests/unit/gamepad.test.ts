@@ -24,6 +24,55 @@ describe('lerEstadoPad', () => {
   });
 });
 
+describe('ESQUIVA no controle: L1 (botão 4) e L2 (botão 6)', () => {
+  it('lerEstadoPad lê os dois botões', () => {
+    expect(lerEstadoPad(pad([4]))).toMatchObject({ l1: true, l2: false });
+    expect(lerEstadoPad(pad([6]))).toMatchObject({ l1: false, l2: true });
+    expect(lerEstadoPad(pad([5, 7]))).toMatchObject({ l1: false, l2: false });
+  });
+
+  it('L1 e L2 do controle 0 viram a tecla n (P1) e do controle 1 a tecla o (P2); cada um sozinho já esquiva', () => {
+    for (const botao of [4, 6]) {
+      const t = new TeclasVirtuais();
+      const abaixo: string[] = [];
+      const g = new Gamepads(t, (k) => abaixo.push(k), () => [pad([botao]), pad([botao])]);
+      g.consultar();
+      expect(t.lerP1().esq).toBe(true);
+      expect(t.lerP2().esq).toBe(true);
+      expect(abaixo).toEqual(['n', 'o']);
+      t.fimDoTick();
+      g.consultar(); // segurado: sem nova borda
+      expect(t.lerP1().esq).toBe(false);
+      expect(abaixo).toEqual(['n', 'o']);
+    }
+  });
+
+  it('L1 + L2 juntos geram UMA borda; soltar só um não solta a tecla (mesmo agrupamento do R1/R2)', () => {
+    const t = new TeclasVirtuais();
+    const abaixo: string[] = [];
+    let atual = pad([4]);
+    const g = new Gamepads(t, (k) => abaixo.push(k), () => [atual]);
+    g.consultar();
+    t.fimDoTick();
+    atual = pad([4, 6]);
+    g.consultar();
+    expect(abaixo).toEqual(['n']);
+    atual = pad([6]);
+    g.consultar();
+    expect(t.estaSegurada('n')).toBe(true);
+    atual = pad([]);
+    g.consultar();
+    expect(t.estaSegurada('n')).toBe(false);
+  });
+
+  it('a esquiva não atrapalha o especial nem os golpes (teclas diferentes)', () => {
+    const t = new TeclasVirtuais();
+    const g = new Gamepads(t, () => undefined, () => [pad([4, 5, 2])]);
+    g.consultar();
+    expect(t.lerP1()).toMatchObject({ esq: true, sp: true, lp: true });
+  });
+});
+
 describe('Gamepads', () => {
   it('controle 0 age como P1 e gera borda só na descida', () => {
     const t = new TeclasVirtuais();
@@ -127,7 +176,7 @@ describe('Gamepads', () => {
       t.fimDoTick();
       atual = pad([5, 2, 15]); // segura R1, aperta X (soco fraco) e direita
       g.consultar();
-      expect(t.lerP1()).toEqual({ left: false, right: true, up: false, down: false, lp: true, hp: false, lk: false, hk: false, sp: false, spSeg: true });
+      expect(t.lerP1()).toEqual({ left: false, right: true, up: false, down: false, lp: true, hp: false, lk: false, hk: false, sp: false, spSeg: true, esq: false });
       t.fimDoTick();
       g.consultar();
       expect(t.lerP1()).toMatchObject({ lp: false, right: true, spSeg: true });

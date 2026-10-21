@@ -1,7 +1,14 @@
 import { reagirAosEventos } from '../../audio/eventos';
+import { tocarReceita, type SintetizadorLike } from '../../audio/receitas';
 import { ALTURA, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
+import type { EventoLuta } from '../../core/contratos';
+import { ESQUIVA_PADRAO } from '../../data/esquiva';
 import type { DummyTreino, FonteEntradas } from '../../fight/game';
+import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
+import { somDoAcerto } from '../../render/identidade-especiais';
+import { chDaFicha } from '../../render/lutador';
+import { SessaoEspecial } from '../../render/sessao-especial';
 import { desenharMundo } from '../../render/mundo';
 import { NOMES_ALVO_TREINO } from '../../render/hud';
 import { cfgDaEtapa } from '../campanha';
@@ -21,6 +28,15 @@ export class CenaFight implements Cena {
   private ended = false;
   private a: ArgsFight | null = null;
   private ultimoTick = 0;
+  /** Último estado aplicado ao botão ESQ do toque (barra abaixo do custo da esquiva); null = ainda não aplicado. */
+  private botaoEsqSem: boolean | null = null;
+  /** CINEMÁTICA do especial (apresentação pura: enquanto roda a cena não chama `game.update`, como a pausa) e a sessão dos acertos dele. */
+  readonly cine: Cinematica;
+  readonly sessao: SessaoEspecial;
+  /** A música está a 50% por causa da cinemática? */
+  private musicaBaixa = false;
+  /** Ainda há tarja por aquecer no cache (a abertura da luta pinta uma por tick)? */
+  private aquecendo = true;
   /** A arte da luta está na memória? (a luta só anda depois) */
   readonly espera = new EsperaDeArte();
   private m: MenuList;
@@ -31,6 +47,42 @@ export class CenaFight implements Cena {
     this.m = new MenuList([], ui.c.audio, ui.c.f);
     this.am = this.m;
     this.cm = this.m;
+    const sintetizador = (): SintetizadorLike => ui.c.audio as unknown as SintetizadorLike;
+    // os sons da cinemática são chamados por ela, NÃO por audio/eventos.ts: o som do evento `special` não muda (o lock-step compara sons)
+    this.cine = new Cinematica({
+      rng: ui.c.rngVisual,
+      aoSom: (momento, id) => void tocarReceita(sintetizador(), momento === 'abertura' ? id.abertura : id.batida),
+    });
+    this.sessao = new SessaoEspecial({
+      rng: ui.c.rngVisual,
+      aoSom: (momento, id, dono, nivel) => {
+        if (momento === 'defesa') {
+          tocarReceita(sintetizador(), id.batida, { abafado: true });
+          return;
+        }
+        const f = ui.m.game.fighters[dono];
+        const base = somDoAcerto(f.id, f.ficha ?? null);
+        // MASHI: 1, 2 ou 3 batidas de kalangu (a cada 70 ms) conforme o nível; o 3º ainda leva o baque grave
+        for (let i = 0; i < Math.max(1, nivel); i++) {
+          tocarReceita(sintetizador(), base.map((c) => ({ ...c, quando: (c.quando ?? 0) + i * 0.07, ...(c.k === 'T' && nivel > 0 ? { f0: c.f0 + i * 60 } : {}) })));
+        }
+        if (nivel >= 3) tocarReceita(sintetizador(), [{ k: 'T', tipo: 'sine', f0: 55, t: 0.5, vol: 0.8 }]);
+      },
+    });
+  }
+
+  /** O modo da cinemática agora (preferência + regras + movimento reduzido), ou null se não há cinemática. */
+  private modoDaCine(): ModoCine | null {
+    const reduz = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    return modoDaCinematica(this.ui.c.persist.settings.cinematica, this.ui.c.regras, reduz);
+  }
+
+  /** A música cai para 50% enquanto a cinemática roda (e a pausa a devolve). */
+  private baixarMusica(baixar: boolean): void {
+    const { audio, persist } = this.ui.c;
+    if (baixar === this.musicaBaixa) return;
+    this.musicaBaixa = baixar;
+    audio.setMusicVol?.(persist.settings.music * (baixar ? 0.5 : 1));
   }
 
   private get fonte(): FonteEntradas {
@@ -51,6 +103,13 @@ export class CenaFight implements Cena {
     if (a.cfg.keepScore && a.run) game.p1.score = a.run.score;
     efeitos.limpar();
     this.ultimoTick = game.tick;
+    this.cine.zerarLuta();
+    this.sessao.zerarLuta();
+    this.aquecendo = true;
+    this.musicaBaixa = true; // força a volta ao volume salvo (a cena anterior pode ter saído no meio de uma cinemática)
+    this.baixarMusica(false);
+    this.botaoEsqSem = null;
+    this.atualizarBotaoEsquiva();
     audio.startMusic('fight');
     this.montarMenus();
   }
@@ -146,18 +205,62 @@ export class CenaFight implements Cena {
     this.paused = true;
     this.view = 'main';
     this.m.sel = 0;
+    this.baixarMusica(false);
     this.ui.c.audio.uiPause();
   }
 
   private resume(): void {
     this.paused = false;
+    if (this.cine.ativa) this.baixarMusica(true);
     this.ui.c.audio.uiPause();
+  }
+
+  /** Qualquer botão de ataque (ou o especial) de um humano pula a cinemática. As teclas seguradas continuam valendo depois. */
+  private alguemPulou(): boolean {
+    const { entrada } = this.ui.c;
+    const { game } = this.ui.m;
+    const ataque = (i: { lp: boolean; hp: boolean; lk: boolean; hk: boolean; sp: boolean } | undefined): boolean => !!i && (i.lp || i.hp || i.lk || i.hk || i.sp);
+    // treino e solo (um humano contra a CPU) leem os dois mapas de teclado juntos, como a própria luta
+    if (game.training || (game.p1.cpu === null && game.p2.cpu !== null)) return ataque(entrada.lerMesclado?.());
+    return (game.p1.cpu === null && ataque(entrada.lerP1?.())) || (game.p2.cpu === null && ataque(entrada.lerP2?.()));
+  }
+
+  /** Um tick da cinemática: a luta NÃO anda (o motor não congela; a cena só não o chama). */
+  private passoDaCinematica(): void {
+    if (this.alguemPulou()) this.cine.pular();
+    this.cine.avancar();
+    if (!this.cine.ativa) this.baixarMusica(false);
+  }
+
+  /** Os eventos do tick: a sessão dos acertos e a abertura da cinemática (no início do golpe, ou no SUCESSO da PARADE/GARKUWA). */
+  private reagirAoEspecial(ev: EventoLuta): void {
+    const modo = this.modoDaCine();
+    if (modo === null) return;
+    const { game, elenco } = this.ui.m;
+    this.sessao.reagir(ev, game, elenco);
+    let abrir: Parameters<Cinematica['iniciar']>[0] | null = null;
+    if (ev.tipo === 'special' && ev.momento !== 'sucesso' && ev.golpe !== undefined) {
+      abrir = { lutador: ev.lutador, golpe: ev.golpe, ficha: ev.ficha ?? null, ...(ev.quadro ? { quadro: ev.quadro } : {}), ...(ev.entrada ? { entrada: ev.entrada } : {}) };
+    } else if (ev.tipo === 'parry' && ev.golpe !== undefined) {
+      abrir = { lutador: ev.defensor, golpe: ev.golpe, ficha: game.fighters[ev.defensor].ficha ?? null, ...(ev.quadro ? { quadro: ev.quadro } : {}), ...(ev.entrada ? { entrada: ev.entrada } : {}) };
+    } else if (ev.tipo === 'clash' && ev.lutador !== undefined && ev.golpe !== undefined) {
+      abrir = { lutador: ev.lutador, golpe: ev.golpe, ficha: game.fighters[ev.lutador].ficha ?? null, ...(ev.quadro ? { quadro: ev.quadro } : {}), ...(ev.entrada ? { entrada: ev.entrada } : {}) };
+    }
+    if (!abrir) return;
+    this.cine.iniciar(abrir, modo);
+    this.baixarMusica(true);
   }
 
   update(): void {
     if (this.paused || !this.espera.pronta) return;
+    if (this.cine.ativa) {
+      this.passoDaCinematica();
+      return;
+    }
     const { game, efeitos, petalasLuta } = this.ui.m;
     const { audio } = this.ui.c;
+    // abertura da luta: pinta as tarjas dos especiais (uma por tick), fora do caminho do primeiro especial
+    if (this.aquecendo && this.modoDaCine() !== null) this.aquecendo = this.cine.aquecer(game, this.ui.m.elenco);
     const t0 = game.t;
     game.update(this.fonte);
     petalasLuta.avancar(t0);
@@ -165,7 +268,8 @@ export class CenaFight implements Cena {
     reagirAosEventos(audio as unknown as { [m: string]: unknown }, game.events);
     for (const ev of game.events) {
       if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
-      efeitos.reagir(ev, (i) => game.fighters[i]);
+      efeitos.reagir(ev, (i) => game.fighters[i], (i) => this.corDoLutador(i));
+      this.reagirAoEspecial(ev);
       // O chefe sai em 3 etapas (troca, danca, retomada): o flash e o "FASE 2!" são só da troca de barra, senão disparam 3 vezes.
       // danca/retomada ainda não têm efeito visual próprio (não há overlay de cena do chefe no HUD; por ora só o filtro).
       if (ev.tipo === 'fase-chefe' && ev.etapa === 'troca') this.aoFaseDoChefe(ev.lutador);
@@ -173,11 +277,28 @@ export class CenaFight implements Cena {
     if (game.tick !== this.ultimoTick) {
       this.ultimoTick = game.tick;
       efeitos.avancar();
+      this.sessao.avancar(game);
     }
+    this.atualizarBotaoEsquiva();
     if (game.matchDone && !this.ended) {
       this.ended = true;
       this.finish();
     }
+  }
+
+  /** Cor principal (`fire[0]`) do lutador `i`, na ficha em que ele está (NILA em SARPA, BAATAR na fase 2). */
+  private corDoLutador(i: 0 | 1): string {
+    const f = this.ui.m.game.fighters[i];
+    return chDaFicha(this.ui.m.elenco[f.id].ch, f.ficha).fire[0];
+  }
+
+  /** Botão ESQ do toque: esmaece (.sem) quando a barra do P1 está abaixo do custo da esquiva. Só mexe no DOM quando o estado muda. */
+  private atualizarBotaoEsquiva(): void {
+    if (typeof document === 'undefined') return;
+    const sem = this.ui.m.game.p1.en < ESQUIVA_PADRAO.custo;
+    if (sem === this.botaoEsqSem) return;
+    this.botaoEsqSem = sem;
+    document.getElementById('esq')?.classList.toggle('sem', sem);
   }
 
   /** O chefe passou para a 2ª barra: flash e faíscas nele e o aviso na tela (o som e o tremor são da luta). */
@@ -201,8 +322,8 @@ export class CenaFight implements Cena {
         run.idx++;
         const prox = run.etapas[run.idx];
         if (!prox) this.ui.go('ending', { run });
-        else if (prox.chefe) this.ui.go('chefe', { cfg: cfgDaEtapa(run, true), run }); // aviso de chefe, depois o VS do chefão
-        else this.ui.go('vs', { cfg: cfgDaEtapa(run, true), run });
+        else if (prox.chefe) this.ui.go('chefe', { cfg: cfgDaEtapa(run, true, this.ui.c.regras), run }); // aviso de chefe, depois o VS do chefão
+        else this.ui.go('vs', { cfg: cfgDaEtapa(run, true, this.ui.c.regras), run });
       } else this.ui.go('continue', { run, a });
       return;
     }
@@ -293,10 +414,13 @@ export class CenaFight implements Cena {
     const { game } = m;
     const W = LARGURA;
     const H = ALTURA;
-    desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, { tremor: persist.settings.shake, alvoTreino: game.dummy });
+    desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, { tremor: persist.settings.shake, alvoTreino: game.dummy, esquiva: this.ui.c.regras.esquiva });
     if (!this.espera.pronta) {
       f.T(this.espera.falhou ? 'Não foi possível carregar os lutadores.' : `Carregando lutadores... ${this.espera.percentual}%`, W / 2, H / 2, 20, '#fff', 'center');
     }
+    // a cinemática por cima do mundo; fora dela, a sessão dos acertos (números, "N HITS" e a vinheta de 20%)
+    if (this.cine.ativa) this.cine.desenhar(ctx, game, m.elenco);
+    else this.sessao.desenhar(ctx, game, m.elenco);
     if (!this.paused) {
       if (game.training && game.phase === 'fight' && game.t < 400) {
         f.T('ESC pausa  •  R reposiciona  •  T troca o alvo', W / 2, H - 56, 13, '#cfd6f5', 'center', { alpha: 1 - game.t / 400 });

@@ -2,6 +2,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
+import { CHEFE } from './_chefe';
 
 /*
  * F3a: os cinco lutadores novos (AMINU, CENTELLA, CAMILLE, NILA, BAATAR) e os seis cenários, com a arte real, no
@@ -74,13 +75,14 @@ test.describe('arte real dos cinco novos', () => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
   });
 
-  test('a seleção abre os 9 sem travar ninguém (BAATAR no centro); a produção abre só 4 e esconde o chefão', async ({ page }) => {
+  test('a seleção abre os 9 sem travar ninguém (BAATAR na 9ª casa); a produção abre só 4 e trava os outros 5, o BAATAR entre eles', async ({ page }) => {
     const erros = coletarErros(page);
     await abrirJogo(page, 'expansao=1');
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); }");
     const grade = await hook(page, '(h) => h.ui.scene.grade');
     expect(grade).toHaveLength(9);
-    expect(grade[4]).toBe('baatar');
+    expect(grade).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar']); // sem chefão: ordem do roster
+    expect(grade[8]).toBe('baatar');
     const liberados = await page.evaluate(async () => {
       const h = (window as any).__inno;
       const { liberados: lib } = await import(/* @vite-ignore */ ('/src/meta/index.ts' as string));
@@ -103,10 +105,32 @@ test.describe('arte real dos cinco novos', () => {
     });
     expect(estados).toEqual({
       hayato: 'liberado', 'wei-long': 'liberado', 'min-ji': 'liberado', caio: 'liberado',
-      baatar: 'chefe-oculto', aminu: 'travado', centella: 'travado', camille: 'travado', nila: 'travado',
+      aminu: 'travado', centella: 'travado', camille: 'travado', nila: 'travado', baatar: 'travado', // BAATAR é lutador comum: sem "???"
     });
     await capturar(prod, 'selecao-producao-5-travados');
     expect(errosProd).toEqual([]);
+    expect(erros).toEqual([]);
+  });
+
+  test('COM chefão de teste: o chefão fica no centro da grade e escondido ("???") até ser derrotado; os outros 4 seguem travados', async ({ page }) => {
+    const erros = coletarErros(page);
+    await abrirJogo(page, CHEFE.query);
+    await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); }");
+    const grade: string[] = await hook(page, '(h) => h.ui.scene.grade');
+    expect(grade).toHaveLength(9);
+    expect(grade[4]).toBe(CHEFE.id);
+    const estados = await page.evaluate(async () => {
+      const h = (window as any).__inno;
+      const { estadoDaCasa } = await import(/* @vite-ignore */ ('/src/ui/grade.ts' as string));
+      const cena = h.ui.scene;
+      const c = { prog: h.persist.prog, regras: h.ui.c.regras, novos: cena.novos };
+      return Object.fromEntries(cena.grade.map((id: string) => [id, estadoDaCasa(id, c)]));
+    });
+    expect(estados).toEqual({
+      hayato: 'liberado', 'wei-long': 'liberado', 'min-ji': 'liberado', caio: 'liberado',
+      aminu: 'travado', centella: 'travado', camille: 'travado', nila: 'travado', [CHEFE.id]: 'chefe-oculto',
+    });
+    await capturar(page, 'selecao-producao-chefe-oculto');
     expect(erros).toEqual([]);
   });
 
@@ -205,12 +229,45 @@ test.describe('arte real dos cinco novos', () => {
     expect(erros).toEqual([]);
   });
 
-  test('BAATAR chefão: 2 barras, troca de barra, Dança da Águia e fase 2 (MERGULHO) no cenário da Estepe', async ({ page }) => {
+  test('BAATAR normal (produção): 1 barra, sem ficha, →+ESP é o MERGULHO DA ÁGUIA com a arte própria (dive0/dive1)', async ({ page }) => {
     const erros = coletarErros(page);
     await abrirJogo(page, '');
-    await abrirLuta(page, 'baatar', { mode: 'arcade', cpu: 1, chefe: true });
+    await abrirLuta(page, 'baatar', { mode: 'arcade', cpu: 1 });
+    const f = await hook(page, '(h) => { const p = h.mundo().game.p2; return { chefe: p.chefe, barras: p.barras, barrasMax: p.barrasMax, ficha: p.ficha, hp: p.maxHp, sFwd: p.ch.moves.sFwd.name, fichas: Object.keys(p.ch.fichas) }; }');
+    expect(f).toMatchObject({ chefe: false, barras: 1, barrasMax: 1, ficha: null, sFwd: 'MERGULHO DA ÁGUIA', fichas: [] });
+    // o MERGULHO sai de verdade: a pose do golpe é a do atlas (dive0/dive1) já na ficha base
+    const r = await page.evaluate(async () => {
+      const { getPD } = await import(/* @vite-ignore */ ('/src/data/poses.ts' as string));
+      const h = (window as any).__inno;
+      const G = h.mundo().game;
+      G.p1.x = 200;
+      G.p2.x = 700;
+      G.p2.en = 100;
+      G.p2.facing = -1;
+      G.p2.startMove('sFwd', G);
+      const poses = new Set<string>();
+      for (let t = 0; t < 60; t++) {
+        h.avancar(1);
+        poses.add(G.p2.pose.name);
+      }
+      const ch = h.mundo().elenco.baatar.ch;
+      const dive1 = h.mundo().elenco.baatar.arte.manifesto.quadros.dive1;
+      const pd = getPD(ch, 'sc1');
+      return { poses: [...poses], mergulhoNoAtlas: pd.x === dive1.x && pd.y === dive1.y && pd.w === dive1.w, ficha: G.p2.ficha, fase: G.phase };
+    });
+    expect(r.poses.some((p) => p === 'sc0' || p === 'sc1')).toBe(true);
+    expect(r.mergulhoNoAtlas).toBe(true);
+    expect(r).toMatchObject({ ficha: null, fase: 'fight' });
+    await capturar(page, 'lutador-baatar-normal-mergulho');
+    expect(erros).toEqual([]);
+  });
+
+  test('COM chefão de teste (BAATAR antigo): 2 barras, troca de barra, Dança da Águia e fase 2 (MERGULHO) no cenário da Estepe', async ({ page }) => {
+    const erros = coletarErros(page);
+    await abrirJogo(page, CHEFE.query);
+    await abrirLuta(page, CHEFE.id, { mode: 'arcade', cpu: 1, chefe: true });
     const f = await hook(page, '(h) => { const p = h.mundo().game.p2; return { chefe: p.chefe !== null, barras: p.barras, barrasMax: p.barrasMax, ficha: p.ficha }; }');
-    expect(f).toEqual({ chefe: true, barras: 2, barrasMax: 2, ficha: 'chefe' });
+    expect(f).toEqual({ chefe: true, barras: 2, barrasMax: 2, ficha: CHEFE.fase1 });
     await capturar(page, 'lutador-baatar-0-chefe-2-barras');
 
     // zera a 1ª barra com um golpe de verdade: a luta troca de barra e abre a Dança (relógio parado, sem entradas)
@@ -240,11 +297,11 @@ test.describe('arte real dos cinco novos', () => {
     });
     expect(danca).toMatchObject({ fase: 'cena-chefe', barras: 1 });
     expect(danca.hp).toBe(danca.maxHp); // a barra nova nasce cheia
-    expect(danca.pose).toMatch(/^devekh[012]$/); // a Dança usa as poses próprias do atlas do BAATAR
+    expect(danca.pose).toMatch(CHEFE.poseDanca); // a Dança usa as poses próprias do atlas do BAATAR
     await capturar(page, 'lutador-baatar-1-danca-da-aguia');
 
     // retomada: a ficha da fase 2 está ativa e o MERGULHO usa a arte própria (dive0/dive1), com a barra cheia de novo
-    const retomou = await page.evaluate(async () => {
+    const retomou = await page.evaluate(async (c) => {
       const { getPD } = await import(/* @vite-ignore */ ('/src/data/poses.ts' as string));
       const h = (window as any).__inno;
       const G = h.mundo().game;
@@ -260,13 +317,13 @@ test.describe('arte real dos cinco novos', () => {
         h.avancar(1);
         poses.add(G.p2.pose.name);
       }
-      const ch = h.mundo().elenco.baatar.ch;
-      const dive1 = h.mundo().elenco.baatar.arte.manifesto.quadros.dive1;
-      const pd = getPD(ch.fichas.chefe2, 'sc1'); // a pose do MERGULHO na ficha da fase 2 resolve para o quadro dive1 do atlas
+      const ch = h.mundo().elenco[c.id].ch;
+      const dive1 = h.mundo().elenco[c.id].arte.manifesto.quadros[c.quadro];
+      const pd = getPD(ch.fichas[c.fase2], 'sc1'); // a pose do MERGULHO na ficha da fase 2 resolve para o quadro dive1 do atlas
       return { fase: G.phase, ficha, poses: [...poses], mergulhoNoAtlas: pd.x === dive1.x && pd.y === dive1.y && pd.w === dive1.w };
-    });
+    }, { id: CHEFE.id, fase2: CHEFE.fase2, quadro: CHEFE.quadrosFase2.sc1 });
     expect(retomou.fase).toBe('fight');
-    expect(retomou.ficha).toBe('chefe2');
+    expect(retomou.ficha).toBe(CHEFE.fase2);
     expect(retomou.poses.some((p) => p === 'sc0' || p === 'sc1')).toBe(true);
     expect(retomou.mergulhoNoAtlas).toBe(true);
     await capturar(page, 'lutador-baatar-2-fase-2');

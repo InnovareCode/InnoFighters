@@ -5,17 +5,20 @@ import { criarRng, type Rng } from '../../src/core/rng';
 import { BAATAR, HAYATO, MERGULHO_DA_AGUIA } from '../../src/data/lutadores';
 import type { LutadorMontado } from '../../src/data/montar';
 import type { GolpeMontado, LutadorDef, NomeGolpe } from '../../src/data/tipos';
+import { ABRACO_DA_ESTEPE, BAATAR_COM_ABRACO } from './_baatar-chefe';
 import { ID_BAATAR, ateALuta, criarLuta, elencoE3, montarFixtura, tipos, type Luta } from './_kit-e3';
 
 /*
  * E3 · S1b — kit do BAATAR em dados + motor (docs/mecanicas-e3.md §2.5): armadura por rank, agarrão com alcance/janela,
- * salto com alvo (vxAlvo) e as dicas de CPU. O BAATAR é só definição de teste sobre o atlas do WEI LONG; a produção
- * segue com 4 lutadores e CHEFE null.
+ * salto com alvo (vxAlvo) e as dicas de CPU. O BAATAR é montado sobre o atlas do WEI LONG (arte própria nos testes de E5).
+ * Ele agora é lutador NORMAL (→+ESP = MERGULHO); a mecânica do ABRAÇO DA ESTEPE (rush + agarrão em janela), que saiu do kit dele,
+ * é testada sobre `BAATAR_COM_ABRACO` (tests/unit/_baatar-chefe.ts).
  */
 
 const elenco = elencoE3();
 const baatar = elenco[ID_BAATAR];
-const { armadura: _armadura, ...semArmadura } = BAATAR;
+const elencoAbraco = elencoE3({ baatar: BAATAR_COM_ABRACO });
+const { armadura: _armadura, ...semArmadura } = BAATAR_COM_ABRACO;
 void _armadura;
 
 function pronta(opts: { c1?: IdLutador; lut?: Record<IdLutador, LutadorMontado>; x1?: number; x2?: number } = {}): Luta {
@@ -167,11 +170,11 @@ describe('S1b · agarrão: alcance, dano e janela', () => {
     expect(tipos(l2.passo(12), 'throw')).toHaveLength(0);
   });
 
-  describe('ABRAÇO DA ESTEPE (rush + agarrão em janela + armadura)', () => {
-    const abraco = baatar.moves.sFwd;
+  describe('ABRAÇO DA ESTEPE (rush + agarrão em janela + armadura; golpe fora do kit, def de teste)', () => {
+    const abraco = elencoAbraco[ID_BAATAR].moves.sFwd;
 
     /** Distância (antes de cada tick) e eventos; o P1 (BAATAR) aperta →+ESP no tick 0. */
-    function correr(distancia: number, p2?: (l: Luta, t: number) => void, lut = elenco) {
+    function correr(distancia: number, p2?: (l: Luta, t: number) => void, lut = elencoAbraco) {
       const l = pronta({ x1: 300, x2: 300 + distancia, lut });
       const ev: EventoLuta[] = [];
       const antes: number[] = [];
@@ -191,6 +194,11 @@ describe('S1b · agarrão: alcance, dano e janela', () => {
       }
       return { l, ev, antes, grudou, vxNoGrab };
     }
+
+    it('o →+ESP do def de teste é o ABRAÇO (a fixtura, não o BAATAR de produção)', () => {
+      expect(abraco.name).toBe(ABRACO_DA_ESTEPE.name);
+      expect(baatar.moves.sFwd.name).not.toBe(ABRACO_DA_ESTEPE.name);
+    });
 
     it('agarra no primeiro tick em que o rival fica dentro de 96 px DEPOIS da preparação, e só uma vez', () => {
       const { ev, antes, grudou, vxNoGrab } = correr(220);
@@ -233,13 +241,10 @@ describe('S1b · agarrão: alcance, dano e janela', () => {
   });
 });
 
-describe('S1b · MERGULHO DA ÁGUIA (vxAlvo, fase 2)', () => {
-  const FICHA2 = 'chefe2';
-
-  /** BAATAR na ficha da fase 2 em x = 100; rival invulnerável (não empurra nem é acertado) a `distancia` px. */
+describe('S1b · MERGULHO DA ÁGUIA (vxAlvo; →+ESP do BAATAR normal)', () => {
+  /** BAATAR em x = 100; rival invulnerável (não empurra nem é acertado) a `distancia` px. */
   function mergulhar(distancia: number, x1 = 100) {
     const l = pronta({ x1, x2: x1 + distancia });
-    l.g.p1.trocarFicha(FICHA2);
     l.g.p2.invuln = 99999;
     const alvoX = l.g.p2.x;
     l.frame.p1.right = true;
@@ -263,14 +268,12 @@ describe('S1b · MERGULHO DA ÁGUIA (vxAlvo, fase 2)', () => {
     return { l, alvoX, noAr, xPouso, pousou };
   }
 
-  it('na ficha da fase 2 o →+ESP é o MERGULHO; na da fase 1 e no def base é o ABRAÇO', () => {
-    expect(baatar.moves.sFwd.name).toBe('ABRAÇO DA ESTEPE');
-    expect(baatar.fichas['chefe']?.moves.sFwd.name).toBe('ABRAÇO DA ESTEPE');
-    const f2 = baatar.fichas['chefe2'];
-    expect(f2?.moves.sFwd.name).toBe(MERGULHO_DA_AGUIA.name);
-    expect(f2?.moves.sFwd.lvl).toBe('over');
-    expect(f2?.moves.sFwd.kd).toBe(1);
-    expect(f2?.moves.sFwd.agarrao).toBeUndefined();
+  it('o →+ESP do BAATAR é o MERGULHO (golpe alto, derruba, sem agarrão) e ele não tem fichas', () => {
+    expect(baatar.moves.sFwd.name).toBe(MERGULHO_DA_AGUIA.name);
+    expect(baatar.moves.sFwd.lvl).toBe('over');
+    expect(baatar.moves.sFwd.kd).toBe(1);
+    expect(baatar.moves.sFwd.agarrao).toBeUndefined();
+    expect(Object.keys(baatar.fichas)).toEqual([]);
   });
 
   it('o dado vxAlvo bate com o tempo de voo medido (vy e gravidade do motor)', () => {
@@ -296,13 +299,9 @@ describe('S1b · MERGULHO DA ÁGUIA (vxAlvo, fase 2)', () => {
   it('sem vxAlvo o mesmo salto vai sempre com a velocidade fixa (mutação do dado: não mira)', () => {
     const { vxAlvo: _v, ...fixo } = MERGULHO_DA_AGUIA;
     void _v;
-    const def: LutadorDef = {
-      ...BAATAR,
-      fichas: { ...BAATAR.fichas, chefe2: { ...BAATAR.fichas?.['chefe2'], especiais: { ...BAATAR.especiais, sFwd: fixo } } },
-    };
+    const def: LutadorDef = { ...BAATAR, especiais: { ...BAATAR.especiais, sFwd: fixo } };
     const lut = elencoE3({ baatar: def });
     const l = pronta({ lut, x1: 100, x2: 400 });
-    l.g.p1.trocarFicha(FICHA2);
     l.g.p2.invuln = 99999;
     l.frame.p1.right = true;
     l.frame.p1.sp = true;
@@ -340,7 +339,7 @@ describe('S1b · montagem recusa dado que o motor não executa', () => {
     const { throw: _t, ...semThrow } = BAATAR.especiais.sFire;
     void _t;
     expect(() => montarFixtura({ ...BAATAR, especiais: { ...BAATAR.especiais, sFire: semThrow } })).toThrow(/throw: 1/);
-    expect(() => montarFixtura(comGolpe('sFwd', { vxAlvo: 30 }))).toThrow(/vxAlvo/);
+    expect(() => montarFixtura(comGolpe('sFire', { vxAlvo: 30 }))).toThrow(/vxAlvo/);
   });
 
   it('o ESP que não é projétil monta (proj neutro); o type fire sem proj continua erro', () => {
@@ -355,10 +354,10 @@ describe('S1b · montagem recusa dado que o motor não executa', () => {
 describe('S1b · dicas de CPU do BAATAR (só quem a tem gasta RNG, só dentro do alcance)', () => {
   const nomesDicas = baatar.dicasIa.map((d) => `${d.golpe}:${d.dica.papel}`);
 
-  it('as dicas montadas: ARREMESSO pressão, ABRAÇO aproximar; na ficha da fase 2 o MERGULHO no lugar do ABRAÇO', () => {
+  it('as dicas montadas: ARREMESSO pressão (0-150) e MERGULHO aproximar (200-700)', () => {
     expect(nomesDicas).toEqual(['sFire:pressao', 'sFwd:aproximar']);
-    const f2 = baatar.fichas['chefe2']?.dicasIa.map((d) => `${d.golpe}:${d.dica.papel}:${d.dica.alcance?.join('-')}`);
-    expect(f2).toEqual(['sFire:pressao:0-150', 'sFwd:aproximar:200-700']);
+    const faixas = baatar.dicasIa.map((d) => `${d.golpe}:${d.dica.papel}:${d.dica.alcance?.join('-')}`);
+    expect(faixas).toEqual(['sFire:pressao:0-150', 'sFwd:aproximar:200-700']);
   });
 
   /** CPU nível 2 de BAATAR (P2) contra o HAYATO parado: início de cada sFire/sFwd e a distância nesse tick. */
@@ -375,7 +374,9 @@ describe('S1b · dicas de CPU do BAATAR (só quem a tem gasta RNG, só dentro do
       const dist = Math.abs(l.g.p1.x - l.g.p2.x);
       l.passo();
       const p = l.g.p2;
-      if (p.state === 'move' && p.move && (p.move === 'sFire' || p.move === 'sFwd') && (anterior !== p.move || p.mt < anteriorMt)) {
+      // Só o que sai do repouso (plano por dica). Cancelamento de um golpe que acabou de acertar (combo) segue o fluxo antigo
+      // da CPU, que ignora a dica (e o rival já foi empurrado pelo golpe anterior): não é o que este teste mede.
+      if (p.state === 'move' && p.move && (p.move === 'sFire' || p.move === 'sFwd') && (anterior !== p.move || p.mt < anteriorMt) && anterior === null) {
         usos.push({ golpe: p.move, dist });
       }
       anterior = p.state === 'move' ? p.move : null;
@@ -385,15 +386,15 @@ describe('S1b · dicas de CPU do BAATAR (só quem a tem gasta RNG, só dentro do
     return usos;
   }
 
-  it('a CPU usa o ARREMESSO só perto e o ABRAÇO na faixa de aproximação (dentro do alcance da dica)', () => {
+  it('a CPU usa o ARREMESSO só perto e o MERGULHO na faixa de aproximação (dentro do alcance da dica)', () => {
     const usos = cpuBaatar(elenco);
     const arremessos = usos.filter((u) => u.golpe === 'sFire');
-    const abracos = usos.filter((u) => u.golpe === 'sFwd');
+    const mergulhos = usos.filter((u) => u.golpe === 'sFwd');
     expect(arremessos.length).toBeGreaterThan(0);
-    expect(abracos.length).toBeGreaterThan(0);
+    expect(mergulhos.length).toBeGreaterThan(0);
     for (const u of arremessos) expect(u.dist, 'ARREMESSO fora do alcance da dica').toBeLessThanOrEqual(150 + 8);
-    for (const u of abracos) expect(u.dist, 'ABRAÇO fora da faixa da dica').toBeGreaterThanOrEqual(110 - 8);
-    for (const u of abracos) expect(u.dist).toBeLessThanOrEqual(260 + 8);
+    for (const u of mergulhos) expect(u.dist, 'MERGULHO fora da faixa da dica').toBeGreaterThanOrEqual(200 - 8);
+    for (const u of mergulhos) expect(u.dist).toBeLessThanOrEqual(700 + 8);
   });
 
   it('sem a dica no def (mutação de dados) a CPU deixa de escolher o ARREMESSO só no alcance certo: o fluxo genérico o usa de longe', () => {

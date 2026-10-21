@@ -246,6 +246,8 @@ export function salvarDadosV2(
  * para `inno-fighters-v2-quebrada` antes de ser substituido. Uma v2 `v > 2` (build mais novo) tambem cai no
  * passo 2/3/4, mas em memoria: nunca e sobrescrita (ver salvarDadosV2). A legada so e
  * apagada DEPOIS que a v2 foi gravada com sucesso. Idempotente: carregar duas vezes da o mesmo resultado.
+ * Z6: `prog.chefesDerrotados` (qual chefao caiu) estende a v2 SEM bump de versao; o booleano legado de chefao derrotado (true) vira
+ * `['baatar']` em memoria ao ler (o disco so muda no proximo save) — tudo via `sanearProgresso`, na leitura e na gravacao.
  */
 export function carregarDadosV2(
   armazenamento: ArmazenamentoLike,

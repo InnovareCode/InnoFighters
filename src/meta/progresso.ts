@@ -8,6 +8,29 @@ export function progressoVazio(): Progresso {
   return { desbloqueados: [], zeradas: 0, chefeDerrotado: false, vistos: [] };
 }
 
+/** O unico chefao que existiu antes de `chefesDerrotados`: e quem um `chefeDerrotado: true` antigo significa. */
+export const CHEFE_LEGADO = 'baatar';
+/**
+ * Chefoes que SO se liberam derrotando-os (nao estao na fila de desbloqueio): ter o id em `desbloqueados` (ou em
+ * `desconhecidos`, num build que ainda nao o conhece) prova a derrota. O saneamento usa isto para recompor
+ * `chefesDerrotados` depois de um rollback, quando o build antigo apagou a lista mas guardou o desbloqueio.
+ * NAO inclui o `baatar`: ele tambem sai da fila, entao ter o id nao prova que foi derrotado como chefe.
+ */
+export const CHEFOES_SO_POR_DERROTA: readonly string[] = ['zenon'];
+/** Teto da lista de chefoes derrotados (sao poucos; localStorage e editavel). */
+export const MAX_CHEFES_DERROTADOS = 8;
+
+/** Chefoes derrotados, olhando tambem o booleano legado (um `Progresso` montado a mao por codigo antigo). */
+export function chefesDerrotadosDe(prog: Progresso): readonly string[] {
+  if (prog.chefesDerrotados && prog.chefesDerrotados.length > 0) return prog.chefesDerrotados;
+  return prog.chefeDerrotado ? [CHEFE_LEGADO] : [];
+}
+
+/** Este chefao ja foi derrotado alguma vez? */
+export function derrotouOChefe(prog: Progresso, id: string): boolean {
+  return chefesDerrotadosDe(prog).includes(id);
+}
+
 /** INICIAIS ∪ prog.desbloqueados. */
 export function liberados(prog: Progresso, regras: Regras = REGRAS_PADRAO): ReadonlySet<IdLutador> {
   return new Set<IdLutador>([...regras.iniciais, ...prog.desbloqueados]);
@@ -47,12 +70,16 @@ export function aplicarVitoriaArcade(
   if (vitoria.derrotouChefe && chefe !== null && !liberados(prog, regras).has(chefe) && !novos.includes(chefe)) {
     liberar(chefe);
   }
+  // QUAL chefao caiu: soma o atual (sem repetir) aos ja derrotados. Jogando COM o chefao nao ha luta de chefe.
+  const derrotados = [...chefesDerrotadosDe(prog)];
+  if (vitoria.derrotouChefe && chefe !== null && !derrotados.includes(chefe)) derrotados.push(chefe);
 
   return {
     prog: {
       desbloqueados,
       zeradas: Math.min(prog.zeradas + 1, Number.MAX_SAFE_INTEGER),
-      chefeDerrotado: prog.chefeDerrotado || (vitoria.derrotouChefe && chefe !== null),
+      chefeDerrotado: derrotados.length > 0,
+      ...(derrotados.length > 0 ? { chefesDerrotados: derrotados } : {}),
       vistos: [...prog.vistos],
       ...(prog.desconhecidos && prog.desconhecidos.length > 0 ? { desconhecidos: [...prog.desconhecidos] } : {}),
     },
@@ -83,8 +110,13 @@ const FORMA_ID_DESCONHECIDO = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 /**
  * Saneia `prog` lido do localStorage (dado externo e editavel; plano 3.3): duplicados removidos, iniciais nunca
- * guardados, `vistos` limitado a quem esta desbloqueado, `zeradas` inteiro >= 0, `chefeDerrotado` booleano estrito.
- * Nunca lanca.
+ * guardados, `vistos` limitado a quem esta desbloqueado, `zeradas` inteiro >= 0. Nunca lanca.
+ *
+ * Chefoes derrotados (Z6): `chefesDerrotados` aceita so ids com a forma de id, sem repeticao, ate
+ * `MAX_CHEFES_DERROTADOS` — NAO exige que o id esteja no roster (o chefao de uma onda futura ainda nao existe). Save
+ * antigo, com `chefeDerrotado: true` (booleano estrito) e sem lista, vira `[CHEFE_LEGADO]`. Chefao de
+ * `CHEFOES_SO_POR_DERROTA` desbloqueado entra na lista (recompoe o que um rollback apagou). `chefeDerrotado` e
+ * DERIVADO: `true` sse a lista nao esta vazia (assim os dois campos nunca discordam e o build antigo le o ganho).
  *
  * Ids de desbloqueio FORA do roster (lutador de onda futura apos rollback) NAO sao jogados fora: vao para
  * `desconhecidos` (opaco, so para sobreviver ao proximo save), desde que tenham a forma de um id
@@ -121,14 +153,26 @@ export function sanearProgresso(bruto: unknown, regras: Pick<Regras, 'roster' | 
     if (permitidos.has(item) && !vistos.includes(item as IdLutador)) vistos.push(item as IdLutador);
   }
 
+  const derrotados: string[] = [];
+  const somar = (item: string): void => {
+    if (FORMA_ID_DESCONHECIDO.test(item) && derrotados.length < MAX_CHEFES_DERROTADOS && !derrotados.includes(item)) {
+      derrotados.push(item);
+    }
+  };
+  strings(bruto['chefesDerrotados']).forEach(somar);
+  if (derrotados.length === 0 && bruto['chefeDerrotado'] === true) somar(CHEFE_LEGADO);
+  const liberadosOuDesconhecidos = new Set<string>([...desbloqueados, ...desconhecidos]);
+  for (const id of CHEFOES_SO_POR_DERROTA) if (liberadosOuDesconhecidos.has(id)) somar(id);
+
   const z = bruto['zeradas'];
   const zeradas = typeof z === 'number' && Number.isFinite(z) && z > 0 ? Math.min(Math.floor(z), Number.MAX_SAFE_INTEGER) : 0;
 
   return {
     desbloqueados,
     zeradas,
-    chefeDerrotado: bruto['chefeDerrotado'] === true,
+    chefeDerrotado: derrotados.length > 0,
     vistos,
+    ...(derrotados.length > 0 ? { chefesDerrotados: derrotados } : {}),
     ...(desconhecidos.length > 0 ? { desconhecidos } : {}),
   };
 }

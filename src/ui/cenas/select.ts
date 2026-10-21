@@ -203,8 +203,8 @@ export class CenaSelect implements Cena {
       const c1 = this.idEm(this.pick[0]);
       const c2 = this.idEm(this.pick[1]);
       if (this.mode === 'arcade' || this.mode === 'cpu') this.ui.go('diff', { mode: this.mode, c1, c2 });
-      else if (this.mode === 'versus') this.ui.go('vs', { cfg: { mode: 'versus', c1, c2, cpu: null } });
-      else this.ui.go('fight', { cfg: { mode: 'training', c1, c2, cpu: null } });
+      else if (this.mode === 'versus') this.ui.go('vs', { cfg: { mode: 'versus', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva } });
+      else this.ui.go('fight', { cfg: { mode: 'training', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva } });
     }
   }
 

@@ -9,7 +9,21 @@ export type Progresso = {
   desbloqueados: IdLutador[];
   /** Quantas vezes o Arcade foi zerado (qualquer dificuldade, com continues). */
   zeradas: number;
+  /**
+   * LEGADO (Z6): "derrotou algum chefao". Continua gravado (= `chefesDerrotados` nao vazio) so para um build ANTIGO,
+   * que ignora campos que nao conhece, ainda ler o ganho depois de um rollback. NADA decide nada a partir dele:
+   * liberar/travar e `desbloqueados` (via `liberados`), e QUAL chefao caiu e `chefesDerrotados`. Um teste de arquitetura
+   * garante que o codigo de jogo/UI nao o le.
+   */
   chefeDerrotado: boolean;
+  /**
+   * Ids dos chefoes ja derrotados no Arcade (ex.: `['baatar', 'zenon']`). `string[]` e nao `IdLutador[]` de proposito:
+   * o id de um chefao de onda futura ainda nao existe no tipo/roster, mas tem de sobreviver ao save (mesma razao de
+   * `desconhecidos`). So informativo — o desbloqueio mora em `desbloqueados`. Ausente quando vazio (formato em disco
+   * identico ao anterior para quem nunca derrotou um chefao). Um save antigo com `chefeDerrotado: true` e sem esta lista
+   * vira `['baatar']` (o unico chefao que existia).
+   */
+  chefesDerrotados?: string[];
   /** Ja apareceram como liberados na selecao (o selo "NOVO!" some). Sempre subconjunto de `desbloqueados`. */
   vistos: IdLutador[];
   /**

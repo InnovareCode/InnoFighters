@@ -119,7 +119,7 @@ export type IndiceLutador = 0 | 1;
 
 /**
  * Id estável do lutador. No protótipo: f1=hayato, f2=wei-long, f3=min-ji, f4=caio. Os cinco da expansão (E5) vêm depois,
- * na ordem da grade: a fila de desbloqueio (aminu, centella, camille, nila) e o chefão (baatar). Esta lista é a ordem do
+ * na ordem da grade: a fila de desbloqueio (aminu, centella, camille, nila, baatar; o BAATAR deixou de ser o chefão). Esta lista é a ordem do
  * `ROSTER` e o que o save reconhece: id fora dela é "desconhecido" (build de onda anterior), ver `src/meta/progresso.ts`.
  */
 export const IDS_LUTADORES = ['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar'] as const;
@@ -469,7 +469,7 @@ export type MomentoCinematica = 'inicio' | 'sucesso';
  * `special` (V1). O evento de sempre (gasto de energia, som) mais o que a cinemática precisa. O motor SEMPRE preenche `golpe`, `ficha` e
  * `momento`; `quadro`/`entrada` só quando `src/data/apresentacao-especiais.ts` tem registro.
  *  - `golpe`: chave de ch.moves do golpe que começou (`sFire`, `sDown`, `sFwd`). Nome, pose e cor: `chDaFicha(ch, ficha).moves[golpe]`.
- *  - `ficha`: ficha ativa de quem atacou (null = base), para `chDaFicha` (NILA em SARPA, BAATAR na fase 2).
+ *  - `ficha`: ficha ativa de quem atacou (null = base), para `chDaFicha` (NILA em SARPA).
  *  - `momento: 'sucesso'` (PARADE, GARKUWA): a UI NÃO abre a cinemática neste evento; abre no `parry` / `clash` (com `lutador`) do mesmo golpe.
  *    A MASHI dispara ao começar a carga (`inicio`); o nível aparece em `hit.nivelCarga`.
  *  - `quadro`: nome do quadro do atlas para o recorte da tarja (troca da pose do golpe, quando o Apolo pede outra). `entrada`: ver `EntradaTarja`.

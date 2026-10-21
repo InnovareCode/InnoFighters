@@ -6,7 +6,7 @@ import type { NomeEspecial } from './tipos';
  * na tarja, por onde a tarja entra e quando a cinemática dispara. Ficam FORA de `LutadorDef.especiais` de propósito: o oráculo de fidelidade
  * compara os especiais dos 4 originais com o protótipo, campo a campo, e o motor não lê nada daqui além de copiar para o evento `special`.
  *
- * Chave: `<lutador>` + ficha opcional + golpe. A ficha é procurada primeiro (NILA em SARPA, BAATAR na fase 2); sem registro, vale o da base.
+ * Chave: `<lutador>` + ficha opcional + golpe. A ficha é procurada primeiro (NILA em SARPA); sem registro, vale o da base.
  */
 export type ApresentacaoEspecial = {
   /** Quadro do atlas para o recorte da tarja (nome de pose; a pose do golpe só vale se este for omitido). */
@@ -66,8 +66,8 @@ const T: Tabela = {
   baatar: {
     sFire: { quadro: 'sa1' },
     sDown: { quadro: 'sb1', entrada: 'rival' },
-    sFwd: { quadro: 'sc1' },
-    'chefe2/sFwd': { quadro: 'dive1', entrada: 'cima' },
+    // MERGULHO DA ÁGUIA (→+ESP desde que o BAATAR virou lutador normal; antes era o 'chefe2/sFwd')
+    sFwd: { quadro: 'dive1', entrada: 'cima' },
   },
 };
 

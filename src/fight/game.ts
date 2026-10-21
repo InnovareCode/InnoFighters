@@ -306,7 +306,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       defensor: d.indice,
       pitch: d.ch.pitch,
       texto: textoFlutuante(a.x, a.y - SH, 'ARREMESSO!', '#ffd23f', 22),
-      // V1: o agarrão de ESPECIAL (BAATAR sFire/sFwd, CENTELLA sDown) conta acerto na sessão do especial; o arremesso comum não.
+      // V1: o agarrão de ESPECIAL (BAATAR sFire, CENTELLA sDown) conta acerto na sessão do especial; o arremesso comum não.
       dano,
       ...(golpe ? { golpe: golpe.id } : {}),
       ...(golpe && golpe.id[0] === 's' ? { especial: true as const } : {}),
@@ -467,8 +467,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     c.vx = 0;
     // O Game manda NO_INPUT na cena, mas o `buf` (9 ticks) de cada lutador seguiria sendo consumido: sem isto o jogador
     // ataca (gasta energia, som) com a dança em andamento.
-    this.p1.buf = null;
-    this.p2.buf = null;
+    this.p1.limparBotoesGuardados();
+    this.p2.limparBotoesGuardados();
     this.phase = 'cena-chefe';
     this.t = 0;
     this.projectiles = [];
@@ -536,7 +536,14 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     const dx = b.x - a.x;
     const min = a.corpo + b.corpo; // 39 + 39 = 78 com o corpo padrão
     if (Math.abs(dx) < min && Math.abs(a.y - b.y) < 90) {
-      const s = dx >= 0 ? 1 : -1;
+      let s = dx >= 0 ? 1 : -1;
+      // Empate exato (os dois no mesmo x, p. ex. o avanço da esquiva contra um rival colado na parede): o desempate antigo assumia o P2 à direita
+      // e dava resultados diferentes para P1 e P2. Com uma esquiva em curso, quem esquiva fica do lado de onde saiu (o rival está para onde ele
+      // olhava: o `facing` não muda durante a esquiva). Sem esquiva o desempate é o de sempre (o snapshot e o lock-step não mudam).
+      if (dx === 0) {
+        const e = a.state === 'esquiva' ? a : b.state === 'esquiva' ? b : null;
+        if (e) s = e === a ? e.facing : -e.facing;
+      }
       const push = (min - Math.abs(dx)) / 2;
       a.x -= push * s;
       b.x += push * s;
@@ -551,10 +558,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       [this.p2, this.p1],
     ] as const) {
       const mv = a.activeMove();
-      if (!mv || a.hitDone) continue;
+      if (!mv || a.hitDone || a.atkEsquivado === a.atkId) continue; // esquivado = consumido para o alvo (como um acerto)
       if (d.untouchable) {
-        // ESQUIVA: quem está na janela invulnerável e levaria o golpe "esquivou" (uma vez por golpe). Fora disso, sem efeito, como sempre.
-        if (d.state === 'esquiva') this.verEsquivada(a, d, mv.box ? a.ch.boxes[mv.box] : undefined, `a${a.atkId}`, false);
+        // ESQUIVA: quem está na janela invulnerável e levaria o golpe "esquivou" (uma vez por golpe) e o golpe é CONSUMIDO: não acerta mais
+        // quando a janela fechar no meio da fase ativa. Fora disso, sem efeito, como sempre.
+        if (d.state === 'esquiva' && this.verEsquivada(a, d, mv.box ? a.ch.boxes[mv.box] : undefined, `a${a.atkId}`, false)) a.atkEsquivado = a.atkId;
         continue;
       }
       const caixa = mv.box ? a.ch.boxes[mv.box] : undefined;
@@ -589,10 +597,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         continue;
       }
       if (d.untouchable && d.state === 'esquiva') {
-        // o projétil atravessa quem esquiva (segue voando) e a esquiva é anunciada uma vez por projétil
-        this.verEsquivada(o, d, { fx: 0, fy: 0, w: 0, h: 0 }, `p${pr.id}`, true, box);
+        // o projétil atravessa quem esquiva (segue voando), a esquiva é anunciada uma vez por projétil e ele fica CONSUMIDO para este alvo
+        if (this.verEsquivada(o, d, { fx: 0, fy: 0, w: 0, h: 0 }, `p${pr.id}`, true, box)) pr.esquivou = true;
       }
-      if (!d.untouchable && overlap(box, d.hurtbox())) {
+      if (!d.untouchable && !pr.esquivou && overlap(box, d.hurtbox())) {
         pr.life = 0;
         // PROJ_BASE vem DEPOIS no Object.assign do protótipo e sobrescreve lvl: o tremor rasteiro (`low`)
         // acaba como 'mid'. Preservado de propósito (zero mudança de comportamento).
@@ -637,12 +645,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
    * ESQUIVA: o golpe `a` (caixa `caixa`) ou o projétil (`box`) sobrepõe a hurtbox de `d`, que está na janela invulnerável da esquiva.
    * Emite `esquivou` uma vez por `chave` (atkId do golpe ou id do projétil) por esquiva.
    */
-  private verEsquivada(a: Fighter, d: Fighter, caixa: { fx: number; fy: number; w: number; h: number } | undefined, chave: string, projetil: boolean, boxProj?: Retangulo): void {
-    if (!caixa) return;
+  private verEsquivada(a: Fighter, d: Fighter, caixa: { fx: number; fy: number; w: number; h: number } | undefined, chave: string, projetil: boolean, boxProj?: Retangulo): boolean {
+    if (!caixa) return false;
     const box = boxProj ?? a.attackBox(caixa);
     const hb = d.hurtbox();
-    if (!overlap(box, hb)) return;
-    if (!d.registrarEsquivada(chave)) return;
+    if (!overlap(box, hb)) return false;
+    if (!d.registrarEsquivada(chave)) return false;
     this.emitir({
       tipo: 'esquivou',
       lutador: d.indice,
@@ -651,6 +659,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       y: (Math.max(box.y, hb.y) + Math.min(box.y + box.h, hb.y + hb.h)) / 2,
       projetil,
     });
+    return true;
   }
 
   /** `d` está com o escudo levantado (golpe `absorveProj` na janela ativa) contra um projétil que vem de frente? */

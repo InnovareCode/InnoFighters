@@ -71,7 +71,7 @@ export type Agregado = {
 
 const fim = (r: Registro): 'ko' | 'tempo' | null => r.fim[r.fim.length - 1] ?? null;
 
-export function agregar(registros: readonly Registro[], ids: readonly IdLutador[], chefeId: IdLutador, parametros: ParametrosSim): Agregado {
+export function agregar(registros: readonly Registro[], ids: readonly IdLutador[], _chefeId: IdLutador | null, parametros: ParametrosSim): Agregado {
   const regulares = registros.filter((r) => r.tipo === 'regular');
   const doChefe = registros.filter((r) => r.tipo === 'chefe');
 
@@ -163,7 +163,7 @@ export function agregar(registros: readonly Registro[], ids: readonly IdLutador[
   for (let f = 0; f < 4; f++) faixas[f] = somaLado((r, i) => r.reboteFaixas[i][f as 0 | 1 | 2 | 3], 'centella');
   const acertosResorte = faixas.reduce((a, b) => a + b, 0);
   const lutasNila = regulares.filter((r) => r.a === 'nila' || r.b === 'nila').length;
-  const lutasBaatar = regulares.filter((r) => r.a === chefeId || r.b === chefeId).length;
+  const lutasBaatar = regulares.filter((r) => r.a === 'baatar' || r.b === 'baatar').length;
 
   return {
     parametros,
@@ -201,7 +201,7 @@ export function agregar(registros: readonly Registro[], ids: readonly IdLutador[
         pctAcimaDoMinimo: acertosResorte ? (faixas[1] + faixas[2] + faixas[3]) / acertosResorte : 0,
       },
       nila: { trocasPorLuta: lutasNila ? somaLado((r, i) => r.trocaFicha[i], 'nila') / lutasNila : 0 },
-      baatar: { agarroes: somaLado((r, i) => r.agarroes[i], chefeId), lutas: lutasBaatar },
+      baatar: { agarroes: somaLado((r, i) => r.agarroes[i], 'baatar'), lutas: lutasBaatar },
       esquiva: {
         porLuta: regulares.length ? regulares.reduce((s, r) => s + r.esquivas[0] + r.esquivas[1], 0) / regulares.length : 0,
         esquivadosPorLuta: regulares.length ? regulares.reduce((s, r) => s + r.esquivou[0] + r.esquivou[1], 0) / regulares.length : 0,

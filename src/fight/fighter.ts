@@ -128,6 +128,11 @@ export class Fighter {
   /** Quantas esquivas este lutador já começou (a CPU rival usa para punir cada recuperação uma vez). Zera em `reset`. */
   esquivaId = 0;
   private readonly esquivados = new Set<string>();
+  /**
+   * `atkId` do golpe deste lutador que já foi ESQUIVADO (-1 = nenhum). Um golpe esquivado é CONSUMIDO para o alvo, como um acerto: depois do
+   * `esquivou` ele não acerta mais no mesmo golpe (a janela de 14 ticks é mais curta que a fase ativa de alguns golpes). Zera em `reset`.
+   */
+  atkEsquivado = -1;
 
   x = 0;
   y = GROUND;
@@ -245,7 +250,17 @@ export class Fighter {
     this.esqT = 0;
     this.bufEsq = 0;
     this.esquivaId = 0;
+    this.atkEsquivado = -1;
     this.esquivados.clear();
+  }
+
+  /**
+   * Descarta os botões guardados (ataque e esquiva). O `Game` chama ao abrir a Dança da Águia: sem isto o jogador atacaria ou esquivaria
+   * (gasto de energia, som, invulnerabilidade) no meio da cena com o botão apertado antes dela.
+   */
+  limparBotoesGuardados(): void {
+    this.buf = null;
+    this.bufEsq = 0;
   }
 
   /**

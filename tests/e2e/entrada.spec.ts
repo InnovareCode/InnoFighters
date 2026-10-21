@@ -3,7 +3,7 @@ import { expect, test, type CDPSession, type Page } from '@playwright/test';
 // a página agora baixa ~6 MB de arte antes de ficar pronta; com vários navegadores em paralelo isso passa de 30 s
 test.describe.configure({ timeout: 90_000 });
 
-type Quadro = Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'hp' | 'lk' | 'hk' | 'sp' | 'spSeg', boolean>;
+type Quadro = Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'hp' | 'lk' | 'hk' | 'sp' | 'spSeg' | 'esq', boolean>;
 type Hook = { entrada: { lerP1(): Quadro; lerP2(): Quadro; lerMesclado(): Quadro; fimDoTick(): void; temToque: boolean } };
 
 async function abrir(page: Page, viewport?: { width: number; height: number }): Promise<string[]> {
@@ -20,7 +20,7 @@ const p2 = (page: Page) => page.evaluate(() => (window as unknown as { __inno: H
 const mesclado = (page: Page) => page.evaluate(() => (window as unknown as { __inno: Hook }).__inno.entrada.lerMesclado());
 const fimDoTick = (page: Page) => page.evaluate(() => (window as unknown as { __inno: Hook }).__inno.entrada.fimDoTick());
 
-const VAZIO: Quadro = { left: false, right: false, up: false, down: false, lp: false, hp: false, lk: false, hk: false, sp: false, spSeg: false };
+const VAZIO: Quadro = { left: false, right: false, up: false, down: false, lp: false, hp: false, lk: false, hk: false, sp: false, spSeg: false, esq: false };
 
 test.describe('teclado (InputFrame = readInput do protótipo)', () => {
   test('direção é segurada, golpe é borda de descida', async ({ page }) => {
@@ -104,7 +104,7 @@ test.describe('camada de toque', () => {
   });
 
   // E7a: controle virtual compacto. Medido no navegador (skill medir-antes-de-afirmar). --m = menor lado da janela;
-  // área de toque do botão = max(44, 0,115 m); joystick = 0,235 m; casa da ESQUIVA reservada (vazia) ao lado do ESP.
+  // área de toque do botão = max(44, 0,115 m); joystick = 0,235 m; botão ESQ (L1) na casa de cima à esquerda, ao lado do ESP.
   // Limites de tamanho: nenhum controle passa de 12% da LARGURA da janela (deitado) e os controles juntos cobrem pouco da arena.
   const LIMITE_LARGURA = 0.12;
   for (const tela of [
@@ -176,8 +176,12 @@ test.describe('camada de toque', () => {
       const todos = { ...botoes, r1, esq };
       const lista = Object.entries(todos);
       for (let i = 0; i < lista.length; i++) for (let j = i + 1; j < lista.length; j++) expect(sobrepoe(lista[i]![1], lista[j]![1]), `${lista[i]![0]} x ${lista[j]![0]}`).toBe(false);
-      // a casa da ESQUIVA é só espaço: não recebe toque e nenhum elemento tocável está no ponto dela
-      expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.id ?? '', [esq.x + esq.w / 2, esq.y + esq.h / 2])).not.toMatch(/^(r1|hp|lp|hk|lk)$/);
+      // a casa da ESQUIVA tem o botão ESQ (L1): é ele que recebe o toque no centro da casa, e não os vizinhos
+      expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.id ?? '', [esq.x + esq.w / 2, esq.y + esq.h / 2])).toBe('esq');
+      // e o desenho do ESQ é menor que a área de toque, como o dos outros botões (::before)
+      const visualEsq = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#esq')!, '::before').width));
+      expect(visualEsq).toBeLessThan(hit - 2);
+      expect(visualEsq).toBeGreaterThan(hit * 0.8);
 
       // TAMANHO: % da LARGURA da janela e % da área do jogo (canvas), medidos e limitados
       const pct = (v: number, total: number) => +((100 * v) / total).toFixed(1);
@@ -259,6 +263,17 @@ test.describe('camada de toque', () => {
     await tocar(1, hk.x, hk.y);
     expect((await p1(page)).hk).toBe(true);
     await soltar();
+    await fimDoTick(page);
+
+    // ESQ (L1) = esquiva (n): borda de descida como os golpes; não aperta o especial nem nenhum outro botão
+    const esq = await centro('#esq');
+    await tocar(1, esq.x, esq.y);
+    expect(await p1(page)).toEqual({ ...VAZIO, esq: true });
+    await expect(page.locator('#esq')).toHaveClass(/\bon\b/);
+    await fimDoTick(page);
+    expect(await p1(page)).toEqual(VAZIO); // segurado, mas é borda
+    await soltar();
+    await expect(page.locator('#esq')).not.toHaveClass(/\bon\b/);
     await fimDoTick(page);
 
     // joystick: puxa para a esquerda -> left; para cima e direita -> up+right; solta -> nada

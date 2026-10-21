@@ -104,7 +104,7 @@ export function casaFiltro(filtro: string | null, a: string, b: string): boolean
 }
 
 /** A lista fixa de lutas do harness, na ordem estável: regulares (par ordenado, nível, índice) e depois o chefe. */
-export function montarTarefas(ids: readonly IdLutador[], chefe: IdLutador, p: ParametrosSim): Tarefa[] {
+export function montarTarefas(ids: readonly IdLutador[], chefe: IdLutador | null, p: ParametrosSim): Tarefa[] {
   const tarefas: Tarefa[] = [];
   const nova = (tipo: TipoTarefa, a: IdLutador, b: IdLutador, nivel: number, i: number): void => {
     tarefas.push({
@@ -123,7 +123,8 @@ export function montarTarefas(ids: readonly IdLutador[], chefe: IdLutador, p: Pa
       for (const nivel of p.niveis) for (let i = 0; i < p.sementes; i++) nova('regular', a, b, nivel, i);
     }
   }
-  if (p.incluirChefe) {
+  // Sem chefão no jogo (`CHEFE` null, enquanto o Zenon não entra) não há tarefa de chefe, mesmo com `incluirChefe`.
+  if (p.incluirChefe && chefe !== null) {
     for (const a of ids) {
       if (a === chefe || !casaFiltro(p.filtro, a, chefe)) continue;
       for (const nivel of p.niveis) for (let i = 0; i < p.sementes; i++) nova('chefe', a, chefe, nivel, i);

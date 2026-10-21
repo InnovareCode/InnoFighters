@@ -286,7 +286,7 @@ describe('seleção de lutadores (máquina de estados)', () => {
     t.s.key('z');
     t.s.key('z');
     rodar(t.s, 60);
-    expect(t.ir).toEqual(['fight {"cfg":{"mode":"training","c1":"hayato","c2":"wei-long","cpu":null}}']);
+    expect(t.ir).toEqual(['fight {"cfg":{"mode":"training","c1":"hayato","c2":"wei-long","cpu":null,"esquiva":true}}']);
   });
 
   it('VERSUS: P1 usa setas/Z e P2 usa WASD/J; só começa com os dois travados; X desfaz', () => {
@@ -303,7 +303,7 @@ describe('seleção de lutadores (máquina de estados)', () => {
     expect(ir).toEqual([]);
     s.key('x'); // P1 desfaz... mas a tela já está contando para sair (done > 0): ignorado
     rodar(s, 1);
-    expect(ir).toEqual(['vs {"cfg":{"mode":"versus","c1":"wei-long","c2":"hayato","cpu":null}}']);
+    expect(ir).toEqual(['vs {"cfg":{"mode":"versus","c1":"wei-long","c2":"hayato","cpu":null,"esquiva":true}}']);
   });
 
   it('mouse: passar por cima move o cursor; clicar confirma o quadrado', () => {
@@ -318,7 +318,7 @@ describe('seleção de lutadores (máquina de estados)', () => {
 });
 
 describe('dificuldade e campanha ARCADE', () => {
-  it('ARCADE: sorteia 5 rivais (sem repetir o seu lutador) + o BAATAR por último e abre a campanha com 3 créditos', () => {
+  it('ARCADE: sorteia 5 rivais (sem repetir o seu lutador; sem chefão por enquanto) e abre a campanha com 3 créditos', () => {
     const t = navegadorFalso();
     t.ui.pronto(mundoFalso());
     const d = t.ui.cenas.diff as CenaDiff;
@@ -330,11 +330,11 @@ describe('dificuldade e campanha ARCADE', () => {
     expect(t.persist.settings.diff).toBe(2);
     expect(t.salvou.n).toBe(1);
     const run = t.ui.run!;
-    const rivais = run.etapas.slice(0, 5).map((e) => e.id);
+    const rivais = run.etapas.map((e) => e.id);
+    expect(run.etapas).toHaveLength(5); // CHEFE null (o Zenon ainda não entrou): a escada tem só os 5 rivais
     expect(new Set(rivais).size).toBe(5);
-    expect(rivais.some((id) => id === 'caio' || id === 'baatar')).toBe(false);
-    expect(run.etapas.slice(0, 5).some((e) => e.chefe)).toBe(false);
-    expect(run.etapas[5]).toEqual({ id: 'baatar', chefe: true }); // ED4: o chefão fecha a escada
+    expect(rivais.includes('caio')).toBe(false);
+    expect(run.etapas.some((e) => e.chefe)).toBe(false);
     expect(run).toMatchObject({ c1: 'caio', idx: 0, score: 0, continues: 3, diff: 2, cont: 0 });
     expect(ir[0]?.[0]).toBe('vs');
     expect((ir[0]?.[1] as { cfg: { c2: string; cpu: number } }).cfg).toMatchObject({ mode: 'arcade', c1: 'caio', c2: run.etapas[0]?.id, cpu: 2 });
@@ -376,7 +376,7 @@ describe('CONTINUAR? (ARCADE)', () => {
     const { c, run, ir } = cont(2, 800);
     c.key('z');
     expect(run).toMatchObject({ continues: 1, cont: 1 });
-    expect(ir).toEqual([['vs', { cfg: { mode: 'arcade', c1: 'caio', c2: 'wei-long', cpu: 1, keepScore: true }, run }]]);
+    expect(ir).toEqual([['vs', { cfg: { mode: 'arcade', c1: 'caio', c2: 'wei-long', cpu: 1, esquiva: true, keepScore: true }, run }]]);
   });
 
   it('sem créditos: não continua e encerra no próximo tick; ESC encerra na hora (sem recorde se for menor)', () => {

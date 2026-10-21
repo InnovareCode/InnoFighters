@@ -143,7 +143,7 @@ export class CenaContinue implements Cena {
     r.cont++;
     this.ui.c.audio.uiOk();
     if (!r.etapas[r.idx]) return;
-    this.ui.go('vs', { cfg: cfgDaEtapa(r, true), run: r }); // continuar o chefão volta direto ao VS dele
+    this.ui.go('vs', { cfg: cfgDaEtapa(r, true, this.ui.c.regras), run: r }); // continuar o chefão volta direto ao VS dele
   }
 
   key(k: string): boolean {

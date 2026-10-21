@@ -254,6 +254,21 @@ primitivas do estilo + 16 riscos de velocidade (C2) = 40**, o teto da B8.
 - Parâmetros: 10–16 penas soltas, vida 40–60; asas 2 x 7. Estampa: penas deitadas espaçadas 100 px. Acerto: as asas fecham
   sobre o ponto e 12 penas se soltam (2–6 px/tick).
 
+### E12 · MEANDRO E ANEL (ZENON, chefão; acrescentado em 2026-10-21 pela Nova, a partir de `docs/proposta-novo-chefao.md` §1.4)
+1. Anéis concêntricos achatados (elipses com ry = 0,45·rx, rx de 40 a 160 px) que se abrem em brilho a partir de um **núcleo
+   ônix** (`#0c0710`). O núcleo é desenhado com `source-over` e alfa ≤ 0,85; só o brilho usa `lighter`. Com `lighter`, um
+   núcleo quase preto não soma nada e a regra da "energia em negativo" some.
+2. Linha de meandro grego: uma polilinha em ângulos retos (módulo de 24 px) que corre pela faixa como moldura, de 6 a 10 px
+   por tick.
+- Parâmetros: de 3 a 5 anéis, 1 meandro em cima e 1 embaixo, até 6 "moedas" (losangos dourados `#d9b25a` de 10 x 6 px).
+  Variantes: `selo` (anéis saindo da mão à frente), `selo-maior` (2 grupos de anéis defasados em 4 ticks), `coluna` (anéis
+  empilhados subindo, rx diminuindo), `tributo` (anel que se fecha sobre o ponto do acerto e solta as moedas na direção do
+  ZENON), `decreto` (meio anel que gira 180° junto com o `flip` da pose).
+- Estampa: meandro a 10%. Acerto: o anel se fecha sobre o rival (rx de 160 a 30 em 10 ticks) e solta 6 moedas. Defesa: o
+  anel bate e se desfaz em 4 segmentos retos, sem moedas.
+- Orçamento: ≤ 24 primitivas por quadro, sem `shadowBlur`, sem `filter` e sem `getImageData` (como os outros 11).
+- Por que é único: é o **único estilo geométrico em ângulo reto** e o **único de núcleo escuro**. Nenhum E1–E11 tem os dois.
+
 ### Camadas comuns (não são identidade, servem a todos)
 - **C1 Anel de choque**: anel de r 20 → 90 (pesado: 30 → 150) em 10 ticks, `lineWidth` 8 → 0, em núcleo. Só no acerto.
 - **C2 Riscos de velocidade**: 16 riscos paralelos à faixa (no lugar dos 28 da spec, para caber o estilo), 80–240 px, em
@@ -573,6 +588,46 @@ fogo de destruição, as cores são as do zodog (vermelho e ouro) e a energia é
 material: quadros `devekh0..2`, E11 com as asas abrindo e fechando no compasso da dança, bordão de morin khuur. É um gesto
 de honra (ele reconhece o jogador como digno), nunca ameaça.
 
+**Atualização de 2026-10-21 (decisão do dono, `docs/spec-chefao-zenon.md` §0):** o BAATAR deixa de ser chefão. O MERGULHO DA
+ÁGUIA passa a ser o →+ESP **da ficha base** (chave `baatar.base.sFwd`, mesma paleta, E11, `dive1`, entrada `CIMA`). O
+ABRAÇO DA ESTEPE sai do kit e o registro 28 da §4 fica sem uso. O BAATAR passa a ser o único lutador com **dois** estilos na
+ficha base (E10 nos dois primeiros e E11 no →+ESP), e a unicidade continua valendo porque os dois são só dele. A Dança da
+Águia vira **pose de entrada e de vitória** (render), ainda fora da cinemática.
+
+### 3.10 ZENON ARGYROS, "O Arconte" · Grécia · E12 MEANDRO E ANEL (chefão; acrescentado pela Nova em 2026-10-21)
+`fire` (proposta) base `#d6339a #0c0710 #2a0418`, `chefe2` `#e0249a #0c0710 #12040c`. É o dono do torneio. Ele é o **único
+com núcleo ônix**, uma regra exclusiva do chefão: ninguém mais tem energia mais escura que o cenário. As chaves seguem o padrão
+`<id>.<ficha|base>.<golpe>`. A ficha `chefe` não precisa de registro próprio porque cai na `base` (`identidadeDe`). A
+`chefe2` precisa de registro só no ESP e no →+ESP, que trocam de golpe.
+
+**SELO DO ARCONTE** (`zenon.base.sFire`, projétil em anel a meia altura)
+- Paleta `#fff0f8` / `#d6339a` / `#2a0418`. Estilo E12 `selo`. Enquadramento `sa1`, `BUSTO`, faixa `media`, 0°, lateral.
+  Ritmo MÉDIO.
+- Projétil (render, estilo novo `anel`): 3 elipses concêntricas com núcleo ônix e borda em brilho, girando um arco de
+  destaque. Acerto: o anel se fecha e solta 6 moedas. Defesa: 4 segmentos retos.
+
+**COLUNA DE ÔNIX** (`zenon.base.sDown`, subida invulnerável, anti-aéreo)
+- Paleta `#ffe6a8` / `#b02a7e` / `#1a0612`. Estilo E12 `coluna`. `sb1`, `CORPO`, faixa `media`, +10°, entrada `BAIXO`.
+  Ritmo RÁPIDO.
+
+**TRIBUTO** (`zenon.base.sFwd`, deslize com a palma; no acerto, toma energia do rival)
+- Paleta `#ffffff` / `#ff5fb8` / `#3d0626`. Estilo E12 `tributo`. `sc1`, `CORPO`, faixa `media`, −4°, lateral. Ritmo
+  PESADO.
+- Acerto: o anel se fecha e as moedas voam **na direção da barra de energia do ZENON** (é o dreno visível; o número vem do
+  campo `dreno` do evento). Defesa: metade das moedas.
+
+**SELO MAIOR** (`zenon.chefe2.sFire`, fase 2)
+- Paleta `#ffffff` / `#e0249a` / `#2a0418`. Estilo E12 `selo-maior`. `sa1`, `BUSTO`, faixa `media` e alta (164), 0°,
+  lateral. Ritmo PESADO.
+
+**DECRETO** (`zenon.chefe2.sFwd`, fase 2, investida que cruza o rival e acerta de costas de mão)
+- Paleta `#ffe08a` / `#e0249a` / `#12040c`. Estilo E12 `decreto`. `sc1` (`decreto1` na arte), `MEIO`, vira com o `flip`,
+  faixa `media`, −8°, lateral. Ritmo PESADO. Acerto e defesa: como o TRIBUTO (o DECRETO também drena).
+
+Som (vocabulário da §1.6, só `tone`/`noise`): abertura T(dente-de-serra 147, 0,6, 0,12, passa-baixa 900) + T(dente-de-serra
+220, 0,6, 0,08, passa-baixa 900), a quinta de órgão da trilha da valsa; batida T(triângulo 1175→880, 0,12, 0,1) (o cravo) +
+T(seno 50, 0,4, 0,7). Moedas: 3 × T(triângulo 2637, 0,05, 0,05) a +0, +40 e +80 ms.
+
 ---
 
 ## 4. Tabela-resumo de unicidade
@@ -611,7 +666,15 @@ diferentes já diferem no estilo. As colunas de cor e enquadramento mostram que,
 | 26 | BAATAR | ARREMESSO DO AVARGA | E10 redemoinho | `#ff4a2e` | 8° | sa1 / BUSTO | media alta / 0° / lateral | pesado |
 | 27 | BAATAR | QUEBRA-BASE | E10 rasante | `#e0402a` | 7° | sb1 / CORPO | baixa / +4° / pelo rival | médio |
 | 28 | BAATAR | ABRAÇO DA ESTEPE | E10 frente | `#ff6a3a` | 15° | sc1 / CORPO | media alta / −4° / lateral | pesado |
-| 29 | BAATAR (fase 2) | MERGULHO DA ÁGUIA | E11 asas | `#ff2a10` | 7° | dive1 / CORPO-H | media alta / −10° / cima | pesado |
+| 29 | BAATAR (fase 2 até 2026-10-21; agora ficha base, `baatar.base.sFwd`) | MERGULHO DA ÁGUIA | E11 asas | `#ff2a10` | 7° | dive1 / CORPO-H | media alta / −10° / cima | pesado |
+| 30 | ZENON | SELO DO ARCONTE | E12 selo | `#d6339a` | 322° | sa1 / BUSTO | media / 0° / lateral | médio |
+| 31 | ZENON | COLUNA DE ÔNIX | E12 coluna | `#b02a7e` | 322° | sb1 / CORPO | media / +10° / baixo | rápido |
+| 32 | ZENON | TRIBUTO | E12 tributo | `#ff5fb8` | 327° | sc1 / CORPO | media / −4° / lateral | pesado |
+| 33 | ZENON (fase 2) | SELO MAIOR | E12 selo-maior | `#e0249a` | 322° | sa1 / BUSTO | media alta / 0° / lateral | pesado |
+| 34 | ZENON (fase 2) | DECRETO | E12 decreto | `#e0249a` | 322° | decreto1 / MEIO, vira | media / −8° / lateral | pesado |
+
+O registro 28 (ABRAÇO DA ESTEPE) fica sem uso depois do BAATAR normal. Pode ser apagado da tabela de código, mas a
+unicidade não depende dele.
 
 **Os pares de lutadores diferentes mais próximos, e por que não se confundem:**
 
@@ -625,6 +688,8 @@ diferentes já diferem no estilo. As colunas de cor e enquadramento mostram que,
 | PARADE / COUP D'ARRÊT (19, 20) x RAIJIN-DAN (1) | núcleo branco | prata sem matiz e sombra navy x ciano saturado; um fio fino x vários raios |
 | BAATAR (26–29) x MIN-JI (7–9) | quentes, vermelho e rosa | 7–15° x 340°; vento, terra e penas x crescentes e flores; pesado x rápido |
 | BAATAR (26–29) x NILA GAJA (22, 23) | quentes | vermelho-brasa x âmbar de lamparina (≥ 15° e sombra diferente); vento x chama em gota |
+| ZENON (30–34) x MIN-JI (7–9) | rosas e magentas: 322–327° x 340–341°, **13° no par mais próximo** (TRIBUTO 327° x TWIO 340°; a proposta dizia 14–19°) | núcleo ônix e sombra quase preta x núcleo claro; anéis e meandro em ângulo reto x crescentes e flores; MIN-JI é toda rápida, ZENON é médio, rápido e pesado; TRIBUTO é `sc1`/CORPO e o TWIO é `sc1`/CORPO-H |
+| ZENON (30–34) x WEI LONG (4–6) | roxos frios de energia | 322° x 259–278° (≥ 44°); núcleo ônix x núcleo claro; anéis geométricos x escamas |
 
 Mesmo que a L2 deixe todas as entradas laterais (sem `CIMA`/`BAIXO`), a tabela continua sem par igual: o estilo exclusivo
 sozinho já separa os lutadores, e entre os do mesmo lutador muda a variante e o recorte.
@@ -651,6 +716,10 @@ O nome tem degradê: topo = núcleo, base = `mix(núcleo, brilho, 40%)`. O conto
 | PARADE / COUP D'ARRÊT / REVERS | `#777f99` / `#767fa2` / `#4d567a` | 3,98 / 3,94 / 6,65 | 3,71 / **3,38** / 5,30 |
 | MARMA / ELEFANTE / BOTE / SALTO | `#9f5e10` / `#7c3c04` / `#2e784f` / `#3d8964` | 4,77 / 6,91 / 4,49 / 3,77 | 3,85 / 4,70 / 4,32 / 3,64 |
 | ARREMESSO / QUEBRA-BASE / ABRAÇO / MERGULHO | `#952014` / `#752715` / `#a9361c` / `#7f1308` | 7,49 / 7,62 / 5,32 / 8,14 | 4,70 / 4,77 / 3,74 / 4,91 |
+| SELO / COLUNA / TRIBUTO / SELO MAIOR / DECRETO (ZENON) | `#661446` / `#4e1338` / `#812559` / `#6a0f46` / `#5a0f3e` | 10,85 / 11,61 / 8,96 / 11,89 / 10,34 | 6,22 / 6,29 / 5,89 / 6,42 / 6,03 |
+
+ZENON: a Nova recalculou com a mesma fórmula em 2026-10-21. Os números do Apolo batem com diferença de ±0,05, e o SELO MAIOR
+é novo. O par mais fraco do ZENON (5,89) fica bem acima do mínimo do elenco (3,38).
 
 Mínimo: 3,38:1 (base do nome do COUP D'ARRÊT). **Decisão sobre o amarelo do HAYATO:** o amarelo fica no **raio** (brilho),
 não no nome; com a sombra escurecida para `#1450b8` o nome passa com 3,55:1. Para chegar nesses números ajustei três
@@ -675,6 +744,8 @@ SERPENTE `#ffd27a` → `#fff1cc` (com o âmbar forte ele caía para 2,61:1). A p
 - **NILA**: chama de lamparina (âmbar, **nunca açafrão**), chenda, termos do kalari; sem encantador de serpentes, sem
   sino de templo, sem "Índia mística". A serpente é postura de arte marcial, não animal ameaçador.
 - **BAATAR**: vento, terra e a águia do DEVEKH (gesto de honra); sem horda, sem arco e flecha, sem crânios, sem tug nem ovoo.
+- **ZENON**: pancrácio, meandro e o anel do torneio. Sem toga, sem louros, sem deuses, sem Partenon, sem "300" e sem piada de
+  crise. O selo opcional em grego (Άρχων, παγκράτιον) só vai para a tela depois de revisão nativa.
 
 ---
 

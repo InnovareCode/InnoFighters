@@ -2,12 +2,13 @@ import type { Elenco } from '../assets/elenco';
 import { ALTURA, LARGURA, MAX_EN } from '../core/constantes';
 import type { ExtensaoChefeLeitura, LeituraLuta, LutadorLeitura } from '../core/contratos';
 import { clamp } from '../core/math';
+import { ESQUIVA_PADRAO } from '../data/esquiva';
 import { zoomIn } from './animacao';
 import { chDaFicha } from './lutador';
 import { ETIQUETA_POSTURA, desenharPostura, posturaDe, type Postura } from './postura';
 import { desenharRetratoMoldurado } from './retrato';
 import type { Ctx } from './tela';
-import { caminhoInclinado, painel, texto, textoArcade } from './texto';
+import { caminhoInclinado, painel, retanguloArredondado, texto, textoArcade } from './texto';
 
 /** Comportamento do boneco de treino (`g.dummy` do protótipo). Ainda não faz parte do C3. */
 export type AlvoTreino = 'stand' | 'crouch' | 'block' | 'crouchblock' | 'jump' | 'cpu';
@@ -24,6 +25,11 @@ export const NOMES_ALVO_TREINO: Readonly<Record<AlvoTreino, string>> = {
 export interface OpcoesHud {
   /** Só no modo treino: mostra "Alvo: ..." no painel. */
   readonly alvoTreino?: AlvoTreino;
+  /**
+   * `Regras.esquiva`: mostra o marcador de custo da ESQUIVA na barra SUPER e o selo ESQ (apagado com en < custo, aceso e pulsando com
+   * en >= custo). Padrão false: sem a mecânica (`?expansao=4`) o HUD é o do protótipo, pixel a pixel.
+   */
+  readonly esquiva?: boolean;
 }
 
 /** Máximo de marcadores de round por lado (a UI oferece 1 a 3; o resto é defesa em profundidade). */
@@ -43,6 +49,7 @@ function desenharLado(
   custoEspecial: number,
   lado: 1 | 2,
   postura: Postura | null = null,
+  esquiva = false,
 ): void {
   const x = lado === 1 ? 104 : 524;
   const w = 332;
@@ -148,11 +155,36 @@ function desenharLado(
   for (let i = 1; i < 10; i++) ctx.fillRect(ex + (ew * i) / 10, ey, 2, eh);
   ctx.fillStyle = '#ffd23f';
   ctx.fillRect(lado === 1 ? ex + (ew * custoEspecial) / MAX_EN : ex + ew - (ew * custoEspecial) / MAX_EN, ey, 2, eh);
+  if (esquiva) {
+    // marcador do custo da ESQUIVA (ciano, 2 px) com 1 px de borda escura de cada lado: a barra cheia também é ciano, sem a borda ele sumiria.
+    // Fica ao lado do dourado (do lado da origem da barra), então nos lutadores de custo 20 os dois não se cobrem.
+    const xe = lado === 1 ? ex + (ew * ESQUIVA_PADRAO.custo) / MAX_EN - 3 : ex + ew - (ew * ESQUIVA_PADRAO.custo) / MAX_EN + 4;
+    ctx.fillStyle = '#05060f';
+    ctx.fillRect(xe - 1, ey, 4, eh);
+    ctx.fillStyle = '#7fe3ff';
+    ctx.fillRect(xe, ey, 2, eh);
+  }
   ctx.restore();
   caminhoInclinado(ctx, ex, ey, ew, eh, 7, lado);
   ctx.lineWidth = 2;
   ctx.strokeStyle = '#9fc6ff';
   ctx.stroke();
+  if (esquiva) desenharSeloEsquiva(ctx, luta, p.en >= ESQUIVA_PADRAO.custo, lado === 1 ? ex + ew + 12 : ex - 12 - SELO_ESQ.w, ey - 1);
+}
+
+/** Selo ESQ ao lado da barra SUPER. Apagado = sem barra para esquivar; aceso e pulsando = pode esquivar (en >= custo). */
+export const SELO_ESQ = { w: 36, h: 18 } as const;
+function desenharSeloEsquiva(ctx: Ctx, luta: LeituraLuta, pronta: boolean, x: number, y: number): void {
+  const pulso = pronta && Math.floor(luta.t / 7) % 2 === 0;
+  ctx.save();
+  retanguloArredondado(ctx, x, y, SELO_ESQ.w, SELO_ESQ.h, 5);
+  ctx.fillStyle = pronta ? (pulso ? '#ffffff' : '#7fe3ff') : '#10264a';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = pronta ? '#e9fbff' : '#4a5a8a';
+  ctx.stroke();
+  ctx.restore();
+  texto(ctx, 'ESQ', x + SELO_ESQ.w / 2, y + SELO_ESQ.h / 2 + 1, 12, pronta ? '#04243a' : '#7f8fbf', 'center', { shadow: false });
 }
 
 /** HUD de luta: barras, retratos, KO, cronômetro e contadores de combo. Porte de drawHUD. */
@@ -160,8 +192,8 @@ export function desenharHUD(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, opcoes:
   const [a, b] = luta.fighters;
   const ra = elenco[a.id];
   const rb = elenco[b.id];
-  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1, posturaDe(ra.ch, a.ficha));
-  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2, posturaDe(rb.ch, b.ficha));
+  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1, posturaDe(ra.ch, a.ficha), opcoes.esquiva === true);
+  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2, posturaDe(rb.ch, b.ficha), opcoes.esquiva === true);
   desenharRetratoMoldurado(ctx, ra.arte.retrato(ra.ch.head), 8, 8, 88, false);
   desenharRetratoMoldurado(ctx, rb.arte.retrato(rb.ch.head), LARGURA - 96, 8, 88, true);
 

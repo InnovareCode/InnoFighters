@@ -21,6 +21,7 @@ import { carregarDadosV2, salvarDadosV2, type ArmazenamentoLike } from '../../sr
 import { CONFIGURACOES_PADRAO } from '../../src/core/contratos';
 import { perfilChefe } from '../../src/fight/cpu';
 import { ateALuta, criarLuta, tipos } from './_kit-e3';
+import { comBaatarChefe } from './_baatar-chefe';
 import { lerManifestoC1, montarTodos } from './_lutadores';
 
 /*
@@ -33,9 +34,11 @@ const caminho = (rel: string): string => fileURLToPath(new URL(`../../${rel}`, i
 const NOVOS = ['aminu', 'centella', 'camille', 'nila', 'baatar'] as const satisfies readonly IdLutador[];
 const ORIGINAIS = ['hayato', 'wei-long', 'min-ji', 'caio'] as const satisfies readonly IdLutador[];
 const real = montarTodos();
+/** O mesmo elenco com o BAATAR ANTIGO (chefão) de fixtura: a mecânica de chefe do motor segue testada com a arte real dele. */
+const realComChefe = comBaatarChefe(real);
 
 describe('E5 · ids finais e papéis', () => {
-  it('IDS_LUTADORES tem os 9, na ordem da grade: 4 do protótipo, a fila e o chefão', () => {
+  it('IDS_LUTADORES tem os 9, na ordem da grade: 4 do protótipo e a fila (o BAATAR é o último)', () => {
     expect([...IDS_LUTADORES]).toEqual([...ORIGINAIS, 'aminu', 'centella', 'camille', 'nila', 'baatar']);
     expect([...ROSTER]).toEqual([...IDS_LUTADORES]);
   });
@@ -45,9 +48,10 @@ describe('E5 · ids finais e papéis', () => {
     expect(Object.keys(LUTADORES)).toHaveLength(9);
   });
 
-  it('a fila é AMINU, CENTELLA, CAMILLE, NILA; o chefão é o BAATAR; os iniciais são os 4 do protótipo', () => {
-    expect([...FILA_DESBLOQUEIO]).toEqual(['aminu', 'centella', 'camille', 'nila']);
-    expect(CHEFE).toBe('baatar');
+  it('a fila é AMINU, CENTELLA, CAMILLE, NILA, BAATAR; não há chefão por enquanto (o Zenon ainda não entrou); os iniciais são os 4 do protótipo', () => {
+    expect([...FILA_DESBLOQUEIO]).toEqual(['aminu', 'centella', 'camille', 'nila', 'baatar']);
+    expect(CHEFE).toBeNull();
+    expect(REGRAS_PADRAO.chefe).toBeNull();
     expect([...INICIAIS]).toEqual([...ORIGINAIS]);
     expect([...REGRAS_PADRAO.roster]).toEqual([...IDS_LUTADORES]);
   });
@@ -63,60 +67,82 @@ describe('E5 · ids finais e papéis', () => {
   });
 });
 
-describe('E5 · fila de desbloqueio e chefão (regras reais)', () => {
-  it('4 zeradas sem derrotar o chefão liberam AMINU, CENTELLA, CAMILLE, NILA, nessa ordem; a 5ª não libera nada', () => {
+describe('E5 · fila de desbloqueio (regras reais; BAATAR é o 5º, sem chefão por enquanto)', () => {
+  it('5 zeradas liberam AMINU, CENTELLA, CAMILLE, NILA, BAATAR, nessa ordem; a 6ª não libera nada', () => {
     let prog = progressoVazio();
     const ordem: IdLutador[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       const r = aplicarVitoriaArcade(prog, { derrotouChefe: false });
       expect(r.novos).toHaveLength(1);
       ordem.push(...r.novos);
       prog = r.prog;
     }
-    expect(ordem).toEqual(['aminu', 'centella', 'camille', 'nila']);
-    const quinta = aplicarVitoriaArcade(prog, { derrotouChefe: false });
-    expect(quinta.novos).toEqual([]);
-    expect(quinta.prog.zeradas).toBe(5);
-    expect(liberados(prog).has('baatar')).toBe(false);
+    expect(ordem).toEqual(['aminu', 'centella', 'camille', 'nila', 'baatar']);
+    expect(liberados(prog).has('baatar')).toBe(true);
+    const sexta = aplicarVitoriaArcade(prog, { derrotouChefe: false });
+    expect(sexta.novos).toEqual([]);
+    expect(sexta.prog.zeradas).toBe(6);
   });
 
-  it('a 1ª zerada derrotando o BAATAR libera AMINU e o BAATAR (fila, depois chefão); jogar COM ele só avança a fila', () => {
+  it('quem já liberou o BAATAR derrotando-o como chefe não perde nada: a fila pula o BAATAR e o save segue igual', () => {
+    const antigo = { desbloqueados: ['aminu', 'baatar'] as IdLutador[], zeradas: 1, chefeDerrotado: true, vistos: [] as IdLutador[] };
+    let prog = antigo;
+    const ordem: IdLutador[] = [];
+    for (let i = 0; i < 4; i++) {
+      const r = aplicarVitoriaArcade(prog, { derrotouChefe: false });
+      ordem.push(...r.novos);
+      prog = r.prog;
+    }
+    expect(ordem).toEqual(['centella', 'camille', 'nila']); // 4ª zerada: a fila acabou (o BAATAR já estava liberado)
+    expect(prog.desbloqueados.filter((id) => id === 'baatar')).toHaveLength(1);
+    expect(prog.chefeDerrotado).toBe(true);
+    expect(liberados(antigo).has('baatar')).toBe(true);
+  });
+
+  it('sem chefão (CHEFE null) `derrotouChefe` não libera nem marca nada: só avança a fila', () => {
     const r = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true });
-    expect(r.novos).toEqual(['aminu', 'baatar']);
-    expect(r.prog.chefeDerrotado).toBe(true);
-    expect(liberados(r.prog).has('baatar')).toBe(true);
-    const com = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: false });
-    expect(com.novos).toEqual(['aminu']);
-    expect(com.prog.chefeDerrotado).toBe(false);
+    expect(r.novos).toEqual(['aminu']);
+    expect(r.prog.chefeDerrotado).toBe(false);
   });
 
-  it('save novo: só os 4 iniciais liberados; os 4 da fila e o chefão ficam travados', () => {
+  it('save novo: só os 4 iniciais liberados; os 5 da fila (BAATAR incluso) ficam travados', () => {
     expect([...liberados(progressoVazio())].sort()).toEqual([...ORIGINAIS].sort());
   });
 });
 
-describe('E5 · escada do Arcade (ED4: 5 rivais + chefão)', () => {
+describe('E5 · escada do Arcade (5 rivais; sem chefão por enquanto)', () => {
   it('TAMANHO_ESCADA é 5', () => {
     expect(TAMANHO_ESCADA).toBe(5);
   });
 
-  it('para cada lutador (menos o BAATAR): 5 rivais distintos, sem o próprio jogador, e o BAATAR por último como chefe', () => {
-    for (const c1 of IDS_LUTADORES.filter((id) => id !== 'baatar')) {
+  it('para cada um dos 9: a escada tem 5 etapas (nenhuma de chefe), rivais distintos, sem o próprio jogador', () => {
+    for (const c1 of IDS_LUTADORES) {
       for (const semente of [1, 2, 3, 99]) {
         const e = montarEscada({ c1, prog: progressoVazio(), rng: criarRng(semente) });
-        expect(e, `${c1}/${semente}`).toHaveLength(6);
-        const rivais = e.slice(0, 5);
-        expect(rivais.every((x) => !x.chefe && x.id !== c1 && x.id !== 'baatar'), `${c1}/${semente}`).toBe(true);
-        expect(new Set(rivais.map((x) => x.id)).size).toBe(5);
-        expect(e[5]).toEqual({ id: 'baatar', chefe: true });
+        expect(e, `${c1}/${semente}`).toHaveLength(5);
+        expect(e.every((x) => !x.chefe && x.id !== c1), `${c1}/${semente}`).toBe(true);
+        expect(new Set(e.map((x) => x.id)).size).toBe(5);
       }
     }
   });
 
-  it('jogando COM o BAATAR: 5 rivais e nenhuma etapa de chefe (ED7)', () => {
+  it('o BAATAR agora pode ser rival (lutador normal) e jogar COM ele não muda o tamanho da escada', () => {
+    const vistos = new Set<IdLutador>();
+    for (let s = 1; s <= 40; s++) for (const x of montarEscada({ c1: 'hayato', prog: progressoVazio(), rng: criarRng(s) })) vistos.add(x.id);
+    expect(vistos.has('baatar')).toBe(true);
     const e = montarEscada({ c1: 'baatar', prog: progressoVazio(), rng: criarRng(7) });
     expect(e).toHaveLength(5);
     expect(e.some((x) => x.chefe || x.id === 'baatar')).toBe(false);
+  });
+
+  it('com um chefão injetado nas regras (o Zenon, quando entrar) a escada volta a ter 5 rivais + o chefe no fim, e ele nunca é rival', () => {
+    const comChefe: Regras = { ...REGRAS_PADRAO, chefe: 'baatar' };
+    for (const c1 of IDS_LUTADORES.filter((id) => id !== 'baatar')) {
+      const e = montarEscada({ c1, prog: progressoVazio(), rng: criarRng(3), regras: comChefe });
+      expect(e).toHaveLength(6);
+      expect(e[5]).toEqual({ id: 'baatar', chefe: true });
+      expect(e.slice(0, 5).some((x) => x.id === 'baatar')).toBe(false);
+    }
   });
 
   it('rival travado entra na escada (ED5: vitrine) e a mesma semente dá a mesma escada', () => {
@@ -136,36 +162,74 @@ describe('E5 · escada do Arcade (ED4: 5 rivais + chefão)', () => {
   });
 });
 
-describe('E5 · BAATAR: ConfigChefe real sobre o atlas real', () => {
-  const cfg = LUTADORES.baatar.chefe;
-
-  it('ConfigChefe (E6b: 2 barras de 40, medido no harness), fichas chefe/chefe2, Dança de 90 ticks, bônus 5000', () => {
-    expect(cfg).toEqual({ barras: 2, hpPorBarra: 40, fichaFase1: 'chefe', fichaFase2: 'chefe2', danca: { duracao: 90 }, bonusVitoria: 5000 });
-    expect(Object.keys(real.baatar.fichas).sort()).toEqual(['chefe', 'chefe2']);
-  });
-
-  it('o cenário do BAATAR é a Estepe (mn) e luta-se nele quando ele é o rival', () => {
+describe('E5 · BAATAR lutador normal sobre o atlas real', () => {
+  it('sem `chefe` e sem fichas; 1 barra, hp 92 e pow 0,9 (E6b), ficha base, cenário mn', () => {
+    expect(LUTADORES.baatar.chefe).toBeUndefined();
+    expect(LUTADORES.baatar.fichas).toBeUndefined();
+    expect(Object.keys(real.baatar.fichas)).toEqual([]);
+    expect([LUTADORES.baatar.hp, LUTADORES.baatar.pow]).toEqual([92, 0.9]);
+    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar' }, real);
+    const c = l.g.p2;
+    expect([c.barras, c.barrasMax, c.maxHp, c.ficha, c.chefe]).toEqual([1, 1, 92, null, false]);
     expect(LUTADORES.baatar.stage).toBe('mn');
-    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, real);
     expect(l.g.stage).toBe('mn');
   });
 
+  it('`cfg.chefe` sem `LutadorDef.chefe` é ignorado de propósito: a luta é a do normal (nunca lança)', () => {
+    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, real);
+    const c = l.g.p2;
+    expect([c.barras, c.barrasMax, c.maxHp, c.ficha, c.chefe]).toEqual([1, 1, 92, null, false]);
+  });
+
+  it('o →+ESP é o MERGULHO com a arte própria (dive0/dive1), a caixa de acerto sai do dive1 e o ABRAÇO não existe mais', () => {
+    const b = real.baatar;
+    expect(b.moves.sFwd.name).toBe('MERGULHO DA ÁGUIA');
+    expect(b.moves.sFwd.anim.s).toEqual(['sc0']);
+    expect(getPD(b, 'sc0')).toBe(b.pd['dive0']);
+    expect(getPD(b, 'sc1')).toBe(b.pd['dive1']);
+    expect(b.sps.map((m) => m.name)).toEqual(['ARREMESSO DO AVARGA', 'QUEBRA-BASE', 'MERGULHO DA ÁGUIA']);
+    expect(b.sps.some((m) => (m.name ?? '').includes('ABRAÇO'))).toBe(false);
+  });
+
+  it('o MERGULHO com a arte real ainda acerta o rival (a caixa nova não passa por cima nem por baixo)', () => {
+    for (const dist of [200, 300, 450]) {
+      const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar' }, real);
+      ateALuta(l);
+      const { g } = l;
+      g.p1.x = 480 - dist;
+      g.p2.x = 480;
+      g.p2.en = 100;
+      g.p2.startMove('sFwd', g);
+      const evs = [];
+      for (let i = 0; i < 90; i++) evs.push(...l.passo());
+      const acertou = tipos(evs, 'hit').length + tipos(evs, 'block').length;
+      expect(acertou, `distância ${dist}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('a pose de vitória (win) e as da Dança da Águia (devekh0..2) seguem no atlas dele', () => {
+    for (const n of ['win', 'devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1']) expect(real.baatar.pd[n], n).toBeDefined();
+  });
+});
+
+describe('E5 · mecânica de chefe do motor com a arte real do BAATAR (def ANTIGO de fixtura, tests/unit/_baatar-chefe.ts)', () => {
+  const cfg = realComChefe.baatar.chefe;
+
+  it('ConfigChefe (2 barras de 40, fichas chefe/chefe2, Dança de 90 ticks, bônus 5000) monta sobre o atlas real', () => {
+    expect(cfg).toEqual({ barras: 2, hpPorBarra: 40, fichaFase1: 'chefe', fichaFase2: 'chefe2', danca: { duracao: 90 }, bonusVitoria: 5000 });
+    expect(Object.keys(realComChefe.baatar.fichas).sort()).toEqual(['chefe', 'chefe2']);
+  });
+
   it('setup de chefe: P2 com 2 barras de 40, ficha da fase 1, round único e perfil de CPU do chefe', () => {
-    const l = criarLuta({ mode: 'cpu', c1: 'hayato', c2: 'baatar', chefe: true, cpu: 1 }, real);
+    const l = criarLuta({ mode: 'cpu', c1: 'hayato', c2: 'baatar', chefe: true, cpu: 1 }, realComChefe);
     const c = l.g.p2;
     expect([c.barras, c.barrasMax, c.maxHp, c.hp, c.ficha, c.chefe]).toEqual([2, 2, 40, 40, 'chefe', true]);
     expect(l.g.winsNeeded).toBe(1);
     expect(c.perfilIa).toEqual(perfilChefe(1, false));
   });
 
-  it('BAATAR jogável (sem cfg.chefe): 1 barra, hp 92 (E6b), ficha base', () => {
-    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar' }, real);
-    const c = l.g.p2;
-    expect([c.barras, c.barrasMax, c.maxHp, c.ficha, c.chefe]).toEqual([1, 1, 92, null, false]);
-  });
-
   it('luta de chefe inteira com a arte real: troca de barra, Dança (devekh0..2 do atlas) e ficha da fase 2 com MERGULHO', () => {
-    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, real);
+    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, realComChefe);
     ateALuta(l);
     const { g } = l;
     const c = g.p2;
@@ -184,37 +248,10 @@ describe('E5 · BAATAR: ConfigChefe real sobre o atlas real', () => {
     }
     expect(ticks).toBe(90);
     expect([...nomes].sort()).toEqual(['devekh0', 'devekh1', 'devekh2']);
-    for (const n of nomes) expect(getPD(c.ch, n), n).toBe(real.baatar.pd[n]);
+    for (const n of nomes) expect(getPD(c.ch, n), n).toBe(realComChefe.baatar.pd[n]);
     expect(c.ficha).toBe('chefe2');
     expect(c.ch.moves.sFwd.name).toBe('MERGULHO DA ÁGUIA');
     expect(tipos(evs, 'fase-chefe').map((e) => (e.tipo === 'fase-chefe' ? e.etapa : ''))).toEqual(['troca', 'danca', 'retomada']);
-  });
-
-  it('fase 2: o MERGULHO usa a arte própria (dive0/dive1) e a caixa de acerto sai do dive1; na fase 1 o ABRAÇO fica com sc0/sc1', () => {
-    const f2 = real.baatar.fichas['chefe2']!;
-    const f1 = real.baatar.fichas['chefe']!;
-    expect(f2.moves.sFwd.anim.s).toEqual(['sc0']);
-    expect(getPD(f2, 'sc0')).toBe(real.baatar.pd['dive0']);
-    expect(getPD(f2, 'sc1')).toBe(real.baatar.pd['dive1']);
-    expect(getPD(f1, 'sc1')).toBe(real.baatar.pd['sc1']);
-    expect(f2.boxes.sFwd).not.toEqual(f1.boxes.sFwd);
-  });
-
-  it('o MERGULHO com a arte real ainda acerta o rival (a caixa nova não passa por cima nem por baixo)', () => {
-    for (const dist of [200, 300, 450]) {
-      const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, real);
-      ateALuta(l);
-      const { g } = l;
-      g.p2.trocarFicha('chefe2');
-      g.p1.x = 480 - dist;
-      g.p2.x = 480;
-      g.p2.en = 100;
-      g.p2.startMove('sFwd', g);
-      const evs = [];
-      for (let i = 0; i < 90; i++) evs.push(...l.passo());
-      const acertou = tipos(evs, 'hit').length + tipos(evs, 'block').length;
-      expect(acertou, `distância ${dist}`).toBeGreaterThan(0);
-    }
   });
 });
 
@@ -472,10 +509,8 @@ describe('E5 · rollback de onda com os ids finais', () => {
 });
 
 describe('E5 · fumaça: CPU × CPU com a arte real', () => {
-  it.each(NOVOS)('%s contra o WEI LONG (e como chefão do HAYATO quando for o caso): 3000 ticks sem exceção, com acertos e dano', (id) => {
-    const cfg = id === 'baatar'
-      ? ({ mode: 'cpu', c1: 'hayato', c2: id, chefe: true, cpu: 1, p1cpu: 2 } as const)
-      : ({ mode: 'cpu', c1: id, c2: 'wei-long', cpu: 2, p1cpu: 2 } as const);
+  it.each(NOVOS)('%s contra o WEI LONG: 3000 ticks sem exceção, com acertos e dano', (id) => {
+    const cfg = { mode: 'cpu', c1: id, c2: 'wei-long', cpu: 2, p1cpu: 2 } as const;
     const l = criarLuta(cfg, real, criarRng(42));
     const evs = [];
     for (let i = 0; i < 3000; i++) evs.push(...l.passo());

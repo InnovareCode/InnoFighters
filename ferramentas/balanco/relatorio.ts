@@ -141,7 +141,7 @@ export function resultadosMd(agr: Agregado, ids: readonly IdLutador[], achados: 
   }
   o.push('');
 
-  o.push('## Chefão (BAATAR, CPU do nível indicado nos dois lados)', '');
+  o.push('## Chefão (CPU do nível indicado nos dois lados; sem chefão no jogo = não roda)', '');
   if (!agr.chefe.length) o.push('Não rodado nesta rodada.', '');
   else {
     o.push('"Jogador" = a CPU do desafiante como P1, no lugar de uma pessoa. Round único; empate repete o round.', '');

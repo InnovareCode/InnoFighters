@@ -3,6 +3,10 @@ import type { EventoLuta, IdLutador } from '../../src/core/contratos';
 import { apresentacaoDoEspecial, todasAsApresentacoes } from '../../src/data/apresentacao-especiais';
 import type { NomeGolpe } from '../../src/data/tipos';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
+import { manifestoParaPoses } from '../../src/data/atlas';
+import { montarLutador } from '../../src/data/montar';
+import { BAATAR_COM_ABRACO, comBaatarChefe } from './_baatar-chefe';
+import { lerManifesto } from './_lutadores';
 import { ateALuta, criarLuta, soltar, tipos, type Luta } from './_kit-e3';
 
 /*
@@ -28,9 +32,10 @@ const doTipo = <T extends EventoLuta['tipo']>(ev: readonly EventoLuta[], t: T): 
 describe('special: golpe, ficha, momento e apresentação', () => {
   const casos = todasAsApresentacoes();
 
-  it('a tabela de apresentação cobre os 29 especiais (9 lutadores, NILA em 2 posturas, BAATAR na fase 2)', () => {
-    expect(casos).toHaveLength(29);
+  it('a tabela de apresentação cobre os 28 especiais (9 lutadores x 3 menos a VADIVU, mais a NILA em SARPA: 2); o BAATAR normal não tem fichas', () => {
+    expect(casos).toHaveLength(28);
     expect(casos.filter((c) => c.ficha === null)).toHaveLength(26); // 9 x 3 menos a VADIVU (custo 0, sem special)
+    expect(casos.filter((c) => c.ficha !== null).map((c) => `${c.id}/${c.ficha}`).sort()).toEqual(['nila/sarpa', 'nila/sarpa']);
   });
 
   it('todo quadro citado existe no atlas de produção do lutador (e é o que o Apolo escreveu)', () => {
@@ -63,12 +68,12 @@ describe('special: golpe, ficha, momento e apresentação', () => {
     expect(ev[0]).toMatchObject({ golpe: 'sFire', momento: 'inicio' });
   });
 
-  it('a VADIVU (custo 0) não emite special; a base do BAATAR usa o registro da base na fase 1 e o MERGULHO na fase 2', () => {
+  it('a VADIVU (custo 0) não emite special; o →+ESP do BAATAR é o MERGULHO (quadro dive1, entrada pelo alto) e o ABRAÇO não tem registro', () => {
     const nila = luta('nila', 'hayato');
     nila.g.p1.startMove('sDown', nila.g);
     expect(doTipo(nila.passo(), 'special')).toHaveLength(0);
-    expect(apresentacaoDoEspecial('baatar', 'chefe', 'sFwd')?.quadro).toBe('sc1');
-    expect(apresentacaoDoEspecial('baatar', 'chefe2', 'sFwd')).toMatchObject({ quadro: 'dive1', entrada: 'cima' });
+    expect(apresentacaoDoEspecial('baatar', null, 'sFwd')).toMatchObject({ quadro: 'dive1', entrada: 'cima' });
+    expect(casos.filter((c) => c.id === 'baatar').map((c) => `${c.ficha}.${c.golpe}`).sort()).toEqual(['null.sDown', 'null.sFire', 'null.sFwd']);
     expect(apresentacaoDoEspecial('hayato', null, 'lp')).toBeUndefined();
   });
 });
@@ -126,7 +131,7 @@ describe('hit: dano, especial, golpe', () => {
   });
 
   it('troca de barra do chefe: o dano é o que saiu da barra que acabou (não o hp cheio da nova)', () => {
-    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, elenco);
+    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, comBaatarChefe(elenco)); // chefão de fixtura (o BAATAR de produção é normal)
     ateALuta(l);
     l.g.p1.x = 300;
     l.g.p2.x = 380;
@@ -151,8 +156,20 @@ describe('throw: agarrão de especial conta; arremesso comum não', () => {
     expect(t[0]?.dano).toBeGreaterThan(0);
   });
 
-  it('ABRAÇO DA ESTEPE (BAATAR sFwd) também', () => {
+  it('MERGULHO DA ÁGUIA (BAATAR sFwd) não é agarrão: sem `throw` (golpe de corpo que derruba)', () => {
     const l = luta('baatar', 'hayato', 300, 380);
+    l.g.p1.startMove('sFwd', l.g);
+    const ev = l.passo(90);
+    expect(doTipo(ev, 'throw')).toHaveLength(0);
+    expect(doTipo(ev, 'hit').length).toBeGreaterThan(0);
+  });
+
+  it('o agarrão em rush (ABRAÇO DA ESTEPE, def de fixtura) segue emitindo throw de especial: a regra é do motor, não do BAATAR', () => {
+    const l = criarLuta({ mode: 'versus', c1: 'baatar', c2: 'hayato' }, { ...elenco, baatar: montarLutador(BAATAR_COM_ABRACO, manifestoParaPoses(lerManifesto('baatar'))) });
+    ateALuta(l);
+    l.g.p1.x = 300;
+    l.g.p2.x = 380;
+    l.g.p1.en = 100;
     l.g.p1.startMove('sFwd', l.g);
     const t = doTipo(l.passo(40), 'throw');
     expect(t[0]).toMatchObject({ especial: true, golpe: 'sFwd' });

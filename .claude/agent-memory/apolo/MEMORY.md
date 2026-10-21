@@ -3,4 +3,5 @@
 - [Curadoria de cenários](project_curadoria_cenarios.md) — pés a 84,5% da imagem (não 87%); composição em escala; limpar canto por translação
 - [Logo paleta D (INNO azul)](project_logo_paleta_d.md) — D1 Cobalto Real recomendada; aro claro obrigatório; Vite com paleta em memória
 - [Identidade dos especiais](project_identidade_especiais.md) — 1 estilo exclusivo por lutador; contraste 3:1; lacunas throw/sResp/MASHI
+- [Novo chefão](project_novo_chefao.md) — A ZENON recomendado; núcleo ônix só do chefão; teto escala 1,42; BAATAR 5º na fila
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

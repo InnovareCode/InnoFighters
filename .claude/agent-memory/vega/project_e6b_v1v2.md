@@ -14,3 +14,4 @@ Entregue em 2026-10-21 (sem commit). Contratos em `docs/handoff-vega-e6b.md` e `
 - Regra de RNG da CPU: nada de `rnd()` novo com flag desligada ou `esq = 0`; provado contando chamadas em 400 sementes.
 - PARADE e GARKUWA disparam a cinemática no SUCESSO (`parry`/`clash.lutador`), `special.momento = 'sucesso'`; `sResp` continua a sessão (`parry.continua`).
 - Edição com texto livre: `python - <<EOF` quebra com apóstrofos; gravar `.py` pela ferramenta Write em `relatorios/` (ignorada) e rodar.
+- **Fix da QA da esquiva (2026-10-21):** "esquivou" CONSOME o golpe (`Fighter.atkEsquivado`, `ProjetilLuta.esquivou`; nunca reusar `hitDone`, ele desacelera investida); `limparBotoesGuardados()` ao abrir a Dança; desempate de `separate()` com `dx === 0` e esquiva em curso = o esquivador fica do lado de onde saiu (`facing` congelado). Janela exata: recuo invulnerável nos ticks 0-13; avanço vulnerável 0-2 e invulnerável 3-18. Detalhes em `docs/handoff-vega-esquiva-fix.md`.

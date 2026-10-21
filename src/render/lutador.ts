@@ -3,6 +3,7 @@ import { GROUND, SH, SH_IDLE } from '../core/constantes';
 import type { LutadorLeitura } from '../core/contratos';
 import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
+import { ALFA_FANTASMA, desenharFaixaDeEsquiva, ehPoseDeEsquiva, esquivaNaJanela, silhuetaTingida } from './esquiva';
 import { desenharRastroGolpe } from './rastro-golpe';
 import type { Ctx } from './tela';
 
@@ -75,16 +76,23 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
     ctx.restore();
   }
 
-  // rastro de imagens (corrida, investidas): silhueta branca esmaecendo
+  // ESQUIVA: fantasma e rastro SÓ na janela invulnerável (na recuperação o corpo é sólido: vulnerável). A cor é a do lutador (fire[0]).
+  const janelaEsq = esquivaNaJanela(f);
+  if (janelaEsq) desenharFaixaDeEsquiva(ctx, f, ch.fire[0]);
+
+  // rastro de imagens (corrida, investidas): silhueta branca esmaecendo; na esquiva, tingida com a cor do lutador
   for (const tr of f.trail) {
+    if (!janelaEsq && ehPoseDeEsquiva(tr.name)) continue; // resto de esquiva fora da janela invulnerável
     const tp = getPD(ch, tr.name);
     const silTr = arte.silhuetaDe(tp);
     if (!silTr) continue;
+    const fonte = janelaEsq ? (silhuetaTingida(silTr, tp, ch.fire[0]) ?? silTr) : silTr;
+    const origem = fonte === silTr ? tp : { ...tp, x: 0, y: 0 };
     ctx.save();
     ctx.translate(tr.x, tr.y);
     ctx.scale(tr.f, 1);
-    ctx.globalAlpha = (tr.life / 10) * 0.28;
-    ctx.drawImage(silTr, tp.x, tp.y, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
+    ctx.globalAlpha = (tr.life / 10) * (janelaEsq ? 0.45 : 0.28);
+    ctx.drawImage(fonte, origem.x, origem.y, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
     ctx.restore();
     ctx.globalAlpha = 1;
   }
@@ -101,7 +109,7 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
   }
   ctx.scale(P.sx, P.sy);
   if (img) {
-    quadro(img, 1);
+    quadro(img, janelaEsq ? ALFA_FANTASMA : 1);
     const silFlash = f.flash > 0 ? arte.silhuetaDe(pd) : null;
     if (silFlash) quadro(silFlash, (f.flash / 8) * 0.5);
   }

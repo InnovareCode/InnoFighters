@@ -38,8 +38,8 @@ export class CenaDiff implements Cena {
       const etapas = montarEscada({ c1: a.c1, prog: persist.prog, rng: rngUI, regras });
       const run: CampanhaArcade = { c1: a.c1, etapas, idx: 0, score: 0, continues: 3, diff: i, cont: 0 };
       this.ui.run = run;
-      this.ui.go('vs', { cfg: cfgDaEtapa(run, false), run });
-    } else this.ui.go('vs', { cfg: { mode: 'cpu', c1: a.c1, c2: a.c2, cpu: i } });
+      this.ui.go('vs', { cfg: cfgDaEtapa(run, false, regras), run });
+    } else this.ui.go('vs', { cfg: { mode: 'cpu', c1: a.c1, c2: a.c2, cpu: i, esquiva: regras.esquiva } });
   }
 
   draw(): void {

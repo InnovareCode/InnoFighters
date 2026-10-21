@@ -15,15 +15,21 @@ import { mundoFalso, mundoFalso9, navegadorFalso } from './_ui';
 const id = (s: string): IdLutador => s as IdLutador;
 // E5: as regras de producao ja sao as de 9 lutadores (a fixture `?expansao=1` com ids falsos nao e mais usada aqui).
 const R9 = REGRAS_PADRAO;
+// O BAATAR deixou de ser chefão (virou o 5º da fila) e o Zenon ainda não entrou: as regras de produção estão SEM chefão (`chefe: null`).
+// A mecânica de chefão da UI (centro da grade, etapa de chefe, aviso do chefão, desbloqueio do chefão) segue testada com estas regras
+// injetadas, que reproduzem o desenho anterior (fila de 4 + um chefão fora da fila; o id é só um stand-in até o Zenon).
+const R9C: Regras = { ...REGRAS_PADRAO, fila: ['aminu', 'centella', 'camille', 'nila'], chefe: 'baatar' };
 const [A, B, C, D]: [IdLutador, IdLutador, IdLutador, IdLutador] = ['aminu', 'centella', 'camille', 'nila'];
 const CHEFE_FALSO: IdLutador = 'baatar';
 
 describe('grade de seleção (plano 5)', () => {
-  it('9 lutadores: o chefão vai para o CENTRO; 4 (hoje) e sem chefão: ordem do roster', () => {
-    const g = ordemDaGrade(R9.roster, R9.chefe);
+  it('9 lutadores: o chefão (quando há) vai para o CENTRO; sem chefão (produção hoje) e com 4: ordem do roster', () => {
+    const g = ordemDaGrade(R9C.roster, R9C.chefe);
     expect(g).toHaveLength(9);
     expect(g[4]).toBe(CHEFE_FALSO);
-    expect(g.filter((x) => x !== CHEFE_FALSO)).toEqual(R9.roster.filter((x) => x !== CHEFE_FALSO));
+    expect(g.filter((x) => x !== CHEFE_FALSO)).toEqual(R9C.roster.filter((x) => x !== CHEFE_FALSO));
+    expect(R9.chefe).toBeNull();
+    expect(ordemDaGrade(R9.roster, R9.chefe)).toEqual(R9.roster); // produção sem chefão: o BAATAR é a última casa comum
     expect(ordemDaGrade(R9.roster.slice(0, 4), null)).toEqual(['hayato', 'wei-long', 'min-ji', 'caio']);
     expect(ordemDaGrade(R9.roster, null)).toEqual(R9.roster);
   });
@@ -76,7 +82,7 @@ describe('grade de seleção (plano 5)', () => {
 
   it('estados: liberado, NOVO!, travado, chefão oculto; só os dois primeiros confirmam', () => {
     const prog = { ...progressoVazio(), desbloqueados: [A, B], vistos: [B] };
-    const c = { prog, regras: R9, novos: new Set([A]) };
+    const c = { prog, regras: R9C, novos: new Set([A]) };
     expect(estadoDaCasa(id('hayato'), c)).toBe('liberado');
     expect(estadoDaCasa(A, c)).toBe('novo');
     expect(estadoDaCasa(B, c)).toBe('liberado');
@@ -97,11 +103,18 @@ describe('textos do ARCADE vêm da escada', () => {
   });
 
   it('com chefão e 9 lutadores: 5 rivais e o chefão no fim', () => {
+    expect(rivaisDaEscada(R9C)).toBe(5);
+    expect(descricaoArcade(R9C)).toBe('Um jogador: enfrente 5 rivais em sequência, depois o chefão, e torne-se o campeão.');
+    expect(dicaArcadeSelecao(R9C)).toContain('cinco rivais');
+    expect(dicaArcadeSelecao(R9C)).toContain('o chefão');
+    expect(textoComoJogarArcade(R9C)).toContain('5 rivais');
+  });
+
+  it('produção hoje (9 lutadores, SEM chefão até o Zenon entrar): 5 rivais e nenhuma menção ao chefão', () => {
     expect(rivaisDaEscada(R9)).toBe(5);
-    expect(descricaoArcade(R9)).toBe('Um jogador: enfrente 5 rivais em sequência, depois o chefão, e torne-se o campeão.');
-    expect(dicaArcadeSelecao(R9)).toContain('cinco rivais');
-    expect(dicaArcadeSelecao(R9)).toContain('o chefão');
-    expect(textoComoJogarArcade(R9)).toContain('5 rivais');
+    expect(descricaoArcade(R9)).toBe('Um jogador: enfrente os 5 rivais em sequência e torne-se o campeão.');
+    expect(dicaArcadeSelecao(R9)).not.toContain('chefão');
+    expect(textoComoJogarArcade(R9)).not.toContain('chefão');
   });
 
   it('a escada nunca promete mais rivais do que existem', () => {
@@ -114,7 +127,7 @@ describe('textos do ARCADE vêm da escada', () => {
 
 describe('seleção com 9 lutadores (regras de produção, E5)', () => {
   function select(prog = progressoVazio(), modo: 'versus' | 'cpu' | 'arcade' | 'training' = 'cpu') {
-    const t = navegadorFalso({}, R9);
+    const t = navegadorFalso({}, R9C);
     t.persist.prog = prog;
     t.ui.pronto(mundoFalso9());
     const s = t.ui.cenas.select as CenaSelect;
@@ -124,7 +137,7 @@ describe('seleção com 9 lutadores (regras de produção, E5)', () => {
     return { ...t, s, ir };
   }
 
-  it('abre com a grade 3x3 (chefão no centro) e o cursor no 1º liberado; P2 no seguinte liberado', () => {
+  it('abre com a grade 3x3 (chefão no centro, regras com chefão) e o cursor no 1º liberado; P2 no seguinte liberado', () => {
     const { s } = select();
     expect(s.grade).toHaveLength(9);
     expect(s.grade[4]).toBe(CHEFE_FALSO);
@@ -196,12 +209,13 @@ describe('seleção com 9 lutadores (regras de produção, E5)', () => {
     expect(t.salvou.n).toBe(0);
   });
 
-  it('produção (E5), save novo: os 4 iniciais liberados, os 4 da fila travados e o BAATAR oculto no centro', () => {
+  it('produção, save novo: os 4 iniciais liberados e os 5 da fila (BAATAR é o último) travados, na ordem do roster, sem casa de chefão', () => {
     const t = navegadorFalso();
     t.ui.pronto(mundoFalso());
     const s = t.ui.cenas.select as CenaSelect;
     s.enter({ mode: 'versus' });
-    expect(s.grade).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'baatar', 'aminu', 'centella', 'camille', 'nila']);
+    expect(s.grade).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar']);
+    expect(['aminu', 'centella', 'camille', 'nila', 'baatar'].map((x) => estadoDaCasa(id(x), { prog: progressoVazio(), regras: R9, novos: new Set() }))).toEqual(Array(5).fill('travado'));
     expect(s.cur).toEqual([0, 1]);
     expect(s.novos.size).toBe(0);
     expect(t.salvou.n).toBe(0);
@@ -210,7 +224,7 @@ describe('seleção com 9 lutadores (regras de produção, E5)', () => {
 
 describe('escada do ARCADE pela UI', () => {
   it('5 rivais sorteados + chefão; o jogador nunca é rival; travado pode ser rival', () => {
-    const t = navegadorFalso({}, R9);
+    const t = navegadorFalso({}, R9C);
     t.ui.pronto(mundoFalso9());
     const d = t.ui.cenas.diff as CenaDiff;
     const ir: Array<[string, unknown]> = [];
@@ -226,8 +240,26 @@ describe('escada do ARCADE pela UI', () => {
     expect((ir[0]?.[1] as { cfg: { chefe?: boolean } }).cfg.chefe).toBeUndefined();
   });
 
+  it('produção hoje (sem chefão): 5 rivais sorteados, sem etapa de chefe, o BAATAR pode ser rival', () => {
+    const vistos = new Set<IdLutador>();
+    for (let i = 0; i < 12; i++) {
+      const t = navegadorFalso({}, R9);
+      t.ui.pronto(mundoFalso9());
+      const d = t.ui.cenas.diff as CenaDiff;
+      t.ui.go = (() => undefined) as never;
+      d.enter({ mode: 'arcade', c1: id('hayato'), c2: id('caio') });
+      d.nav('ok');
+      const run = t.ui.run!;
+      expect(run.etapas).toHaveLength(5);
+      expect(run.etapas.some((e) => e.chefe || e.id === 'hayato')).toBe(false);
+      expect(new Set(run.etapas.map((e) => e.id)).size).toBe(5);
+      for (const e of run.etapas) vistos.add(e.id);
+    }
+    expect(vistos.has('baatar')).toBe(true);
+  });
+
   it('jogando COM o chefão: escada só de rivais, sem etapa de chefe', () => {
-    const t = navegadorFalso({}, R9);
+    const t = navegadorFalso({}, R9C);
     t.ui.pronto(mundoFalso9());
     const d = t.ui.cenas.diff as CenaDiff;
     t.ui.go = (() => undefined) as never;
@@ -254,7 +286,7 @@ describe('desbloqueio ao zerar o ARCADE', () => {
   const ladder = [A, B, C, D, id('wei-long')].map((x) => ({ id: x, chefe: false })).concat([{ id: CHEFE_FALSO, chefe: true }]);
 
   it('1ª zerada derrotando o chefão: libera o 1º da fila E o chefão, nessa ordem; grava e conta a zerada', () => {
-    const { e, ui, persist, salvou, ir } = final(R9, ladder);
+    const { e, ui, persist, salvou, ir } = final(R9C, ladder);
     expect(e.novos).toEqual([A, CHEFE_FALSO]);
     expect(persist.prog).toMatchObject({ desbloqueados: [A, CHEFE_FALSO], zeradas: 1, chefeDerrotado: true });
     expect(salvou.n).toBeGreaterThanOrEqual(1);
@@ -264,21 +296,33 @@ describe('desbloqueio ao zerar o ARCADE', () => {
   });
 
   it('jogando com o chefão (sem etapa de chefe): só a fila avança', () => {
-    const { e, persist } = final(R9, ladder.slice(0, 5));
+    const { e, persist } = final(R9C, ladder.slice(0, 5));
     expect(e.novos).toEqual([A]);
     expect(persist.prog.chefeDerrotado).toBe(false);
   });
 
   it('2ª zerada: o próximo da fila; fila esgotada: nada novo e vai direto ao título', () => {
-    const p1 = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, R9).prog;
-    const seg = final(R9, ladder, p1);
+    const p1 = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, R9C).prog;
+    const seg = final(R9C, ladder, p1);
     expect(seg.e.novos).toEqual([B]);
     const cheio = { ...progressoVazio(), desbloqueados: [A, B, C, D, CHEFE_FALSO], zeradas: 5, chefeDerrotado: true };
-    const fim = final(R9, ladder, cheio);
+    const fim = final(R9C, ladder, cheio);
     expect(fim.e.novos).toEqual([]);
     fim.ui.t = 61;
     fim.e.key('Enter');
     expect(fim.ir).toEqual([['title', undefined]]);
+  });
+
+  it('produção hoje (sem chefão): zerar o Arcade de 5 etapas libera só o 1º da fila (AMINU); quem já liberou o BAATAR como chefe segue a fila sem perder nada', () => {
+    const cinco = ladder.slice(0, 5);
+    const novo = final(R9, cinco);
+    expect(novo.e.novos).toEqual([A]);
+    expect(novo.persist.prog).toMatchObject({ desbloqueados: [A], zeradas: 1, chefeDerrotado: false });
+    const antigo = { ...progressoVazio(), desbloqueados: [A, CHEFE_FALSO], zeradas: 1, chefeDerrotado: true, vistos: [A, CHEFE_FALSO] };
+    const seg = final(R9, cinco, antigo);
+    expect(seg.e.novos).toEqual([B]);
+    expect(seg.persist.prog.desbloqueados).toEqual([A, CHEFE_FALSO, B]);
+    expect(seg.persist.prog.chefeDerrotado).toBe(true);
   });
 
   it('onda 1 (fila vazia e chefe null, regras injetadas): zerar não mostra aviso nenhum', () => {

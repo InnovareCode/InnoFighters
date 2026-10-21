@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { ROSTER } from '../../src/data/lutadores';
 import { agregar, compararRodadas, hashDosRegistros, taxaDe } from '../../ferramentas/balanco/agregado';
 import { aplicarAjustes, montarElenco } from '../../ferramentas/balanco/elenco';
-import { BAATAR, WEI_LONG } from '../../src/data/lutadores';
+import { WEI_LONG } from '../../src/data/lutadores';
+import { BAATAR_CHEFE, montarBaatarChefe } from './_baatar-chefe';
 import { semente32, wilson } from '../../ferramentas/balanco/estatistica';
 import { medirGolpe, varrerAlcance } from '../../ferramentas/balanco/frame-data';
 import { acharOutliers } from '../../ferramentas/balanco/outliers';
@@ -71,13 +72,24 @@ describe('determinismo', () => {
     }
   });
 
-  it('a luta de chefão usa a primitiva do chefe (round único, barras) e termina', () => {
+  it('a luta de chefão usa a primitiva do chefe (round único, barras) e termina (chefão de fixtura: o BAATAR de produção não tem `chefe`)', () => {
     const [t] = montarTarefas(ROSTER, 'baatar', { ...PARAMS, filtro: 'hayato:baatar', incluirChefe: true, niveis: [1] }).filter((x) => x.tipo === 'chefe');
     expect(t).toBeDefined();
-    const r = lutar(elenco, t as NonNullable<typeof t>);
+    const r = lutar({ ...elenco, baatar: montarBaatarChefe() }, t as NonNullable<typeof t>);
     expect(r.tipo).toBe('chefe');
     expect(r.travou).toBe(false);
     expect([0, 1]).toContain(r.venc);
+  });
+
+  it('sem chefão no jogo (CHEFE null) não há tarefa de chefe, mesmo pedindo `incluirChefe`; o BAATAR é um regular como os outros', () => {
+    const todas = montarTarefas(ROSTER, null, { ...PARAMS, filtro: null, incluirChefe: true, sementes: 1, niveis: [1] });
+    expect(todas.some((x) => x.tipo === 'chefe')).toBe(false);
+    expect(todas).toHaveLength(9 * 8); // todos os pares ordenados dos 9
+    expect(todas.some((x) => x.a === 'baatar' || x.b === 'baatar')).toBe(true);
+    const agr = agregar(rodarTarefas(elenco, montarTarefas(ROSTER, null, { ...PARAMS, filtro: 'baatar:hayato,hayato:baatar', sementes: 1, niveis: [1] })), ['hayato', 'baatar'], null, PARAMS);
+    expect(agr.total.chefe).toBe(0);
+    expect(agr.chefe).toEqual([]);
+    expect(agr.mecanicas.baatar.lutas).toBe(2);
   });
 });
 
@@ -199,6 +211,7 @@ describe('estatística e agregação', () => {
 describe('"e se..." (--ajustes): ajusta em memória, não mexe nos dados do jogo', () => {
   it('muda hp/pow/golpe/projétil/chefe SÓ no elenco montado pedido; a definição estática e um elenco novo ficam intactos', () => {
     const outro = montarElenco();
+    outro.baatar = montarBaatarChefe(); // os ajustes de `chefe` só valem em quem tem `chefe` (o BAATAR de produção não tem mais)
     aplicarAjustes(outro, {
       'wei-long': { hp: 90, pow: 1.01, moves: { hk: { dmg: 1 }, sFire: { proj: { dmg: 3 } }, sFwd: { armor: 0 } } },
       baatar: { chefe: { hpPorBarra: 33 } },
@@ -216,10 +229,10 @@ describe('"e se..." (--ajustes): ajusta em memória, não mexe nos dados do jogo
     expect(WEI_LONG.hp).toBe(96);
     expect(WEI_LONG.mods.hk?.dmg).toBe(14);
     expect((WEI_LONG.especiais.sFire.proj as { dmg: number }).dmg).toBe(20);
-    expect(BAATAR.chefe?.hpPorBarra).toBe(40);
+    expect(BAATAR_CHEFE.chefe?.hpPorBarra).toBe(40);
     expect(elenco['wei-long'].hp).toBe(96);
     expect(elenco['wei-long'].moves.sFire.proj?.dmg).toBe(20);
-    expect(elenco.baatar.chefe?.hpPorBarra).toBe(40);
+    expect(elenco.baatar.chefe).toBeUndefined(); // o elenco de produção: BAATAR normal
   });
 
   it('o ajuste muda o resultado da luta (e ajuste vazio não muda)', () => {
@@ -240,7 +253,9 @@ describe('"e se..." (--ajustes): ajusta em memória, não mexe nos dados do jogo
     expect(() => aplicarAjustes(e, { hayato: { hp: -1 } })).toThrow(/número/);
     expect(() => aplicarAjustes(e, { hayato: { moves: { zzz: { dmg: 1 } } } })).toThrow(/golpe/);
     expect(() => aplicarAjustes(e, { hayato: { chefe: { hpPorBarra: 1 } } })).toThrow(/chefe/);
-    expect(() => aplicarAjustes(e, { 'baatar/chefe': { chefe: { hpPorBarra: 1 } } })).toThrow(/chefe/);
+    expect(() => aplicarAjustes(e, { baatar: { chefe: { hpPorBarra: 1 } } })).toThrow(/só vale na ficha base de quem é chefe/); // BAATAR normal
+    e.baatar = montarBaatarChefe();
+    expect(() => aplicarAjustes(e, { 'baatar/chefe': { chefe: { hpPorBarra: 1 } } })).toThrow(/só vale na ficha base de quem é chefe/);
     expect(() => aplicarAjustes(e, { hayato: { voar: 1 } as never })).toThrow(/campo/);
   });
 });

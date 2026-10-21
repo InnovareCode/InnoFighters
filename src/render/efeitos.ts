@@ -1,4 +1,4 @@
-import { ALTURA, GROUND, LARGURA } from '../core/constantes';
+import { ALTURA, GROUND, LARGURA, SH } from '../core/constantes';
 import type { EstiloProjetil, EventoLuta, IndiceLutador, ProjetilLeitura, TextoFlutuante } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import { textoArcade } from './texto';
@@ -182,7 +182,7 @@ export class Efeitos {
    * dentro da lógica. Eventos sem efeito visual (swing, jump, ko, round...) são ignorados aqui.
    * `onde` dá a posição dos lutadores para os eventos que não trazem x/y (`carga`, `troca-ficha`); sem ele eles são ignorados.
    */
-  reagir(ev: EventoLuta, onde?: PosicaoDoLutador): void {
+  reagir(ev: EventoLuta, onde?: PosicaoDoLutador, corDe?: (indice: IndiceLutador) => string): void {
     const texto = (t: TextoFlutuante | null): void => {
       if (t) this.textoFlutuante(t.x, t.y, t.s, t.col, t.size);
     };
@@ -211,7 +211,7 @@ export class Efeitos {
           // COUP D'ARRÊT pego na preparação: o rival é interceptado, então a rajada é maior, branca, com um anel frio por trás
           this.faiscas(ev.x, ev.y, '#ffffff', 14);
           this.estrela(ev.x, ev.y, '#ffffff', true);
-          this.estrela(ev.x, ev.y, '#7fe3ff', true);
+          this.estrela(ev.x, ev.y, '#c7d3ff', true); // prata-azulado da CAMILLE (era ciano #7fe3ff, família do HAYATO)
         }
         texto(ev.texto);
         break;
@@ -232,6 +232,20 @@ export class Efeitos {
         this.estrela(ev.x, ev.y, '#ff4a3a', true);
         texto(ev.texto);
         break;
+      case 'esquiva': {
+        // começo da esquiva: flash curto na cor do lutador (a poeira vem do evento `dust` do motor)
+        const p = onde?.(ev.lutador);
+        const cor = corDe?.(ev.lutador) ?? '#bfe9ff';
+        this.faiscas(ev.x, (p?.y ?? GROUND) - 70, cor, 8);
+        this.estrela(ev.x, (p?.y ?? GROUND) - 70, cor, false);
+        break;
+      }
+      case 'esquivou': {
+        // a esquiva funcionou: o texto sai no lutador que esquivou (sem energia, sem pontos)
+        const p = onde?.(ev.lutador);
+        this.textoFlutuante(p?.x ?? ev.x, (p?.y ?? GROUND) - SH, 'ESQUIVOU!', '#bfe9ff', 20);
+        break;
+      }
       case 'carga': {
         // a cada nível alcançado um pulso de brilho no corpo: mais faíscas e uma estrela maior no nível 3
         const p = onde?.(ev.lutador);

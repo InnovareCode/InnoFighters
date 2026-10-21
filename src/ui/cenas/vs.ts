@@ -4,6 +4,7 @@ import { AI_LEVELS } from '../../fight/cpu';
 import { desenharPose } from '../../render/pose';
 import { EsperaDeArte } from '../espera-de-arte';
 import type { Navegador } from '../navegador';
+import { escalaDeVitrine } from '../personagens';
 import type { ArgsVs, Cena } from '../tipos';
 
 /** Tela de confronto (VS): entra com animação e vai para a luta sozinha em ~3 s (ou ao apertar). */
@@ -89,12 +90,12 @@ export class CenaVs implements Cena {
     ctx.save();
     ctx.globalAlpha = k1;
     f.floorShadow(250 - (1 - k1) * 300, 470, 130);
-    desenharPose(ctx, c1, r1.arte, 'guard', 250 - (1 - k1) * 300, 470, 1.55, 1);
+    desenharPose(ctx, c1, r1.arte, 'guard', 250 - (1 - k1) * 300, 470, 1.55 * escalaDeVitrine(c1), 1);
     ctx.restore();
     ctx.save();
     ctx.globalAlpha = k2;
     f.floorShadow(710 + (1 - k2) * 300, 470, 130);
-    desenharPose(ctx, c2, r2.arte, 'guard', 710 + (1 - k2) * 300, 470, 1.55, -1);
+    desenharPose(ctx, c2, r2.arte, 'guard', 710 + (1 - k2) * 300, 470, 1.55 * escalaDeVitrine(c2), -1);
     ctx.restore();
     f.A(c1.name, 40 - (1 - k1) * 300, 70, 62, '#fff', '#002a66', 'left');
     f.A(c2.name, W - 40 + (1 - k2) * 300, 70, 62, '#fff', '#660a1a', 'right');

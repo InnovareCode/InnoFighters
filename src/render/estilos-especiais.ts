@@ -1,7 +1,7 @@
 import type { Ctx } from './tela';
 
 /*
- * Os 11 estilos procedurais dos brilhos da cinemática do especial (docs/identidade-visual-especiais.md, seção 2): um por lutador
+ * Os 12 estilos procedurais dos brilhos da cinemática do especial (docs/identidade-visual-especiais.md, seção 2): um por lutador
  * (NILA e BAATAR têm dois, um por ficha). Cada estilo é uma função PURA do instante: `(ctx, t, paleta, caixa, semente, variante)`, sem estado
  * entre quadros (o "sorteio" é um hash da semente, então o mesmo quadro sai sempre igual e o teste pode contar as primitivas).
  *
@@ -14,7 +14,7 @@ export type Paleta = { readonly nucleo: string; readonly brilho: string; readonl
 /** Área em que o estilo age, em coordenadas locais da faixa (a pose fica à esquerda, o nome à direita). */
 export type Caixa = { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
 
-export type EstiloId = 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9' | 'E10' | 'E11';
+export type EstiloId = 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9' | 'E10' | 'E11' | 'E12';
 
 export interface ArgsEstilo {
   readonly ctx: Ctx;
@@ -875,6 +875,150 @@ function estiloPena(a: ArgsEstilo): void {
   ctx.restore();
 }
 
+// ---------------------------------------------------------------- E12 MEANDRO E ANEL (ZENON, chefão)
+/** O núcleo ônix: a "energia em negativo" é regra exclusiva do chefão (nenhum outro lutador tem energia mais escura que o cenário). */
+export const ONIX = '#0c0710';
+const OURO = '#d9b25a';
+
+type Anel = { readonly x: number; readonly y: number; readonly rx: number; readonly idade: number };
+
+/**
+ * Anéis achatados (ry = 0,45·rx) abrindo a partir de UM núcleo ônix em `source-over` (alfa <= 0,85): sem isso o centro sumiria no `lighter`
+ * (um núcleo quase preto não soma nada). Só a borda é aditiva, em dois traçados (anéis novos mais fortes, antigos esmaecendo): 3 primitivas.
+ */
+function aneisComNucleo(a: ArgsEstilo, nucleo: { x: number; y: number; rx: number } | null, lista: readonly Anel[], vidaDoAnel = 26): void {
+  const { ctx } = a;
+  if (nucleo) {
+    ctx.save();
+    ctx.globalAlpha = trava(a.vida * 0.85);
+    ctx.fillStyle = ONIX;
+    ctx.beginPath();
+    ctx.ellipse(nucleo.x, nucleo.y, nucleo.rx, nucleo.rx * 0.45, 0, 0, PI2);
+    ctx.fill();
+    ctx.restore();
+  }
+  for (const novo of [true, false]) {
+    const grupo = lista.filter((r) => r.idade >= 0 && r.idade < vidaDoAnel && (r.idade < vidaDoAnel / 2) === novo);
+    if (grupo.length === 0) continue;
+    const c2 = aditivo(a, novo ? 1 : 0.5);
+    c2.beginPath();
+    for (const r of grupo) {
+      c2.moveTo(r.x + r.rx, r.y);
+      c2.ellipse(r.x, r.y, r.rx, r.rx * 0.45, 0, 0, PI2);
+    }
+    c2.lineWidth = novo ? 4 : 2.5;
+    c2.strokeStyle = a.p.brilho;
+    c2.stroke();
+    c2.restore();
+  }
+}
+
+/** Linha de meandro (ângulos retos, módulo de 24 px) em cima e embaixo da faixa, andando 6 a 10 px por tick: UM traçado. */
+function meandro(a: ArgsEstilo): void {
+  const { c } = a;
+  const ctx = aditivo(a, 0.7);
+  const passo = a.pesado ? 6 : 10;
+  const desl = ((a.t - 8) * passo) % 24;
+  ctx.beginPath();
+  for (const y0 of [c.y + 8, c.y + c.h - 18]) {
+    for (let x = c.x - 24 + desl; x < c.x + c.w; x += 24) {
+      ctx.moveTo(x, y0 + 10);
+      ctx.lineTo(x, y0);
+      ctx.lineTo(x + 12, y0);
+      ctx.lineTo(x + 12, y0 + 10);
+      ctx.lineTo(x + 24, y0 + 10);
+    }
+  }
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = a.p.brilho;
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Moedas (losangos dourados de 10 x 6 px) nos pontos dados: UM preenchimento. */
+function moedas(a: ArgsEstilo, pts: readonly { x: number; y: number }[]): void {
+  if (pts.length === 0) return;
+  const ctx = aditivo(a);
+  ctx.beginPath();
+  for (const p of pts) {
+    ctx.moveTo(p.x - 5, p.y);
+    ctx.lineTo(p.x, p.y - 3);
+    ctx.lineTo(p.x + 5, p.y);
+    ctx.lineTo(p.x, p.y + 3);
+    ctx.closePath();
+  }
+  ctx.fillStyle = OURO;
+  ctx.fill();
+  ctx.restore();
+}
+
+function estiloMeandro(a: ArgsEstilo): void {
+  const { c } = a;
+  const cy = c.y + c.h / 2;
+  const u = progresso(a);
+  meandro(a);
+  if (a.variante === 'coluna') {
+    // anéis empilhados subindo, rx diminuindo (150 -> 50)
+    const x = c.x + c.w * 0.45;
+    const n = qtd(a, 5);
+    const lista: Anel[] = [];
+    for (let i = 0; i < n; i++) {
+      const sobe = trava((a.t - 8 - i * 3) / 10);
+      lista.push({ x, y: lerp(c.y + c.h - 14, c.y + 22 + ((c.h - 44) * (n - 1 - i)) / Math.max(1, n - 1), sobe), rx: lerp(150, 50, n === 1 ? 0 : i / (n - 1)) * (0.6 + 0.4 * sobe), idade: a.t - 8 - i * 3 });
+    }
+    aneisComNucleo(a, { x, y: c.y + c.h - 12, rx: 70 }, lista, 30);
+  } else if (a.variante === 'tributo') {
+    // o anel se fecha sobre o ponto (rx 160 -> 30 em 10 ticks) e as moedas voam na direção do ZENON (a esquerda da faixa)
+    const px = c.x + c.w * 0.45;
+    const idade = a.t - 10;
+    const k = trava(idade / 10);
+    aneisComNucleo(a, { x: px, y: cy, rx: lerp(70, 22, k) }, idade >= 0 ? [{ x: px, y: cy, rx: lerp(160, 30, k), idade: Math.min(idade, 12) }] : [], 40);
+    const m: { x: number; y: number }[] = [];
+    for (let i = 0; i < qtd(a, 6); i++) {
+      const v = trava((a.t - 20 - i * 1.5) / 16);
+      if (v <= 0 || v >= 1) continue;
+      m.push({ x: lerp(px, c.x - 10, v), y: lerp(cy + (i - 2.5) * 6, c.y + c.h * 0.75, v) });
+    }
+    moedas(a, m);
+  } else if (a.variante === 'decreto') {
+    // meio anel que gira 180° junto com o flip da pose (a investida cruza o rival)
+    const x = c.x + c.w * 0.4;
+    const ctx = aditivo(a);
+    const ini = Math.PI * u;
+    ctx.beginPath();
+    ctx.ellipse(x, cy, 150, 150 * 0.45, 0, ini, ini + Math.PI);
+    ctx.ellipse(x, cy, 100, 100 * 0.45, 0, ini, ini + Math.PI);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = a.p.brilho;
+    ctx.stroke();
+    ctx.restore();
+    const nu = a.vida;
+    ctx.save();
+    ctx.globalAlpha = trava(nu * 0.85);
+    ctx.fillStyle = ONIX;
+    ctx.beginPath();
+    ctx.ellipse(x, cy, 46, 46 * 0.45, 0, ini, ini + Math.PI);
+    ctx.fill();
+    ctx.restore();
+    moedas(a, Array.from({ length: qtd(a, 4) }, (_, i) => ({ x: x + Math.cos(ini + (i * Math.PI) / 3) * 125, y: cy + Math.sin(ini + (i * Math.PI) / 3) * 56 })));
+  } else {
+    // selo / selo-maior: anéis saindo da mão à frente; o maior tem dois grupos defasados em 4 ticks
+    const grupos = a.variante === 'selo-maior' ? 2 : 1;
+    const por = qtd(a, a.variante === 'selo-maior' ? 4 : 5);
+    for (let g = 0; g < grupos; g++) {
+      const ox = c.x + c.w * (0.2 + g * 0.06);
+      const oy = cy + (g ? 8 : -4);
+      const esc = g ? 1.2 : 1;
+      const lista: Anel[] = [];
+      for (let i = 0; i < por; i++) {
+        const idade = a.t - 8 - i * 4 - g * 4;
+        lista.push({ x: ox + idade * 6, y: oy, rx: Math.min(160, 40 + idade * 5) * esc, idade });
+      }
+      aneisComNucleo(a, { x: ox, y: oy, rx: 30 * esc * (0.6 + 0.4 * u) }, lista);
+    }
+  }
+}
+
 export const ESTILOS: Readonly<Record<EstiloId, (a: ArgsEstilo) => void>> = {
   E1: estiloRaio,
   E2: estiloDragao,
@@ -887,6 +1031,7 @@ export const ESTILOS: Readonly<Record<EstiloId, (a: ArgsEstilo) => void>> = {
   E9: estiloEspiral,
   E10: estiloVento,
   E11: estiloPena,
+  E12: estiloMeandro,
 };
 
 /** Desenha o estilo `id` (e só ele): o chamador cuida do envelope, do clipe da faixa e da transformação. */
@@ -1117,6 +1262,45 @@ export function desenharAssinatura(a: ArgsAssinatura): void {
       ctx.fill();
       break;
     }
+    case 'E12': {
+      if (eco) {
+        // defesa: o anel bate e se desfaz em 4 segmentos retos, sem moedas
+        ctx.beginPath();
+        for (let i = 0; i < 4; i++) {
+          const sx = i % 2 ? 1 : -1;
+          const sy = i < 2 ? -1 : 1;
+          const d = 24 + idade * 2.2;
+          ctx.moveTo(x + sx * d, y + sy * d * 0.45);
+          ctx.lineTo(x + sx * (d + 14), y + sy * (d + 14) * 0.45);
+        }
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = nucleo;
+        ctx.stroke();
+        break;
+      }
+      // acerto: o anel se fecha sobre o rival (rx 160 -> 30 em 10 ticks) e solta 6 moedas na direção do ZENON (contra o lado do golpe)
+      const kf = trava(idade / 10);
+      ctx.beginPath();
+      ctx.ellipse(x, y, lerp(160, 30, kf), lerp(160, 30, kf) * 0.45, 0, 0, PI2);
+      ctx.lineWidth = 4 * (1 - kf * 0.5);
+      ctx.strokeStyle = cor;
+      ctx.stroke();
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const v = trava((idade - 3 - i) / 14);
+        if (v <= 0) continue;
+        const mx = x - a.dir * v * (60 + i * 14);
+        const my = y - 10 - v * (30 + az(sem, i) * 40) + v * v * 60;
+        ctx.moveTo(mx - 5, my);
+        ctx.lineTo(mx, my - 3);
+        ctx.lineTo(mx + 5, my);
+        ctx.lineTo(mx, my + 3);
+        ctx.closePath();
+      }
+      ctx.fillStyle = OURO;
+      ctx.fill();
+      break;
+    }
   }
   ctx.restore();
 }
@@ -1196,6 +1380,15 @@ export function estampaDaTarja(g: Ctx, estilo: EstiloId, brilho: string, W: numb
       for (let x = 40; x < W; x += 100) {
         g.moveTo(x + 24, cy + 8);
         g.ellipse(x, cy + 8, 24, 6, -0.3, 0, PI2);
+      }
+      break;
+    case 'E12': // meandro grego a 10%: ângulos retos, módulo de 24 px, na altura do meio
+      for (let x = 0; x < W; x += 24) {
+        g.moveTo(x, cy + 10);
+        g.lineTo(x, cy);
+        g.lineTo(x + 12, cy);
+        g.lineTo(x + 12, cy + 10);
+        g.lineTo(x + 24, cy + 10);
       }
       break;
   }

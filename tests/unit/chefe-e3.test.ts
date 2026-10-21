@@ -26,7 +26,7 @@ const CFG_CHEFE: ConfigChefe = {
   hpPorBarra: 75,
   fichaFase1: 'chefe',
   fichaFase2: 'chefe2',
-  danca: { duracao: 90 },
+  cena: { duracao: 90, poses: ['devekh0', 'devekh1', 'devekh2'] },
   bonusVitoria: 7777,
 };
 
@@ -137,7 +137,7 @@ describe('S0 · C3 aditivo: valores neutros publicados pelo Game', () => {
   it('os eventos novos têm som mapeado só com métodos que o AudioSys já tem', () => {
     const metodos = (e: EventoLuta): string[] => sonsDoEvento(e).map((s) => s.metodo);
     expect(metodos({ tipo: 'fase-chefe', lutador: 1, etapa: 'troca', barrasRestantes: 1 })).toEqual(['fireballHit']);
-    expect(metodos({ tipo: 'fase-chefe', lutador: 1, etapa: 'danca', barrasRestantes: 1 })).toEqual(['introWhoosh']);
+    expect(metodos({ tipo: 'fase-chefe', lutador: 1, etapa: 'cena', barrasRestantes: 1 })).toEqual(['introWhoosh', 'musicaDaFase']);
     expect(metodos({ tipo: 'fase-chefe', lutador: 1, etapa: 'retomada', barrasRestantes: 1 })).toEqual(['fight']);
     expect(metodos({ tipo: 'carga', lutador: 0, nivel: 2 })).toEqual(['uiSelect']);
     expect(metodos({ tipo: 'rebote', lutador: 0, x: 60 })).toEqual(['land']);
@@ -379,7 +379,7 @@ describe('S1a · Dança da Águia (§3.3)', () => {
     tickCena = g.tick;
     expect(c.state).toBe('cena');
     expect(c.cenaPendente).toBe(false);
-    expect(etapas).toEqual(['danca']);
+    expect(etapas).toEqual(['cena']);
 
     // durante a cena: contar ticks, relógio parado, nada de hit, projéteis vazios
     // o jogador "termina o que estava fazendo": um MASHI/projétil em andamento não pode deixar projétil vivo
@@ -406,7 +406,7 @@ describe('S1a · Dança da Águia (§3.3)', () => {
     l.frame.p1.hp = false;
     expect(hits).toBe(0);
     // `phase` vale 'cena-chefe' no início de exatamente `duracao` ticks: o último dos 90 já devolve 'fight'
-    expect(ticksDeCena).toBe(CFG_CHEFE.danca.duracao);
+    expect(ticksDeCena).toBe(CFG_CHEFE.cena.duracao);
     expect(tickCena).toBeGreaterThan(0);
     expect(g.phase).toBe('fight');
     expect(c.ficha).toBe('chefe2');

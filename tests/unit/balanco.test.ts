@@ -84,7 +84,7 @@ describe('determinismo', () => {
   it('sem chefão no jogo (CHEFE null) não há tarefa de chefe, mesmo pedindo `incluirChefe`; o BAATAR é um regular como os outros', () => {
     const todas = montarTarefas(ROSTER, null, { ...PARAMS, filtro: null, incluirChefe: true, sementes: 1, niveis: [1] });
     expect(todas.some((x) => x.tipo === 'chefe')).toBe(false);
-    expect(todas).toHaveLength(9 * 8); // todos os pares ordenados dos 9
+    expect(todas).toHaveLength(ROSTER.length * (ROSTER.length - 1)); // todos os pares ordenados do roster
     expect(todas.some((x) => x.a === 'baatar' || x.b === 'baatar')).toBe(true);
     const agr = agregar(rodarTarefas(elenco, montarTarefas(ROSTER, null, { ...PARAMS, filtro: 'baatar:hayato,hayato:baatar', sementes: 1, niveis: [1] })), ['hayato', 'baatar'], null, PARAMS);
     expect(agr.total.chefe).toBe(0);

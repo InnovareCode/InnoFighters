@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { CHEFE } from './_chefe';
+import { CHEFE, GRADE_DE_PRODUCAO } from './_chefe';
 
 /*
  * F3a: os cinco lutadores novos (AMINU, CENTELLA, CAMILLE, NILA, BAATAR) e os seis cenários, com a arte real, no
@@ -75,20 +75,21 @@ test.describe('arte real dos cinco novos', () => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
   });
 
-  test('a seleção abre os 9 sem travar ninguém (BAATAR na 9ª casa); a produção abre só 4 e trava os outros 5, o BAATAR entre eles', async ({ page }) => {
+  test('a seleção abre os 10 sem travar ninguém (BAATAR na 9ª casa, o ZENON na casa de honra); a produção abre só 4, trava os outros 5 e esconde o chefão', async ({ page }) => {
     const erros = coletarErros(page);
     await abrirJogo(page, 'expansao=1');
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); }");
     const grade = await hook(page, '(h) => h.ui.scene.grade');
-    expect(grade).toHaveLength(9);
-    expect(grade).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar']); // sem chefão: ordem do roster
+    expect(grade).toHaveLength(10);
+    expect(grade).toEqual([...GRADE_DE_PRODUCAO]); // os 9 regulares na ordem do roster e o chefão na casa de honra
     expect(grade[8]).toBe('baatar');
+    expect(grade[9]).toBe(CHEFE.id);
     const liberados = await page.evaluate(async () => {
       const h = (window as any).__inno;
       const { liberados: lib } = await import(/* @vite-ignore */ ('/src/meta/index.ts' as string));
       return [...lib(h.persist.prog, h.ui.c.regras)].sort();
     });
-    expect(liberados).toEqual(['aminu', 'baatar', 'caio', 'camille', 'centella', 'hayato', 'min-ji', 'nila', 'wei-long']);
+    expect(liberados).toEqual(['aminu', 'baatar', 'caio', 'camille', 'centella', 'hayato', 'min-ji', 'nila', 'wei-long', CHEFE.id].sort());
     await capturar(page, 'selecao-expansao-9-liberados');
 
     const prod = await page.context().newPage();
@@ -106,19 +107,20 @@ test.describe('arte real dos cinco novos', () => {
     expect(estados).toEqual({
       hayato: 'liberado', 'wei-long': 'liberado', 'min-ji': 'liberado', caio: 'liberado',
       aminu: 'travado', centella: 'travado', camille: 'travado', nila: 'travado', baatar: 'travado', // BAATAR é lutador comum: sem "???"
+      [CHEFE.id]: 'chefe-oculto', // o chefão sim: "???" na casa de honra até ser derrotado
     });
     await capturar(prod, 'selecao-producao-5-travados');
     expect(errosProd).toEqual([]);
     expect(erros).toEqual([]);
   });
 
-  test('COM chefão de teste: o chefão fica no centro da grade e escondido ("???") até ser derrotado; os outros 4 seguem travados', async ({ page }) => {
+  test('o chefão fica na casa de honra, embaixo da 3x3, escondido ("???") até ser derrotado; os outros 5 seguem travados', async ({ page }) => {
     const erros = coletarErros(page);
     await abrirJogo(page, CHEFE.query);
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); }");
     const grade: string[] = await hook(page, '(h) => h.ui.scene.grade');
-    expect(grade).toHaveLength(9);
-    expect(grade[4]).toBe(CHEFE.id);
+    expect(grade).toHaveLength(10);
+    expect(grade[9]).toBe(CHEFE.id);
     const estados = await page.evaluate(async () => {
       const h = (window as any).__inno;
       const { estadoDaCasa } = await import(/* @vite-ignore */ ('/src/ui/grade.ts' as string));
@@ -128,7 +130,7 @@ test.describe('arte real dos cinco novos', () => {
     });
     expect(estados).toEqual({
       hayato: 'liberado', 'wei-long': 'liberado', 'min-ji': 'liberado', caio: 'liberado',
-      aminu: 'travado', centella: 'travado', camille: 'travado', nila: 'travado', [CHEFE.id]: 'chefe-oculto',
+      aminu: 'travado', centella: 'travado', camille: 'travado', nila: 'travado', baatar: 'travado', [CHEFE.id]: 'chefe-oculto',
     });
     await capturar(page, 'selecao-producao-chefe-oculto');
     expect(erros).toEqual([]);
@@ -262,13 +264,14 @@ test.describe('arte real dos cinco novos', () => {
     expect(erros).toEqual([]);
   });
 
-  test('COM chefão de teste (BAATAR antigo): 2 barras, troca de barra, Dança da Águia e fase 2 (MERGULHO) no cenário da Estepe', async ({ page }) => {
+  test('o chefão ZENON: 2 barras, troca de barra, cena da fase 2 e fase 2 (DECRETO com a arte própria) na arena gr', async ({ page }) => {
     const erros = coletarErros(page);
     await abrirJogo(page, CHEFE.query);
     await abrirLuta(page, CHEFE.id, { mode: 'arcade', cpu: 1, chefe: true });
     const f = await hook(page, '(h) => { const p = h.mundo().game.p2; return { chefe: p.chefe !== null, barras: p.barras, barrasMax: p.barrasMax, ficha: p.ficha }; }');
     expect(f).toEqual({ chefe: true, barras: 2, barrasMax: 2, ficha: CHEFE.fase1 });
-    await capturar(page, 'lutador-baatar-0-chefe-2-barras');
+    expect(await hook(page, '(h) => h.mundo().game.stage')).toBe(CHEFE.cenario); // a luta é na casa dele: a arena do Arconte
+    await capturar(page, 'lutador-zenon-0-chefe-2-barras');
 
     // zera a 1ª barra com um golpe de verdade: a luta troca de barra e abre a Dança (relógio parado, sem entradas)
     // (a harness só rebaixa a vida enquanto a barra não trocou: depois da troca a barra nova nasce cheia e fica assim)
@@ -297,10 +300,10 @@ test.describe('arte real dos cinco novos', () => {
     });
     expect(danca).toMatchObject({ fase: 'cena-chefe', barras: 1 });
     expect(danca.hp).toBe(danca.maxHp); // a barra nova nasce cheia
-    expect(danca.pose).toMatch(CHEFE.poseDanca); // a Dança usa as poses próprias do atlas do BAATAR
-    await capturar(page, 'lutador-baatar-1-danca-da-aguia');
+    expect(danca.pose).toMatch(CHEFE.poseCena); // a cena usa as poses próprias do atlas do ZENON (S10, linha 2)
+    await capturar(page, 'lutador-zenon-1-cena');
 
-    // retomada: a ficha da fase 2 está ativa e o MERGULHO usa a arte própria (dive0/dive1), com a barra cheia de novo
+    // retomada: a ficha da fase 2 está ativa e o DECRETO usa a arte própria (decreto0/decreto1), com a barra cheia de novo
     const retomou = await page.evaluate(async (c) => {
       const { getPD } = await import(/* @vite-ignore */ ('/src/data/poses.ts' as string));
       const h = (window as any).__inno;
@@ -326,7 +329,7 @@ test.describe('arte real dos cinco novos', () => {
     expect(retomou.ficha).toBe(CHEFE.fase2);
     expect(retomou.poses.some((p) => p === 'sc0' || p === 'sc1')).toBe(true);
     expect(retomou.mergulhoNoAtlas).toBe(true);
-    await capturar(page, 'lutador-baatar-2-fase-2');
+    await capturar(page, 'lutador-zenon-2-fase-2');
     expect(erros).toEqual([]);
   });
 

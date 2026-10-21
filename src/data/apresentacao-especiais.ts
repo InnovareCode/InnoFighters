@@ -2,7 +2,7 @@ import type { EntradaTarja, IdLutador, MomentoCinematica } from '../core/contrat
 import type { NomeEspecial } from './tipos';
 
 /*
- * Dados de APRESENTAÇÃO dos 29 especiais para a cinemática (docs/identidade-visual-especiais.md, seção 4 e 1.2/1.3): qual quadro do atlas vai
+ * Dados de APRESENTAÇÃO dos 34 especiais para a cinemática (docs/identidade-visual-especiais.md, seção 4 e 1.2/1.3): qual quadro do atlas vai
  * na tarja, por onde a tarja entra e quando a cinemática dispara. Ficam FORA de `LutadorDef.especiais` de propósito: o oráculo de fidelidade
  * compara os especiais dos 4 originais com o protótipo, campo a campo, e o motor não lê nada daqui além de copiar para o evento `special`.
  *
@@ -68,6 +68,14 @@ const T: Tabela = {
     sDown: { quadro: 'sb1', entrada: 'rival' },
     // MERGULHO DA ÁGUIA (→+ESP desde que o BAATAR virou lutador normal; antes era o 'chefe2/sFwd')
     sFwd: { quadro: 'dive1', entrada: 'cima' },
+  },
+  // ZENON (E12 MEANDRO E ANEL, docs/identidade-visual-especiais.md §3.10). A ficha `chefe` (fase 1) cai na base; a `chefe2` troca o ESP e o →+ESP.
+  zenon: {
+    sFire: { quadro: 'sa1' }, // SELO DO ARCONTE
+    sDown: { quadro: 'sb1', entrada: 'baixo' }, // COLUNA DE ÔNIX
+    sFwd: { quadro: 'sc1' }, // TRIBUTO
+    'chefe2/sFire': { quadro: 'sa1' }, // SELO MAIOR
+    'chefe2/sFwd': { quadro: 'decreto1' }, // DECRETO
   },
 };
 

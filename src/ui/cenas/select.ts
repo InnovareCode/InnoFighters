@@ -4,9 +4,9 @@ import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
 import { liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
 import { dicaArcadeSelecao } from '../escada-texto';
-import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa, type EstadoCasa } from '../grade';
+import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa, retanguloDeToque, temCasaDeHonra, type EstadoCasa } from '../grade';
 import type { Navegador } from '../navegador';
-import { barrasDeStatus, mostrarLutador, P_COL } from '../personagens';
+import { barrasDeStatus, escalaDeVitrine, mostrarLutador, P_COL } from '../personagens';
 import type { ArgsSelect, Cena, ModoMenu } from '../tipos';
 
 type Dir = 'up' | 'down' | 'left' | 'right';
@@ -15,8 +15,8 @@ const TECLAS_P1: Readonly<Record<string, Dir>> = { ArrowUp: 'up', ArrowDown: 'do
 const TECLAS_P2: Readonly<Record<string, Dir>> = { w: 'up', s: 'down', a: 'left', d: 'right' };
 
 /**
- * Seleção de lutador(es): grade de 2 colunas até 4 lutadores (layout de hoje) ou 3x3 com o chefão no centro (9),
- * estados liberado / NOVO! / travado / chefão oculto, 1 ou 2 jogadores, etapa de alvo/adversário.
+ * Seleção de lutador(es): grade de 2 colunas até 4 lutadores (layout de hoje), 3x3 com o chefão no centro (9) ou 3x3 de regulares com a CASA DE
+ * HONRA do chefão embaixo (10, o ZENON), estados liberado / NOVO! / travado / chefão oculto, 1 ou 2 jogadores, etapa de alvo/adversário.
  * Tudo deriva de `regras.roster` (nada de "4" fixo) e do progresso do jogador.
  */
 export class CenaSelect implements Cena {
@@ -32,6 +32,8 @@ export class CenaSelect implements Cena {
   /** Ids na ordem das casas. */
   grade: IdLutador[] = [];
   private colunas: 2 | 3 = 2;
+  /** Há a casa de honra do chefão (10 casas: 3x3 + o chefão numa faixa embaixo)? */
+  private honra = false;
   private libs: ReadonlySet<IdLutador> = new Set();
   /** Liberados que ainda não tinham sido vistos ao abrir a tela (selo NOVO!). */
   novos: ReadonlySet<IdLutador> = new Set();
@@ -45,6 +47,7 @@ export class CenaSelect implements Cena {
     this.step = 1;
     this.grade = ordemDaGrade(regras.roster, regras.chefe);
     this.colunas = colunasDaGrade(this.grade.length);
+    this.honra = temCasaDeHonra(this.grade.length);
     this.libs = liberados(persist.prog, regras);
     // o selo NOVO! vale durante esta visita; ao abrir, já conta como visto (some na próxima)
     this.novos = new Set(naoVistos(persist.prog).filter((id) => this.libs.has(id)));
@@ -168,7 +171,12 @@ export class CenaSelect implements Cena {
   }
 
   private tileRect(i: number): { x: number; y: number; w: number; h: number } {
-    return retanguloDaCasa(i, this.colunas);
+    return retanguloDaCasa(i, this.colunas, this.n);
+  }
+
+  /** A área de mouse/toque da casa (a de honra tem folga: ver `retanguloDeToque`). */
+  private toqueRect(i: number): { x: number; y: number; w: number; h: number } {
+    return retanguloDeToque(i, this.colunas, this.n);
   }
 
   private jogadorDoMouse(): 0 | 1 {
@@ -177,7 +185,7 @@ export class CenaSelect implements Cena {
 
   hover(mx: number, my: number): void {
     for (let i = 0; i < this.n; i++) {
-      const r = this.tileRect(i);
+      const r = this.toqueRect(i);
       const p = this.jogadorDoMouse();
       if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h && !this.lock[p] && this.cur[p] !== i) {
         this.cur[p] = i;
@@ -188,7 +196,7 @@ export class CenaSelect implements Cena {
 
   click(mx: number, my: number): void {
     for (let i = 0; i < this.n; i++) {
-      const r = this.tileRect(i);
+      const r = this.toqueRect(i);
       if (mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
         const p = this.jogadorDoMouse();
         this.cur[p] = i;
@@ -248,7 +256,7 @@ export class CenaSelect implements Cena {
       ctx.restore();
     }
     ctx.restore();
-    mostrarLutador(f, m, ch.id, x, 362, 1.18, facing, t + p * 30, fl > 12 ? 'special' : 'guard');
+    mostrarLutador(f, m, ch.id, x, 362, 1.18 * escalaDeVitrine(ch), facing, t + p * 30, fl > 12 ? 'special' : 'guard');
     f.panel(px, 374, 284, 132, { stroke: P_COL[p] });
     f.A(ch.name, px + 14, 394, 28, '#fff', '#000', 'left');
     f.T(`${ch.title}  •  ${ch.country}`, px + 14, 418, 13, ch.accent, 'left');
@@ -290,6 +298,10 @@ export class CenaSelect implements Cena {
     ctx.fillStyle = 'rgba(0,0,0,.4)';
     ctx.fillRect(r.x - 4, r.y - 4, r.w + 8, r.h + 8);
     ctx.restore();
+    if (this.honra && i === this.n - 1) {
+      this.casaDeHonra(i, est, r);
+      return;
+    }
     if (est === 'chefe-oculto') {
       const g = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
       g.addColorStop(0, '#2a1236');
@@ -321,6 +333,15 @@ export class CenaSelect implements Cena {
       ctx.restore();
       f.T('NOVO!', r.x + r.w / 2, r.y + 34.5 * esc, 12 * esc, '#1b0b00', 'center', { shadow: false });
     }
+    this.marcadores(r, esc, aqui);
+  }
+
+  /** Os marcadores dos jogadores sobre a casa (moldura pulsante, etiqueta 1P/2P/CPU e o OK de quem já travou). Na casa de honra (faixa 256x44) a etiqueta é fixa e legível. */
+  private marcadores(r: { x: number; y: number; w: number; h: number }, esc: number, aqui: readonly (0 | 1)[], honra = false): void {
+    const { ctx, f } = this.ui.c;
+    const tw = honra ? 32 : 34 * esc;
+    const th = honra ? 18 : 20 * esc;
+    const ts = honra ? 12 : 13 * esc;
     aqui.forEach((p, n) => {
       const pulse = this.lock[p] ? 1 : 0.6 + 0.4 * Math.sin(this.ui.t / 6);
       ctx.save();
@@ -330,14 +351,48 @@ export class CenaSelect implements Cena {
       ctx.strokeRect(r.x - 3 - n * 5, r.y - 3 - n * 5, r.w + 6 + n * 10, r.h + 6 + n * 10);
       ctx.restore();
       ctx.fillStyle = P_COL[p];
-      ctx.fillRect(r.x + (p ? r.w - 34 * esc : 0), r.y, 34 * esc, 20 * esc);
-      f.T(this.versus ? (p ? '2P' : '1P') : p ? 'CPU' : '1P', r.x + (p ? r.w - 17 * esc : 17 * esc), r.y + 10 * esc, 13 * esc, '#fff', 'center', { shadow: false });
+      ctx.fillRect(r.x + (p ? r.w - tw : 0), r.y, tw, th);
+      f.T(this.versus ? (p ? '2P' : '1P') : p ? 'CPU' : '1P', r.x + (p ? r.w - tw / 2 : tw / 2), r.y + th / 2, ts, '#fff', 'center', { shadow: false });
       if (this.lock[p]) {
         ctx.fillStyle = 'rgba(0,0,0,.35)';
-        ctx.fillRect(r.x, r.y, r.w, r.h - 22 * esc);
-        f.A('OK', r.x + r.w / 2, r.y + 50 * esc, 30 * esc, P_COL[p], '#000');
+        ctx.fillRect(r.x, r.y, r.w, honra ? r.h : r.h - 22 * esc);
+        f.A('OK', r.x + r.w / 2, honra ? r.y + r.h / 2 : r.y + 50 * esc, honra ? 24 : 30 * esc, P_COL[p], '#000');
       }
     });
+  }
+
+  /**
+   * A CASA DE HONRA do chefão: faixa de 256x44 embaixo da 3x3, moldura em ouro (`#d9b25a`). Oculto = "???" (sem silhueta, não confirma);
+   * liberado = o rosto dele num quadrado de 44 px, o nome e o título. Os marcadores dos jogadores são os mesmos das outras casas.
+   */
+  private casaDeHonra(i: number, est: EstadoCasa, r: { x: number; y: number; w: number; h: number }): void {
+    const { ctx, f } = this.ui.c;
+    const rc = this.ui.m.elenco[this.idEm(i)];
+    const ch = rc.ch;
+    const aqui = ([0, 1] as const).filter((p) => (this.versus || (p === 0 ? true : this.step === 2)) && this.cur[p] === i);
+    const g = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
+    g.addColorStop(0, '#2a1236');
+    g.addColorStop(1, '#0a0614');
+    ctx.fillStyle = g;
+    ctx.fillRect(r.x, r.y, r.w, r.h);
+    if (est === 'chefe-oculto') {
+      f.A('???', r.x + r.w / 2, r.y + r.h / 2 - 2, 28, '#8a7a5a', '#0a0a14');
+      f.T('O ANFITRIÃO', r.x + r.w - 8, r.y + r.h - 9, 11, '#d9b25a', 'right', { shadow: false });
+    } else {
+      desenharRetrato(ctx, rc.arte.retrato(ch.head), r.x, r.y, r.h, false, ['#4a1a3a', '#12040c']);
+      f.A(ch.name, r.x + r.h + 12, r.y + 15, 20, '#fff', '#000', 'left');
+      f.T(ch.title.toUpperCase(), r.x + r.h + 12, r.y + 34, 12, '#d9b25a', 'left', { shadow: false });
+      f.T('CHEFÃO', r.x + r.w - 8, r.y + 34, 12, '#d9b25a', 'right', { shadow: false });
+      if (est === 'novo') {
+        ctx.fillStyle = '#ffd23f';
+        ctx.fillRect(r.x + r.w - 56, r.y + 4, 50, 17);
+        f.T('NOVO!', r.x + r.w - 31, r.y + 12.5, 12, '#1b0b00', 'center', { shadow: false });
+      }
+    }
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#d9b25a';
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    this.marcadores(r, 1, aqui, true);
   }
 
   draw(): void {
@@ -375,14 +430,20 @@ export class CenaSelect implements Cena {
     for (let i = 0; i < this.n; i++) this.casa(i);
     const act = this.versus ? 0 : (this.active() ?? 0);
     const idc = this.idEm(this.cur[act]);
-    f.panel(352, 358, 256, 100, { r: 8 });
+    // com a casa de honra o painel desce 50 px (e encolhe 8): y 408 a 500, acima da faixa de dica (510)
+    const py = this.honra ? 408 : 358;
+    const ph = this.honra ? 92 : 100;
+    const nomeY = py + (this.honra ? 17 : 18);
+    const textoY = py + (this.honra ? 38 : 44);
+    const linha = this.honra ? 15 : 17;
+    f.panel(352, py, 256, ph, { r: 8 });
     if (podeEscolher(this.estado(idc))) {
       const hc = m.elenco[idc].ch;
-      f.A(hc.name, 480, 376, 22, '#fff', '#000');
-      f.wrap(hc.desc, 366, 402, 228, 17, 13, '#e8ecff');
+      f.A(hc.name, 480, nomeY, 22, '#fff', '#000');
+      f.wrap(hc.desc, 366, textoY, 228, linha, 13, '#e8ecff');
     } else {
-      f.A('???', 480, 376, 22, '#9fa6c9', '#000');
-      f.wrap(this.estado(idc) === 'chefe-oculto' ? 'Aparece no fim do ARCADE.' : 'Zere o ARCADE para liberar.', 366, 402, 228, 17, 13, '#e8ecff');
+      f.A('???', 480, nomeY, 22, '#9fa6c9', '#000');
+      f.wrap(this.estado(idc) === 'chefe-oculto' ? 'Aparece no fim do ARCADE.' : 'Zere o ARCADE para liberar.', 366, textoY, 228, linha, 13, '#e8ecff');
     }
     f.hint(this.versus ? 'P1: ← ↑ ↓ → e Z      P2: WASD e J      X / K desfazer     ESC menu' : '← ↑ ↓ → mover     ENTER / Z confirmar     ESC / X voltar');
   }

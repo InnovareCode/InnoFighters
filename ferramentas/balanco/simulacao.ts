@@ -73,7 +73,7 @@ export type Registro = {
   /** Dano CAUSADO por cada lado (queda de `vidaTotal` do rival; inclui raspão de bloqueio). */
   dano: [number, number];
   golpes: [Record<string, ContagemGolpe>, Record<string, ContagemGolpe>];
-  /** Trocas de barra, Danças e retomadas do chefe. */
+  /** Trocas de barra, cenas e retomadas do chefe. */
   chefe: [number, number, number];
   trocaFicha: [number, number];
   /** Paradas bem-sucedidas (contadas no DEFENSOR). */
@@ -299,7 +299,7 @@ function contarEvento(reg: Registro, e: EventoLuta, f: readonly [Fighter, Fighte
       break;
     case 'fase-chefe':
       if (e.etapa === 'troca') reg.chefe[0]++;
-      else if (e.etapa === 'danca') reg.chefe[1]++;
+      else if (e.etapa === 'cena') reg.chefe[1]++;
       else reg.chefe[2]++;
       break;
     case 'troca-ficha':

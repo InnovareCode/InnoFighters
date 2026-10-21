@@ -38,9 +38,9 @@ export type LinhaChefe = {
   nivel: number;
   jogador: Taxa;
   duracaoSeg: number;
-  /** Fração das lutas em que o chefe chegou a trocar de barra / fazer a Dança. */
+  /** Fração das lutas em que o chefe chegou a trocar de barra / ver a cena da fase 2. */
   trocouBarra: number;
-  fezDanca: number;
+  fezCena: number;
   porKo: number;
   roundsMedios: number;
   travadas: number;
@@ -143,7 +143,7 @@ export function agregar(registros: readonly Registro[], ids: readonly IdLutador[
         jogador: taxaDe(ok.filter((r) => r.venc === 0).length, ok.length),
         duracaoSeg: media(l.map((r) => r.ticks / 60)),
         trocouBarra: l.filter((r) => r.chefe[0] > 0).length / l.length,
-        fezDanca: l.filter((r) => r.chefe[1] > 0).length / l.length,
+        fezCena: l.filter((r) => r.chefe[1] > 0).length / l.length,
         porKo: l.filter((r) => fim(r) === 'ko').length / l.length,
         roundsMedios: media(l.map((r) => r.rounds)),
         travadas: l.length - ok.length,

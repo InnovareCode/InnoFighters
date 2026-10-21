@@ -145,11 +145,11 @@ export function resultadosMd(agr: Agregado, ids: readonly IdLutador[], achados: 
   if (!agr.chefe.length) o.push('Não rodado nesta rodada.', '');
   else {
     o.push('"Jogador" = a CPU do desafiante como P1, no lugar de uma pessoa. Round único; empate repete o round.', '');
-    o.push('| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Fez a Dança | Terminou por KO |');
+    o.push('| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO |');
     o.push('|---|---|---|---|---|---|---|---|---|');
     for (const c of agr.chefe) {
       o.push(
-        `| ${c.desafiante} | ${c.nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} | **${pct(c.jogador.taxa)}** (${c.jogador.k}/${c.jogador.n}) | ${pct(c.jogador.lo, 0)}-${pct(c.jogador.hi, 0)} | ${c.duracaoSeg.toFixed(0)} s | ${c.roundsMedios.toFixed(1)} | ${pct(c.trocouBarra, 0)} | ${pct(c.fezDanca, 0)} | ${pct(c.porKo, 0)} |`,
+        `| ${c.desafiante} | ${c.nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} | **${pct(c.jogador.taxa)}** (${c.jogador.k}/${c.jogador.n}) | ${pct(c.jogador.lo, 0)}-${pct(c.jogador.hi, 0)} | ${c.duracaoSeg.toFixed(0)} s | ${c.roundsMedios.toFixed(1)} | ${pct(c.trocouBarra, 0)} | ${pct(c.fezCena, 0)} | ${pct(c.porKo, 0)} |`,
       );
     }
     o.push('');

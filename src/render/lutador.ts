@@ -3,6 +3,7 @@ import { GROUND, SH, SH_IDLE } from '../core/constantes';
 import type { LutadorLeitura } from '../core/contratos';
 import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
+import { desenharAuraChefe } from './aura-chefe';
 import { ALFA_FANTASMA, desenharFaixaDeEsquiva, ehPoseDeEsquiva, esquivaNaJanela, silhuetaTingida } from './esquiva';
 import { desenharRastroGolpe } from './rastro-golpe';
 import type { Ctx } from './tela';
@@ -24,8 +25,9 @@ export function chDaFicha(ch: LutadorMontado, ficha: string | null): LutadorMont
  *
  * Nota de fidelidade: no protótipo o piscar da invulnerabilidade (`globalAlpha = 0.6`) era
  * sobrescrito pelo `pose()` seguinte e nunca tinha efeito; portanto não é desenhado aqui.
+ * `aura` (0 a 1): a rampa da fase 2 do chefe (`rampaDaFase2`); 0 = nenhuma aura (todo lutador comum e o chefe na fase 1).
  */
-export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMontado, arte: ArteLutador): void {
+export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMontado, arte: ArteLutador, aura = 0): void {
   const ch = chDaFicha(chBase, f.ficha);
   const P = f.pose;
   const pd = getPD(ch, P.name);
@@ -45,6 +47,8 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
   ctx.beginPath();
   ctx.ellipse(f.x, GROUND + 3, deitado ? 105 : Math.max(26, 66 - air * 0.12), deitado ? 11 : 10, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  if (aura > 0) desenharAuraChefe(ctx, f, aura, ch.fire[0], ch.scale);
 
   if (P.glow > 0.01) {
     // energia da magia

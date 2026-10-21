@@ -23,8 +23,8 @@ describe('dados de produção: nada trivial nem degenerado', () => {
   });
   const menorBarra = Math.min(...ROSTER.map((id) => prod[id].chefe?.hpPorBarra ?? prod[id].hp), ...ROSTER.map((id) => prod[id].hp));
 
-  it('hp, pow e spd finitos e dentro de uma faixa sã em todas as fichas; 9 lutadores', () => {
-    expect(ROSTER).toHaveLength(9);
+  it('hp, pow e spd finitos e dentro de uma faixa sã em todas as fichas; 10 lutadores', () => {
+    expect(ROSTER).toHaveLength(10);
     for (const { rot, v } of variantes) {
       expect(Number.isFinite(v.hp) && v.hp >= 60 && v.hp <= 160, `${rot} hp ${v.hp}`).toBe(true);
       expect(Number.isFinite(v.pow) && v.pow >= 0.6 && v.pow <= 1.6, `${rot} pow ${v.pow}`).toBe(true);

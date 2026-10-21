@@ -22,7 +22,7 @@ import { montarTodos } from './_lutadores';
 
 const base = montarTodos();
 const BAATAR = 'baatar' as IdLutador;
-const CFG: ConfigChefe = { barras: 2, hpPorBarra: 75, fichaFase1: 'chefe', fichaFase2: 'chefe2', danca: { duracao: 90 }, bonusVitoria: 7777 };
+const CFG: ConfigChefe = { barras: 2, hpPorBarra: 75, fichaFase1: 'chefe', fichaFase2: 'chefe2', cena: { duracao: 90, poses: ['devekh0', 'devekh1', 'devekh2'] }, bonusVitoria: 7777 };
 
 function poseWei() {
   const url = new URL('../../public/assets/lutadores/wei-long/atlas.json', import.meta.url);
@@ -201,7 +201,7 @@ describe('troca de barra em estados raros do chefe', () => {
     const hpJogador = g.p1.hp;
     const todos: EventoLuta[] = [];
     for (let i = 0; i < 200; i++) todos.push(...l.passo());
-    expect(etapas(todos)).toEqual(['troca', 'danca', 'retomada']);
+    expect(etapas(todos)).toEqual(['troca', 'cena', 'retomada']);
     expect(tipos(todos, 'throw')).toHaveLength(0);
     expect(g.p1.hp).toBe(hpJogador);
     expect(c.move === 'throw').toBe(false);
@@ -237,7 +237,7 @@ describe('troca de barra em estados raros do chefe', () => {
     expect(c.gotHits).toBe(0);
     // e a cena vem depois, uma só vez
     const resto = ateACena(l);
-    expect(etapas(resto)).toEqual(['danca']);
+    expect(etapas(resto)).toEqual(['cena']);
   });
 
   it('arremesso do jogador com o tremor desligado: a troca congela 20 ticks e não treme (shake 0)', () => {
@@ -295,7 +295,7 @@ describe('troca de barra em estados raros do chefe', () => {
       expect(c.ficha).toBe('chefe2');
       expect(c.state).toBe('idle');
     }
-    expect(todas).toEqual(['troca', 'danca', 'retomada', 'troca', 'danca', 'retomada']);
+    expect(todas).toEqual(['troca', 'cena', 'retomada', 'troca', 'cena', 'retomada']);
     expect([c.barras, c.hp]).toEqual([1, 75]);
     c.hp = 0;
     expect(g.resolverVidaZerada(c, g.p1)).toBe(true); // a terceira vida zerada é KO
@@ -629,7 +629,7 @@ describe('Game/Fighter reaproveitados entre lutas', () => {
     ateOFimDaCena(l);
     expect(l.g.p2.ficha).toBe('chefe2');
 
-    const cfg3: ConfigChefe = { ...CFG, barras: TRES, hpPorBarra: 40, fichaFase1: 'chefe2', fichaFase2: 'chefe', danca: { duracao: 30 }, bonusVitoria: 1 };
+    const cfg3: ConfigChefe = { ...CFG, barras: TRES, hpPorBarra: 40, fichaFase1: 'chefe2', fichaFase2: 'chefe', cena: { duracao: 30, poses: ['devekh0', 'devekh1', 'devekh2'] }, bonusVitoria: 1 };
     const l3 = comElenco(montar({ chefe: cfg3 }));
     const g = new Game({ lutadores: l3, rng: criarRng(3) });
     g.setup({ mode: 'versus', c1: 'hayato', c2: BAATAR, chefe: true, cpu: 1 }, { ...AJUSTES });
@@ -803,7 +803,7 @@ describe('determinismo', () => {
   it('e a luta determinística realmente passa por troca, dança e retomada (não prova determinismo no vazio)', () => {
     const vistos = new Set<string>();
     for (const linha of luta(2).split('\n')) for (const e of (JSON.parse(linha) as unknown[][])[6] as string[]) vistos.add(e);
-    expect([...vistos].filter((e) => ['troca', 'danca', 'retomada'].includes(e)).sort()).toEqual(['danca', 'retomada', 'troca']);
+    expect([...vistos].filter((e) => ['troca', 'cena', 'retomada'].includes(e)).sort()).toEqual(['cena', 'retomada', 'troca']);
   });
 });
 
@@ -871,15 +871,15 @@ describe('fuzz de invariantes: CPU e apertador de botão contra o chefe (golpes,
               placar.trocas++;
               expect(c.hpShown, onde).toBe(c.hp); // a barra nova enche no mesmo tick
             }
-            if (e.etapa === 'danca') placar.dancas++;
+            if (e.etapa === 'cena') placar.dancas++;
             if (e.etapa === 'retomada') placar.retomadas++;
           }
           if (e.tipo === 'throw') placar.throws++;
           if (e.tipo === 'armor') placar.armaduras++;
           if (e.tipo === 'ko' && e.defensor === 1) placar.mortesDoChefe++;
         }
-        // a ordem dos eventos do chefe, no round: troca, danca, retomada; sem repetir nem pular
-        expect(['', 'troca', 'troca,danca', 'troca,danca,retomada'], `${onde}: ${sequencia.join(',')}`).toContain(sequencia.join(','));
+        // a ordem dos eventos do chefe, no round: troca, cena, retomada; sem repetir nem pular
+        expect(['', 'troca', 'troca,cena', 'troca,cena,retomada'], `${onde}: ${sequencia.join(',')}`).toContain(sequencia.join(','));
         expect(trocasNoRound, onde).toBeLessThanOrEqual(c.barrasMax - 1);
         // barras e vida
         expect(c.barras, onde).toBeGreaterThanOrEqual(1);
@@ -901,9 +901,9 @@ describe('fuzz de invariantes: CPU e apertador de botão contra o chefe (golpes,
           expect(g.timer, onde).toBe(relogioDaCena);
           expect(c.cenaPendente, onde).toBe(false);
           expect(ev.filter((e) => e.tipo === 'hit' || e.tipo === 'armor' || e.tipo === 'block'), onde).toHaveLength(0);
-          expect(seguidosDeCena, onde).toBeLessThanOrEqual(CFG.danca.duracao);
+          expect(seguidosDeCena, onde).toBeLessThanOrEqual(CFG.cena.duracao);
         } else {
-          if (seguidosDeCena > 0 && g.phase === 'fight') expect(seguidosDeCena, onde).toBe(CFG.danca.duracao); // retomou: dançou os 90
+          if (seguidosDeCena > 0 && g.phase === 'fight') expect(seguidosDeCena, onde).toBe(CFG.cena.duracao); // retomou: dançou os 90
           seguidosDeCena = 0;
         }
       }

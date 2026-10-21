@@ -1,6 +1,7 @@
 import { ALTURA, GROUND, LARGURA, SH } from '../core/constantes';
 import type { EstiloProjetil, EventoLuta, IndiceLutador, ProjetilLeitura, TextoFlutuante } from '../core/contratos';
 import type { Rng } from '../core/rng';
+import { desenharProjetilAnel } from './projetil-anel';
 import { textoArcade } from './texto';
 import type { Ctx } from './tela';
 
@@ -393,6 +394,10 @@ export function desenharProjetil(ctx: Ctx, pr: ProjetilVisual): void {
   const t = pr.frame;
   const st = pr.estilo;
   const dir = Math.sign(pr.vx) || pr.dir;
+  if (st === 'anel') {
+    desenharProjetilAnel(ctx, pr);
+    return;
+  }
   ctx.save();
   ctx.translate(pr.x, pr.y);
   ctx.scale(pr.sc, pr.sy);

@@ -367,12 +367,13 @@ describe('Cinematica: desenho', () => {
   });
 });
 
-describe('os 11 estilos e a tabela dos 28 especiais', () => {
+describe('os 12 estilos e a tabela dos 33 especiais', () => {
   const PRIM = new Set(['fill', 'stroke', 'fillRect', 'strokeRect', 'drawImage']);
 
-  it('são 28 entradas, as mesmas da tabela de apresentação do motor (id, ficha, golpe) e o título é o mv.name exato', () => {
-    expect(CHAVES_IDENTIDADE).toHaveLength(28);
+  it('são 33 entradas (28 + as 5 do ZENON), as mesmas da tabela de apresentação do motor (id, ficha, golpe) e o título é o mv.name exato', () => {
+    expect(CHAVES_IDENTIDADE).toHaveLength(33);
     const doMotor = todasAsApresentacoes().map((c) => `${c.id}.${c.ficha ?? 'base'}.${c.golpe}`).sort();
+    expect(doMotor).toHaveLength(33);
     expect(CHAVES_IDENTIDADE.slice().sort()).toEqual(doMotor);
     for (const chave of CHAVES_IDENTIDADE) {
       const [id, fichaS, golpe] = chave.split('.') as [IdLutador, string, string];
@@ -383,13 +384,13 @@ describe('os 11 estilos e a tabela dos 28 especiais', () => {
     }
   });
 
-  it('cada lutador tem estilo exclusivo (NILA e BAATAR um por ficha) e os 11 estilos aparecem', () => {
+  it('cada lutador tem estilo exclusivo (NILA e BAATAR um por ficha) e os 12 estilos aparecem (o E12 é só do ZENON, nas duas fichas)', () => {
     const porEstilo = new Map<EstiloId, Set<string>>();
     for (const [chave, id] of Object.entries(IDENTIDADES)) {
       const dono = chave.split('.')[0] as string;
       (porEstilo.get(id.estilo) ?? porEstilo.set(id.estilo, new Set()).get(id.estilo))?.add(dono);
     }
-    expect([...porEstilo.keys()].sort()).toEqual(['E1', 'E10', 'E11', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9']);
+    expect([...porEstilo.keys()].sort()).toEqual(['E1', 'E10', 'E11', 'E12', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9']);
     for (const [estilo, donos] of porEstilo) expect(donos.size, `${estilo} em ${[...donos]}`).toBe(1);
   });
 

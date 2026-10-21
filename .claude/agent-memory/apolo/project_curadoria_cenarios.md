@@ -19,4 +19,7 @@ lutador vai de 8,8% a 91,2% da largura (clamp 60..900 de 960, fundo com 1020 de 
 - Limpar canto de chão pintado: translação de terra limpa da mesma linha (espelho cria mancha simétrica), rampa
   lateral larga (120) e rampa de topo curta (30) — topo longo traz o objeto de volta como fantasma. Em piso de lajes
   com perspectiva simétrica, espelho do canto oposto funciona; ponha a costura numa junta.
+- Lutador escuro em piso escuro (ZENON no `gr`, 2026-10-21): mediana de luminância bota 0,012 x piso 0,0115 = 1,01:1.
+  Conserto sem crédito: `scratchpad/apolo/piso2.ps1` (levanta o preto com tinta fria A=50/48/66 só abaixo da borda do piso)
+  → 1,85:1 sem perder a noite; cinza neutro fica "leitoso". `chamas.ps1` acha os braseiros (o `gr` tem 6, a spec previa 8).
 - Ver também [[project-curadoria-sprites]] para os scripts System.Drawing via PowerShell.

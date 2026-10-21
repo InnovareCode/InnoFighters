@@ -66,7 +66,8 @@ export function sonsDoEvento(ev: EventoLuta): ChamadaSom[] {
     // --- E3: só métodos que o AudioSys já tem (nenhum som novo sintetizado) ---
     case 'fase-chefe':
       if (ev.etapa === 'troca') return [{ metodo: 'fireballHit', args: [] }];
-      if (ev.etapa === 'danca') return [{ metodo: 'introWhoosh', args: [] }];
+      // A cena vira a trilha do chefão para a fase 2 (`AudioSys.musicaDaFase`; sem efeito se a trilha da luta não é a do chefão).
+      if (ev.etapa === 'cena') return [{ metodo: 'introWhoosh', args: [] }, { metodo: 'musicaDaFase', args: [2] }];
       return [{ metodo: 'fight', args: [] }];
     case 'parry':
       return [{ metodo: 'block', args: [] }];

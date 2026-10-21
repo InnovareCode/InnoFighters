@@ -85,6 +85,16 @@ export type DicaIa = {
   limite?: number;
 };
 
+/**
+ * (ZENON, spec-chefao-zenon §2) Cena de poses por tempo: `poses[i]` vale do tick floor(i·duracao/n) ao próximo; a última
+ * segura até o fim. Dois consumidores, um tipo: a cena de fase 2 do chefe (`ConfigChefe.cena`, no motor) e as poses de
+ * entrada/vitória (`APRESENTACAO`, só desenho).
+ */
+export type CenaDef = { duracao: number; poses: readonly string[] };
+
+/** Trilha da luta de chefe (src/audio, spec §5). Ausente = a trilha de luta de sempre. */
+export type TrilhaChefe = 'chefe';
+
 /** Configuração da luta de chefe de um lutador (docs/mecanicas-e3.md §3.1). Só vale com `ConfigPartida.chefe`. */
 export type ConfigChefe = {
   barras: 2;
@@ -94,11 +104,20 @@ export type ConfigChefe = {
   fichaFase1: string;
   /** Ficha ativa na fase 2, depois da cena. */
   fichaFase2: string;
-  /** Dança da Águia: ticks entre a troca de barra e a retomada. */
-  danca: { duracao: number };
+  /** Cena da fase 2 (era `danca`): `duracao` ticks entre a troca de barra e a retomada, e as poses do chefe nela. */
+  cena: CenaDef;
   /** Pontos para quem derrota o chefe (valor final na E6). */
   bonusVitoria: number;
+  /** Trilha da luta de chefe (spec §5). Ausente = 'fight' (a de hoje). Tirar o campo é o rollback. */
+  trilha?: TrilhaChefe;
 };
+
+/**
+ * (ZENON, spec §1) TRIBUTO/DECRETO: no acerto tira `acerto` de energia do rival e dá ao atacante; na defesa (bloqueio),
+ * `defesa`. Sem escala por `pow`. Só vale em golpe corpo a corpo de UM acerto; `montar` rejeita com `proj`, `hits > 1`, `throw`
+ * ou valores fora de 0 ≤ defesa ≤ acerto ≤ MAX_EN.
+ */
+export type DrenaEnergiaDef = { acerto: number; defesa: number };
 
 export type ProjetilDef = {
   dmg: number;
@@ -177,6 +196,8 @@ export type Golpe = {
   troca?: { ficha: string | null };
   /** Dica de CPU (ver `DicaIa`). */
   ia?: DicaIa;
+  /** (ZENON) Imposto de energia no acerto/bloqueio (ver `DrenaEnergiaDef`). */
+  drenaEnergia?: DrenaEnergiaDef;
   // --- especiais ---
   name?: string;
   info?: string;
@@ -206,7 +227,7 @@ export type EspeciaisLutador = Record<NomeEspecial, Golpe>;
 /** Ficha: variação do lutador (postura da NILA, fases do chefe). Sobrescreve (raso) campos do `LutadorDef` base. */
 export type FichaDef = Partial<Omit<LutadorDef, 'id' | 'fichas' | 'chefe'>>;
 
-export type IdCenario = 'jp' | 'cn' | 'kr' | 'br' | 'ng' | 'mx' | 'fr' | 'in' | 'mn';
+export type IdCenario = 'jp' | 'cn' | 'kr' | 'br' | 'ng' | 'mx' | 'fr' | 'in' | 'mn' | 'gr';
 
 /** Dados estáticos de um lutador (CHARS do protótipo, sem o que é derivado do atlas). */
 export type LutadorDef = {
@@ -246,8 +267,8 @@ export type LutadorDef = {
   reach?: number;
   mods: ModsGolpes;
   especiais: EspeciaisLutador;
-  /** Ajustes de animação por especial quando a folha pede outra sequência (CHAR_ANIM). */
-  anim?: Partial<Record<NomeEspecial | 'sResp', Anim>>;
+  /** Ajustes de animação por especial quando a folha pede outra sequência (CHAR_ANIM). `throw` (ZENON): arte própria do agarrão comum. */
+  anim?: Partial<Record<NomeEspecial | 'sResp' | 'throw', Anim>>;
   /**
    * (S5) Pose por ficha: nome lógico -> pose do atlas que SUBSTITUI a pose própria (ex.: `idle0 -> sarpaIdle0`). Só vale
    * se o atlas tem a pose; senão `getPD` segue a cadeia de sempre. Diferente de `alias` (que só entra quando falta).
@@ -260,6 +281,12 @@ export type LutadorDef = {
    * Não vale agachado, `rente`, no ar nem em golpe: esses estados usam poses que não mudam de tamanho.
    */
   alturaEmPe?: number;
+  /**
+   * (ZENON) Altura (px logicos acima dos pes, ja na escala do lutador) em que o projetil nasce. Ausente = a da ponta de `special`/`sa1`
+   * (conta de sempre, bit a bit). A 1,36 de escala a mao do `sa1` fica a ~280 px do chao e a caixa do projetil (60 px) passava por cima da
+   * cabeca de quem tem escala 1,0 (hurtbox em pe com topo a 254 px): o SELO nunca acertava.
+   */
+  alturaDoProjetil?: number;
   // --- E3 ---
   /** Golpes extras que nenhuma entrada alcança (ex.: `sResp` da CAMILLE). */
   extras?: Partial<Record<'sResp', Golpe>>;

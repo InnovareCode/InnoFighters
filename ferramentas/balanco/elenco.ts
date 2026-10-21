@@ -41,12 +41,12 @@ export { ROSTER };
  * (`npm run balanco -- --ajustes '{"wei-long":{"hp":100}}'`). Nada é gravado; os relatórios saem em `relatorios/` e levam o
  * ajuste nos parâmetros, então nunca se confundem com a rodada de referência.
  *
- * Chave = `<id>` (ficha base) ou `<id>/<ficha>`. Campos: números do lutador (`hp`, `pow`, `spd`, `jump`), `moves`
+ * Chave = `<id>` (ficha base) ou `<id>/<ficha>`. Campos: números do lutador (`hp`, `pow`, `spd`, `jump`, `alturaEmPe`), `moves`
  * (`{ "sFire": { "dmg": 12, "S": 8, "proj": { "dmg": 9 } } }`) e `chefe` (`{ "hpPorBarra": 60 }`, só na ficha base).
  */
-export type AjustesElenco = Record<string, { hp?: number; pow?: number; spd?: number; jump?: number; moves?: Record<string, Record<string, unknown>>; chefe?: Record<string, number> }>;
+export type AjustesElenco = Record<string, { hp?: number; pow?: number; spd?: number; jump?: number; alturaEmPe?: number; moves?: Record<string, Record<string, unknown>>; chefe?: Record<string, number> }>;
 
-const CAMPOS_NUMERICOS = ['hp', 'pow', 'spd', 'jump'] as const;
+const CAMPOS_NUMERICOS = ['hp', 'pow', 'spd', 'jump', 'alturaEmPe'] as const;
 
 export function aplicarAjustes(elenco: Elenco, ajustes: AjustesElenco): void {
   for (const [alvo, patch] of Object.entries(ajustes)) {

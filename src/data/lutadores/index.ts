@@ -10,6 +10,7 @@ import { HAYATO } from './hayato';
 import { MIN_JI } from './min-ji';
 import { NILA } from './nila';
 import { WEI_LONG } from './wei-long';
+import { ZENON_DEF } from './zenon';
 
 /*
  * Papéis dos lutadores (docs/plano-expansao.md 1.2). Antes o ROSTER acumulava todos; agora cada lista tem um dono:
@@ -27,6 +28,7 @@ export const ROSTER: readonly IdLutador[] = [
   'hayato', 'wei-long', 'min-ji', 'caio',
   'aminu', 'centella', 'camille', 'nila',
   'baatar',
+  'zenon',
 ];
 
 /*
@@ -38,6 +40,9 @@ export { CHEFE, FILA_DESBLOQUEIO, INICIAIS } from '../../meta/regras';
 /** Quem aparece no título e na abertura: só os liberados de fábrica (não estraga a surpresa dos outros). */
 export const VITRINE: readonly IdLutador[] = INICIAIS_LOCAL;
 
+/** O chefão final (`CHEFE`): a luta de chefe usa as fichas `chefe`/`chefe2`; fora dela é jogável comum (D-Z1). */
+export const ZENON: LutadorDef = { ...ZENON_DEF, id: 'zenon' };
+
 export const LUTADORES: Readonly<Record<IdLutador, LutadorDef>> = {
   hayato: HAYATO,
   'wei-long': WEI_LONG,
@@ -48,6 +53,7 @@ export const LUTADORES: Readonly<Record<IdLutador, LutadorDef>> = {
   camille: CAMILLE,
   nila: NILA,
   baatar: BAATAR,
+  zenon: ZENON,
 };
 
 export { AMINU, BAATAR, CAIO, CAMILLE, CENTELLA, HAYATO, MERGULHO_DA_AGUIA, MIN_JI, NILA, WEI_LONG };

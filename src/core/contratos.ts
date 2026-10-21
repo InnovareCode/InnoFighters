@@ -122,7 +122,7 @@ export type IndiceLutador = 0 | 1;
  * na ordem da grade: a fila de desbloqueio (aminu, centella, camille, nila, baatar; o BAATAR deixou de ser o chefão). Esta lista é a ordem do
  * `ROSTER` e o que o save reconhece: id fora dela é "desconhecido" (build de onda anterior), ver `src/meta/progresso.ts`.
  */
-export const IDS_LUTADORES = ['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar'] as const;
+export const IDS_LUTADORES = ['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar', 'zenon'] as const;
 export type IdLutador = (typeof IDS_LUTADORES)[number];
 
 /** Máquina de estados do `Fighter` do protótipo (`this.state`). */
@@ -227,7 +227,8 @@ export type LutadorLeitura = {
   esquiva?: 0 | 1 | -1;
 };
 
-export type EstiloProjetil = 'orb' | 'wave' | 'blade' | 'boomerang';
+/** `anel`: só o ZENON (SELO DO ARCONTE / SELO MAIOR): três elipses concêntricas, núcleo ônix e borda em brilho (render/projetil-anel.ts). */
+export type EstiloProjetil = 'orb' | 'wave' | 'blade' | 'boomerang' | 'anel';
 
 export type ProjetilLeitura = {
   id: number;
@@ -299,7 +300,7 @@ export type SomImpacto = 'punch' | 'kick' | 'fireballHit';
  *  fase-chefe   -> etapa 'troca': a barra do chefe acabou e uma nova encheu. Sai ANTES do `hit` do mesmo tick.
  *                  Receita: flash branco + faíscas no chefe, tremor (já em `shake`), som grave de impacto, animação
  *                  de "barra nova enchendo" no HUD. Cena e ficha ainda NÃO mudaram.
- *                  etapa 'danca': começou a cena (fase 'cena-chefe', relógio parado): escurece o céu da arena, faixa.
+ *                  etapa 'cena' (era 'danca'): começou a cena (fase 'cena-chefe', relógio parado): escurece o céu da arena, faixa.
  *                  etapa 'retomada': a cena acabou e a ficha da fase 2 está ativa: desliga a faixa e o escurecimento.
  *  parry        -> (S4) faíscas 14 brancas + rajada em (x, y) + som de bloqueio agudo + texto 'PARADA!'. Sai NO LUGAR de
  *                  block/hit (o golpe foi anulado); o atacante entra em `hit` e o defensor em golpe `sResp` (pose do fouetté).
@@ -357,6 +358,8 @@ export type EventoLuta =
       /** Defesa de um ESPECIAL: o golpe (chave de ch.moves ou do projétil) e `especial: true`. Sem número, sem contador (B11). */
       golpe?: string;
       especial?: true;
+      /** ZENON (`drenaEnergia`): energia que o golpe tirou do defensor no bloqueio (> 0) e deu ao atacante. Ausente = não houve dreno. */
+      dreno?: number;
     }
   | {
       tipo: 'armor';
@@ -401,6 +404,8 @@ export type EventoLuta =
       especial?: true;
       /** Golpe que acertou (chave de ch.moves do atacante; num projétil, o golpe que o lançou). */
       golpe?: string;
+      /** ZENON (`drenaEnergia`): energia que este acerto tirou do defensor (> 0) e deu ao atacante. Ausente = não houve dreno. */
+      dreno?: number;
       /** Nível da carga do MASHI neste acerto (1..3). Só em golpe `carga`. */
       nivelCarga?: 1 | 2 | 3;
     }
@@ -452,6 +457,8 @@ export type EventoLuta =
       texto: TextoFlutuante;
       golpe?: string;
       especial?: true;
+      /** ZENON: dreno de energia no bloqueio quebrado (ver `block.dreno`). */
+      dreno?: number;
     }
   | { tipo: 'carga'; lutador: IndiceLutador; nivel: 1 | 2 | 3 }
   | { tipo: 'rebote'; lutador: IndiceLutador; x: number }
@@ -525,11 +532,11 @@ export type LeituraLuta = {
 // ---------------------------------------------------------------------------
 
 /** Etapas da luta de chefe (docs/mecanicas-e3.md §3). */
-export type EtapaFaseChefe = 'troca' | 'danca' | 'retomada';
+export type EtapaFaseChefe = 'troca' | 'cena' | 'retomada';
 
 /**
  * Evento do chefe. `lutador` = o chefe. `barrasRestantes` = barras DEPOIS do evento (1 na troca da 2ª para a 1ª;
- * nas etapas 'danca' e 'retomada' repete o valor atual). ATENÇÃO (UI): sai uma vez por etapa, então quem só quer o
+ * nas etapas 'cena' e 'retomada' repete o valor atual). ATENÇÃO (UI): sai uma vez por etapa, então quem só quer o
  * flash da troca de barra deve filtrar `etapa === 'troca'`.
  */
 export type EventoFaseChefe = {

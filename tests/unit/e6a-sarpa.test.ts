@@ -105,10 +105,11 @@ describe('SARPA: hurtbox em pé proporcional ao sprite', () => {
     }
   });
 
-  it('a GAJA (ficha base) e os outros 8 lutadores têm a caixa de sempre, bit a bit', () => {
+  it('a GAJA (ficha base) e os outros 8 lutadores (o ZENON tem a dele: 1,25) têm a caixa de sempre, bit a bit', () => {
     expect(caixaDe('nila', null, 'idle')).toEqual(cheia);
     expect(cheia.h).toBe(SH * 0.96);
-    for (const id of Object.keys(elenco) as IdLutador[]) {
+    expect(elenco['zenon' as IdLutador].alturaEmPe).toBe(1.25);
+    for (const id of (Object.keys(elenco) as IdLutador[]).filter((x) => x !== ('zenon' as IdLutador))) {
       expect(elenco[id].alturaEmPe, id).toBeUndefined();
       for (const e of ['idle', 'walk', 'block'] as const) expect(caixaDe(id, null, e), `${id} ${e}`).toEqual(cheia);
     }

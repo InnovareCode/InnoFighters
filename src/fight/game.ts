@@ -17,7 +17,7 @@ import type { Rng } from '../core/rng';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { PROJ_BASE } from '../data/base-moves';
 import type { LutadorMontado } from '../data/montar';
-import type { ContraDef, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
+import type { ContraDef, DrenaEnergiaDef, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
 import { NO_INPUT, cpuInput, perfilChefe } from './cpu';
 import { Fighter, type PartidaParaLutador } from './fighter';
@@ -86,6 +86,8 @@ type AtaqueAcerto = {
   golpe: string | undefined;
   especial: boolean;
   nivelCarga: 0 | 1 | 2 | 3;
+  /** ZENON: imposto de energia no acerto/bloqueio (TRIBUTO, DECRETO). Projétil e golpe de vários acertos nunca têm (`montar` recusa). */
+  drenaEnergia: DrenaEnergiaDef | undefined;
 };
 
 /** Campos de cinemática que os eventos de acerto/defesa levam (só o que existe: `exactOptionalPropertyTypes`). */
@@ -122,6 +124,7 @@ const noAtaque = (mv: GolpeMontado, atacante: Fighter): AtaqueAcerto => {
     golpe: mv.id,
     especial: mv.id[0] === 's',
     nivelCarga: mv.carga ? atacante.nivelCarga : 0,
+    drenaEnergia: mv.drenaEnergia,
   };
 };
 
@@ -454,7 +457,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   }
 
   /**
-   * Dança da Águia (E3 §3.3). Começa no primeiro tick em que a luta segue em 'fight' e o chefe, com a barra já trocada
+   * Cena da fase 2 do chefe (E3 §3.3, era a Dança da Águia; ZENON: spec §2). Começa no primeiro tick em que a luta segue em 'fight' e o chefe, com a barra já trocada
    * (`cenaPendente`), está livre no chão (depois de levantar). KO ou fim de tempo no mesmo tick vencem: a fase já não é
    * 'fight' e a cena não começa. Durante a cena: relógio parado, sem acertos, sem projéteis, sem entradas.
    */
@@ -473,15 +476,15 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.t = 0;
     this.projectiles = [];
     this.hitstop = 0;
-    this.emitir({ tipo: 'fase-chefe', lutador: c.indice, etapa: 'danca', barrasRestantes: c.barras });
+    this.emitir({ tipo: 'fase-chefe', lutador: c.indice, etapa: 'cena', barrasRestantes: c.barras });
   }
 
-  /** Fim da cena: o chefe entra na ficha da fase 2 e a luta volta a andar. A cena dura `danca.duracao` ticks. */
+  /** Fim da cena: o chefe entra na ficha da fase 2 e a luta volta a andar. A cena dura `cena.duracao` ticks. */
   private andarCenaDoChefe(): void {
     const c = this.chefeDaLuta;
     const cfg = c?.cfgChefe;
     this.projectiles = []; // um golpe do jogador que terminava durante a cena pode ter soltado projétil
-    if (!c || !cfg || this.t < cfg.danca.duracao) return;
+    if (!c || !cfg || this.t < cfg.cena.duracao) return;
     c.trocarFicha(cfg.fichaFase2);
     c.setState('idle');
     this.aplicarPerfilDoChefe(true);
@@ -625,6 +628,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
             golpe: pr.golpe,
             especial: pr.especial === true,
             nivelCarga: 0,
+            drenaEnergia: undefined, // projétil não drena (o SELO é projétil)
           },
           box,
         );
@@ -739,6 +743,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       this.hitstop = quebrou ? 6 : 2;
       a.en = Math.min(MAX_EN, a.en + 3);
       d.en = Math.min(MAX_EN, d.en + 4);
+      const drenoDefesa = this.cobrarDreno(a, d, mv.drenaEnergia, 'defesa'); // depois dos ganhos do ramo (spec ZENON §1.2)
       if (quebrou) {
         this.emitir({
           tipo: 'quebra-guarda',
@@ -748,6 +753,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
           y: oy,
           texto: textoFlutuante(d.x, d.y - SH * 0.95, 'GUARDA QUEBRADA!', '#ff5a4a', 22),
           ...marcaDoGolpe(mv),
+          ...(drenoDefesa > 0 ? { dreno: drenoDefesa } : {}),
         });
         return;
       }
@@ -760,6 +766,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         dir: (-a.facing) as 1 | -1,
         texto: d.gotHits === 0 ? textoFlutuante(d.x, d.y - SH * 0.95, 'BLOQUEOU', '#9ad8ff', 18) : null,
         ...marcaDoGolpe(mv),
+        ...(drenoDefesa > 0 ? { dreno: drenoDefesa } : {}),
       });
       return;
     }
@@ -807,6 +814,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.trainInfo = { hits: d.gotHits, dmg: d.comboDmg };
     a.en = Math.min(MAX_EN, a.en + (mv.proj ? 4 : 8));
     d.en = Math.min(MAX_EN, d.en + 5);
+    const drenoAcerto = this.cobrarDreno(a, d, mv.drenaEnergia, 'acerto'); // depois dos ganhos do ramo (spec ZENON §1.2)
     d.flash = 8;
     d.move = null;
     const kill = this.resolverVidaZerada(d, a);
@@ -854,7 +862,22 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       dano: danoCausado,
       ...marcaDoGolpe(mv),
       ...(mv.nivelCarga > 0 ? { nivelCarga: mv.nivelCarga as 1 | 2 | 3 } : {}),
+      ...(drenoAcerto > 0 ? { dreno: drenoAcerto } : {}),
     });
+  }
+
+  /**
+   * (ZENON) Passa energia do defensor para o atacante: `k = min(d.en, valor)`, `d.en -= k`, `a.en = min(MAX_EN, a.en + k)`. Devolve `k`
+   * (0 = nada transferido). Só os dois ramos de `applyHit` que mexem em `en` (acerto e bloqueio) chamam; a armadura que absorve, a
+   * PARADE e a esquiva retornam antes. Sem `drenaEnergia` não toca em nada (o lock-step dos originais não vê).
+   */
+  private cobrarDreno(a: Fighter, d: Fighter, dreno: DrenaEnergiaDef | undefined, ramo: 'acerto' | 'defesa'): number {
+    if (!dreno) return 0;
+    const k = Math.min(d.en, dreno[ramo]);
+    if (!(k > 0)) return 0;
+    d.en -= k;
+    a.en = Math.min(MAX_EN, a.en + k);
+    return k;
   }
 
   /**

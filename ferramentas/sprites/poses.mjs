@@ -55,7 +55,11 @@ export const FRACAO_PE = 0.55;
 // (figura descartada: a pose não entra no atlas, mas a figura ainda conta para achar as 6/12 da folha).
 // ---------------------------------------------------------------------------------------------------------------
 
-/** Poses que não são do mapa canônico de 48 mas existem no motor (`jpunch`: folha 5; `devekh`/`dive`: BAATAR). */
+/**
+ * Poses que não são do mapa canônico de 48 mas existem no motor (`jpunch`: folha 5; `devekh`/`dive`: BAATAR). As poses próprias do ZENON
+ * (`entrada*`, `cena*`, `vitoria*`, `decreto*`, `sc2`, `grab*`) não entram aqui: saem só do layout dele e vão para o fim do manifesto
+ * (`executar.mjs` acrescenta as poses de células que não estão em ORDEM_COMPLETA); `decreto1` ganha ponta por exceção (lutadores.json).
+ */
 export const EXTRAS = ['jpunch', 'devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1'];
 
 /** Ordem do manifesto: as canônicas e depois as extras (as que o lutador não tiver simplesmente não saem). */
@@ -94,7 +98,34 @@ const LAYOUT_CHEFE = {
   },
 };
 
-export const LAYOUTS = { padrao: LAYOUT_PADRAO, chefe: LAYOUT_CHEFE };
+/**
+ * ZENON ARGYROS (1,36x, o chefão final). Mapa v2 do Apolo (docs/handoff-apolo-zenon-folhas.md §3 e §8): 10 folhas 3x2, S1 a S10, mais
+ * a folha de reposição ZR (só 2 células entram).
+ *  - S1 r1c2 é o mesmo desenho de r1c1 (2,4% de diferença): descartada; o laço de respiração é 821/832/836/832 (idle0, idle1=idle3, idle2).
+ *  - S3: a `cblock` falhou em 3 células de 2 gerações (saiu quase em pé): `cblock` é apelido do `crouch`; r1c3 descartada.
+ *  - S6: a rasteira da arte estendia a perna de TRÁS; a `sweep` vem da ZR r1c2 (bota da frente). S6 r2c2 descartada.
+ *  - ZR: r1c2 -> `sweep` (ponta `direita`, na bota) e r2c3 -> `jpunch` (cotovelada aérea, ponta `mao` = o cotovelo). As outras 4 reprovadas.
+ *  - `lk` é a cotovelada (S5) e `hk` o chute de bota (S6). `sa1`/`sa2` e `sb1`/`sb2` são o mesmo desenho (1 retângulo, 2 entradas).
+ *  - Fora do contrato da spec §12: `sc2` (TRIBUTO), `grab0`/`grab1` (agarrão comum), ligadas por `LutadorDef.anim`.
+ */
+const LAYOUT_ZENON = {
+  ids: ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 'zr'],
+  folhas: {
+    s1: { grade: GRADE_CHEFE, celulas: ['idle0', null, ['idle1', 'idle3'], 'idle2', 'walk0', 'walk1'] },
+    s2: { grade: GRADE_CHEFE, celulas: ['walk2', 'walk3', 'walk4', 'walk5', 'walk6', 'walk7'] },
+    s3: { grade: GRADE_CHEFE, celulas: [['crouch', 'cblock'], 'block', null, 'jsquat', 'jup', 'jtop'] },
+    s4: { grade: GRADE_CHEFE, celulas: ['jfall', 'land', 'hitH', 'hitB', 'kdAir', 'koFloor'] },
+    s5: { grade: GRADE_CHEFE, celulas: ['lp0', 'lp1', 'hp0', 'hp1', 'lk0', 'lk1'] },
+    s6: { grade: GRADE_CHEFE, celulas: ['hk0', 'hk1', 'clp', 'clk', null, 'upper'] },
+    s7: { grade: GRADE_CHEFE, celulas: ['sa0', ['sa1', 'sa2'], 'sa3', 'sb0', ['sb1', 'sb2'], 'sb3'] },
+    s8: { grade: GRADE_CHEFE, celulas: ['sc0', 'sc1', 'sc2', 'jkick', null, 'grab0'] },
+    s9: { grade: GRADE_CHEFE, celulas: ['decreto0', 'decreto1', 'decreto2', 'grab1', ['vitoria0', 'win'], 'vitoria1'] },
+    s10: { grade: GRADE_CHEFE, celulas: ['entrada0', 'entrada1', 'entrada2', 'cena0', 'cena1', 'cena2'] },
+    zr: { grade: GRADE_CHEFE, celulas: [null, 'sweep', null, null, null, 'jpunch'] },
+  },
+};
+
+export const LAYOUTS = { padrao: LAYOUT_PADRAO, chefe: LAYOUT_CHEFE, zenon: LAYOUT_ZENON };
 
 /** Uma célula (nome | lista | null) como lista de nomes (vazia = descartada). */
 export function nomesDaCelula(celula) {

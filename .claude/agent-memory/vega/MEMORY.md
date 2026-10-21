@@ -10,3 +10,4 @@
 - [E6a harness de balanço + SARPA](project_e6a_harness_balanco.md) — npm run balanco, --ajustes "e se", o que move a taxa, fidelidade dos originais, bug do sprites
 - [E6b balanceamento + V1/V2 esquiva](project_e6b_v1v2.md) — fixture dos 4 originais como oráculo, campos opcionais nos eventos, CPU da esquiva
 - [BAATAR vira normal](project_baatar_normal.md) — CHEFE null temporário, fixtura do chefe antigo em testes, MERGULHO dmg 10, dica de CPU x combo
+- [ZENON chefão Z1/Z4/Z5](project_zenon_chefao.md) — sprite alto x caixa de acerto, mods de ficha raso, âncora tronco descartada, harness com esquiva

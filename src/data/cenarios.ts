@@ -31,6 +31,8 @@ export const CENARIOS: Readonly<Record<IdCenario, CenarioDef>> = {
   fr: { id: 'fr', arquivo: 'assets/cenarios/cenario-fr.webp', nome: 'Velho Porto de Marselha, França', casa: 'camille', pes: PES_NO_CENARIO },
   in: { id: 'in', arquivo: 'assets/cenarios/cenario-in.webp', nome: 'Fort Kochi, Kerala, Índia', casa: 'nila', pes: PES_NO_CENARIO },
   mn: { id: 'mn', arquivo: 'assets/cenarios/cenario-mn.webp', nome: 'Estepe do Naadam, Mongólia', casa: 'baatar', pes: PES_NO_CENARIO },
+  // Anfiteatro do Arconte: a casa do chefão (ZENON). Fora do `CICLO_CENARIOS` e do padrão (sem spoiler); a fase 2 é só sobreposição de render.
+  gr: { id: 'gr', arquivo: 'assets/cenarios/cenario-gr.webp', nome: 'Anfiteatro do Arconte, Grécia', casa: 'zenon', pes: PES_NO_CENARIO },
 };
 
 /** Sequência do fundo da tela de título (STAGE_CYCLE): só os cenários dos lutadores liberados de fábrica (sem estragar a surpresa). */

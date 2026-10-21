@@ -414,12 +414,12 @@ test.describe('F3b: retratos na seleção', () => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
   });
 
-  test('os 9 retratos (HAYATO, MIN-JI e NILA novos) chegam e a seleção desenha os 9 liberados', async ({ page }) => {
+  test('os 10 retratos (HAYATO, MIN-JI e NILA novos, e o do ZENON) chegam e a seleção desenha os 10 liberados', async ({ page }) => {
     const erros = coletarErros(page);
     const urls = espiarAssets(page);
     await abrirJogo(page, 'expansao=1');
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); h.avancar(30); h.desenhar(); }");
-    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(9);
+    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(10);
     const retratos = await hook(page, '(h) => Object.fromEntries(Object.entries(h.mundo().elenco).map(([id, e]) => { const r = e.arte.retrato([0, 0, 1, 1]); return [id, r ? [r.imagem.width, r.imagem.height, r.recorte.join(",")] : null]; }))');
     for (const id of ['hayato', 'min-ji', 'nila']) {
       expect(retratos[id], id).not.toBeNull();

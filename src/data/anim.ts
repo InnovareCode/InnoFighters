@@ -51,7 +51,7 @@ const temAnimDeTipo = (t: string | undefined): t is TipoComAnim => t !== undefin
 
 /** Animação do golpe `n` de um lutador (animFor do protótipo; `anim` = LutadorDef.anim). */
 export function animFor(n: NomeGolpe, mv: Golpe, anim: LutadorDef['anim']): Anim {
-  const doLutador = n === 'sFire' || n === 'sDown' || n === 'sFwd' || n === 'sResp' ? anim?.[n] : undefined;
+  const doLutador = n === 'sFire' || n === 'sDown' || n === 'sFwd' || n === 'sResp' || n === 'throw' ? anim?.[n] : undefined;
   if (doLutador) return doLutador;
   const base = BASE_ANIM[n];
   if (base) return base;

@@ -71,7 +71,7 @@ describe('CHEFÃO: a esquiva e a Dança da Águia', () => {
     ev.push(...l.passo()); // a cena abre no 1º tick (o chefe estava livre)
     expect(l.g.phase).toBe('cena-chefe');
     for (let t = 0; t < 300 && l.g.phase === 'cena-chefe'; t++) ev.push(...l.passo());
-    expect(etapas(ev)).toEqual(['danca', 'retomada']);
+    expect(etapas(ev)).toEqual(['cena', 'retomada']);
     expect(l.g.phase).toBe('fight');
     expect(l.g.p2.state).not.toBe('cena');
     expect(ev.filter((e) => e.tipo === 'esquiva' || e.tipo === 'deny')).toHaveLength(0);

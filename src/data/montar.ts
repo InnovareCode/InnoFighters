@@ -1,7 +1,8 @@
-import { CORPO_PADRAO, SH_IDLE } from '../core/constantes';
+import { CORPO_PADRAO, MAX_EN, SH_IDLE } from '../core/constantes';
 import { animFor } from './anim';
 import { LADO_RETRATO } from './atlas';
 import { BASE_MOVES, NOMES_GOLPES_BASE } from './base-moves';
+import { validarCena } from './cena';
 import { getPD } from './poses';
 import type { CaixaGolpe, DicaIa, GolpeMontado, LutadorDef, NomeEspecial, NomeGolpe, Poses, ProjetilDef } from './tipos';
 
@@ -81,6 +82,16 @@ function validarParametrosE3(id: string, nome: NomeGolpe, mv: GolpeMontado, fich
     if (mv.type !== 'troca') throw new Error(`${onde}: troca só vale em type 'troca'`);
     if (t.ficha !== null && !fichas.includes(t.ficha)) throw new Error(`${onde}: troca para ficha desconhecida '${t.ficha}'`);
   }
+  // ZENON (TRIBUTO/DECRETO): `drenaEnergia` só nos dois ramos de applyHit que mexem em `en` (acerto e bloqueio) e em golpe de UM acerto
+  // corpo a corpo. Projétil, vários acertos e agarrão (que não passa por applyHit) falham ALTO: senão o dado dizia "drena" e não drenava.
+  const dr = mv.drenaEnergia;
+  if (dr) {
+    const ok = Number.isFinite(dr.acerto) && Number.isFinite(dr.defesa) && dr.acerto >= 0 && dr.acerto <= MAX_EN && dr.defesa >= 0 && dr.defesa <= dr.acerto;
+    if (!ok) throw new Error(`${onde}: drenaEnergia inválida (números finitos, 0 <= defesa <= acerto <= ${MAX_EN})`);
+    if (mv.proj || mv.type === 'fire') throw new Error(`${onde}: drenaEnergia não vale em projétil`);
+    if (mv.hits !== undefined && mv.hits > 1) throw new Error(`${onde}: drenaEnergia não vale em golpe de vários acertos (hits > 1)`);
+    if (mv.throw || mv.agarrao) throw new Error(`${onde}: drenaEnergia não vale em agarrão (ele não passa pelo ramo de acerto/bloqueio)`);
+  }
 }
 
 /**
@@ -91,6 +102,7 @@ export function montarLutador(def: LutadorDef, pd: Poses, fichasDoLutador?: read
   // `fichasDoLutador` só é passado na recursão das fichas: uma ficha não tem `fichas` próprias, mas o VADIVU dela aponta
   // para as do lutador (ou para a base, null).
   const nomesDeFichas = fichasDoLutador ?? Object.keys(def.fichas ?? {});
+  if (def.chefe) validarCena(`${def.id}.chefe`, def.chefe.cena);
   const idle = pd['idle0'] ?? pd['guard'];
   if (!idle) throw new Error(`${def.id}: atlas sem idle0/guard`);
   const g = pd['guard'] ?? pd['idle0'];
@@ -183,7 +195,7 @@ export function montarLutador(def: LutadorDef, pd: Poses, fichasDoLutador?: read
     sps: [moves.sFire, moves.sDown, moves.sFwd],
     proj: { ...projDef, cost: sFire.cost ?? 0, speed: projDef.sp },
     special: sFire.name ?? '',
-    spawn: { x: ((ponta.tipX ?? 150) - 30) * def.scale, y: (ponta.tipY ?? 150) * def.scale },
+    spawn: { x: ((ponta.tipX ?? 150) - 30) * def.scale, y: def.alturaDoProjetil ?? (ponta.tipY ?? 150) * def.scale },
     fichas,
     dicasIa,
   };

@@ -13,12 +13,12 @@ import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher,
 import { mundoFalso, mundoFalso9, navegadorFalso } from './_ui';
 
 const id = (s: string): IdLutador => s as IdLutador;
-// E5: as regras de producao ja sao as de 9 lutadores (a fixture `?expansao=1` com ids falsos nao e mais usada aqui).
-const R9 = REGRAS_PADRAO;
-// O BAATAR deixou de ser chefão (virou o 5º da fila) e o Zenon ainda não entrou: as regras de produção estão SEM chefão (`chefe: null`).
+// R9 = as regras de produção de ANTES do Zenon: 9 lutadores (o BAATAR é o 5º da fila) e SEM chefão. A mecânica da UI com 9 e a grade 3x3 seguem testadas
+// com ela (injetada); a produção de hoje tem 10 lutadores e o ZENON como chefão (grade de 10 = casa de honra: Lyra, Z2).
+const R9: Regras = { ...REGRAS_PADRAO, roster: REGRAS_PADRAO.roster.slice(0, 9), chefe: null };
 // A mecânica de chefão da UI (centro da grade, etapa de chefe, aviso do chefão, desbloqueio do chefão) segue testada com estas regras
-// injetadas, que reproduzem o desenho anterior (fila de 4 + um chefão fora da fila; o id é só um stand-in até o Zenon).
-const R9C: Regras = { ...REGRAS_PADRAO, fila: ['aminu', 'centella', 'camille', 'nila'], chefe: 'baatar' };
+// injetadas, que reproduzem o desenho anterior (fila de 4 + um chefão fora da fila; o id é só um stand-in de 9 lutadores).
+const R9C: Regras = { ...R9, fila: ['aminu', 'centella', 'camille', 'nila'], chefe: 'baatar' };
 const [A, B, C, D]: [IdLutador, IdLutador, IdLutador, IdLutador] = ['aminu', 'centella', 'camille', 'nila'];
 const CHEFE_FALSO: IdLutador = 'baatar';
 
@@ -210,7 +210,7 @@ describe('seleção com 9 lutadores (regras de produção, E5)', () => {
   });
 
   it('produção, save novo: os 4 iniciais liberados e os 5 da fila (BAATAR é o último) travados, na ordem do roster, sem casa de chefão', () => {
-    const t = navegadorFalso();
+    const t = navegadorFalso({}, R9);
     t.ui.pronto(mundoFalso());
     const s = t.ui.cenas.select as CenaSelect;
     s.enter({ mode: 'versus' });

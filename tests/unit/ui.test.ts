@@ -318,7 +318,7 @@ describe('seleção de lutadores (máquina de estados)', () => {
 });
 
 describe('dificuldade e campanha ARCADE', () => {
-  it('ARCADE: sorteia 5 rivais (sem repetir o seu lutador; sem chefão por enquanto) e abre a campanha com 3 créditos', () => {
+  it('ARCADE: sorteia 5 rivais (sem repetir o seu lutador) + o chefão ZENON no fim e abre a campanha com 3 créditos', () => {
     const t = navegadorFalso();
     t.ui.pronto(mundoFalso());
     const d = t.ui.cenas.diff as CenaDiff;
@@ -330,11 +330,13 @@ describe('dificuldade e campanha ARCADE', () => {
     expect(t.persist.settings.diff).toBe(2);
     expect(t.salvou.n).toBe(1);
     const run = t.ui.run!;
-    const rivais = run.etapas.map((e) => e.id);
-    expect(run.etapas).toHaveLength(5); // CHEFE null (o Zenon ainda não entrou): a escada tem só os 5 rivais
+    const rivais = run.etapas.slice(0, 5).map((e) => e.id);
+    expect(run.etapas).toHaveLength(6); // 5 rivais + o chefão ZENON
+    expect(run.etapas[5]).toEqual({ id: 'zenon', chefe: true });
     expect(new Set(rivais).size).toBe(5);
     expect(rivais.includes('caio')).toBe(false);
-    expect(run.etapas.some((e) => e.chefe)).toBe(false);
+    expect(rivais.includes('zenon')).toBe(false);
+    expect(run.etapas.slice(0, 5).some((e) => e.chefe)).toBe(false);
     expect(run).toMatchObject({ c1: 'caio', idx: 0, score: 0, continues: 3, diff: 2, cont: 0 });
     expect(ir[0]?.[0]).toBe('vs');
     expect((ir[0]?.[1] as { cfg: { c2: string; cpu: number } }).cfg).toMatchObject({ mode: 'arcade', c1: 'caio', c2: run.etapas[0]?.id, cpu: 2 });

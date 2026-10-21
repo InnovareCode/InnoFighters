@@ -209,9 +209,9 @@ test.describe('legibilidade do HUD no celular deitado (tamanho real em px CSS)',
     { width: 915, height: 412 },
     { width: 844, height: 390 },
   ]) {
-    test(`${tela.width}x${tela.height}: COM chefão de teste: etiqueta GAJA/SARPA, CHEFÃO e contador de barras com ~12 px CSS ou mais`, async ({ page }, info) => {
+    test(`${tela.width}x${tela.height}: chefão ZENON: etiqueta GAJA/SARPA, "CHEFÃO · O ARCONTE" e contador de barras com ~12 px CSS ou mais`, async ({ page }, info) => {
       const erros = coletarErros(page);
-      await abrir(page, tela, `&${CHEFE.query}`);
+      await abrir(page, tela, CHEFE.query ? `&${CHEFE.query}` : '');
       await instalarEspiaDeTextos(page);
       const cv = await page.locator('canvas#jogo').boundingBox();
       // o canvas 960x540 cabe na janela sem distorcer: escala CSS por px lógico
@@ -224,7 +224,7 @@ test.describe('legibilidade do HUD no celular deitado (tamanho real em px CSS)',
       info.annotations.push({ type: 'medido', description: `${tela.width}x${tela.height} canvas ${cv!.width}x${cv!.height}: ${JSON.stringify({ gaja, sarpa, comum })}` });
       expect(gaja['GAJA']).toBeGreaterThanOrEqual(12);
       expect(sarpa['SARPA']).toBeGreaterThanOrEqual(12);
-      expect(gaja['000000  CHEFÃO']).toBeGreaterThanOrEqual(12);
+      expect(gaja[CHEFE.rotulo]).toBeGreaterThanOrEqual(12);
       expect(gaja['×2']).toBeGreaterThanOrEqual(12);
       expect(gaja[CHEFE.nome]).toBeGreaterThanOrEqual(12);
       // as linhas dos lutadores comuns seguem as do protótipo (14 lógicos): ficam abaixo de 12 de propósito (fidelidade pixel a pixel)

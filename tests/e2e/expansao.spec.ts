@@ -2,14 +2,13 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { CHEFE, SEM_CHEFE, urlComChefe } from './_chefe';
+import { CHEFE, DESCRICAO_DO_ARCADE, GRADE_DE_PRODUCAO, PULAR_ENTRADA, urlComChefe } from './_chefe';
 
 /*
- * E4/E5 — Arcade, seleção 3x3 e desbloqueio, no jogo REAL de 9 lutadores (AMINU, CENTELLA, CAMILLE, NILA e BAATAR na fila de
- * desbloqueio). Dois jogos: o de PRODUÇÃO de hoje (sem chefão: Arcade de 5 etapas, BAATAR lutador normal na 9ª casa) e o COM
- * CHEFÃO DE TESTE (`?chefe=teste`, só em dev; ver `_chefe.ts`), que exercita a mecânica de chefão (casa central, aviso e VS de
- * chefe, HUD de barras, desbloqueio de chefe). O jogo de 4 (as 40 telas de fidelidade-ui e o ARCADE de 3 lutas de jogo.spec.ts)
- * roda com `?expansao=4`. O progresso é semeado direto no localStorage v2 (sem código de trapaça no jogo).
+ * E4/E5/Z2 — Arcade, seleção (3x3 + a CASA DE HONRA do chefão) e desbloqueio, no jogo REAL de 10 lutadores (AMINU, CENTELLA, CAMILLE, NILA e
+ * BAATAR na fila de desbloqueio; o ZENON é o chefão do ARCADE e, derrotado, jogável: ver `_chefe.ts`). O jogo de 4 (as 40 telas de
+ * fidelidade-ui e o ARCADE de 3 lutas de jogo.spec.ts) roda com `?expansao=4`. O progresso é semeado direto no localStorage v2 (sem
+ * código de trapaça no jogo).
  */
 
 test.describe.configure({ timeout: 120_000 });
@@ -69,15 +68,8 @@ const abrirCena = (page: Page, cena: string, args: unknown, ticks = 0): Promise<
     { cena, args, ticks },
   );
 
-/** A grade com o chefão de teste no centro (índice 4) e os demais na ordem do roster. */
-const GRADE_COM_CHEFE = (() => {
-  const g = ['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar'].filter((id) => id !== CHEFE.id);
-  g.splice(4, 0, CHEFE.id);
-  return g;
-})();
-
-test.describe('seleção 3x3 com estados', () => {
-  test('COM chefão: chefão no centro, travados, NOVO! e travado que não confirma', async ({ page }, info) => {
+test.describe('seleção de 10 (3x3 + casa de honra) com estados', () => {
+  test('PRODUÇÃO: o chefão na casa de honra ("???"), o BAATAR na 9ª, travados, NOVO! e travado que não confirma', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
     const erros = coletarErros(page);
     await semear(page, { desbloqueados: ['aminu'], zeradas: 1 });
@@ -85,62 +77,16 @@ test.describe('seleção 3x3 com estados', () => {
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await abrirCena(page, 'select', { mode: 'versus' }, 30);
 
-    const a = await hook(page, '(h) => { const s = h.ui.scene; return { grade: s.grade, novos: [...s.novos], vistos: h.persist.prog.vistos, cur: s.cur }; }');
-    expect(a.grade).toEqual(GRADE_COM_CHEFE);
+    const a = await hook(page, '(h) => { const s = h.ui.scene; return { grade: s.grade, novos: [...s.novos], vistos: h.persist.prog.vistos, cur: s.cur, chefe: h.ui.c.regras.chefe }; }');
+    expect(a.chefe).toBe(CHEFE.id);
+    expect(a.grade).toEqual([...GRADE_DE_PRODUCAO]); // os 9 regulares na ordem do roster (BAATAR na 9ª casa) e o chefão por último: a casa de honra
     expect(a.novos).toEqual(['aminu']);
     expect(a.vistos).toEqual(['aminu']); // ao abrir já conta como visto
     expect(JSON.parse(await page.evaluate(() => window.localStorage.getItem('inno-fighters-v2')!)).prog.vistos).toEqual(['aminu']);
     expect(a.cur).toEqual([0, 1]);
-    await foto(page, 'selecao-3x3-inicio');
+    await foto(page, 'selecao-10-inicio');
 
-    // 3 colunas medidas no navegador: 9 casas dentro do canvas, sem sobreposição, e o chefão no centro
-    const caixas = await hook(page, '(h) => Array.from({ length: 9 }, (_, i) => h.ui.scene.tileRect(i))');
-    expect(caixas[4].x + caixas[4].w / 2).toBe(480);
-    for (const c of caixas) expect(c.w).toBe(80);
-
-    // teclas reais: ↓ ↓ = NOVO B (travado). O cursor anda por cima, mas Enter não confirma
-    await page.keyboard.press('ArrowDown');
-    await page.keyboard.press('ArrowDown');
-    expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe('centella');
-    await page.keyboard.press('Enter');
-    expect(await hook(page, '(h) => ({ lock: h.ui.scene.lock, done: h.ui.scene.done })')).toEqual({ lock: [false, false], done: 0 });
-    await hook(page, '(h) => h.desenhar()');
-    await foto(page, 'selecao-3x3-travado');
-    // chefão oculto
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('ArrowRight');
-    expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe(CHEFE.id);
-    await page.keyboard.press('Enter');
-    expect((await hook(page, '(h) => h.ui.scene.lock'))[0]).toBe(false);
-    await hook(page, '(h) => h.desenhar()');
-    await foto(page, 'selecao-3x3-chefe-oculto');
-    // AMINU (liberado, com selo NOVO!) confirma
-    await page.keyboard.press('ArrowRight');
-    expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe('aminu');
-    await page.keyboard.press('Enter');
-    expect((await hook(page, '(h) => h.ui.scene.lock'))[0]).toBe(true);
-
-    // reabrir a seleção: o selo NOVO! já não aparece
-    await abrirCena(page, 'select', { mode: 'versus' }, 5);
-    expect(await hook(page, '(h) => [...h.ui.scene.novos]')).toEqual([]);
-    expect(erros).toEqual([]);
-  });
-
-  test('PRODUÇÃO (sem chefão): BAATAR é a 9ª casa, travado até a 5ª zerada; nenhuma casa é "???"', async ({ page }, info) => {
-    test.skip(info.project.name !== 'desktop', 'só no desktop');
-    const erros = coletarErros(page);
-    await semear(page, { desbloqueados: ['aminu'], zeradas: 1 });
-    await page.goto('/?seed=3&manual=1');
-    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    await abrirCena(page, 'select', { mode: 'versus' }, 30);
-
-    const a = await hook(page, '(h) => { const s = h.ui.scene; return { grade: s.grade, novos: [...s.novos], cur: s.cur, chefe: h.ui.c.regras.chefe }; }');
-    expect(a.chefe).toBeNull();
-    expect(a.grade).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar']); // ordem do roster, sem casa central de chefão
-    expect(a.novos).toEqual(['aminu']);
-    expect(a.cur).toEqual([0, 1]);
-
-    // estados medidos com o código real da grade: nenhum chefe-oculto; o BAATAR é um lutador comum, travado como os da fila
+    // estados medidos com o código real da grade: o chefão é "???" (chefe-oculto); o BAATAR é lutador comum, travado como os da fila
     const estados = await page.evaluate(async () => {
       const h = (window as any).__inno;
       const { estadoDaCasa } = await import(/* @vite-ignore */ ('/src/ui/grade.ts' as string));
@@ -150,37 +96,51 @@ test.describe('seleção 3x3 com estados', () => {
     });
     expect(estados).toEqual({
       hayato: 'liberado', 'wei-long': 'liberado', 'min-ji': 'liberado', caio: 'liberado',
-      aminu: 'novo', centella: 'travado', camille: 'travado', nila: 'travado', baatar: 'travado',
+      aminu: 'novo', centella: 'travado', camille: 'travado', nila: 'travado', baatar: 'travado', [CHEFE.id]: 'chefe-oculto',
     });
-    await foto(page, 'selecao-3x3-producao-sem-chefao');
 
-    // 3 colunas medidas no navegador: 9 casas dentro do canvas, sem sobreposição; a do centro (índice 4) segue centrada
-    const caixas = await hook(page, '(h) => Array.from({ length: 9 }, (_, i) => h.ui.scene.tileRect(i))');
+    // 3 colunas medidas no navegador: 9 casas de 80 px dentro do canvas, sem sobreposição, a do centro centrada; a 10ª é a faixa de honra
+    const caixas = await hook(page, '(h) => Array.from({ length: 10 }, (_, i) => h.ui.scene.tileRect(i))');
     expect(caixas[4].x + caixas[4].w / 2).toBe(480);
-    for (const c of caixas) expect(c.w).toBe(80);
-    expect(caixas[8].x + caixas[8].w).toBeLessThanOrEqual(960); // a 9ª casa (BAATAR) cabe no canvas
-    expect(caixas[8].y + caixas[8].h).toBeLessThanOrEqual(540);
+    for (const c of caixas.slice(0, 9)) expect(c.w).toBe(80);
+    expect(caixas[8].x + caixas[8].w).toBeLessThanOrEqual(960);
+    expect(caixas[9]).toEqual({ x: 352, y: 356, w: 256, h: 44 });
 
-    // teclas reais: do HAYATO (índice 0) ↓ ↓ = CAMILLE (índice 6) (travada: o cursor anda por cima, Enter não confirma)
+    // teclas reais: do HAYATO (índice 0) ↓ ↓ = CAMILLE (6) (travada: o cursor anda por cima, Enter não confirma)
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('ArrowDown');
     expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe('camille');
+    await page.keyboard.press('Enter');
+    expect(await hook(page, '(h) => ({ lock: h.ui.scene.lock, done: h.ui.scene.done })')).toEqual({ lock: [false, false], done: 0 });
     // → → chega ao BAATAR (9ª casa): travado, não confirma (como qualquer outro da fila, e sem "???")
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('ArrowRight');
     expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe('baatar');
     await page.keyboard.press('Enter');
-    expect(await hook(page, '(h) => ({ lock: h.ui.scene.lock, done: h.ui.scene.done })')).toEqual({ lock: [false, false], done: 0 });
+    expect((await hook(page, '(h) => h.ui.scene.lock'))[0]).toBe(false);
     await hook(page, '(h) => h.desenhar()');
-    await foto(page, 'selecao-3x3-baatar-travado');
-    // AMINU (liberado, com selo NOVO!) confirma: da 9ª casa (índice 8) ↑ ↑ vai a 2, ↓ a 5 (CENTELLA), ← a 4 (AMINU)
-    await page.keyboard.press('ArrowUp');
-    await page.keyboard.press('ArrowUp');
+    await foto(page, 'selecao-10-baatar-travado');
+    // ↓ vai à casa de honra: o chefão oculto, o cursor anda por cima, Enter não confirma
     await page.keyboard.press('ArrowDown');
+    expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe(CHEFE.id);
+    await page.keyboard.press('Enter');
+    expect((await hook(page, '(h) => h.ui.scene.lock'))[0]).toBe(false);
+    await hook(page, '(h) => h.desenhar()');
+    await foto(page, 'selecao-10-honra-oculto');
+    // esquerda e direita na honra não mudam de casa; ↑ da honra vai para a 7 (NILA), ↑ de novo para a 4 (AMINU: liberado, com selo NOVO!), que confirma
     await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowRight');
+    expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe(CHEFE.id);
+    await page.keyboard.press('ArrowUp');
+    expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe('nila');
+    await page.keyboard.press('ArrowUp');
     expect(await hook(page, '(h) => h.ui.scene.grade[h.ui.scene.cur[0]]')).toBe('aminu');
     await page.keyboard.press('Enter');
     expect((await hook(page, '(h) => h.ui.scene.lock'))[0]).toBe(true);
+
+    // reabrir a seleção: o selo NOVO! já não aparece
+    await abrirCena(page, 'select', { mode: 'versus' }, 5);
+    expect(await hook(page, '(h) => [...h.ui.scene.novos]')).toEqual([]);
     expect(erros).toEqual([]);
   });
 
@@ -210,83 +170,18 @@ test.describe('seleção 3x3 com estados', () => {
     expect(casaCss).toBeGreaterThanOrEqual(44); // alvo de toque mínimo (WCAG 2.5.5 / Material)
   });
 
-  test('COM chefão: o menu mostra a escada com chefão', async ({ page }, info) => {
+  test('PRODUÇÃO: o menu mostra a escada com chefão', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
     await semear(page);
     await page.goto(`/?${urlComChefe('seed=3&manual=1')}`);
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await abrirCena(page, 'menu', undefined, 5);
-    expect(await hook(page, '(h) => h.ui.scene.m.items[0].desc')).toBe('Um jogador: enfrente 5 rivais em sequência, depois o chefão, e torne-se o campeão.');
+    expect(await hook(page, '(h) => h.ui.scene.m.items[0].desc')).toBe(DESCRICAO_DO_ARCADE);
   });
 
-  test('PRODUÇÃO: o menu mostra o Arcade de 5 rivais, sem chefão', async ({ page }, info) => {
-    test.skip(info.project.name !== 'desktop', 'só no desktop');
-    await semear(page);
-    await page.goto('/?seed=3&manual=1');
-    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    await abrirCena(page, 'menu', undefined, 5);
-    expect(await hook(page, '(h) => h.ui.scene.m.items[0].desc')).toBe(SEM_CHEFE.descricao);
-  });
 });
 
-test.describe('ARCADE de PRODUÇÃO (5 etapas, sem chefão), de ponta a ponta (teclado real)', () => {
-  test('5 rivais sorteados, nenhuma luta de chefe: final, um aviso de desbloqueio (AMINU) e nada de chefão no save', async ({ page }, info) => {
-    test.skip(info.project.name !== 'desktop', 'só no desktop');
-    test.setTimeout(300_000);
-    const erros = coletarErros(page);
-    await semear(page);
-    await page.goto('/?seed=11');
-    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('diff', { mode: 'arcade', c1: 'min-ji', c2: 'hayato' }); }");
-    await page.keyboard.press('Enter'); // dificuldade
-    await esperarCena(page, 'vs');
-
-    const etapas = await hook(page, '(h) => h.ui.run.etapas');
-    expect(etapas).toHaveLength(SEM_CHEFE.etapas);
-    expect(etapas.every((e: any) => !e.chefe && e.id !== 'min-ji')).toBe(true); // ninguém é chefe; o jogador não se enfrenta
-    expect(new Set(etapas.map((e: any) => e.id)).size).toBe(SEM_CHEFE.etapas); // 5 rivais distintos
-    expect(await hook(page, '(h) => h.ui.scene.a.cfg.chefe')).toBeUndefined();
-
-    for (let luta = 0; luta < SEM_CHEFE.etapas; luta++) {
-      await esperarCena(page, 'vs', 30_000);
-      expect(await hook(page, '(h) => h.ui.scene.a.cfg.chefe')).toBeUndefined(); // nenhuma luta é de chefe
-      await page.waitForTimeout(700);
-      await page.keyboard.press('Enter');
-      await esperarCena(page, 'fight', 20_000);
-      await page.waitForFunction(() => (window as any).__inno.mundo().game.phase === 'fight', undefined, { timeout: 20_000 });
-      // luta normal de 1 barra: o rival cai com poucos golpes (o BAATAR também, ele é lutador comum)
-      expect(await hook(page, '(h) => { const p = h.mundo().game.p2; return { barras: p.barras, barrasMax: p.barrasMax, chefe: p.chefe }; }')).toEqual({ barras: 1, barrasMax: 1, chefe: false });
-      for (let i = 0; i < 160; i++) {
-        const fase = await hook(page, '(h) => h.mundo().game.phase');
-        if (fase !== 'fight') break;
-        await hook(page, '(h) => { const g = h.mundo().game; g.p1.hp = g.p1.maxHp; if (g.p2.hp > 3) { g.p2.hp = 3; g.p2.hpShown = 3; } g.p1.x = g.p2.x - 80; }');
-        await page.keyboard.press('z');
-        await page.waitForTimeout(80);
-      }
-      // depois do 5º rival o ARCADE acaba direto (sem a cena 'chefe')
-      await esperarCena(page, luta < SEM_CHEFE.etapas - 1 ? 'vs' : 'ending', 40_000);
-    }
-
-    // zerou: o final grava o progresso (só a fila) e mostra UM aviso de desbloqueio; chefão nenhum
-    const prog = await hook(page, '(h) => h.persist.prog');
-    expect(prog).toMatchObject({ desbloqueados: ['aminu'], zeradas: 1, chefeDerrotado: false });
-    expect(prog.chefesDerrotados).toBeUndefined();
-    expect(await hook(page, '(h) => h.ui.scene.novos')).toEqual(['aminu']);
-    await page.waitForTimeout(1200);
-    await page.keyboard.press('Enter');
-    await esperarCena(page, 'desbloqueio');
-    expect(await hook(page, '(h) => h.ui.scene.indice')).toBe(0);
-    await page.waitForTimeout(900);
-    await page.keyboard.press('Enter');
-    await esperarCena(page, 'title'); // um aviso só: o próximo Enter já volta ao título
-
-    const salvo = JSON.parse(await page.evaluate(() => window.localStorage.getItem('inno-fighters-v2')!));
-    expect(salvo.prog).toMatchObject({ desbloqueados: ['aminu'], zeradas: 1, chefeDerrotado: false });
-    expect(erros).toEqual([]);
-  });
-});
-
-test.describe('ARCADE COM chefão de teste, de ponta a ponta (teclado real)', () => {
+test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (teclado real)', () => {
   test('5 rivais sorteados + chefão: aviso, VS do chefão, final, e os dois avisos de desbloqueio', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
     test.setTimeout(300_000);
@@ -328,9 +223,9 @@ test.describe('ARCADE COM chefão de teste, de ponta a ponta (teclado real)', ()
         const fase = await hook(page, '(h) => h.mundo().game.phase');
         if (fase !== 'fight' && fase !== 'cena-chefe') break;
         if (luta === 5) {
-          // SALVAR_QUADROS: o BAATAR da ARCADE de verdade (1ª barra, Dança, fase 2) com o jogador na arte nova
+          // SALVAR_QUADROS: o chefão da ARCADE de verdade (1ª barra, cena, fase 2) com o jogador na arte nova
           const barras = await hook(page, '(h) => h.mundo().game.p2.barras');
-          const quando = fase === 'cena-chefe' ? 'danca' : barras === 1 ? 'fase-2' : 'fase-1';
+          const quando = fase === 'cena-chefe' ? 'cena' : barras === 1 ? 'fase-2' : 'fase-1';
           if (!fotografado.has(quando)) {
             fotografado.add(quando);
             await foto(page, `arcade-${CHEFE.id}-${quando}`);
@@ -413,7 +308,9 @@ test.describe('chefão na tela (cenas e HUD de barras)', () => {
 
     // 3) HUD com 2 barras: a barra de baixo (roxa) aparece por trás, onde a atual já esvaziou (hp 50%); na última barra
     //    some; o jogo de hoje nem tem os campos
-    await abrirCena(page, 'fight', { cfg }, 100);
+    await abrirCena(page, 'fight', { cfg }, 0);
+    await hook(page, PULAR_ENTRADA); // a entrada dramática esconde o HUD: aqui se mede o HUD
+    await hook(page, '(h) => { h.avancar(100); h.desenhar(); }');
     const roxo = 'b > 150 && r > 60 && r < 235 && g < 150 && b > r + 20';
     const regiaoBarra = [1048, 48, 664, 52] as const; // barra do lado direito (P2), px do canvas real
     await hook(page, '(h) => { const f = h.mundo().game.p2; f.hp = f.hpShown = f.maxHp / 2; f.barras = 2; f.barrasMax = 2; f.chefe = true; h.desenhar(); }');

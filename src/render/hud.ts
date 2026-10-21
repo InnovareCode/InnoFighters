@@ -38,6 +38,9 @@ export const MAX_MARCADORES_ROUND = 5;
 /** Corpo (px lógicos) do rótulo "CHEFÃO  000000": 14 dava 10,7 px CSS no celular deitado (E7a); 18 dá 13,7 / 13,0. Só o chefão: as linhas dos lutadores comuns seguem as do protótipo. */
 export const FONTE_ROTULO_CHEFE = 18;
 
+/** Título do chefão que cabe na linha do rótulo ("O ARCONTE" = 9); mais longo, o rótulo fica só "CHEFÃO" (a linha tem 332 px, junto do placar). */
+export const TITULO_MAX_NO_HUD = 16;
+
 const DOURADO: readonly [string, string] = ['#fff6b0', '#ff9a1a'];
 
 /** Barra de vida, energia, nome, placar e rounds de UM lado. Porte do `bar()` de drawHUD. */
@@ -50,6 +53,7 @@ function desenharLado(
   lado: 1 | 2,
   postura: Postura | null = null,
   esquiva = false,
+  titulo = '',
 ): void {
   const x = lado === 1 ? 104 : 524;
   const w = 332;
@@ -101,7 +105,8 @@ function desenharLado(
   const alinha = lado === 1 ? 'left' : 'right';
   const ancora = lado === 1 ? x + 6 : x + w - 6;
   textoArcade(ctx, nome, ancora, 66, 22, '#fff', '#05060f', alinha);
-  const rotulo = ext.chefe === true ? 'CHEFÃO' : p.cpu !== null ? 'CPU' : lado === 1 ? '1P' : '2P';
+  // o chefão leva o título do def (ZENON: "O ARCONTE"): "CHEFÃO · O ARCONTE", logo acima do nome
+  const rotulo = ext.chefe === true ? (titulo && titulo.length <= TITULO_MAX_NO_HUD ? `CHEFÃO · ${titulo.toLocaleUpperCase('pt-BR')}` : 'CHEFÃO') : p.cpu !== null ? 'CPU' : lado === 1 ? '1P' : '2P';
   const placar = String(p.score).padStart(6, '0');
   const chefao = ext.chefe === true;
   textoArcade(ctx, lado === 1 ? `${rotulo}  ${placar}` : `${placar}  ${rotulo}`, ancora, chefao ? 12 : 11, chefao ? FONTE_ROTULO_CHEFE : 14, '#cfe6ff', '#05060f', alinha);
@@ -192,8 +197,8 @@ export function desenharHUD(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, opcoes:
   const [a, b] = luta.fighters;
   const ra = elenco[a.id];
   const rb = elenco[b.id];
-  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1, posturaDe(ra.ch, a.ficha), opcoes.esquiva === true);
-  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2, posturaDe(rb.ch, b.ficha), opcoes.esquiva === true);
+  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1, posturaDe(ra.ch, a.ficha), opcoes.esquiva === true, ra.ch.title);
+  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2, posturaDe(rb.ch, b.ficha), opcoes.esquiva === true, rb.ch.title);
   desenharRetratoMoldurado(ctx, ra.arte.retrato(ra.ch.head), 8, 8, 88, false);
   desenharRetratoMoldurado(ctx, rb.arte.retrato(rb.ch.head), LARGURA - 96, 8, 88, true);
 

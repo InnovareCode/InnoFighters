@@ -6,7 +6,7 @@ import { zoomIn } from '../../render/animacao';
 import { cfgDaEtapa } from '../campanha';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
-import { mostrarLutador } from '../personagens';
+import { escalaDeVitrine, mostrarLutador } from '../personagens';
 import { NAV, type AcaoNav, type ArgsContinue, type ArgsEnding, type ArgsResult, type CampanhaArcade, type Cena } from '../tipos';
 
 /** Resultado de uma luta: vencedor, placar de rounds, maior combo, pontos e as opções. */
@@ -45,7 +45,7 @@ export class CenaResult implements Cena {
     const wid = a.winner === 1 ? c.c1 : c.c2;
     const ch = m.elenco[wid].ch;
     f.spotlight(250, 330, 260, `${ch.fire[0]}55`);
-    mostrarLutador(f, m, wid, 250, 480, 1.6, 1, t, 'win');
+    mostrarLutador(f, m, wid, 250, 480, 1.6 * escalaDeVitrine(ch), 1, t, 'win');
     this.ui.desenharPetalas();
     const p = a.winner === 1 ? '1' : '2';
     const who = c.mode === 'cpu' && a.winner === 2 ? 'CPU' : `JOGADOR ${p}`;
@@ -225,7 +225,7 @@ export class CenaEnding implements Cena {
     const ch = m.elenco[run.c1].ch;
     desenharFundoMenu(ctx, m.rec.cenarioPadrao, m.rec.vinheta, t, 0.5);
     f.spotlight(480, 300, 320, `${ch.fire[0]}44`);
-    mostrarLutador(f, m, ch.id, 480, 500, 1.6, 1, t, 'win');
+    mostrarLutador(f, m, ch.id, 480, 500, 1.6 * escalaDeVitrine(ch), 1, t, 'win');
     this.ui.desenharPetalas();
     f.A('PARABÉNS!', W / 2, 62, 76, ['#ffffff', '#ff7aa8'], '#2a0420', 'center', zoomIn(t));
     f.A(`${ch.name} É O CAMPEÃO!`, W / 2, 128, 40, ['#fff6b0', '#ff9a1a'], '#2a1000');

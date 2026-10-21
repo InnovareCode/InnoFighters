@@ -12,6 +12,7 @@ import type {
 import { INPUT_VAZIO } from '../core/contratos';
 import { clamp, lerp } from '../core/math';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
+import { poseDaCena } from '../data/cena';
 import { ESQUIVA_PADRAO, type TrechoEsquiva } from '../data/esquiva';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
@@ -550,7 +551,7 @@ export class Fighter {
         this.updateEsquiva(jogo);
         return;
       case 'win':
-      case 'cena': // Dança da Águia: parado no lugar até o Game devolver o controle
+      case 'cena': // cena da fase 2 do chefe (BAATAR antigo: Dança da Águia; ZENON: estala os dedos): parado até o Game devolver o controle
         this.vx = 0;
         this.physics(jogo);
         return;
@@ -1044,9 +1045,9 @@ export class Fighter {
         else P.name = 'koFloor';
         break;
       case 'cena': {
-        // devekh0..2 (folha B9) em terços da duração; sem a arte (atlas provisório) cai em `win`/`guard` via getPD
-        const dur = this.cfgChefe?.danca.duracao ?? 90;
-        P.name = 'devekh' + Math.min(2, Math.floor((this.st * 3) / dur));
+        // Poses da `ConfigChefe.cena` em partes iguais da duração (spec-chefao-zenon §2); pose que falta no atlas cai na cadeia de `getPD`.
+        const cena = this.cfgChefe?.cena;
+        P.name = cena ? poseDaCena(cena, this.st) : 'win';
         break;
       }
       case 'esquiva': {

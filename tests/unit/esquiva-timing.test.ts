@@ -86,9 +86,11 @@ const ESPECIAIS = todasAsApresentacoes().filter((c) => !(c.id === 'camille' && c
 const MULTI_PROJETIL = (id: string, golpe: string): boolean => id === 'min-ji' && golpe === 'sFire';
 
 describe('cada especial: no tempo certo = zero dano; golpe esquivado é consumido', () => {
-  it('a lista cobre os especiais dos 9 (28 menos PARADE e HURACANRANA; inclui as fichas SARPA e o MERGULHO do BAATAR)', () => {
+  it('a lista cobre os especiais dos 10 (33 menos PARADE e HURACANRANA; inclui as fichas SARPA, o MERGULHO do BAATAR e os 5 do ZENON)', () => {
     const nomes = ESPECIAIS.map((c) => `${c.id}${c.ficha ? '/' + c.ficha : ''}.${c.golpe}`);
-    expect(nomes).toHaveLength(26);
+    expect(nomes).toHaveLength(31);
+    expect(nomes).toContain('zenon/chefe2.sFwd'); // DECRETO (through, como o REVERS)
+    expect(nomes).toContain('zenon.sFwd'); // TRIBUTO
     expect(nomes).toContain('aminu.sDown'); // GARKUWA
     expect(nomes).toContain('baatar.sFwd'); // MERGULHO DA ÁGUIA
     expect(nomes).toContain('centella.sFwd'); // RESORTE
@@ -104,8 +106,9 @@ describe('cada especial: no tempo certo = zero dano; golpe esquivado é consumid
       const { cfg, T } = achado as { cfg: Cfg; T: number };
       let announced = 0;
       // tempo certo: o aperto cai de 10 ticks antes do contato até o próprio tick do contato (o contato pode deslizar 1-3 ticks quando o recuo mexe na distância)
-      // REVERS (`through`): no tick do contato a CAMILLE já cruzou e o `facing` do alvo vira; "trás" apertado ali é "frente" (arranque vulnerável)
-      const ate = c.id === 'camille' && c.golpe === 'sFwd' ? T - 1 : T;
+      // REVERS e DECRETO (`through`): no tick do contato quem ataca já cruzou e o `facing` do alvo vira; "trás" apertado ali é "frente" (arranque vulnerável)
+      const through = (c.id === 'camille' && c.golpe === 'sFwd') || (c.id === 'zenon' && c.ficha === 'chefe2' && c.golpe === 'sFwd');
+      const ate = through ? T - 1 : T;
       for (let k = Math.max(0, T - 10); k <= ate; k++) {
         const { ev } = rodar(c.id, c.ficha, c.golpe, cfg, k);
         if (!MULTI_PROJETIL(c.id, c.golpe)) expect(danoNoP1(ev), `${rotulo} k=${k} (contato em ${T})`).toBe(0);

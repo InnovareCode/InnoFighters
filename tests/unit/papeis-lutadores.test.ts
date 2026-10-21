@@ -24,7 +24,7 @@ describe('papéis dos lutadores (plano de expansão 1.2)', () => {
   });
 
   it('E5: a ordem do ROSTER é os 4 do protótipo, a fila de desbloqueio e o chefão; a vitrine segue só nos 4', () => {
-    expect([...ROSTER]).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar']);
+    expect([...ROSTER]).toEqual(['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar', 'zenon']);
     expect([...VITRINE]).toEqual(['hayato', 'wei-long', 'min-ji', 'caio']);
   });
 

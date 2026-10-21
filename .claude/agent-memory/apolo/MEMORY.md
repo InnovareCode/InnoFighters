@@ -1,6 +1,6 @@
-- [Curadoria de sprites](project_curadoria_sprites.md) — WEI LONG; novos; BAATAR; NILA f5 (postura no CHARACTER); componentes; chão; cabeça-queixo
+- [Curadoria de sprites](project_curadoria_sprites.md) — WEI; novos; BAATAR; NILA f5; ZENON (mapa v2, ZR 3/6, eco da referência); bota como régua
 - [Prompts no Runway](project_prompts_runway.md) — docs/prompts é gerado (mude fonte+script); 1 referência; SPACING; KO à esquerda; HAYATO A2
-- [Curadoria de cenários](project_curadoria_cenarios.md) — pés a 84,5% da imagem (não 87%); composição em escala; limpar canto por translação
+- [Curadoria de cenários](project_curadoria_cenarios.md) — pés a 84,5%; contraste em escala; limpar canto; piso escuro (piso2.ps1)
 - [Logo paleta D (INNO azul)](project_logo_paleta_d.md) — D1 Cobalto Real recomendada; aro claro obrigatório; Vite com paleta em memória
 - [Identidade dos especiais](project_identidade_especiais.md) — 1 estilo exclusivo por lutador; contraste 3:1; lacunas throw/sResp/MASHI
 - [Novo chefão](project_novo_chefao.md) — A ZENON recomendado; núcleo ônix só do chefão; teto escala 1,42; BAATAR 5º na fila

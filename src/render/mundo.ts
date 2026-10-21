@@ -2,9 +2,11 @@ import type { Elenco } from '../assets/elenco';
 import type { LeituraLuta } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import { aplicarCamera } from './camera';
-import { desenharCenarioLuta, desenharVinheta } from './cenario';
+import { rampaDaFase2, chefeDaLeitura } from './aura-chefe';
+import { SOBREPOSICOES_DE_CENARIO, desenharCenarioLuta, desenharVinheta } from './cenario';
 import { desenharPetalas, desenharProjetil, projetilParaVisual, type CampoDePetalas, type Efeitos } from './efeitos';
 import { desenharHUD, desenharOverlay, type OpcoesHud } from './hud';
+import { comPose, leituraApresentada } from './apresentacao-lutadores';
 import { chDaFicha, desenharLutador } from './lutador';
 import { limparQuadro, type Ctx } from './tela';
 
@@ -23,6 +25,10 @@ export interface OpcoesMundo extends OpcoesHud {
   readonly tremor?: boolean;
   /** Desenhar HUD e faixas por cima (padrão: sim). */
   readonly hud?: boolean;
+  /** Pose a desenhar no lugar da do motor, por índice de lutador (a entrada dramática do chefão). Vence a pose de apresentação. */
+  readonly poses?: Partial<Record<0 | 1, string>>;
+  /** Braseiros acesos da arena (0 a 6) durante a entrada dramática; ausente = todos acesos e sem véu. */
+  readonly acesos?: number;
 }
 
 /**
@@ -44,13 +50,20 @@ export function desenharMundo(
   ctx.save();
   aplicarCamera(ctx, luta.cam, opcoes.tremor === false ? 0 : luta.shake, rngVisual);
   desenharCenarioLuta(ctx, rec.cenarios.get(luta.stage) ?? rec.cenarioPadrao, luta.cam.x);
+  // fase 2 do chefão: a rampa vem do ESTADO (barras < barrasMax), não de um evento; só o chefe tem aura e só a arena registrada muda
+  const chefe = chefeDaLeitura(luta);
+  const rampa = chefe ? rampaDaFase2(luta, chefe, rec.elenco[chefe.id]?.ch) : 0;
+  SOBREPOSICOES_DE_CENARIO[luta.stage]?.(ctx, { rampa, t: luta.tick, camX: luta.cam.x, ...(opcoes.acesos === undefined ? {} : { acesos: opcoes.acesos }) });
 
   const [a, b] = luta.fighters;
   // quem está atacando fica por cima (desenhado por último)
   const ordem = a.state === 'move' && b.state !== 'move' ? [b, a] : [a, b];
   for (const f of ordem) {
     const r = rec.elenco[f.id];
-    desenharLutador(ctx, f, r.ch, r.arte);
+    // pose de entrada/vitória (apresentação) ou a imposta pela entrada dramática; o motor e a leitura não mudam
+    const imposta = opcoes.poses?.[f.indice];
+    const vista = imposta ? comPose(f, imposta) : leituraApresentada(luta, f);
+    desenharLutador(ctx, vista, r.ch, r.arte, f === chefe ? rampa : 0);
   }
   for (const p of luta.projectiles) {
     const dono = luta.fighters[p.dono];

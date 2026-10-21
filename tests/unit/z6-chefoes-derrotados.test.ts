@@ -41,8 +41,9 @@ const ZENON = id('zenon');
 const [AMINU, CENTELLA, CAMILLE, NILA, BAATAR] = ['aminu', 'centella', 'camille', 'nila', 'baatar'] as const;
 
 /** O roster de hoje (9) e o de 10 (com o Zenon), como a Z5 deixara. */
-const ROSTER9: readonly IdLutador[] = IDS_LUTADORES;
-const ROSTER10: readonly IdLutador[] = [...IDS_LUTADORES, ZENON];
+// (o Zenon ja entrou em IDS_LUTADORES na Z5: o roster "de antes" e o de 9, sem o ultimo id)
+const ROSTER9: readonly IdLutador[] = IDS_LUTADORES.filter((x) => x !== ZENON);
+const ROSTER10: readonly IdLutador[] = [...IDS_LUTADORES];
 const R9: Pick<Regras, 'roster' | 'iniciais'> = { roster: ROSTER9, iniciais: INICIAIS };
 const R10: Regras = { ...REGRAS_PADRAO, roster: ROSTER10, chefe: ZENON }; // fila = a real (5, com o BAATAR)
 
@@ -170,9 +171,9 @@ describe('Z6 §11.2: o BAATAR virou o 5o da fila e o Zenon e o chefao', () => {
     expect(r.prog.chefesDerrotados).toBeUndefined();
   });
 
-  it('sem chefao nas regras (estado de hoje: CHEFE null) derrotouChefe nao inventa derrota nem desbloqueio', () => {
-    expect(REGRAS_PADRAO.chefe).toBeNull();
-    const r = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, REGRAS_PADRAO);
+  it('sem chefao nas regras (injetado null: o estado entre o BAATAR normal e o Zenon) derrotouChefe nao inventa derrota nem desbloqueio', () => {
+    expect(REGRAS_PADRAO.chefe).toBe('zenon');
+    const r = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, { ...REGRAS_PADRAO, chefe: null });
     expect(r.novos).toEqual([AMINU]);
     expect(r.prog.chefeDerrotado).toBe(false);
     expect(r.prog.chefesDerrotados).toBeUndefined();

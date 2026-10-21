@@ -34,16 +34,16 @@ test.describe('retratos e carga de arte', () => {
     const urls = espiarAssets(page);
     await page.goto('/?seed=1');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    // E5: o elenco tem 9 (manifesto e retrato de todos no boot), mas só a vitrine (os 4 de fábrica) baixa as imagens do atlas
-    expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(9);
-    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(9);
+    // E5/Z5: o elenco tem 10 (manifesto e retrato de todos no boot), mas só a vitrine (os 4 de fábrica) baixa as imagens do atlas
+    expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(10);
+    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(10);
     expect(atlasDe(urls)).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
     expect(atlasV1De(urls)).toEqual(['caio', 'wei-long']); // só os dois originais que seguem em v1
     for (const id of ['hayato', 'min-ji']) expect(paginasDe(urls, id), id).toEqual(['atlas-0.webp', 'atlas-1.webp']); // arte nova: 2 páginas, uma vez cada
-    for (const id of ['aminu', 'centella', 'camille', 'nila', 'baatar']) expect(paginasDe(urls, id), id).toEqual([]); // nenhuma página dos novos no boot
+    for (const id of ['aminu', 'centella', 'camille', 'nila', 'baatar', 'zenon']) expect(paginasDe(urls, id), id).toEqual([]); // nenhuma página dos novos no boot (o ZENON só na luta contra ele)
     expect(cenariosDe(urls)).toEqual(['br.jpg', 'cenario-jp.webp', 'cn.jpg', 'kr.jpg']); // os 4 da vitrine; os cenários novos só sob demanda
     const r = await hook(page, '(h) => { const m = h.mundo(); return Object.fromEntries(Object.entries(m.elenco).map(([id, e]) => [id, e.arte.temRetrato])); }');
-    expect(r).toEqual({ hayato: true, 'wei-long': true, 'min-ji': true, caio: true, aminu: true, centella: true, camille: true, nila: true, baatar: true });
+    expect(r).toEqual({ hayato: true, 'wei-long': true, 'min-ji': true, caio: true, aminu: true, centella: true, camille: true, nila: true, baatar: true, zenon: true });
   });
 
   test('tudo sob demanda: sem atlas no boot; a seleção pede só os mostrados e o VS só a dupla da luta', async ({ page }, info) => {
@@ -61,7 +61,7 @@ test.describe('retratos e carga de arte', () => {
     // boot: manifestos, retratos e o cenário padrão; NENHUM atlas e nenhum outro cenário
     expect(atlasDe(urls)).toEqual([]);
     expect(cenariosDe(urls)).toEqual(['cenario-jp.webp']);
-    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(9);
+    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(10);
 
     await page.keyboard.press('Enter');
     await esperarCena(page, 'intro');

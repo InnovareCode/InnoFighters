@@ -5,7 +5,12 @@ import { clamp } from '../../core/math';
 import type { EventoLuta } from '../../core/contratos';
 import { ESQUIVA_PADRAO } from '../../data/esquiva';
 import type { DummyTreino, FonteEntradas } from '../../fight/game';
+import { chefeDaLeitura } from '../../render/aura-chefe';
+import { APRESENTACAO, falaDoChefe } from '../../render/apresentacao-lutadores';
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
+import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
+import { desenharLegenda } from '../../render/legenda';
+import { MoedasDeDreno } from '../../render/moedas-dreno';
 import { somDoAcerto } from '../../render/identidade-especiais';
 import { chDaFicha } from '../../render/lutador';
 import { SessaoEspecial } from '../../render/sessao-especial';
@@ -33,6 +38,12 @@ export class CenaFight implements Cena {
   /** CINEMÁTICA do especial (apresentação pura: enquanto roda a cena não chama `game.update`, como a pausa) e a sessão dos acertos dele. */
   readonly cine: Cinematica;
   readonly sessao: SessaoEspecial;
+  /** ENTRADA DRAMÁTICA do chefão (apresentação pura, antes do 1º `game.update`: o motor e o lock-step não a veem). */
+  readonly entrada: EntradaDoChefe;
+  /** O DRENO do ZENON (TRIBUTO/DECRETO) visível: moedas do golpe até a barra SUPER de quem drenou. */
+  readonly moedas = new MoedasDeDreno();
+  /** A entrada ainda não começou nesta luta (espera a arte ficar pronta)? */
+  private entradaPendente = false;
   /** A música está a 50% por causa da cinemática? */
   private musicaBaixa = false;
   /** Ainda há tarja por aquecer no cache (a abertura da luta pinta uma por tick)? */
@@ -52,6 +63,9 @@ export class CenaFight implements Cena {
     this.cine = new Cinematica({
       rng: ui.c.rngVisual,
       aoSom: (momento, id) => void tocarReceita(sintetizador(), momento === 'abertura' ? id.abertura : id.batida),
+    });
+    this.entrada = new EntradaDoChefe({
+      aoSom: (som) => tocarReceita(sintetizador(), som === 'faixas' ? SOM_DAS_FAIXAS : som === 'cartao' ? SOM_DO_CARTAO : somDoBraseiro(som.braseiro)),
     });
     this.sessao = new SessaoEspecial({
       rng: ui.c.rngVisual,
@@ -75,6 +89,29 @@ export class CenaFight implements Cena {
   private modoDaCine(): ModoCine | null {
     const reduz = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
     return modoDaCinematica(this.ui.c.persist.settings.cinematica, this.ui.c.regras, reduz);
+  }
+
+  /**
+   * A entrada dramática desta luta, ou null (sem entrada): só o chefão cujo lutador tem `entradaDramatica` em `APRESENTACAO`. COMPLETA na primeira luta contra
+   * o chefão de cada ARCADE; CURTA depois de um continue (ou reinício) na mesma campanha, com `prefers-reduced-motion` ou com a cinemática CURTA/DESLIGADA.
+   * Regras sem cinemática (`?expansao=4`) = sem entrada. O nome do chefão aparece sempre: a entrada não some, só encolhe.
+   */
+  private modoDaEntrada(a: ArgsFight): ModoEntrada | null {
+    if (!a.cfg.chefe || !APRESENTACAO[a.cfg.c2]?.entradaDramatica || !this.ui.c.regras.cinematica) return null;
+    const reduz = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
+    const pref = this.ui.c.persist.settings.cinematica ?? (reduz ? 'curta' : 'completa');
+    return pref === 'completa' && !a.run?.entradaDoChefeVista ? 'completa' : 'curta';
+  }
+
+  /** Começa a entrada (a luta já foi montada com `setup`; o motor continua parado até ela acabar). */
+  private comecarEntrada(): void {
+    this.entradaPendente = false;
+    const a = this.a;
+    const modo = a ? this.modoDaEntrada(a) : null;
+    const ap = a ? APRESENTACAO[a.cfg.c2] : undefined;
+    if (!a || !modo || !ap?.entradaDramatica) return;
+    if (a.run) a.run.entradaDoChefeVista = true;
+    this.entrada.iniciar(modo, ap.entradaDramatica, ap.falas?.entrada ?? '');
   }
 
   /** A música cai para 50% enquanto a cinemática roda (e a pausa a devolve). */
@@ -110,7 +147,11 @@ export class CenaFight implements Cena {
     this.baixarMusica(false);
     this.botaoEsqSem = null;
     this.atualizarBotaoEsquiva();
-    audio.startMusic('fight');
+    this.entrada.zerar();
+    this.moedas.zerar();
+    this.entradaPendente = this.modoDaEntrada(a) !== null;
+    // a trilha do chefão (valsa 3/4) é uma flag do def: tirar `trilha` de `ConfigChefe` é o rollback para a música de luta
+    audio.startMusic(a.cfg.chefe ? (this.ui.m.elenco[a.cfg.c2].ch.chefe?.trilha ?? 'fight') : 'fight');
     this.montarMenus();
   }
 
@@ -253,6 +294,15 @@ export class CenaFight implements Cena {
 
   update(): void {
     if (this.paused || !this.espera.pronta) return;
+    if (this.entradaPendente) this.comecarEntrada();
+    if (this.entrada.ativa) {
+      // a entrada anda no lugar do motor: `game.update` NÃO é chamado (nada do lock-step muda). Qualquer ataque de um humano pula (depois do tick 10).
+      if (this.alguemPulou()) this.entrada.pular();
+      this.entrada.avancar();
+      // as tarjas dos especiais se pintam durante a entrada (sobra tempo aqui e o 1º especial não paga o custo de primeira vez)
+      if (this.aquecendo && this.modoDaCine() !== null) this.aquecendo = this.cine.aquecer(this.ui.m.game, this.ui.m.elenco);
+      return;
+    }
     if (this.cine.ativa) {
       this.passoDaCinematica();
       return;
@@ -270,6 +320,7 @@ export class CenaFight implements Cena {
       if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
       efeitos.reagir(ev, (i) => game.fighters[i], (i) => this.corDoLutador(i));
       this.reagirAoEspecial(ev);
+      this.moedas.reagir(ev, game);
       // O chefe sai em 3 etapas (troca, danca, retomada): o flash e o "FASE 2!" são só da troca de barra, senão disparam 3 vezes.
       // danca/retomada ainda não têm efeito visual próprio (não há overlay de cena do chefe no HUD; por ora só o filtro).
       if (ev.tipo === 'fase-chefe' && ev.etapa === 'troca') this.aoFaseDoChefe(ev.lutador);
@@ -278,6 +329,7 @@ export class CenaFight implements Cena {
       this.ultimoTick = game.tick;
       efeitos.avancar();
       this.sessao.avancar(game);
+      this.moedas.avancar();
     }
     this.atualizarBotaoEsquiva();
     if (game.matchDone && !this.ended) {
@@ -367,6 +419,10 @@ export class CenaFight implements Cena {
       this.pause();
       return true;
     }
+    if (k === 'Enter' && this.entrada.ativa) {
+      this.entrada.pular();
+      return true;
+    }
     if (k === 'Enter' && game.phase === 'matchend' && game.t > 40) {
       game.matchDone = true;
       return true;
@@ -414,13 +470,31 @@ export class CenaFight implements Cena {
     const { game } = m;
     const W = LARGURA;
     const H = ALTURA;
-    desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, { tremor: persist.settings.shake, alvoTreino: game.dummy, esquiva: this.ui.c.regras.esquiva });
+    // entrada dramática: o mundo sem HUD, o chefe na pose da vez e os braseiros acendendo; as faixas, o cartão e a fala vêm por cima
+    const q = this.entrada.ativa ? this.entrada.quadro() : null;
+    const chefe = q ? chefeDaLeitura(game) : null;
+    const poseDaEntrada = q && chefe ? APRESENTACAO[chefe.id]?.entrada?.poses[q.pose] : undefined;
+    desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, {
+      tremor: persist.settings.shake,
+      alvoTreino: game.dummy,
+      esquiva: this.ui.c.regras.esquiva,
+      ...(q ? { hud: false, acesos: q.acesos } : {}),
+      ...(chefe && poseDaEntrada ? { poses: { [chefe.indice]: poseDaEntrada } } : {}),
+    });
+    if (q) this.entrada.desenhar(ctx);
+    else this.moedas.desenhar(ctx, game);
     if (!this.espera.pronta) {
       f.T(this.espera.falhou ? 'Não foi possível carregar os lutadores.' : `Carregando lutadores... ${this.espera.percentual}%`, W / 2, H / 2, 20, '#fff', 'center');
     }
     // a cinemática por cima do mundo; fora dela, a sessão dos acertos (números, "N HITS" e a vinheta de 20%)
     if (this.cine.ativa) this.cine.desenhar(ctx, game, m.elenco);
-    else this.sessao.desenhar(ctx, game, m.elenco);
+    else if (!q) {
+      this.sessao.desenhar(ctx, game, m.elenco);
+      // fala do chefão em legenda: fase 2 (na cena), vitória (matchend) e derrota (no KO final)
+      const c = chefeDaLeitura(game);
+      const fala = c ? falaDoChefe(game, c) : null;
+      if (fala) desenharLegenda(ctx, fala, Math.min(1, game.t / 12));
+    }
     if (!this.paused) {
       if (game.training && game.phase === 'fight' && game.t < 400) {
         f.T('ESC pausa  •  R reposiciona  •  T troca o alvo', W / 2, H - 56, 13, '#cfd6f5', 'center', { alpha: 1 - game.t / 400 });

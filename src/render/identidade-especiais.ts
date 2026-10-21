@@ -2,7 +2,7 @@ import type { IdLutador } from '../core/contratos';
 import type { EstiloId, Paleta } from './estilos-especiais';
 
 /*
- * Tabela de apresentação dos 28 especiais (docs/identidade-visual-especiais.md, seção 3 e a tabela de unicidade da seção 4): título, paleta,
+ * Tabela de apresentação dos 33 especiais (docs/identidade-visual-especiais.md, seção 3 e a tabela de unicidade da seção 4): título, paleta,
  * estilo + variante, recorte da pose, altura/ângulo da faixa, ritmo e receitas de som. Chave `<id>.<ficha|base>.<golpe>`
  * (ex.: `nila.sarpa.sFire`, `baatar.base.sFwd`). Fica no render, FORA do `LutadorDef`: não mexe no snapshot nem no lock-step; a ausência da
  * chave cai no padrão (cores `fire` do lutador, estilo de estrelas, o mesmo som de abertura do jogo).
@@ -64,6 +64,14 @@ function id(
 ): Identidade {
   return { titulo, paleta: pal(cores), estilo, variante, recorte, faixa: f, ritmo, abertura, batida, ...extra };
 }
+
+/** Moedas do ZENON (3 x T(triângulo 2637, 0,05, 0,05) a +0, +40 e +80 ms): o dreno de energia que se ouve. */
+const MOEDAS_ZENON: readonly Som[] = [0, 0.04, 0.08].map((q) => T('triangle', 2637, null, 0.05, 0.05, q));
+/** Abertura do chefão: a quinta de órgão da trilha da valsa (Ré e Lá, dente-de-serra passa-baixa 900 Hz). */
+const ABERTURA_ZENON: readonly Som[] = [T('sawtooth', 147, null, 0.6, 0.12, 0, ['lowpass', 900]), T('sawtooth', 220, null, 0.6, 0.08, 0, ['lowpass', 900])];
+/** Batida: o cravo (triângulo 1175 -> 880) e o bumbo de seno 50 Hz. */
+const BATIDA_ZENON: readonly Som[] = [T('triangle', 1175, 880, 0.12, 0.1), T('sine', 50, null, 0.4, 0.7)];
+
 
 export const IDENTIDADES: Readonly<Record<string, Identidade>> = {
   // ---- HAYATO · E1 RAIO
@@ -136,15 +144,22 @@ export const IDENTIDADES: Readonly<Record<string, Identidade>> = {
     [R('bandpass', 300, 150, 1, 0.25, 0.4), T('sine', 90, 45, 0.3, 0.5)], [T('sine', 90, 45, 0.2, 0.4)]),
   'baatar.base.sFwd': id('MERGULHO DA ÁGUIA', ['#ffe08a', '#ff2a10', '#3a0603'], 'E11', 'asas', 'CORPO-H', faixa('media', -10, 164), 'PESADO',
     [T('triangle', 2400, 1500, 0.3, 0.12), T('triangle', 2400, 1500, 0.3, 0.12, 0, undefined, { desafina: 20 }), R('bandpass', 900, null, 1, 0.6, 0.2)], [T('sine', 45, null, 0.6, 0.8)]),
+  // ---- ZENON · E12 MEANDRO E ANEL (chefão; docs/identidade-visual-especiais.md §3.10). A ficha `chefe` (fase 1) cai na base; só a `chefe2` troca o ESP e o →+ESP.
+  // O núcleo ônix (`#0c0710`) é fixo no estilo; a `paleta.nucleo` daqui é o miolo CLARO do nome.
+  'zenon.base.sFire': id('SELO DO ARCONTE', ['#fff0f8', '#d6339a', '#2a0418'], 'E12', 'selo', 'BUSTO', faixa('media', 0), 'MEDIO', ABERTURA_ZENON, BATIDA_ZENON),
+  'zenon.base.sDown': id('COLUNA DE ÔNIX', ['#ffe6a8', '#b02a7e', '#1a0612'], 'E12', 'coluna', 'CORPO', faixa('media', 10), 'RAPIDO', ABERTURA_ZENON, [T('triangle', 1175, 880, 0.12, 0.1), T('sine', 50, null, 0.3, 0.6)]),
+  'zenon.base.sFwd': id('TRIBUTO', ['#ffffff', '#ff5fb8', '#3d0626'], 'E12', 'tributo', 'CORPO', faixa('media', -4), 'PESADO', ABERTURA_ZENON, [...BATIDA_ZENON, ...MOEDAS_ZENON]),
+  'zenon.chefe2.sFire': id('SELO MAIOR', ['#ffffff', '#e0249a', '#2a0418'], 'E12', 'selo-maior', 'BUSTO', faixa('media', 0, 164), 'PESADO', ABERTURA_ZENON, BATIDA_ZENON),
+  'zenon.chefe2.sFwd': id('DECRETO', ['#ffe08a', '#e0249a', '#12040c'], 'E12', 'decreto', 'MEIO', faixa('media', -8), 'PESADO', ABERTURA_ZENON, [...BATIDA_ZENON, ...MOEDAS_ZENON]),
 };
 
-/** Chaves das 29 entradas, para teste. */
+/** Chaves das 33 entradas (28 + as 5 do ZENON), para teste. */
 export const CHAVES_IDENTIDADE: readonly string[] = Object.keys(IDENTIDADES);
 
 /** `<id>.<ficha|base>.<golpe>`. */
 export const chaveDaIdentidade = (lutador: IdLutador, ficha: string | null, golpe: string): string => `${lutador}.${ficha ?? 'base'}.${golpe}`;
 
-/** A identidade do especial: a da ficha ativa, senão a da base (o BAATAR deixou de ter fichas: virou lutador comum, o →+ESP dele é o MERGULHO DA ÁGUIA). undefined = padrão. */
+/** A identidade do especial: a da ficha ativa, senão a da base (o BAATAR deixou de ter fichas: virou lutador comum, o →+ESP dele é o MERGULHO DA ÁGUIA; a ficha `chefe` do ZENON cai na base). undefined = padrão. */
 export function identidadeDe(lutador: IdLutador, ficha: string | null, golpe: string): Identidade | undefined {
   return IDENTIDADES[chaveDaIdentidade(lutador, ficha, golpe)] ?? IDENTIDADES[chaveDaIdentidade(lutador, null, golpe)];
 }
@@ -175,6 +190,7 @@ export const SOM_DO_ACERTO: Readonly<Record<string, readonly Som[]>> = {
   camille: [T('triangle', 2637, null, 0.2, 0.1), R('highpass', 6000, null, 1, 0.1, 0.2)],
   nila: [T('sine', 140, 90, 0.2, 0.4)],
   'nila.sarpa': [R('bandpass', 5200, null, 4, 0.15, 0.2)],
+  zenon: [T('triangle', 1175, 880, 0.12, 0.1), T('sine', 50, null, 0.35, 0.6)],
   baatar: [T('sawtooth', 73, null, 0.3, 0.2, 0, ['lowpass', 500]), T('sine', 55, null, 0.35, 0.6), T('triangle', 2400, 1500, 0.2, 0.08)],
 };
 

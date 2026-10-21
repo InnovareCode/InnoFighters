@@ -45,11 +45,11 @@ describe('meta/progresso: liberados', () => {
     expect(l.has(B)).toBe(false);
   });
 
-  it('regras padrao: so os 4 iniciais liberados; a fila e AMINU, CENTELLA, CAMILLE, NILA, BAATAR e NAO ha chefao (ate o Zenon entrar)', () => {
+  it('regras padrao: so os 4 iniciais liberados; a fila e AMINU, CENTELLA, CAMILLE, NILA, BAATAR e o chefao e o ZENON (fora da fila)', () => {
     expect([...liberados(progressoVazio())].sort()).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
-    expect(REGRAS_PADRAO.chefe).toBeNull();
+    expect(REGRAS_PADRAO.chefe).toBe('zenon');
     expect(REGRAS_PADRAO.fila).toEqual(['aminu', 'centella', 'camille', 'nila', 'baatar']);
-    expect(REGRAS_PADRAO.roster).toHaveLength(9);
+    expect(REGRAS_PADRAO.roster).toHaveLength(10);
   });
 });
 
@@ -296,12 +296,13 @@ describe('meta/escada: montarEscada', () => {
     expect(e.filter((x) => !x.chefe).map((x) => x.id).sort()).toEqual([A, C, M, W].sort());
   });
 
-  it('com as regras padrao (sem chefao): 5 rivais, nenhuma etapa de chefe, sem o lutador do jogador; o BAATAR pode ser rival', () => {
+  it('com as regras padrao: 5 rivais (sem o lutador do jogador, sem o ZENON) e o chefao ZENON no fim; o BAATAR pode ser rival', () => {
     const e = montarEscada({ c1: H, prog: progressoVazio(), rng: criarRng(1) });
-    expect(e).toHaveLength(5);
-    expect(e.some((x) => x.chefe || x.id === H)).toBe(false);
+    expect(e).toHaveLength(6);
+    expect(e[5]).toEqual({ id: 'zenon', chefe: true });
+    expect(e.slice(0, 5).some((x) => x.chefe || x.id === H || x.id === 'zenon')).toBe(false);
     const rivais = new Set<string>();
-    for (let s = 1; s <= 30; s++) for (const x of montarEscada({ c1: H, prog: progressoVazio(), rng: criarRng(s) })) rivais.add(x.id);
+    for (let s = 1; s <= 30; s++) for (const x of montarEscada({ c1: H, prog: progressoVazio(), rng: criarRng(s) }).slice(0, 5)) rivais.add(x.id);
     expect(rivais.has('baatar')).toBe(true);
   });
 

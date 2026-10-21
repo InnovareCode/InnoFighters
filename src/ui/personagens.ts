@@ -15,6 +15,16 @@ export type EsquemaTeclas = keyof typeof SCHEME;
 /** Cores dos jogadores (P_COL). */
 export const P_COL: readonly [string, string] = ['#3fa9ff', '#ff4f5e'];
 
+/**
+ * Escala máxima (`LutadorDef.scale`) que as telas de vitrine (seleção, VS, final) mostram sem corte: acima disso o lutador é reduzido na vitrine
+ * para ter a altura de um de 1,1. Só o BAATAR (1,28) e o ZENON (1,36) passam; os 8 de até 1,06 (os 4 originais, de fidelidade com o protótipo,
+ * inclusive) ficam EXATAMENTE como estavam. Sem isto a cabeça do ZENON sai da tela na seleção (topo em y -48), no VS (-68) e no final (-55).
+ */
+export const ESCALA_MAXIMA_DE_VITRINE = 1.1;
+
+/** Fator (<= 1) que a vitrine multiplica na escala de desenho de um lutador. */
+export const escalaDeVitrine = (ch: { readonly scale: number }): number => Math.min(1, ESCALA_MAXIMA_DE_VITRINE / ch.scale);
+
 /** Respiração do lutador nos menus. */
 export const idleBob = (t: number): number => 1 + 0.012 * Math.sin(t / 16);
 

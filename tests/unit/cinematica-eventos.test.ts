@@ -32,10 +32,10 @@ const doTipo = <T extends EventoLuta['tipo']>(ev: readonly EventoLuta[], t: T): 
 describe('special: golpe, ficha, momento e apresentação', () => {
   const casos = todasAsApresentacoes();
 
-  it('a tabela de apresentação cobre os 28 especiais (9 lutadores x 3 menos a VADIVU, mais a NILA em SARPA: 2); o BAATAR normal não tem fichas', () => {
-    expect(casos).toHaveLength(28);
-    expect(casos.filter((c) => c.ficha === null)).toHaveLength(26); // 9 x 3 menos a VADIVU (custo 0, sem special)
-    expect(casos.filter((c) => c.ficha !== null).map((c) => `${c.id}/${c.ficha}`).sort()).toEqual(['nila/sarpa', 'nila/sarpa']);
+  it('a tabela de apresentação cobre os 33 especiais (10 lutadores x 3 menos a VADIVU, mais a NILA em SARPA: 2 e o ZENON em chefe2: 2); o BAATAR normal não tem fichas', () => {
+    expect(casos).toHaveLength(33);
+    expect(casos.filter((c) => c.ficha === null)).toHaveLength(29); // 10 x 3 menos a VADIVU (custo 0, sem special)
+    expect(casos.filter((c) => c.ficha !== null).map((c) => `${c.id}/${c.ficha}`).sort()).toEqual(['nila/sarpa', 'nila/sarpa', 'zenon/chefe2', 'zenon/chefe2']);
   });
 
   it('todo quadro citado existe no atlas de produção do lutador (e é o que o Apolo escreveu)', () => {

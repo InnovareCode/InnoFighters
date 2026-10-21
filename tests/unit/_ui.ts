@@ -73,7 +73,7 @@ export function navegadorFalso(settings: Partial<Configuracoes> = {}, regras: Re
   return { ui, c, g, audio: a, persist, salvou };
 }
 
-/** Os 9 lutadores do elenco (E5): nome, tom de voz e cenário da casa (iguais aos dos dados reais). */
+/** Os 10 lutadores do elenco (E5 + o ZENON): nome, tom de voz e cenário da casa (iguais aos dos dados reais). */
 const ELENCO_FALSO: ReadonlyArray<readonly [string, string, number, string]> = [
   ['hayato', 'HAYATO', 1.05, 'jp'],
   ['wei-long', 'WEI LONG', 0.82, 'cn'],
@@ -84,11 +84,12 @@ const ELENCO_FALSO: ReadonlyArray<readonly [string, string, number, string]> = [
   ['camille', 'CAMILLE', 1.1, 'fr'],
   ['nila', 'NILA', 1.12, 'in'],
   ['baatar', 'BAATAR', 0.7, 'mn'],
+  ['zenon', 'ZENON', 0.76, 'gr'],
 ];
 
-/** Mundo mínimo (só o que as cenas testadas leem): nome, tom e cenário dos 9 lutadores. */
+/** Mundo mínimo (só o que as cenas testadas leem): nome, tom e cenário dos 10 lutadores. */
 export function mundoFalso(): Mundo {
-  const ch = (name: string, pitch: number, stage: string) => ({ ch: { name, pitch, stage, K: 1, scale: 1, fichas: {} }, arte: { retrato: () => null } });
+  const ch = (name: string, pitch: number, stage: string) => ({ ch: { name, pitch, stage, K: 1, scale: 1, fichas: {}, title: 'O Arconte', head: [0, 0, 1, 1] }, arte: { retrato: () => null } });
   const elenco = Object.fromEntries(ELENCO_FALSO.map(([id, nome, tom, cen]) => [id, ch(nome, tom, cen)]));
   return { elenco, arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined } } as unknown as Mundo;
 }

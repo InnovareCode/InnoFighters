@@ -38,20 +38,21 @@ const real = montarTodos();
 const realComChefe = comBaatarChefe(real);
 
 describe('E5 · ids finais e papéis', () => {
-  it('IDS_LUTADORES tem os 9, na ordem da grade: 4 do protótipo e a fila (o BAATAR é o último)', () => {
-    expect([...IDS_LUTADORES]).toEqual([...ORIGINAIS, 'aminu', 'centella', 'camille', 'nila', 'baatar']);
+  it('IDS_LUTADORES tem os 10, na ordem da grade: 4 do protótipo, a fila (o BAATAR é o último dela) e o chefão ZENON no fim', () => {
+    expect([...IDS_LUTADORES]).toEqual([...ORIGINAIS, 'aminu', 'centella', 'camille', 'nila', 'baatar', 'zenon']);
     expect([...ROSTER]).toEqual([...IDS_LUTADORES]);
   });
 
   it('cada definição carrega o id da própria chave (sem cast que desminta o tipo)', () => {
     for (const id of IDS_LUTADORES) expect(LUTADORES[id].id).toBe(id);
-    expect(Object.keys(LUTADORES)).toHaveLength(9);
+    expect(Object.keys(LUTADORES)).toHaveLength(10);
   });
 
-  it('a fila é AMINU, CENTELLA, CAMILLE, NILA, BAATAR; não há chefão por enquanto (o Zenon ainda não entrou); os iniciais são os 4 do protótipo', () => {
+  it('a fila é AMINU, CENTELLA, CAMILLE, NILA, BAATAR; o chefão é o ZENON (fora da fila); os iniciais são os 4 do protótipo', () => {
     expect([...FILA_DESBLOQUEIO]).toEqual(['aminu', 'centella', 'camille', 'nila', 'baatar']);
-    expect(CHEFE).toBeNull();
-    expect(REGRAS_PADRAO.chefe).toBeNull();
+    expect(CHEFE).toBe('zenon');
+    expect(REGRAS_PADRAO.chefe).toBe('zenon');
+    expect(FILA_DESBLOQUEIO).not.toContain('zenon');
     expect([...INICIAIS]).toEqual([...ORIGINAIS]);
     expect([...REGRAS_PADRAO.roster]).toEqual([...IDS_LUTADORES]);
   });
@@ -99,10 +100,17 @@ describe('E5 · fila de desbloqueio (regras reais; BAATAR é o 5º, sem chefão 
     expect(liberados(antigo).has('baatar')).toBe(true);
   });
 
-  it('sem chefão (CHEFE null) `derrotouChefe` não libera nem marca nada: só avança a fila', () => {
-    const r = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true });
+  it('sem chefão nas regras (injetado null) `derrotouChefe` não libera nem marca nada: só avança a fila', () => {
+    const r = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, { ...REGRAS_PADRAO, chefe: null });
     expect(r.novos).toEqual(['aminu']);
     expect(r.prog.chefeDerrotado).toBe(false);
+  });
+
+  it('com o ZENON como chefão (regras reais) derrotá-lo libera o ZENON (D-Z1) além do próximo da fila', () => {
+    const r = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true });
+    expect(r.novos).toContain('zenon');
+    expect(r.novos).toContain('aminu');
+    expect(liberados(r.prog).has('zenon')).toBe(true);
   });
 
   it('save novo: só os 4 iniciais liberados; os 5 da fila (BAATAR incluso) ficam travados', () => {
@@ -110,18 +118,24 @@ describe('E5 · fila de desbloqueio (regras reais; BAATAR é o 5º, sem chefão 
   });
 });
 
-describe('E5 · escada do Arcade (5 rivais; sem chefão por enquanto)', () => {
+describe('E5 · escada do Arcade (5 rivais + o chefão ZENON no fim; jogando COM o ZENON não há chefe)', () => {
   it('TAMANHO_ESCADA é 5', () => {
     expect(TAMANHO_ESCADA).toBe(5);
   });
 
-  it('para cada um dos 9: a escada tem 5 etapas (nenhuma de chefe), rivais distintos, sem o próprio jogador', () => {
+  it('para cada um dos 10: 5 rivais distintos sem o próprio jogador e, no fim, o chefão ZENON (jogando COM ele: só os 5 rivais, ED7)', () => {
     for (const c1 of IDS_LUTADORES) {
       for (const semente of [1, 2, 3, 99]) {
         const e = montarEscada({ c1, prog: progressoVazio(), rng: criarRng(semente) });
-        expect(e, `${c1}/${semente}`).toHaveLength(5);
-        expect(e.every((x) => !x.chefe && x.id !== c1), `${c1}/${semente}`).toBe(true);
-        expect(new Set(e.map((x) => x.id)).size).toBe(5);
+        const rivais = e.filter((x) => !x.chefe);
+        expect(rivais, `${c1}/${semente}`).toHaveLength(5);
+        expect(rivais.every((x) => x.id !== c1 && x.id !== 'zenon'), `${c1}/${semente}`).toBe(true);
+        expect(new Set(rivais.map((x) => x.id)).size).toBe(5);
+        if (c1 === 'zenon') expect(e, `${c1}/${semente}`).toHaveLength(5);
+        else {
+          expect(e, `${c1}/${semente}`).toHaveLength(6);
+          expect(e[5], `${c1}/${semente}`).toEqual({ id: 'zenon', chefe: true });
+        }
       }
     }
   });
@@ -131,8 +145,8 @@ describe('E5 · escada do Arcade (5 rivais; sem chefão por enquanto)', () => {
     for (let s = 1; s <= 40; s++) for (const x of montarEscada({ c1: 'hayato', prog: progressoVazio(), rng: criarRng(s) })) vistos.add(x.id);
     expect(vistos.has('baatar')).toBe(true);
     const e = montarEscada({ c1: 'baatar', prog: progressoVazio(), rng: criarRng(7) });
-    expect(e).toHaveLength(5);
-    expect(e.some((x) => x.chefe || x.id === 'baatar')).toBe(false);
+    expect(e).toHaveLength(6); // 5 rivais + o ZENON
+    expect(e.slice(0, 5).some((x) => x.chefe || x.id === 'baatar')).toBe(false);
   });
 
   it('com um chefão injetado nas regras (o Zenon, quando entrar) a escada volta a ter 5 rivais + o chefe no fim, e ele nunca é rival', () => {
@@ -216,7 +230,7 @@ describe('E5 · mecânica de chefe do motor com a arte real do BAATAR (def ANTIG
   const cfg = realComChefe.baatar.chefe;
 
   it('ConfigChefe (2 barras de 40, fichas chefe/chefe2, Dança de 90 ticks, bônus 5000) monta sobre o atlas real', () => {
-    expect(cfg).toEqual({ barras: 2, hpPorBarra: 40, fichaFase1: 'chefe', fichaFase2: 'chefe2', danca: { duracao: 90 }, bonusVitoria: 5000 });
+    expect(cfg).toEqual({ barras: 2, hpPorBarra: 40, fichaFase1: 'chefe', fichaFase2: 'chefe2', cena: { duracao: 90, poses: ['devekh0', 'devekh1', 'devekh2'] }, bonusVitoria: 5000 });
     expect(Object.keys(realComChefe.baatar.fichas).sort()).toEqual(['chefe', 'chefe2']);
   });
 
@@ -251,7 +265,7 @@ describe('E5 · mecânica de chefe do motor com a arte real do BAATAR (def ANTIG
     for (const n of nomes) expect(getPD(c.ch, n), n).toBe(realComChefe.baatar.pd[n]);
     expect(c.ficha).toBe('chefe2');
     expect(c.ch.moves.sFwd.name).toBe('MERGULHO DA ÁGUIA');
-    expect(tipos(evs, 'fase-chefe').map((e) => (e.tipo === 'fase-chefe' ? e.etapa : ''))).toEqual(['troca', 'danca', 'retomada']);
+    expect(tipos(evs, 'fase-chefe').map((e) => (e.tipo === 'fase-chefe' ? e.etapa : ''))).toEqual(['troca', 'cena', 'retomada']);
   });
 });
 
@@ -418,18 +432,18 @@ describe('E5 · cenários', () => {
   const ferramenta = async () =>
     (await import(/* @vite-ignore */ pathToFileURL(caminho('ferramentas/extrair-prototipo.mjs')).href)) as { dimensoesWebp: (b: Buffer) => [number, number] };
 
-  it('10 cenários: jp, cn, kr, br + ng, mx, fr, in, mn; cada um com a sua casa', () => {
-    expect(ids.sort()).toEqual(['br', 'cn', 'fr', 'in', 'jp', 'kr', 'mn', 'mx', 'ng']);
-    const casas: Record<string, IdLutador> = { jp: 'hayato', cn: 'wei-long', kr: 'min-ji', br: 'caio', ng: 'aminu', mx: 'centella', fr: 'camille', in: 'nila', mn: 'baatar' };
+  it('10 cenários: jp, cn, kr, br + ng, mx, fr, in, mn + gr (o do chefão); cada um com a sua casa', () => {
+    expect(ids.sort()).toEqual(['br', 'cn', 'fr', 'gr', 'in', 'jp', 'kr', 'mn', 'mx', 'ng']);
+    const casas: Record<string, IdLutador> = { jp: 'hayato', cn: 'wei-long', kr: 'min-ji', br: 'caio', ng: 'aminu', mx: 'centella', fr: 'camille', in: 'nila', mn: 'baatar', gr: 'zenon' };
     for (const id of ids) expect(CENARIOS[id].casa, id).toBe(casas[id]);
   });
 
-  it('cada lutador aponta para o cenário cuja casa é ele (bijeção 9 × 9)', () => {
+  it('cada lutador aponta para o cenário cuja casa é ele (bijeção 10 × 10)', () => {
     for (const id of IDS_LUTADORES) {
       const c = CENARIOS[LUTADORES[id].stage];
       expect(c.casa, id).toBe(id);
     }
-    expect(new Set(IDS_LUTADORES.map((id) => LUTADORES[id].stage)).size).toBe(9);
+    expect(new Set(IDS_LUTADORES.map((id) => LUTADORES[id].stage)).size).toBe(10);
   });
 
   it('os arquivos existem e são imagens de verdade (WebP ou JPEG, 16:9 aproximado)', async () => {

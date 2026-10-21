@@ -12,11 +12,10 @@ export const INICIAIS: readonly IdLutador[] = ['hayato', 'wei-long', 'min-ji', '
 export const FILA_DESBLOQUEIO: readonly IdLutador[] = ['aminu', 'centella', 'camille', 'nila', 'baatar'];
 
 /**
- * Chefao: NENHUM por enquanto (TEMPORARIO). O BAATAR virou lutador normal e o Zenon Argyros ainda nao entrou: o Arcade
- * termina sem luta de chefe (escada so com os `TAMANHO_ESCADA` rivais; `derrotouChefe` nunca vale). Quando o Zenon entrar,
- * e so trocar este valor pelo id dele.
+ * Chefao: ZENON ARGYROS, "O Arconte" (docs/spec-chefao-zenon.md). O BAATAR virou lutador normal (5o da fila). Derrotado, o ZENON
+ * e jogavel (D-Z1); jogando COM ele nao ha luta de chefe (ED7).
  */
-export const CHEFE: IdLutador | null = null;
+export const CHEFE: IdLutador | null = 'zenon';
 
 /** Rivais sorteados antes do chefao (ED4: 5 rivais + chefao = 6 lutas; sem chefao, a escada tem 5 etapas). */
 export const TAMANHO_ESCADA = 5;

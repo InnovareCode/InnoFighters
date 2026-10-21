@@ -36,6 +36,8 @@ export type CampanhaArcade = {
   continues: number;
   diff: number;
   cont: number;
+  /** A ENTRADA DRAMÁTICA do chefão já foi mostrada nesta campanha? Depois de um continue ela é curta (spec do ZENON §3.2). */
+  entradaDoChefeVista?: boolean;
 };
 
 /** Argumentos de entrada das cenas (o que `UI.go(nome, args)` leva). */

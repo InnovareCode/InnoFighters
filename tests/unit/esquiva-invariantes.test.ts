@@ -206,7 +206,7 @@ describe('fuzz de invariantes (mãos aleatórias, 9 lutadores, esquiva ligada)',
         checar(p, vigias, falhas, { chefe: true });
         for (const e of p.ev) {
           if (e.tipo === 'fase-chefe' && e.etapa === 'troca') trocas++;
-          if (e.tipo === 'fase-chefe' && e.etapa === 'danca') naCena = true;
+          if (e.tipo === 'fase-chefe' && e.etapa === 'cena') naCena = true;
           if (e.tipo === 'fase-chefe' && e.etapa === 'retomada') naCena = false;
           if (naCena && e.tipo === 'esquiva') falhas.push('esquiva do lutador ' + e.lutador + ' durante a Dança, tick ' + p.g.tick);
         }

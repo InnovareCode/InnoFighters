@@ -58,4 +58,15 @@ já desenha os projéteis.
   de ação concreta saíram certas. **Folha de postura alternativa: trocar a frase de postura do CHARACTER, não só a linha.**
   Teste rápido de postura: razão largura/altura da caixa (serpente é mais larga que alta). f4/f5 da NILA ~10% menores
   que a f1 v3 (cabeça 101-102 x 112 px): `fatorFolha` ~1,11.
+- ZENON S1-S10 (2026-10-21, `docs/handoff-apolo-zenon-folhas.md`): nenhuma regeração obrigatória; mapa v1 fecha as 60 poses
+  com apelidos (cblock=crouch, sweep=clk); ZR opcional (6 créditos). Defeitos: idle duplicado (achar com `difmask.ps1`: <3% =
+  mesmo desenho), cblock alta (88% do idle) porque o CHARACTER diz "tall and upright", rasteira com a perna de TRÁS, SELO com o
+  braço errado ("right arm" é ambíguo: diga "the arm nearest the viewer"), pose "tirando a poeira" desenhou poeira (verbo que
+  implica partícula vira efeito). Régua de escala: cano da bota a 16 px da sola (~72 px) + cabeça (`queixo.ps1`, falha na
+  mestra: lá medir a olho). Cabeça inclinada infla topo→queixo ~8%: confira com a bota antes de pedir `fatorFolha`.
+- ZENON ZR (2026-10-21, §8 do mesmo doc): 3 de 6 entraram (`sweep` r1c2, `jpunch` r2c3; r2c2 reserva). A `cblock` falhou em
+  3 células de 2 gerações: este modelo não desenha defesa agachada baixa para personagem alto; fica o apelido do `crouch`.
+  **Eco da referência também no Runway:** pose parecida com a anexada (SELO = mão estendida, igual à guarda do idle) volta
+  como a própria referência (6,1% de máscara, menos que idle x idle). Sempre rodar `difcruz.ps1` da célula contra a anexada;
+  diferença menor que a da respiração = eco, reprova mesmo cumprindo o critério escrito.
 - Dragão FX do WEI aprovado (1bcee91a); falta o original em `arte-fonte/lutadores/wei-long/fx/wei-long-fx-v1.png`.

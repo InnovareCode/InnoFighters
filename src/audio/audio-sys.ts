@@ -7,7 +7,8 @@ import { criarRng, sementeAleatoria, type Rng } from '../core/rng';
  *  - tone: oscilador com envelope e filtro opcional
  *  - noise: ruído branco filtrado (impactos, whoosh)
  *  - voice: sawtooth passando por filtros formantes (vozes: "HA!", grito de KO)
- *  - música: sequenciador de 16 semicolcheias por compasso (baixo, lead e bateria), 2 trilhas (menu / luta)
+ *  - música: sequenciador de semicolcheias (baixo, lead e bateria), 3 trilhas (menu / luta / chefão). As duas primeiras têm 16 passos por
+ *    compasso; a do chefão (ZENON) é uma valsa em 3/4, 12 passos por compasso (docs/spec-chefao-zenon.md §5)
  * A luta NÃO chama isto: ela emite eventos e audio/eventos.ts converte em chamadas.
  */
 
@@ -52,7 +53,16 @@ export type OpcoesVoz = {
   Q?: number;
 };
 
-export type TrilhaMusica = 'fight' | 'menu';
+export type TrilhaMusica = 'fight' | 'menu' | 'chefe';
+
+/** Forma de cada trilha: andamento, passos por compasso e compassos do laço. `fight` e `menu` são as do protótipo, bit a bit. */
+type DefTrilha = { bpm: number; passosPorCompasso: number; compassos: number; andamentoFase2?: number };
+export const TRILHAS: Readonly<Record<TrilhaMusica, DefTrilha>> = {
+  fight: { bpm: 150, passosPorCompasso: 16, compassos: 4 },
+  menu: { bpm: 92, passosPorCompasso: 16, compassos: 4 },
+  // Valsa 3/4 em semicolcheias: 12 passos por compasso, 8 compassos (96 passos). Fase 2 do chefão: +12% de andamento.
+  chefe: { bpm: 138, passosPorCompasso: 12, compassos: 8, andamentoFase2: 1.12 },
+};
 
 export type DependenciasAudio = {
   /** Cria o AudioContext (padrão: window.AudioContext / webkitAudioContext). null = sem áudio. */
@@ -63,7 +73,6 @@ export type DependenciasAudio = {
   clearInterval?: (id: unknown) => void;
 };
 
-const BPM = 150;
 const ROOTS = [45, 41, 43, 40]; // Am  F  G  E (notas MIDI do baixo)
 const BASS = [0, null, 12, null, 0, null, 7, null, 0, null, 12, null, 7, null, 10, null] as const;
 const KICK = [1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0];
@@ -77,6 +86,22 @@ const MLEAD = [
   76, 0, 0, 0, 72, 0, 74, 0, 71, 0, 0, 0, 69, 0, 0, 0, 72, 0, 0, 0, 77, 0, 76, 0, 72, 0, 0, 0, 69, 0, 71, 0, 71, 0, 0, 0, 74, 0, 76, 0, 79, 0, 0, 0,
   76, 0, 74, 0, 76, 0, 0, 0, 71, 0, 0, 0, 68, 0, 71, 0, 76, 0, 0, 0,
 ];
+
+// --- Trilha do chefão (ZENON): valsa sinistra em Ré frígio dominante (Ré Mi♭ Fá♯ Sol Lá Si♭ Dó), raiz MIDI 50 ---
+const CHEFE_RAIZ = 50;
+/** Grau da raiz de cada um dos 8 compassos, em semitons acima de Ré: Ré, Mi♭, Ré, Mi♭, Dó, Mi♭, Ré, Ré. */
+const CHEFE_GRAUS = [0, 1, 0, 1, -2, 1, 0, 0] as const;
+/** Melodia do cravo: 96 passos (8 compassos x 12), 0 = pausa. A nota cai nos tempos (passos 0, 4 e 8) e nos floreios (6 e 10). */
+const CHEFE_MELODIA = [
+  74, 0, 0, 0, 70, 0, 69, 0, 66, 0, 0, 0, // Ré: Ré Si♭ Lá Fá♯
+  75, 0, 0, 0, 72, 0, 70, 0, 67, 0, 0, 0, // Mi♭: Mi♭ Dó Si♭ Sol
+  74, 0, 0, 0, 70, 0, 69, 0, 66, 0, 69, 0, // Ré, com a volta para o Lá
+  75, 0, 0, 0, 74, 0, 72, 0, 70, 0, 0, 0, // Mi♭ descendo
+  72, 0, 0, 0, 69, 0, 67, 0, 66, 0, 0, 0, // Dó
+  70, 0, 0, 0, 72, 0, 75, 0, 74, 0, 0, 0, // Mi♭ subindo
+  74, 0, 72, 0, 70, 0, 69, 0, 66, 0, 67, 0, // Ré, descida cromática
+  69, 0, 0, 0, 66, 0, 0, 0, 62, 0, 0, 0, // cadência no Ré
+] as const;
 
 const contextoDoNavegador = (): AudioContext | null => {
   const w = globalThis as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
@@ -99,6 +124,9 @@ export class AudioSys {
   timer: unknown = null;
   loops = 0;
   kind: TrilhaMusica | null = null;
+  /** Fase da trilha do chefão em uso (1 ou 2) e a pedida por `musicaDaFase`: a troca só vale no início do compasso seguinte. */
+  fase: 1 | 2 = 1;
+  private faseAlvo: 1 | 2 = 1;
 
   private readonly dep: Required<DependenciasAudio>;
 
@@ -374,9 +402,11 @@ export class AudioSys {
   // --- música de fundo (sequenciador) ---
   startMusic(kind: TrilhaMusica = 'fight'): void {
     if (!this.ctx) return;
+    this.faseAlvo = 1; // uma luta nova começa na fase 1, mesmo com a trilha já tocando (a troca vale no início do compasso)
     if (this.musicOn && this.kind === kind) return;
     this.stopMusic();
     this.kind = kind;
+    this.fase = 1;
     this.musicOn = true;
     this.step = 0;
     this.loops = 0;
@@ -388,14 +418,23 @@ export class AudioSys {
     this.timer = null;
     this.musicOn = false;
   }
+  /**
+   * Fase 2 da luta de chefe (a cena do ZENON): andamento +12%, bumbo nos 3 tempos e órgão uma oitava abaixo. NÃO corta o compasso em
+   * andamento: só vira no início do próximo (passo % passosPorCompasso === 0). Sem efeito nas trilhas `fight` e `menu`.
+   */
+  musicaDaFase(fase: 1 | 2): void {
+    this.faseAlvo = fase;
+  }
   scheduler(): void {
     const c = this.ctx;
     if (!c) return;
-    const bpm = this.kind === 'menu' ? 92 : BPM;
-    const spb = 60 / bpm / 4;
-    const len = 64;
+    const def = TRILHAS[this.kind === 'menu' ? 'menu' : this.kind === 'chefe' ? 'chefe' : 'fight'];
+    const len = def.passosPorCompasso * def.compassos;
     while (this.nextTime < c.currentTime + 0.15) {
+      if (this.step % def.passosPorCompasso === 0) this.fase = this.faseAlvo;
+      const spb = 60 / (def.bpm * (this.fase === 2 && def.andamentoFase2 ? def.andamentoFase2 : 1)) / 4;
       if (this.kind === 'menu') this.playMenu(this.step, this.nextTime, spb);
+      else if (this.kind === 'chefe') this.playChefe(this.step, this.nextTime, spb);
       else this.playStep(this.step, this.nextTime, spb);
       this.nextTime += spb;
       this.step++;
@@ -433,6 +472,32 @@ export class AudioSys {
     // acorde de apoio no início de cada compasso
     if (s16 === 0) {
       [0, 3 + (bar === 3 ? 1 : 0), 7].forEach((iv) => this.tone({ type: 'sawtooth', f0: midi(root + 12 + iv), t: spb * 6, vol: 0.045, at: t, dest: m, filter: { type: 'lowpass', f: 1200 } }));
+    }
+  }
+  /**
+   * Valsa do chefão (3/4, 12 passos por compasso). Tempo 1 = passo 0: bordão (dente-de-serra, passa-baixa de 900 Hz) e bumbo. Tempos 2 e
+   * 3 = passos 4 e 8: acorde de órgão em quintas. Prato de braseiro no passo 8 (ruído passa-alta de 6 kHz) e cravo na melodia (triângulo
+   * curto). Fase 2: bumbo também nos passos 4 e 8 e o órgão uma oitava abaixo. Tudo determinístico em `step`: nenhum sorteio.
+   */
+  playChefe(step: number, t: number, spb: number): void {
+    const passo = step % 12;
+    const compasso = Math.floor(step / 12) % CHEFE_GRAUS.length;
+    const raiz = CHEFE_RAIZ + (CHEFE_GRAUS[compasso] ?? 0);
+    const m = this.music;
+    const f2 = this.fase === 2;
+    if (passo === 0 || (f2 && (passo === 4 || passo === 8))) this.tone({ type: 'sine', f0: 150, f1: 40, t: 0.24, vol: 0.5, at: t, dest: m });
+    if (passo === 0) {
+      this.tone({ type: 'sawtooth', f0: midi(raiz - 12), t: spb * 10, vol: 0.2, at: t, dest: m, filter: { type: 'lowpass', f: 900 } });
+    }
+    if (passo === 4 || passo === 8) {
+      const oit = f2 ? 0 : 12;
+      [0, 7, 12].forEach((iv) => this.tone({ type: 'sawtooth', f0: midi(raiz + oit + iv), t: spb * 3.4, vol: 0.05, at: t, dest: m, filter: { type: 'lowpass', f: 900 } }));
+    }
+    if (passo === 8) this.noise({ t: 0.16, vol: 0.1, type: 'highpass', f0: 6000, at: t, dest: m });
+    const n = CHEFE_MELODIA[step % CHEFE_MELODIA.length];
+    if (n) {
+      this.tone({ type: 'triangle', f0: midi(n), t: spb * 1.6, vol: 0.16, attack: 0.003, at: t, dest: m, filter: { type: 'lowpass', f: 3000 } });
+      this.tone({ type: 'triangle', f0: midi(n), t: spb * 1.6, vol: 0.09, attack: 0.003, at: t, dest: m, detune: 7, filter: { type: 'lowpass', f: 3000 } });
     }
   }
   playMenu(step: number, t: number, spb: number): void {

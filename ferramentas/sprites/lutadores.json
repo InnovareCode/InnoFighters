@@ -37,5 +37,19 @@
       "dive1": "direita",
       "jkick": "pe"
     }
+  },
+  "zenon": {
+    "_nota": "Chefao final. Layout 'zenon' (s1..s10 + zr, 3x2) com o mapa v2 do Apolo (docs/handoff-apolo-zenon-folhas.md); a S9 entra na v2 (sem a poeira de r2c3: apagar-pequenos -X0 2130 -Y0 960 -X1 2210 -Y1 1005, arquivo zenon-s9-v2.png). docs/handoff-vega-zenon.md",
+    "layout": "zenon",
+    "alturaRef": 558,
+    "acolchoar": {
+      "s8": { "direita": 16 }
+    },
+    "ponta": {
+      "lk1": "mao",
+      "upper": "mao",
+      "sb1": "cima",
+      "decreto1": "mao"
+    }
   }
 }

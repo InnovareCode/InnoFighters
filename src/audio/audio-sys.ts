@@ -53,6 +53,42 @@ export type OpcoesVoz = {
   Q?: number;
 };
 
+/** Voz por formantes (sons por lutador, spec §3.1). Uma sílaba/segmento vozeado; as consoantes são `tone`/`noise` à parte. */
+export type OpcoesVozFormante = {
+  onda: 'sawtooth' | 'square';
+  /** Contorno do tom em 3 pontos (início, pico em 40% da duração, fim), em Hz. */
+  f: readonly [number, number, number];
+  t: number;
+  vol: number;
+  when?: number;
+  /** F1, F2, F3 em Hz (já multiplicados pelo trato vocal `k`). */
+  formantes: readonly [number, number, number];
+  /** Vogal de chegada (ditongo): os formantes deslizam até aqui em 80% da duração. */
+  formantes2?: readonly [number, number, number];
+  q: number;
+  ganhoF3: number;
+  atq?: number;
+  vib?: { hz: number; prof: number; atraso: number };
+  asp?: { hz: number; prof: number };
+  sopro?: number;
+  coro?: { cents: number; sub: number };
+  extra?: { f: number; q: number; ganho: number };
+  dest?: AudioNode | null;
+};
+
+/** Fontes (OscillatorNode/AudioBufferSourceNode iniciados) que uma `vozFormante` cria. Pura: o orçamento conta antes de tocar. */
+export function fontesDaVoz(o: Pick<OpcoesVozFormante, 'vib' | 'asp' | 'sopro' | 'coro'>): number {
+  return 1 + (o.vib ? 1 : 0) + (o.asp ? 1 : 0) + (o.sopro ? 1 : 0) + (o.coro ? (o.coro.sub > 0 ? 2 : 1) : 0);
+}
+
+/** Tetos do orçamento de CPU dos sons por lutador (spec §6.2). */
+export const FONTES_POR_PLANO = 12;
+export const FONTES_SIMULTANEAS = 32;
+/** A voz de dano do mesmo lutador não volta antes disto (multi-acerto, combo): o impacto toca, a voz não. */
+export const ANTI_METRALHADORA_S = 0.08;
+
+type Garganta = { gate: GainNode; fim: number; ko: boolean; ultimoDano: number };
+
 export type TrilhaMusica = 'fight' | 'menu' | 'chefe';
 
 /** Forma de cada trilha: andamento, passos por compasso e compassos do laço. `fight` e `menu` são as do protótipo, bit a bit. */
@@ -71,7 +107,17 @@ export type DependenciasAudio = {
   rng?: Rng;
   setInterval?: (fn: () => void, ms: number) => unknown;
   clearInterval?: (id: unknown) => void;
+  /**
+   * Sons por lutador (docs/spec-sons-por-lutador.md 6.3): limitador (DynamicsCompressor) entre o master e o destino. Padrão `false`: o grafo do
+   * `init()` continua IDÊNTICO ao do protótipo (o oráculo de `audio.test.ts` constrói o AudioSys sem esta opção).
+   */
+  limitador?: boolean;
+  /** Semente da variação de tom/volume dos sons por lutador (`semente + 6`, ver `variacao` em identidade-sonora.ts). Não usa RNG da lógica. */
+  sementeVariacao?: number;
 };
+
+/** Os quatro campos que o AudioSys do protótipo já tinha; os de identidade sonora ficam fora de `dep` para o `Required` continuar valendo. */
+type DepsBase = Omit<DependenciasAudio, 'limitador' | 'sementeVariacao'>;
 
 const ROOTS = [45, 41, 43, 40]; // Am  F  G  E (notas MIDI do baixo)
 const BASS = [0, null, 12, null, 0, null, 7, null, 0, null, 12, null, 7, null, 10, null] as const;
@@ -127,8 +173,15 @@ export class AudioSys {
   /** Fase da trilha do chefão em uso (1 ou 2) e a pedida por `musicaDaFase`: a troca só vale no início do compasso seguinte. */
   fase: 1 | 2 = 1;
   private faseAlvo: 1 | 2 = 1;
+  /** Sons por lutador: barramento (criado na 1ª chamada, nunca no `init()`), garganta por lutador e fim agendado das fontes de identidade. */
+  private barramentoId: GainNode | null = null;
+  private readonly gargantas: Garganta[] = [];
+  private fontesAteQuando: number[] = [];
 
-  private readonly dep: Required<DependenciasAudio>;
+  private readonly dep: Required<DepsBase>;
+  private readonly limitador: boolean;
+  /** Semente da variação dos sons por lutador (0 = não informada). */
+  readonly sementeVariacao: number;
 
   constructor(dep: DependenciasAudio = {}) {
     this.dep = {
@@ -137,6 +190,8 @@ export class AudioSys {
       setInterval: dep.setInterval ?? ((fn, ms) => setInterval(fn, ms)),
       clearInterval: dep.clearInterval ?? ((id) => clearInterval(id as ReturnType<typeof setInterval>)),
     };
+    this.limitador = dep.limitador ?? false;
+    this.sementeVariacao = dep.sementeVariacao ?? 0;
   }
 
   /** Chamar após um gesto do usuário (política de autoplay). Idempotente. */
@@ -147,7 +202,17 @@ export class AudioSys {
     this.ctx = c;
     this.master = c.createGain();
     this.master.gain.value = 0.9;
-    this.master.connect(c.destination);
+    if (this.limitador) {
+      // limitador no master (D-S6): pega a música também, porque é na soma que estoura. Só com a opção ligada.
+      const lim = c.createDynamicsCompressor();
+      lim.threshold.value = -3;
+      lim.knee.value = 0;
+      lim.ratio.value = 20;
+      lim.attack.value = 0.002;
+      lim.release.value = 0.12;
+      this.master.connect(lim);
+      lim.connect(c.destination);
+    } else this.master.connect(c.destination);
     this.sfx = c.createGain();
     this.sfx.gain.value = this.sfxVol;
     this.sfx.connect(this.master);
@@ -264,6 +329,172 @@ export class AudioSys {
     g.connect(this.sfx);
     osc.start(now);
     osc.stop(now + t + 0.1);
+  }
+
+  // --- sons por lutador (docs/spec-sons-por-lutador.md): métodos NOVOS; `init()` e os de cima não mudam ---
+  /** Barramento dos sons de identidade (liga no `sfx`). Criado sob demanda: o `init()` do protótipo continua com o mesmo grafo. */
+  barramentoIdentidade(): GainNode | null {
+    const c = this.ctx;
+    if (!c || !this.sfx) return null;
+    if (!this.barramentoId) {
+      this.barramentoId = c.createGain();
+      this.barramentoId.gain.value = 1;
+      this.barramentoId.connect(this.sfx);
+    }
+    return this.barramentoId;
+  }
+  /** Fontes de identidade ainda soando agora (a música e os sons genéricos não entram na conta). */
+  fontesAtivas(): number {
+    const c = this.ctx;
+    if (!c) return 0;
+    this.fontesAteQuando = this.fontesAteQuando.filter((fim) => fim > c.currentTime);
+    return this.fontesAteQuando.length;
+  }
+  fontesLivres(): number {
+    return Math.max(0, FONTES_SIMULTANEAS - this.fontesAtivas());
+  }
+  registrarFontes(n: number, fim: number): void {
+    for (let i = 0; i < n; i++) this.fontesAteQuando.push(fim);
+  }
+  /**
+   * Garganta (uma pessoa tem uma só): a voz nova do lutador `i` desliga a anterior em ~15 ms. Devolve o `GainNode` por onde a voz deve sair, ou
+   * null se ela não pode tocar: KO em andamento (nenhuma outra voz daquele lutador entra) ou voz de dano dentro de 80 ms da anterior.
+   */
+  abrirGarganta(i: number, duracao: number, o: { ko?: boolean; dano?: boolean } = {}): GainNode | null {
+    const c = this.ctx;
+    const bus = this.barramentoIdentidade();
+    if (!c || !bus) return null;
+    const agora = c.currentTime;
+    const ant = this.gargantas[i];
+    if (ant && ant.ko && agora < ant.fim) return null;
+    if (o.dano && ant && agora - ant.ultimoDano < ANTI_METRALHADORA_S) return null;
+    if (ant) {
+      ant.gate.gain.cancelScheduledValues(agora);
+      ant.gate.gain.setTargetAtTime(0, agora, 0.005);
+    }
+    const gate = c.createGain();
+    gate.gain.value = 1;
+    gate.connect(bus);
+    this.gargantas[i] = { gate, fim: agora + duracao, ko: o.ko === true, ultimoDano: o.dano ? agora : (ant?.ultimoDano ?? -Infinity) };
+    return gate;
+  }
+
+  /**
+   * Voz por formantes: fonte (serra/quadrada) com contorno de tom, vibrato, aspereza (AM), coro e sub-oitava; 3 filtros passa-banda (F1, F2, F3 com
+   * ganho próprio, deslizando para a vogal seguinte), formante extra estreito e sopro (ruído no F2). Tudo opcional além da fonte e dos formantes.
+   */
+  vozFormante(o: OpcoesVozFormante): void {
+    const c = this.ctx;
+    const destino = o.dest ?? this.barramentoIdentidade();
+    if (!c || !this.sfx || !destino) return;
+    const now = c.currentTime + (o.when ?? 0);
+    const { t } = o;
+    const fim = now + t;
+    const [f0, f1, f2] = o.f;
+    // fonte (e as fontes do coro) com o mesmo contorno de tom
+    const fonte = c.createGain();
+    const osciladores: OscillatorNode[] = [];
+    const nova = (mult: number, cents: number, ganho: number): OscillatorNode => {
+      const osc = c.createOscillator();
+      osc.type = o.onda;
+      osc.frequency.setValueAtTime(f0 * mult, now);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(f1 * mult, 20), now + t * 0.4);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(f2 * mult, 20), fim);
+      if (cents) osc.detune.value = cents;
+      if (ganho === 1) osc.connect(fonte);
+      else {
+        const g = c.createGain();
+        g.gain.value = ganho;
+        osc.connect(g);
+        g.connect(fonte);
+      }
+      osciladores.push(osc);
+      return osc;
+    };
+    const principal = nova(1, 0, 1);
+    if (o.coro) {
+      nova(1, o.coro.cents, 0.6);
+      if (o.coro.sub > 0) nova(0.5, 0, o.coro.sub);
+    }
+    if (o.vib) {
+      const lfo = c.createOscillator();
+      lfo.frequency.value = o.vib.hz;
+      const lg = c.createGain();
+      lg.gain.setValueAtTime(0, now);
+      lg.gain.setValueAtTime(0, now + o.vib.atraso);
+      lg.gain.linearRampToValueAtTime(f1 * o.vib.prof, now + o.vib.atraso + 0.05);
+      lfo.connect(lg);
+      lg.connect(principal.frequency);
+      lfo.start(now);
+      lfo.stop(fim + 0.05);
+    }
+    // aspereza: modulação de amplitude (25-55 Hz)
+    let saidaFonte: AudioNode = fonte;
+    if (o.asp) {
+      const am = c.createGain();
+      am.gain.value = 1 - o.asp.prof / 2;
+      const lfo = c.createOscillator();
+      lfo.frequency.value = o.asp.hz;
+      const ag = c.createGain();
+      ag.gain.value = o.asp.prof / 2;
+      lfo.connect(ag);
+      ag.connect(am.gain);
+      fonte.connect(am);
+      saidaFonte = am;
+      lfo.start(now);
+      lfo.stop(fim + 0.05);
+    }
+    const env = c.createGain();
+    env.gain.setValueAtTime(0.0001, now);
+    env.gain.linearRampToValueAtTime(o.vol, now + (o.atq ?? 0.03));
+    env.gain.setValueAtTime(o.vol, now + t * 0.6);
+    env.gain.exponentialRampToValueAtTime(0.0001, fim);
+    const ganhos = [1, 0.7, o.ganhoF3] as const;
+    o.formantes.forEach((fr, i) => {
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.Q.value = o.q;
+      bp.frequency.setValueAtTime(fr, now);
+      const alvo = o.formantes2?.[i];
+      if (alvo !== undefined) bp.frequency.linearRampToValueAtTime(alvo, now + t * 0.8);
+      const g = c.createGain();
+      g.gain.value = ganhos[i] ?? 1;
+      saidaFonte.connect(bp);
+      bp.connect(g);
+      g.connect(env);
+    });
+    if (o.extra) {
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = o.extra.f;
+      bp.Q.value = o.extra.q;
+      const g = c.createGain();
+      g.gain.value = o.extra.ganho;
+      saidaFonte.connect(bp);
+      bp.connect(g);
+      g.connect(env);
+    }
+    if (o.sopro && this.noiseBuf) {
+      const src = c.createBufferSource();
+      src.buffer = this.noiseBuf;
+      const bp = c.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = o.formantes[1];
+      bp.Q.value = 2;
+      const g = c.createGain();
+      g.gain.value = o.sopro;
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(env);
+      src.start(now);
+      src.stop(fim + 0.05);
+    }
+    env.connect(destino);
+    for (const osc of osciladores) {
+      osc.start(now);
+      osc.stop(fim + 0.05);
+    }
+    this.registrarFontes(fontesDaVoz(o), fim + 0.05);
   }
 
   // --- efeitos sonoros ---

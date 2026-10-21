@@ -10,8 +10,10 @@
   "incluirChefe": true,
   "esquiva": true
  },
- "hashRegistros": "2c93922d5c48c8ea",
- "versaoDados": "d81622b9b8db",
+ "hashRegistros": "957b8416d75bf060",
+ "hashRegulares": "f420ce928e06b304",
+ "hashChefes": "c8d18e0edd93ebd0",
+ "versaoDados": "f6b9952cee5e",
  "geradoEm": "2026-10-21",
  "taxas": {
   "hayato": 0.4519444444444444,
@@ -39,7 +41,7 @@
   },
   "total": {
    "regulares": 18000,
-   "chefe": 1800,
+   "chefe": 7800,
    "travadas": 0,
    "duracaoSegMedia": 106.53512500000001,
    "lutasPorTempo": 0,
@@ -1191,58 +1193,46 @@
   },
   "chefe": [
    {
+    "chefe": "aminu",
     "desafiante": "hayato",
     "nivel": 1,
     "jogador": {
      "n": 100,
-     "k": 30,
-     "taxa": 0.3,
-     "lo": 0.21894753866228117,
-     "hi": 0.39585038432811953
+     "k": 22,
+     "taxa": 0.22,
+     "lo": 0.15001174503655804,
+     "hi": 0.3107053471500031
     },
-    "duracaoSeg": 39.89499999999999,
-    "trocouBarra": 0.83,
-    "fezCena": 0.83,
+    "duracaoSeg": 39.573999999999984,
+    "trocouBarra": 0.71,
+    "fezCena": 0.71,
     "porKo": 1,
+    "porTempo": 0,
     "roundsMedios": 1,
     "travadas": 0
    },
    {
+    "chefe": "aminu",
     "desafiante": "wei-long",
     "nivel": 1,
     "jogador": {
      "n": 100,
-     "k": 25,
-     "taxa": 0.25,
-     "lo": 0.1754509400372426,
-     "hi": 0.3430464637007583
+     "k": 33,
+     "taxa": 0.33,
+     "lo": 0.24562983793895452,
+     "hi": 0.4269483966028862
     },
-    "duracaoSeg": 39.19649999999999,
-    "trocouBarra": 0.86,
-    "fezCena": 0.86,
+    "duracaoSeg": 43.34566666666667,
+    "trocouBarra": 0.82,
+    "fezCena": 0.82,
     "porKo": 1,
+    "porTempo": 0,
     "roundsMedios": 1,
     "travadas": 0
    },
    {
+    "chefe": "aminu",
     "desafiante": "min-ji",
-    "nivel": 1,
-    "jogador": {
-     "n": 100,
-     "k": 24,
-     "taxa": 0.24,
-     "lo": 0.16691211265459965,
-     "hi": 0.3323251872329213
-    },
-    "duracaoSeg": 38.14683333333334,
-    "trocouBarra": 0.8,
-    "fezCena": 0.8,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "caio",
     "nivel": 1,
     "jogador": {
      "n": 100,
@@ -1251,236 +1241,74 @@
      "lo": 0.21014706973984146,
      "hi": 0.38539074940007934
     },
-    "duracaoSeg": 38.222,
-    "trocouBarra": 0.8,
-    "fezCena": 0.8,
+    "duracaoSeg": 39.50916666666666,
+    "trocouBarra": 0.81,
+    "fezCena": 0.81,
     "porKo": 1,
+    "porTempo": 0,
     "roundsMedios": 1,
     "travadas": 0
    },
    {
-    "desafiante": "aminu",
+    "chefe": "aminu",
+    "desafiante": "caio",
     "nivel": 1,
     "jogador": {
      "n": 100,
-     "k": 39,
-     "taxa": 0.39,
-     "lo": 0.300167219319702,
-     "hi": 0.48797163832501844
+     "k": 33,
+     "taxa": 0.33,
+     "lo": 0.24562983793895452,
+     "hi": 0.4269483966028862
     },
-    "duracaoSeg": 39.531333333333336,
-    "trocouBarra": 0.88,
-    "fezCena": 0.88,
+    "duracaoSeg": 38.56466666666665,
+    "trocouBarra": 0.78,
+    "fezCena": 0.78,
     "porKo": 1,
+    "porTempo": 0,
     "roundsMedios": 1,
     "travadas": 0
    },
    {
-    "desafiante": "centella",
-    "nivel": 1,
-    "jogador": {
-     "n": 100,
-     "k": 27,
-     "taxa": 0.27,
-     "lo": 0.1926946091766482,
-     "hi": 0.3643230022623127
-    },
-    "duracaoSeg": 38.13616666666667,
-    "trocouBarra": 0.73,
-    "fezCena": 0.73,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "camille",
-    "nivel": 1,
-    "jogador": {
-     "n": 100,
-     "k": 42,
-     "taxa": 0.42,
-     "lo": 0.327982249185113,
-     "hi": 0.5179369200110473
-    },
-    "duracaoSeg": 38.595000000000006,
-    "trocouBarra": 0.85,
-    "fezCena": 0.85,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "nila",
-    "nivel": 1,
-    "jogador": {
-     "n": 100,
-     "k": 40,
-     "taxa": 0.4,
-     "lo": 0.3093997461136028,
-     "hi": 0.4979992153815976
-    },
-    "duracaoSeg": 41.92816666666667,
-    "trocouBarra": 0.88,
-    "fezCena": 0.88,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "baatar",
-    "nivel": 1,
-    "jogador": {
-     "n": 100,
-     "k": 31,
-     "taxa": 0.31,
-     "lo": 0.22779563206132378,
-     "hi": 0.40626239477955695
-    },
-    "duracaoSeg": 41.396000000000015,
-    "trocouBarra": 0.89,
-    "fezCena": 0.89,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
+    "chefe": "aminu",
     "desafiante": "hayato",
     "nivel": 2,
     "jogador": {
      "n": 100,
-     "k": 22,
-     "taxa": 0.22,
-     "lo": 0.15001174503655804,
-     "hi": 0.3107053471500031
+     "k": 9,
+     "taxa": 0.09,
+     "lo": 0.04807199516388488,
+     "hi": 0.16226374696643667
     },
-    "duracaoSeg": 59.95616666666664,
-    "trocouBarra": 0.86,
-    "fezCena": 0.86,
+    "duracaoSeg": 58.57883333333332,
+    "trocouBarra": 0.63,
+    "fezCena": 0.63,
     "porKo": 1,
+    "porTempo": 0,
     "roundsMedios": 1,
     "travadas": 0
    },
    {
+    "chefe": "aminu",
     "desafiante": "wei-long",
     "nivel": 2,
     "jogador": {
      "n": 100,
-     "k": 20,
-     "taxa": 0.2,
-     "lo": 0.1333659225590988,
-     "hi": 0.28883096192650237
+     "k": 11,
+     "taxa": 0.11,
+     "lo": 0.06254131955225126,
+     "hi": 0.18631463027903022
     },
-    "duracaoSeg": 58.12916666666666,
-    "trocouBarra": 0.8,
-    "fezCena": 0.8,
+    "duracaoSeg": 58.900499999999994,
+    "trocouBarra": 0.65,
+    "fezCena": 0.65,
     "porKo": 1,
+    "porTempo": 0,
     "roundsMedios": 1,
     "travadas": 0
    },
    {
+    "chefe": "aminu",
     "desafiante": "min-ji",
-    "nivel": 2,
-    "jogador": {
-     "n": 100,
-     "k": 26,
-     "taxa": 0.26,
-     "lo": 0.18404578126986462,
-     "hi": 0.35371172631861636
-    },
-    "duracaoSeg": 59.20283333333336,
-    "trocouBarra": 0.85,
-    "fezCena": 0.85,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "caio",
-    "nivel": 2,
-    "jogador": {
-     "n": 100,
-     "k": 28,
-     "taxa": 0.28,
-     "lo": 0.2013955916759837,
-     "hi": 0.37488212361345724
-    },
-    "duracaoSeg": 55.431333333333306,
-    "trocouBarra": 0.82,
-    "fezCena": 0.82,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "aminu",
-    "nivel": 2,
-    "jogador": {
-     "n": 100,
-     "k": 38,
-     "taxa": 0.38,
-     "lo": 0.2909744920013438,
-     "hi": 0.47790426179289663
-    },
-    "duracaoSeg": 62.01266666666669,
-    "trocouBarra": 0.9,
-    "fezCena": 0.9,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "centella",
-    "nivel": 2,
-    "jogador": {
-     "n": 100,
-     "k": 27,
-     "taxa": 0.27,
-     "lo": 0.1926946091766482,
-     "hi": 0.3643230022623127
-    },
-    "duracaoSeg": 55.96533333333334,
-    "trocouBarra": 0.74,
-    "fezCena": 0.74,
-    "porKo": 1,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "camille",
-    "nivel": 2,
-    "jogador": {
-     "n": 100,
-     "k": 18,
-     "taxa": 0.18,
-     "lo": 0.11700131654251038,
-     "hi": 0.26667536024213084
-    },
-    "duracaoSeg": 63.033166666666666,
-    "trocouBarra": 0.78,
-    "fezCena": 0.77,
-    "porKo": 0.98,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "nila",
-    "nivel": 2,
-    "jogador": {
-     "n": 100,
-     "k": 15,
-     "taxa": 0.15,
-     "lo": 0.09305903191162297,
-     "hi": 0.23283733332157835
-    },
-    "duracaoSeg": 70.86499999999998,
-    "trocouBarra": 0.78,
-    "fezCena": 0.78,
-    "porKo": 0.98,
-    "roundsMedios": 1,
-    "travadas": 0
-   },
-   {
-    "desafiante": "baatar",
     "nivel": 2,
     "jogador": {
      "n": 100,
@@ -1489,12 +1317,1820 @@
      "lo": 0.07757093858414264,
      "hi": 0.20980521894809878
     },
-    "duracaoSeg": 60.969833333333334,
+    "duracaoSeg": 56.23266666666669,
+    "trocouBarra": 0.69,
+    "fezCena": 0.69,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "aminu",
+    "desafiante": "caio",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 7,
+     "taxa": 0.07,
+     "lo": 0.034318824364064096,
+     "hi": 0.13749671006529757
+    },
+    "duracaoSeg": 53.87866666666664,
+    "trocouBarra": 0.6,
+    "fezCena": 0.6,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "hayato",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 32,
+     "taxa": 0.32,
+     "lo": 0.2366901081545688,
+     "hi": 0.4166280225367919
+    },
+    "duracaoSeg": 42.00816666666667,
+    "trocouBarra": 0.85,
+    "fezCena": 0.85,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "wei-long",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 19,
+     "taxa": 0.19,
+     "lo": 0.1251465399270426,
+     "hi": 0.27779024070807856
+    },
+    "duracaoSeg": 40.498666666666665,
+    "trocouBarra": 0.74,
+    "fezCena": 0.74,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "min-ji",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 25,
+     "taxa": 0.25,
+     "lo": 0.1754509400372426,
+     "hi": 0.3430464637007583
+    },
+    "duracaoSeg": 40.76483333333334,
+    "trocouBarra": 0.79,
+    "fezCena": 0.79,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "caio",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 28,
+     "taxa": 0.28,
+     "lo": 0.2013955916759837,
+     "hi": 0.37488212361345724
+    },
+    "duracaoSeg": 38.03266666666667,
+    "trocouBarra": 0.79,
+    "fezCena": 0.79,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "aminu",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 30,
+     "taxa": 0.3,
+     "lo": 0.21894753866228117,
+     "hi": 0.39585038432811953
+    },
+    "duracaoSeg": 44.553499999999985,
+    "trocouBarra": 0.86,
+    "fezCena": 0.86,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "hayato",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 25,
+     "taxa": 0.25,
+     "lo": 0.1754509400372426,
+     "hi": 0.3430464637007583
+    },
+    "duracaoSeg": 59.82116666666668,
+    "trocouBarra": 0.79,
+    "fezCena": 0.79,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "wei-long",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 18,
+     "taxa": 0.18,
+     "lo": 0.11700131654251038,
+     "hi": 0.26667536024213084
+    },
+    "duracaoSeg": 57.276833333333336,
+    "trocouBarra": 0.71,
+    "fezCena": 0.71,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "min-ji",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 20,
+     "taxa": 0.2,
+     "lo": 0.1333659225590988,
+     "hi": 0.28883096192650237
+    },
+    "duracaoSeg": 54.664000000000016,
+    "trocouBarra": 0.71,
+    "fezCena": 0.71,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "caio",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 29,
+     "taxa": 0.29,
+     "lo": 0.21014706973984146,
+     "hi": 0.38539074940007934
+    },
+    "duracaoSeg": 57.96699999999999,
+    "trocouBarra": 0.81,
+    "fezCena": 0.81,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "centella",
+    "desafiante": "aminu",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 37,
+     "taxa": 0.37,
+     "lo": 0.28182212569509163,
+     "hi": 0.46779652424866885
+    },
+    "duracaoSeg": 62.94999999999998,
+    "trocouBarra": 0.87,
+    "fezCena": 0.87,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "hayato",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 24,
+     "taxa": 0.24,
+     "lo": 0.16691211265459965,
+     "hi": 0.3323251872329213
+    },
+    "duracaoSeg": 39.23933333333334,
+    "trocouBarra": 0.75,
+    "fezCena": 0.75,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "wei-long",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 20,
+     "taxa": 0.2,
+     "lo": 0.1333659225590988,
+     "hi": 0.28883096192650237
+    },
+    "duracaoSeg": 38.739333333333335,
+    "trocouBarra": 0.78,
+    "fezCena": 0.78,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "min-ji",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 19,
+     "taxa": 0.19,
+     "lo": 0.1251465399270426,
+     "hi": 0.27779024070807856
+    },
+    "duracaoSeg": 37.66516666666666,
+    "trocouBarra": 0.77,
+    "fezCena": 0.77,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "caio",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 25,
+     "taxa": 0.25,
+     "lo": 0.1754509400372426,
+     "hi": 0.3430464637007583
+    },
+    "duracaoSeg": 38.302166666666665,
+    "trocouBarra": 0.77,
+    "fezCena": 0.77,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "aminu",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 34,
+     "taxa": 0.34,
+     "lo": 0.25461379497543,
+     "hi": 0.43722454341689065
+    },
+    "duracaoSeg": 41.04083333333333,
+    "trocouBarra": 0.84,
+    "fezCena": 0.84,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "centella",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 24,
+     "taxa": 0.24,
+     "lo": 0.16691211265459965,
+     "hi": 0.3323251872329213
+    },
+    "duracaoSeg": 39.451833333333326,
+    "trocouBarra": 0.86,
+    "fezCena": 0.86,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "hayato",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 6,
+     "taxa": 0.06,
+     "lo": 0.02778574526665662,
+     "hi": 0.12476968531222507
+    },
+    "duracaoSeg": 59.637000000000015,
+    "trocouBarra": 0.58,
+    "fezCena": 0.58,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "wei-long",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 15,
+     "taxa": 0.15,
+     "lo": 0.09305903191162297,
+     "hi": 0.23283733332157835
+    },
+    "duracaoSeg": 59.40650000000002,
     "trocouBarra": 0.72,
     "fezCena": 0.72,
     "porKo": 1,
+    "porTempo": 0,
     "roundsMedios": 1,
     "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "min-ji",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 11,
+     "taxa": 0.11,
+     "lo": 0.06254131955225126,
+     "hi": 0.18631463027903022
+    },
+    "duracaoSeg": 57.494166666666636,
+    "trocouBarra": 0.69,
+    "fezCena": 0.69,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "caio",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 10,
+     "taxa": 0.1,
+     "lo": 0.05522854161313613,
+     "hi": 0.1743673043676654
+    },
+    "duracaoSeg": 56.31916666666665,
+    "trocouBarra": 0.65,
+    "fezCena": 0.65,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "aminu",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 32,
+     "taxa": 0.32,
+     "lo": 0.2366901081545688,
+     "hi": 0.4166280225367919
+    },
+    "duracaoSeg": 65.59566666666666,
+    "trocouBarra": 0.86,
+    "fezCena": 0.86,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "camille",
+    "desafiante": "centella",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 24,
+     "taxa": 0.24,
+     "lo": 0.16691211265459965,
+     "hi": 0.3323251872329213
+    },
+    "duracaoSeg": 55.736833333333344,
+    "trocouBarra": 0.67,
+    "fezCena": 0.67,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "hayato",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 20,
+     "taxa": 0.2,
+     "lo": 0.1333659225590988,
+     "hi": 0.28883096192650237
+    },
+    "duracaoSeg": 44.35450000000002,
+    "trocouBarra": 0.8,
+    "fezCena": 0.8,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "wei-long",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 16,
+     "taxa": 0.16,
+     "lo": 0.10095202349473717,
+     "hi": 0.24420444558894414
+    },
+    "duracaoSeg": 45.923999999999985,
+    "trocouBarra": 0.79,
+    "fezCena": 0.79,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "min-ji",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 17,
+     "taxa": 0.17,
+     "lo": 0.10893476059773155,
+     "hi": 0.25548181233642975
+    },
+    "duracaoSeg": 41.386833333333335,
+    "trocouBarra": 0.68,
+    "fezCena": 0.68,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "caio",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 20,
+     "taxa": 0.2,
+     "lo": 0.1333659225590988,
+     "hi": 0.28883096192650237
+    },
+    "duracaoSeg": 42.50933333333336,
+    "trocouBarra": 0.78,
+    "fezCena": 0.78,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "aminu",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 23,
+     "taxa": 0.23,
+     "lo": 0.15843154746876406,
+     "hi": 0.32154564856827694
+    },
+    "duracaoSeg": 46.23216666666665,
+    "trocouBarra": 0.87,
+    "fezCena": 0.87,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "centella",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 26,
+     "taxa": 0.26,
+     "lo": 0.18404578126986462,
+     "hi": 0.35371172631861636
+    },
+    "duracaoSeg": 44.36983333333335,
+    "trocouBarra": 0.74,
+    "fezCena": 0.74,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "camille",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 23,
+     "taxa": 0.23,
+     "lo": 0.15843154746876406,
+     "hi": 0.32154564856827694
+    },
+    "duracaoSeg": 45.226833333333325,
+    "trocouBarra": 0.8,
+    "fezCena": 0.8,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "hayato",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 12,
+     "taxa": 0.12,
+     "lo": 0.06999337365267776,
+     "hi": 0.19812268002908368
+    },
+    "duracaoSeg": 72.00083333333332,
+    "trocouBarra": 0.67,
+    "fezCena": 0.67,
+    "porKo": 0.97,
+    "porTempo": 0.03,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "wei-long",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 16,
+     "taxa": 0.16,
+     "lo": 0.10095202349473717,
+     "hi": 0.24420444558894414
+    },
+    "duracaoSeg": 71.99183333333335,
+    "trocouBarra": 0.73,
+    "fezCena": 0.73,
+    "porKo": 0.99,
+    "porTempo": 0.01,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "min-ji",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 13,
+     "taxa": 0.13,
+     "lo": 0.07757093858414264,
+     "hi": 0.20980521894809878
+    },
+    "duracaoSeg": 66.20383333333332,
+    "trocouBarra": 0.72,
+    "fezCena": 0.72,
+    "porKo": 0.98,
+    "porTempo": 0.02,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "caio",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 15,
+     "taxa": 0.15,
+     "lo": 0.09305903191162297,
+     "hi": 0.23283733332157835
+    },
+    "duracaoSeg": 67.47633333333336,
+    "trocouBarra": 0.75,
+    "fezCena": 0.75,
+    "porKo": 0.98,
+    "porTempo": 0.02,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "aminu",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 28,
+     "taxa": 0.28,
+     "lo": 0.2013955916759837,
+     "hi": 0.37488212361345724
+    },
+    "duracaoSeg": 80.72366666666662,
+    "trocouBarra": 0.87,
+    "fezCena": 0.87,
+    "porKo": 0.88,
+    "porTempo": 0.12,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "centella",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 14,
+     "taxa": 0.14,
+     "lo": 0.08526265754464905,
+     "hi": 0.22137360383807236
+    },
+    "duracaoSeg": 66.22700000000005,
+    "trocouBarra": 0.64,
+    "fezCena": 0.64,
+    "porKo": 0.99,
+    "porTempo": 0.01,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "nila",
+    "desafiante": "camille",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 16,
+     "taxa": 0.16,
+     "lo": 0.10095202349473717,
+     "hi": 0.24420444558894414
+    },
+    "duracaoSeg": 77.7461666666667,
+    "trocouBarra": 0.86,
+    "fezCena": 0.86,
+    "porKo": 0.96,
+    "porTempo": 0.04,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "hayato",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 11,
+     "taxa": 0.11,
+     "lo": 0.06254131955225126,
+     "hi": 0.18631463027903022
+    },
+    "duracaoSeg": 39.71933333333334,
+    "trocouBarra": 0.76,
+    "fezCena": 0.76,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "wei-long",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 22,
+     "taxa": 0.22,
+     "lo": 0.15001174503655804,
+     "hi": 0.3107053471500031
+    },
+    "duracaoSeg": 40.77766666666666,
+    "trocouBarra": 0.69,
+    "fezCena": 0.69,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1.01,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "min-ji",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 12,
+     "taxa": 0.12,
+     "lo": 0.06999337365267776,
+     "hi": 0.19812268002908368
+    },
+    "duracaoSeg": 38.97233333333334,
+    "trocouBarra": 0.72,
+    "fezCena": 0.72,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "caio",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 23,
+     "taxa": 0.23,
+     "lo": 0.15843154746876406,
+     "hi": 0.32154564856827694
+    },
+    "duracaoSeg": 38.26583333333333,
+    "trocouBarra": 0.76,
+    "fezCena": 0.76,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "aminu",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 19,
+     "taxa": 0.19,
+     "lo": 0.1251465399270426,
+     "hi": 0.27779024070807856
+    },
+    "duracaoSeg": 45.45349999999999,
+    "trocouBarra": 0.74,
+    "fezCena": 0.74,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "centella",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 16,
+     "taxa": 0.16,
+     "lo": 0.10095202349473717,
+     "hi": 0.24420444558894414
+    },
+    "duracaoSeg": 42.16933333333331,
+    "trocouBarra": 0.82,
+    "fezCena": 0.82,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "camille",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 18,
+     "taxa": 0.18,
+     "lo": 0.11700131654251038,
+     "hi": 0.26667536024213084
+    },
+    "duracaoSeg": 41.41316666666665,
+    "trocouBarra": 0.75,
+    "fezCena": 0.75,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "nila",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 25,
+     "taxa": 0.25,
+     "lo": 0.1754509400372426,
+     "hi": 0.3430464637007583
+    },
+    "duracaoSeg": 46.69950000000001,
+    "trocouBarra": 0.81,
+    "fezCena": 0.81,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "hayato",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 12,
+     "taxa": 0.12,
+     "lo": 0.06999337365267776,
+     "hi": 0.19812268002908368
+    },
+    "duracaoSeg": 64.23766666666667,
+    "trocouBarra": 0.6,
+    "fezCena": 0.6,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "wei-long",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 33,
+     "taxa": 0.33,
+     "lo": 0.24562983793895452,
+     "hi": 0.4269483966028862
+    },
+    "duracaoSeg": 62.07533333333336,
+    "trocouBarra": 0.78,
+    "fezCena": 0.78,
+    "porKo": 0.99,
+    "porTempo": 0.01,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "min-ji",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 9,
+     "taxa": 0.09,
+     "lo": 0.04807199516388488,
+     "hi": 0.16226374696643667
+    },
+    "duracaoSeg": 58.493166666666696,
+    "trocouBarra": 0.55,
+    "fezCena": 0.55,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "caio",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 20,
+     "taxa": 0.2,
+     "lo": 0.1333659225590988,
+     "hi": 0.28883096192650237
+    },
+    "duracaoSeg": 60.274999999999984,
+    "trocouBarra": 0.8,
+    "fezCena": 0.8,
+    "porKo": 0.99,
+    "porTempo": 0.01,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "aminu",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 27,
+     "taxa": 0.27,
+     "lo": 0.1926946091766482,
+     "hi": 0.3643230022623127
+    },
+    "duracaoSeg": 71.06099999999999,
+    "trocouBarra": 0.71,
+    "fezCena": 0.71,
+    "porKo": 0.97,
+    "porTempo": 0.03,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "centella",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 18,
+     "taxa": 0.18,
+     "lo": 0.11700131654251038,
+     "hi": 0.26667536024213084
+    },
+    "duracaoSeg": 57.94500000000003,
+    "trocouBarra": 0.6,
+    "fezCena": 0.6,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "camille",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 16,
+     "taxa": 0.16,
+     "lo": 0.10095202349473717,
+     "hi": 0.24420444558894414
+    },
+    "duracaoSeg": 67.19200000000005,
+    "trocouBarra": 0.73,
+    "fezCena": 0.73,
+    "porKo": 0.99,
+    "porTempo": 0.01,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "baatar",
+    "desafiante": "nila",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 17,
+     "taxa": 0.17,
+     "lo": 0.10893476059773155,
+     "hi": 0.25548181233642975
+    },
+    "duracaoSeg": 80.22116666666666,
+    "trocouBarra": 0.78,
+    "fezCena": 0.78,
+    "porKo": 0.9,
+    "porTempo": 0.1,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "hayato",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 15,
+     "taxa": 0.15,
+     "lo": 0.09305903191162297,
+     "hi": 0.23283733332157835
+    },
+    "duracaoSeg": 41.49333333333333,
+    "trocouBarra": 0.68,
+    "fezCena": 0.68,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "wei-long",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 15,
+     "taxa": 0.15,
+     "lo": 0.09305903191162297,
+     "hi": 0.23283733332157835
+    },
+    "duracaoSeg": 42.501999999999995,
+    "trocouBarra": 0.74,
+    "fezCena": 0.74,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "min-ji",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 12,
+     "taxa": 0.12,
+     "lo": 0.06999337365267776,
+     "hi": 0.19812268002908368
+    },
+    "duracaoSeg": 38.61166666666667,
+    "trocouBarra": 0.69,
+    "fezCena": 0.69,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "caio",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 18,
+     "taxa": 0.18,
+     "lo": 0.11700131654251038,
+     "hi": 0.26667536024213084
+    },
+    "duracaoSeg": 39.06650000000001,
+    "trocouBarra": 0.67,
+    "fezCena": 0.67,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "aminu",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 28,
+     "taxa": 0.28,
+     "lo": 0.2013955916759837,
+     "hi": 0.37488212361345724
+    },
+    "duracaoSeg": 43.05416666666667,
+    "trocouBarra": 0.8,
+    "fezCena": 0.8,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "centella",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 12,
+     "taxa": 0.12,
+     "lo": 0.06999337365267776,
+     "hi": 0.19812268002908368
+    },
+    "duracaoSeg": 40.110833333333346,
+    "trocouBarra": 0.63,
+    "fezCena": 0.63,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "camille",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 17,
+     "taxa": 0.17,
+     "lo": 0.10893476059773155,
+     "hi": 0.25548181233642975
+    },
+    "duracaoSeg": 41.28233333333333,
+    "trocouBarra": 0.74,
+    "fezCena": 0.74,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "nila",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 14,
+     "taxa": 0.14,
+     "lo": 0.08526265754464905,
+     "hi": 0.22137360383807236
+    },
+    "duracaoSeg": 45.754333333333335,
+    "trocouBarra": 0.8,
+    "fezCena": 0.8,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "baatar",
+    "nivel": 1,
+    "jogador": {
+     "n": 100,
+     "k": 14,
+     "taxa": 0.14,
+     "lo": 0.08526265754464905,
+     "hi": 0.22137360383807236
+    },
+    "duracaoSeg": 44.45533333333333,
+    "trocouBarra": 0.81,
+    "fezCena": 0.81,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "hayato",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 11,
+     "taxa": 0.11,
+     "lo": 0.06254131955225126,
+     "hi": 0.18631463027903022
+    },
+    "duracaoSeg": 63.40966666666665,
+    "trocouBarra": 0.7,
+    "fezCena": 0.7,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "wei-long",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 6,
+     "taxa": 0.06,
+     "lo": 0.02778574526665662,
+     "hi": 0.12476968531222507
+    },
+    "duracaoSeg": 60.15683333333331,
+    "trocouBarra": 0.71,
+    "fezCena": 0.71,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "min-ji",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 12,
+     "taxa": 0.12,
+     "lo": 0.06999337365267776,
+     "hi": 0.19812268002908368
+    },
+    "duracaoSeg": 64.09816666666669,
+    "trocouBarra": 0.68,
+    "fezCena": 0.67,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1.01,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "caio",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 14,
+     "taxa": 0.14,
+     "lo": 0.08526265754464905,
+     "hi": 0.22137360383807236
+    },
+    "duracaoSeg": 57.44516666666668,
+    "trocouBarra": 0.7,
+    "fezCena": 0.7,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "aminu",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 17,
+     "taxa": 0.17,
+     "lo": 0.10893476059773155,
+     "hi": 0.25548181233642975
+    },
+    "duracaoSeg": 66.1861666666667,
+    "trocouBarra": 0.82,
+    "fezCena": 0.82,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "centella",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 15,
+     "taxa": 0.15,
+     "lo": 0.09305903191162297,
+     "hi": 0.23283733332157835
+    },
+    "duracaoSeg": 58.779999999999994,
+    "trocouBarra": 0.57,
+    "fezCena": 0.57,
+    "porKo": 1,
+    "porTempo": 0,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "camille",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 10,
+     "taxa": 0.1,
+     "lo": 0.05522854161313613,
+     "hi": 0.1743673043676654
+    },
+    "duracaoSeg": 68.24466666666667,
+    "trocouBarra": 0.68,
+    "fezCena": 0.67,
+    "porKo": 0.98,
+    "porTempo": 0.02,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "nila",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 9,
+     "taxa": 0.09,
+     "lo": 0.04807199516388488,
+     "hi": 0.16226374696643667
+    },
+    "duracaoSeg": 75.13766666666665,
+    "trocouBarra": 0.65,
+    "fezCena": 0.64,
+    "porKo": 0.92,
+    "porTempo": 0.08,
+    "roundsMedios": 1,
+    "travadas": 0
+   },
+   {
+    "chefe": "zenon",
+    "desafiante": "baatar",
+    "nivel": 2,
+    "jogador": {
+     "n": 100,
+     "k": 9,
+     "taxa": 0.09,
+     "lo": 0.04807199516388488,
+     "hi": 0.16226374696643667
+    },
+    "duracaoSeg": 64.14166666666667,
+    "trocouBarra": 0.6,
+    "fezCena": 0.6,
+    "porKo": 0.99,
+    "porTempo": 0.01,
+    "roundsMedios": 1,
+    "travadas": 0
+   }
+  ],
+  "resumoChefes": [
+   {
+    "chefe": "aminu",
+    "nivel": 1,
+    "posicao": 0,
+    "total": 6,
+    "desafiantes": 4,
+    "jogador": {
+     "n": 400,
+     "k": 117,
+     "taxa": 0.2925,
+     "lo": 0.25006128808159916,
+     "hi": 0.3388864577672683
+    },
+    "meta": [
+     0.26,
+     0.3
+    ],
+    "duracaoSeg": 40.24837499999999,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "hayato",
+     "taxa": 0.22
+    },
+    "melhor": {
+     "desafiante": "caio",
+     "taxa": 0.33
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "aminu",
+    "nivel": 2,
+    "posicao": 0,
+    "total": 6,
+    "desafiantes": 4,
+    "jogador": {
+     "n": 400,
+     "k": 40,
+     "taxa": 0.1,
+     "lo": 0.07429885168964503,
+     "hi": 0.13331126079009953
+    },
+    "meta": [
+     0.13,
+     0.19
+    ],
+    "duracaoSeg": 56.897666666666666,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "caio",
+     "taxa": 0.07
+    },
+    "melhor": {
+     "desafiante": "min-ji",
+     "taxa": 0.13
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": false,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "centella",
+    "nivel": 1,
+    "posicao": 1,
+    "total": 6,
+    "desafiantes": 5,
+    "jogador": {
+     "n": 500,
+     "k": 134,
+     "taxa": 0.268,
+     "lo": 0.23105333049086763,
+     "hi": 0.30848449250747156
+    },
+    "meta": [
+     0.24,
+     0.28
+    ],
+    "duracaoSeg": 41.17156666666666,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "wei-long",
+     "taxa": 0.19
+    },
+    "melhor": {
+     "desafiante": "hayato",
+     "taxa": 0.32
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "centella",
+    "nivel": 2,
+    "posicao": 1,
+    "total": 6,
+    "desafiantes": 5,
+    "jogador": {
+     "n": 500,
+     "k": 129,
+     "taxa": 0.258,
+     "lo": 0.22159556840612682,
+     "hi": 0.29809474696283045
+    },
+    "meta": [
+     0.12,
+     0.18
+    ],
+    "duracaoSeg": 58.5358,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "wei-long",
+     "taxa": 0.18
+    },
+    "melhor": {
+     "desafiante": "aminu",
+     "taxa": 0.37
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": false,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "camille",
+    "nivel": 1,
+    "posicao": 2,
+    "total": 6,
+    "desafiantes": 6,
+    "jogador": {
+     "n": 600,
+     "k": 146,
+     "taxa": 0.24333333333333335,
+     "lo": 0.21070196752967638,
+     "hi": 0.2792304915788051
+    },
+    "meta": [
+     0.22,
+     0.26
+    ],
+    "duracaoSeg": 39.0731111111111,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "min-ji",
+     "taxa": 0.19
+    },
+    "melhor": {
+     "desafiante": "aminu",
+     "taxa": 0.34
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "camille",
+    "nivel": 2,
+    "posicao": 2,
+    "total": 6,
+    "desafiantes": 6,
+    "jogador": {
+     "n": 600,
+     "k": 98,
+     "taxa": 0.16333333333333333,
+     "lo": 0.13591201357530347,
+     "hi": 0.1950383548656917
+    },
+    "meta": [
+     0.11,
+     0.17
+    ],
+    "duracaoSeg": 59.031555555555556,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "hayato",
+     "taxa": 0.06
+    },
+    "melhor": {
+     "desafiante": "aminu",
+     "taxa": 0.32
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "nila",
+    "nivel": 1,
+    "posicao": 3,
+    "total": 6,
+    "desafiantes": 7,
+    "jogador": {
+     "n": 700,
+     "k": 145,
+     "taxa": 0.20714285714285716,
+     "lo": 0.17875869793641713,
+     "hi": 0.2387238720054562
+    },
+    "meta": [
+     0.19,
+     0.23
+    ],
+    "duracaoSeg": 44.286214285714294,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "wei-long",
+     "taxa": 0.16
+    },
+    "melhor": {
+     "desafiante": "centella",
+     "taxa": 0.26
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "nila",
+    "nivel": 2,
+    "posicao": 3,
+    "total": 6,
+    "desafiantes": 7,
+    "jogador": {
+     "n": 700,
+     "k": 114,
+     "taxa": 0.16285714285714287,
+     "lo": 0.13735670655943383,
+     "hi": 0.19203786176389348
+    },
+    "meta": [
+     0.09,
+     0.15
+    ],
+    "duracaoSeg": 71.76709523809524,
+    "porKo": 0.9642857142857143,
+    "porTempo": 0.03571428571428571,
+    "pior": {
+     "desafiante": "hayato",
+     "taxa": 0.12
+    },
+    "melhor": {
+     "desafiante": "aminu",
+     "taxa": 0.28
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": false,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "baatar",
+    "nivel": 1,
+    "posicao": 4,
+    "total": 6,
+    "desafiantes": 8,
+    "jogador": {
+     "n": 800,
+     "k": 146,
+     "taxa": 0.1825,
+     "lo": 0.15727212693605802,
+     "hi": 0.210762570447108
+    },
+    "meta": [
+     0.17,
+     0.21
+    ],
+    "duracaoSeg": 41.68383333333333,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "hayato",
+     "taxa": 0.11
+    },
+    "melhor": {
+     "desafiante": "nila",
+     "taxa": 0.25
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "baatar",
+    "nivel": 2,
+    "posicao": 4,
+    "total": 6,
+    "desafiantes": 8,
+    "jogador": {
+     "n": 800,
+     "k": 152,
+     "taxa": 0.19,
+     "lo": 0.16432104174977888,
+     "hi": 0.21864196986843046
+    },
+    "meta": [
+     0.08,
+     0.14
+    ],
+    "duracaoSeg": 65.18754166666668,
+    "porKo": 0.98,
+    "porTempo": 0.02,
+    "pior": {
+     "desafiante": "min-ji",
+     "taxa": 0.09
+    },
+    "melhor": {
+     "desafiante": "wei-long",
+     "taxa": 0.33
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": false,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "zenon",
+    "nivel": 1,
+    "posicao": 5,
+    "total": 6,
+    "desafiantes": 9,
+    "jogador": {
+     "n": 900,
+     "k": 145,
+     "taxa": 0.16111111111111112,
+     "lo": 0.13854063103418135,
+     "hi": 0.18656235161233548
+    },
+    "meta": [
+     0.15,
+     0.19
+    ],
+    "duracaoSeg": 41.8145,
+    "porKo": 1,
+    "porTempo": 0,
+    "pior": {
+     "desafiante": "min-ji",
+     "taxa": 0.12
+    },
+    "melhor": {
+     "desafiante": "aminu",
+     "taxa": 0.28
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
+   },
+   {
+    "chefe": "zenon",
+    "nivel": 2,
+    "posicao": 5,
+    "total": 6,
+    "desafiantes": 9,
+    "jogador": {
+     "n": 900,
+     "k": 103,
+     "taxa": 0.11444444444444445,
+     "lo": 0.09526393952833913,
+     "hi": 0.1369024046629439
+    },
+    "meta": [
+     0.07,
+     0.13
+    ],
+    "duracaoSeg": 64.17777777777776,
+    "porKo": 0.9877777777777778,
+    "porTempo": 0.012222222222222223,
+    "pior": {
+     "desafiante": "wei-long",
+     "taxa": 0.06
+    },
+    "melhor": {
+     "desafiante": "aminu",
+     "taxa": 0.17
+    },
+    "travadas": 0,
+    "ok": {
+     "taxa": true,
+     "ko": true,
+     "duracao": true,
+     "pior": true,
+     "melhor": true,
+     "travadas": true
+    }
    }
   ],
   "golpes": {
@@ -2270,9 +3906,41 @@
     "porLuta": 6.532555555555556,
     "esquivadosPorLuta": 2.2834444444444446
    }
+  },
+  "danoRecebido": {
+   "aminu": 0.925,
+   "centella": 0.875,
+   "camille": 0.925,
+   "nila": 0.875,
+   "baatar": 0.85,
+   "zenon": 0.8
   }
  },
  "achados": [
+  {
+   "severidade": "atencao",
+   "categoria": "chefao",
+   "alvo": "chefão aminu DIFÍCIL",
+   "texto": "o jogador vence 10.0% (n=400), fora da meta 13-19%"
+  },
+  {
+   "severidade": "atencao",
+   "categoria": "chefao",
+   "alvo": "chefão centella DIFÍCIL",
+   "texto": "o jogador vence 25.8% (n=500), fora da meta 12-18%"
+  },
+  {
+   "severidade": "atencao",
+   "categoria": "chefao",
+   "alvo": "chefão nila DIFÍCIL",
+   "texto": "o jogador vence 16.3% (n=700), fora da meta 9-15%"
+  },
+  {
+   "severidade": "atencao",
+   "categoria": "chefao",
+   "alvo": "chefão baatar DIFÍCIL",
+   "texto": "o jogador vence 19.0% (n=800), fora da meta 8-14%"
+  },
   {
    "severidade": "atencao",
    "categoria": "nunca-acerta",

@@ -278,9 +278,20 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.emitir({ tipo: 'dust', x: f.x, n: 14, power: 1.4 });
   }
 
+  /**
+   * Dano que a VIDA do defensor sofre de verdade. Só o chefe com `ConfigChefe.danoRecebido` (< 1) leva menos; para todo o resto
+   * devolve `dano` sem tocar (nem uma multiplicação por 1), o que mantém os 4 originais bit a bit. Chamado depois de todas as contas
+   * do golpe (gotHits, contragolpe, mínimo do raspão) e antes de descontar da vida, nos 4 pontos onde ela cai. O fator mora no
+   * `cfgChefe` do Fighter, não na ficha: o VADIVU da NILA troca de ficha no meio da luta e levaria o reforço junto.
+   */
+  private danoNoDefensor(d: Fighter, dano: number): number {
+    const fator = d.cfgChefe?.danoRecebido;
+    return fator === undefined || fator === 1 ? dano : dano * fator;
+  }
+
   /** Arremesso: joga o rival por cima do ombro. */
   arremessar(a: Fighter, d: Fighter, golpe?: GolpeMontado): void {
-    const dmg = (golpe?.agarrao?.dmg ?? 12) * a.ch.pow;
+    const dmg = this.danoNoDefensor(d, (golpe?.agarrao?.dmg ?? 12) * a.ch.pow);
     const hpAntes = d.hp;
     d.hp = Math.max(this.training ? 1 : 0, d.hp - dmg);
     const dano = hpAntes - d.hp;
@@ -485,7 +496,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     const cfg = c?.cfgChefe;
     this.projectiles = []; // um golpe do jogador que terminava durante a cena pode ter soltado projétil
     if (!c || !cfg || this.t < cfg.cena.duracao) return;
-    c.trocarFicha(cfg.fichaFase2);
+    if (cfg.fichaFase2 !== undefined) c.trocarFicha(cfg.fichaFase2); // sem ficha de fase 2 o chefe segue na que estava (NILA: a postura)
     c.setState('idle');
     this.aplicarPerfilDoChefe(true);
     this.phase = 'fight';
@@ -722,7 +733,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     a.lastHitMt = a.mt;
     const cornered = d.x <= 66 || d.x >= LARGURA - 66;
     if (blocked) {
-      const chip = Math.max(0.4, (mv.proj ? mv.dmg : mv.dmg * a.ch.pow) * 0.12);
+      const chip = this.danoNoDefensor(d, Math.max(0.4, (mv.proj ? mv.dmg : mv.dmg * a.ch.pow) * 0.12));
       d.hp = Math.max(1, d.hp - chip);
       a.score += Math.round(chip * 50);
       // E3: golpe com `quebraGuarda` (MASHI nível 3) atravessa o bloqueio: o raspão é o mesmo, mas o defensor fica
@@ -778,9 +789,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     // golpe forte a interrompem. Sem `armadura` no def, qualquer golpe é absorvido como sempre.
     const rankMax = d.ch.armadura?.rankMax;
     const armaduraAbsorve = rankMax === undefined || (mv.rank !== undefined && mv.rank <= rankMax);
-    if (d.armor > 0 && d.state === 'move' && armaduraAbsorve && d.hp - danoDeArmadura(mv.dmg, a.ch.pow, mv.proj) > 0) {
+    const danoArmadura = d.armor > 0 ? this.danoNoDefensor(d, danoDeArmadura(mv.dmg, a.ch.pow, mv.proj)) : 0; // o teste de absorção e o valor usam o MESMO dano
+    if (d.armor > 0 && d.state === 'move' && armaduraAbsorve && d.hp - danoArmadura > 0) {
       // ARMADURA: absorve o golpe sem interromper
-      const ad = danoDeArmadura(mv.dmg, a.ch.pow, mv.proj);
+      const ad = danoArmadura;
       d.hp -= ad;
       d.flash = 6;
       a.score += Math.round(ad * 100);
@@ -800,7 +812,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       return;
     }
     if (d.gotHits === 0) d.comboDmg = 0;
-    let dmg = danoDoGolpe(mv.dmg, a.ch.pow, mv.proj, d.gotHits, counter, emPreparo ? mv.contra?.mult : undefined);
+    let dmg = this.danoNoDefensor(d, danoDoGolpe(mv.dmg, a.ch.pow, mv.proj, d.gotHits, counter, emPreparo ? mv.contra?.mult : undefined));
     const stunExtra = emPreparo ? (mv.contra?.hs ?? 0) : 0;
     if (this.training) dmg = Math.min(dmg, d.hp - 1 > 0 ? dmg : 0);
     const hpAntes = d.hp;

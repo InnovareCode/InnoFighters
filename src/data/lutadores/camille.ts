@@ -66,4 +66,12 @@ export const CAMILLE: LutadorDef = {
       dmg: 12, kb: 9, hs: 0, bs: 14, kd: 1, lvl: 'mid', bh: 120, rm: 1.5, heavy: 1, tall: 1,
     },
   },
+  // Guardiã (spec chefões §4.2): ver AMINU. A cena da fase 2 é a guarda ("en garde", `block`).
+  chefe: {
+    barras: 2,
+    hpPorBarra: 49,
+    cena: { duracao: 60, poses: ['block'] },
+    bonusVitoria: 3000,
+    danoRecebido: 0.925,
+  },
 };

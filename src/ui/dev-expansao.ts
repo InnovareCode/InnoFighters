@@ -28,6 +28,9 @@ export function regrasExpansao(): Regras {
     travadosNaEscada: REGRAS_PADRAO.travadosNaEscada,
     esquiva: REGRAS_PADRAO.esquiva,
     cinematica: REGRAS_PADRAO.cinematica,
+    // sem fila, o chefao e sempre o Anfitriao: a regra de antes basta (P1)
+    chefesDaFila: false,
+    temasMusicais: false,
   };
 }
 
@@ -44,5 +47,7 @@ export function regrasDeQuatro(): Regras {
     travadosNaEscada: true,
     esquiva: false,
     cinematica: false,
+    chefesDaFila: false,
+    temasMusicais: false,
   };
 }

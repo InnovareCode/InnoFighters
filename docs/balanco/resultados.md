@@ -6,19 +6,27 @@
 
 - Modo **completo + ESQUIVA ligada**: 100 sementes por combinação, níveis da CPU NORMAL e DIFÍCIL, semente-base 1.
 - Partida: 2 rounds, 99 s, os DOIS lados de cada par (A como P1 e como P2), espelho fora; teto de 21 600 ticks por luta.
-- Total: 19800 lutas (18000 regulares + 1800 contra o chefão), 72 s em 8 processo(s).
-- Versão dos dados/motor: `d81622b9b8db` (hash de `src/data`, `src/fight`, `src/core` e dos `atlas.json`). Gerado em 2026-10-21.
+- Total: 25800 lutas (18000 regulares + 7800 contra os chefões), 75 s em 8 processo(s).
+- Versão dos dados/motor: `f6b9952cee5e` (hash de `src/data`, `src/fight`, `src/core` e dos `atlas.json`). Gerado em 2026-10-21.
 - A CPU joga todos os lados: mecânicas de leitura (PARADE, postura da NILA) tendem a parecer mais fracas do que são nas mãos de uma pessoa.
 
 ## Determinismo (diferença entre rodadas)
 
-Hash do resultado desta rodada: `2c93922d5c48c8ea`.
-Não havia rodada anterior com os mesmos parâmetros neste diretório: esta passa a ser a referência.
+Hash do resultado desta rodada: `957b8416d75bf060`.
+Hash só das lutas regulares: `f420ce928e06b304` (tem de ser igual antes e depois de qualquer ajuste de chefão); só das lutas de chefe: `c8d18e0edd93ebd0`.
+**DIFERENTE** da rodada anterior (antes `b678f5ecb996d6a8`, agora `957b8416d75bf060`), e a versão dos dados/motor/harness mudou (`0842bb4ccf79` -> `f6b9952cee5e`): diferença esperada.
+
+| Lutador | Taxa antes | Taxa agora |
+|---|---|---|
 
 ## Sinalizações (outliers)
 
 | Severidade | Categoria | Alvo | O quê |
 |---|---|---|---|
+| ATENCAO | chefao | chefão aminu DIFÍCIL | o jogador vence 10.0% (n=400), fora da meta 13-19% |
+| ATENCAO | chefao | chefão centella DIFÍCIL | o jogador vence 25.8% (n=500), fora da meta 12-18% |
+| ATENCAO | chefao | chefão nila DIFÍCIL | o jogador vence 16.3% (n=700), fora da meta 9-15% |
+| ATENCAO | chefao | chefão baatar DIFÍCIL | o jogador vence 19.0% (n=800), fora da meta 8-14% |
 | ATENCAO | nunca-acerta | camille sFwd | usado 11347x e só 503 contato(s) (4.4%) |
 
 ## Taxa de vitória por lutador
@@ -57,33 +65,136 @@ Vantagem de lado: o P1 vence 53.2% das lutas (n=18000). Duração média 107 s; 
 | **baatar** | 59 | 46 | 64 | 55 | 50 | 60 | 52 | 47 | · | 49 |
 | **zenon** | 60 | 55 | 54 | 51 | 45 | 61 | 44 | 41 | 52 | · |
 
-## Chefão (CPU do nível indicado nos dois lados; sem chefão no jogo = não roda)
+## Chefões (CPU do nível indicado nos dois lados; cada chefão contra o elenco que existe no ponto dele da progressão)
 
-"Jogador" = a CPU do desafiante como P1, no lugar de uma pessoa. Round único; empate repete o round.
+"Jogador" = a CPU do desafiante como P1, no lugar de uma pessoa (uma APROXIMAÇÃO, não a taxa de uma pessoa). Round único, 2 barras; empate repete o round.
 
-| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO |
-|---|---|---|---|---|---|---|---|---|
-| hayato | NORMAL | **30.0%** (30/100) | 22%-40% | 40 s | 1.0 | 83% | 83% | 100% |
-| wei-long | NORMAL | **25.0%** (25/100) | 18%-34% | 39 s | 1.0 | 86% | 86% | 100% |
-| min-ji | NORMAL | **24.0%** (24/100) | 17%-33% | 38 s | 1.0 | 80% | 80% | 100% |
-| caio | NORMAL | **29.0%** (29/100) | 21%-39% | 38 s | 1.0 | 80% | 80% | 100% |
-| aminu | NORMAL | **39.0%** (39/100) | 30%-49% | 40 s | 1.0 | 88% | 88% | 100% |
-| centella | NORMAL | **27.0%** (27/100) | 19%-36% | 38 s | 1.0 | 73% | 73% | 100% |
-| camille | NORMAL | **42.0%** (42/100) | 33%-52% | 39 s | 1.0 | 85% | 85% | 100% |
-| nila | NORMAL | **40.0%** (40/100) | 31%-50% | 42 s | 1.0 | 88% | 88% | 100% |
-| baatar | NORMAL | **31.0%** (31/100) | 23%-41% | 41 s | 1.0 | 89% | 89% | 100% |
-| hayato | DIFÍCIL | **22.0%** (22/100) | 15%-31% | 60 s | 1.0 | 86% | 86% | 100% |
-| wei-long | DIFÍCIL | **20.0%** (20/100) | 13%-29% | 58 s | 1.0 | 80% | 80% | 100% |
-| min-ji | DIFÍCIL | **26.0%** (26/100) | 18%-35% | 59 s | 1.0 | 85% | 85% | 100% |
-| caio | DIFÍCIL | **28.0%** (28/100) | 20%-37% | 55 s | 1.0 | 82% | 82% | 100% |
-| aminu | DIFÍCIL | **38.0%** (38/100) | 29%-48% | 62 s | 1.0 | 90% | 90% | 100% |
-| centella | DIFÍCIL | **27.0%** (27/100) | 19%-36% | 56 s | 1.0 | 74% | 74% | 100% |
-| camille | DIFÍCIL | **18.0%** (18/100) | 12%-27% | 63 s | 1.0 | 78% | 77% | 98% |
-| nila | DIFÍCIL | **15.0%** (15/100) | 9%-23% | 71 s | 1.0 | 78% | 78% | 98% |
-| baatar | DIFÍCIL | **13.0%** (13/100) | 8%-21% | 61 s | 1.0 | 72% | 72% | 100% |
+Metas: rampa aprovada pelo dono (AMINU ~26-30% no NORMAL descendo até ZENON ~15-19%; DIFÍCIL proporcionalmente menor, centro x 0,575 ± 3 pontos). Acompanham: KO >= 90%, duração <= 75 s (NORMAL) / 90 s (DIFÍCIL), pior desafiante >= 5% e melhor <= 40% no NORMAL, 0 travadas, `danoRecebido` >= 0,60.
 
-Média contra os 9 desafiantes, NORMAL: o jogador vence **31.9%** (meta 20-40% no NORMAL).
-Média contra os 9 desafiantes, DIFÍCIL: o jogador vence **23.0%** (meta 20-40% no NORMAL).
+### Resumo
+
+| Chefão | Desafiantes | Fator `danoRecebido` | Nível | Jogador vence | IC95 | Meta | Na meta | Terminou por KO | Por tempo | Duração | Pior desafiante | Melhor desafiante | Travadas |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **aminu** | 4 | 0.925 | NORMAL | **29.3%** (117/400) | 25%-34% | 26-30% | sim | 100% | 0% | 40 s | hayato 22% | caio 33% | 0 |
+| **aminu** | 4 | 0.925 | DIFÍCIL | **10.0%** (40/400) | 7%-13% | 13-19% | **NÃO** | 100% | 0% | 57 s | caio 7% | min-ji 13% | 0 |
+| **centella** | 5 | 0.875 | NORMAL | **26.8%** (134/500) | 23%-31% | 24-28% | sim | 100% | 0% | 41 s | wei-long 19% | hayato 32% | 0 |
+| **centella** | 5 | 0.875 | DIFÍCIL | **25.8%** (129/500) | 22%-30% | 12-18% | **NÃO** | 100% | 0% | 59 s | wei-long 18% | aminu 37% | 0 |
+| **camille** | 6 | 0.925 | NORMAL | **24.3%** (146/600) | 21%-28% | 22-26% | sim | 100% | 0% | 39 s | min-ji 19% | aminu 34% | 0 |
+| **camille** | 6 | 0.925 | DIFÍCIL | **16.3%** (98/600) | 14%-20% | 11-17% | sim | 100% | 0% | 59 s | hayato 6% | aminu 32% | 0 |
+| **nila** | 7 | 0.875 | NORMAL | **20.7%** (145/700) | 18%-24% | 19-23% | sim | 100% | 0% | 44 s | wei-long 16% | centella 26% | 0 |
+| **nila** | 7 | 0.875 | DIFÍCIL | **16.3%** (114/700) | 14%-19% | 9-15% | **NÃO** | 96% | 4% | 72 s | hayato 12% | aminu 28% | 0 |
+| **baatar** | 8 | 0.85 | NORMAL | **18.3%** (146/800) | 16%-21% | 17-21% | sim | 100% | 0% | 42 s | hayato 11% | nila 25% | 0 |
+| **baatar** | 8 | 0.85 | DIFÍCIL | **19.0%** (152/800) | 16%-22% | 8-14% | **NÃO** | 98% | 2% | 65 s | min-ji 9% | wei-long 33% | 0 |
+| **zenon** | 9 | 0.8 | NORMAL | **16.1%** (145/900) | 14%-19% | 15-19% | sim | 100% | 0% | 42 s | min-ji 12% | aminu 28% | 0 |
+| **zenon** | 9 | 0.8 | DIFÍCIL | **11.4%** (103/900) | 10%-14% | 7-13% | sim | 99% | 1% | 64 s | wei-long 6% | aminu 17% | 0 |
+
+### Chefão aminu
+
+| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO | Terminou por tempo |
+|---|---|---|---|---|---|---|---|---|---|
+| hayato | NORMAL | **22.0%** (22/100) | 15%-31% | 40 s | 1.0 | 71% | 71% | 100% | 0% |
+| wei-long | NORMAL | **33.0%** (33/100) | 25%-43% | 43 s | 1.0 | 82% | 82% | 100% | 0% |
+| min-ji | NORMAL | **29.0%** (29/100) | 21%-39% | 40 s | 1.0 | 81% | 81% | 100% | 0% |
+| caio | NORMAL | **33.0%** (33/100) | 25%-43% | 39 s | 1.0 | 78% | 78% | 100% | 0% |
+| hayato | DIFÍCIL | **9.0%** (9/100) | 5%-16% | 59 s | 1.0 | 63% | 63% | 100% | 0% |
+| wei-long | DIFÍCIL | **11.0%** (11/100) | 6%-19% | 59 s | 1.0 | 65% | 65% | 100% | 0% |
+| min-ji | DIFÍCIL | **13.0%** (13/100) | 8%-21% | 56 s | 1.0 | 69% | 69% | 100% | 0% |
+| caio | DIFÍCIL | **7.0%** (7/100) | 3%-14% | 54 s | 1.0 | 60% | 60% | 100% | 0% |
+
+### Chefão centella
+
+| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO | Terminou por tempo |
+|---|---|---|---|---|---|---|---|---|---|
+| hayato | NORMAL | **32.0%** (32/100) | 24%-42% | 42 s | 1.0 | 85% | 85% | 100% | 0% |
+| wei-long | NORMAL | **19.0%** (19/100) | 13%-28% | 40 s | 1.0 | 74% | 74% | 100% | 0% |
+| min-ji | NORMAL | **25.0%** (25/100) | 18%-34% | 41 s | 1.0 | 79% | 79% | 100% | 0% |
+| caio | NORMAL | **28.0%** (28/100) | 20%-37% | 38 s | 1.0 | 79% | 79% | 100% | 0% |
+| aminu | NORMAL | **30.0%** (30/100) | 22%-40% | 45 s | 1.0 | 86% | 86% | 100% | 0% |
+| hayato | DIFÍCIL | **25.0%** (25/100) | 18%-34% | 60 s | 1.0 | 79% | 79% | 100% | 0% |
+| wei-long | DIFÍCIL | **18.0%** (18/100) | 12%-27% | 57 s | 1.0 | 71% | 71% | 100% | 0% |
+| min-ji | DIFÍCIL | **20.0%** (20/100) | 13%-29% | 55 s | 1.0 | 71% | 71% | 100% | 0% |
+| caio | DIFÍCIL | **29.0%** (29/100) | 21%-39% | 58 s | 1.0 | 81% | 81% | 100% | 0% |
+| aminu | DIFÍCIL | **37.0%** (37/100) | 28%-47% | 63 s | 1.0 | 87% | 87% | 100% | 0% |
+
+### Chefão camille
+
+| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO | Terminou por tempo |
+|---|---|---|---|---|---|---|---|---|---|
+| hayato | NORMAL | **24.0%** (24/100) | 17%-33% | 39 s | 1.0 | 75% | 75% | 100% | 0% |
+| wei-long | NORMAL | **20.0%** (20/100) | 13%-29% | 39 s | 1.0 | 78% | 78% | 100% | 0% |
+| min-ji | NORMAL | **19.0%** (19/100) | 13%-28% | 38 s | 1.0 | 77% | 77% | 100% | 0% |
+| caio | NORMAL | **25.0%** (25/100) | 18%-34% | 38 s | 1.0 | 77% | 77% | 100% | 0% |
+| aminu | NORMAL | **34.0%** (34/100) | 25%-44% | 41 s | 1.0 | 84% | 84% | 100% | 0% |
+| centella | NORMAL | **24.0%** (24/100) | 17%-33% | 39 s | 1.0 | 86% | 86% | 100% | 0% |
+| hayato | DIFÍCIL | **6.0%** (6/100) | 3%-12% | 60 s | 1.0 | 58% | 58% | 100% | 0% |
+| wei-long | DIFÍCIL | **15.0%** (15/100) | 9%-23% | 59 s | 1.0 | 72% | 72% | 100% | 0% |
+| min-ji | DIFÍCIL | **11.0%** (11/100) | 6%-19% | 57 s | 1.0 | 69% | 69% | 100% | 0% |
+| caio | DIFÍCIL | **10.0%** (10/100) | 6%-17% | 56 s | 1.0 | 65% | 65% | 100% | 0% |
+| aminu | DIFÍCIL | **32.0%** (32/100) | 24%-42% | 66 s | 1.0 | 86% | 86% | 100% | 0% |
+| centella | DIFÍCIL | **24.0%** (24/100) | 17%-33% | 56 s | 1.0 | 67% | 67% | 100% | 0% |
+
+### Chefão nila
+
+| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO | Terminou por tempo |
+|---|---|---|---|---|---|---|---|---|---|
+| hayato | NORMAL | **20.0%** (20/100) | 13%-29% | 44 s | 1.0 | 80% | 80% | 100% | 0% |
+| wei-long | NORMAL | **16.0%** (16/100) | 10%-24% | 46 s | 1.0 | 79% | 79% | 100% | 0% |
+| min-ji | NORMAL | **17.0%** (17/100) | 11%-26% | 41 s | 1.0 | 68% | 68% | 100% | 0% |
+| caio | NORMAL | **20.0%** (20/100) | 13%-29% | 43 s | 1.0 | 78% | 78% | 100% | 0% |
+| aminu | NORMAL | **23.0%** (23/100) | 16%-32% | 46 s | 1.0 | 87% | 87% | 100% | 0% |
+| centella | NORMAL | **26.0%** (26/100) | 18%-35% | 44 s | 1.0 | 74% | 74% | 100% | 0% |
+| camille | NORMAL | **23.0%** (23/100) | 16%-32% | 45 s | 1.0 | 80% | 80% | 100% | 0% |
+| hayato | DIFÍCIL | **12.0%** (12/100) | 7%-20% | 72 s | 1.0 | 67% | 67% | 97% | 3% |
+| wei-long | DIFÍCIL | **16.0%** (16/100) | 10%-24% | 72 s | 1.0 | 73% | 73% | 99% | 1% |
+| min-ji | DIFÍCIL | **13.0%** (13/100) | 8%-21% | 66 s | 1.0 | 72% | 72% | 98% | 2% |
+| caio | DIFÍCIL | **15.0%** (15/100) | 9%-23% | 67 s | 1.0 | 75% | 75% | 98% | 2% |
+| aminu | DIFÍCIL | **28.0%** (28/100) | 20%-37% | 81 s | 1.0 | 87% | 87% | 88% | 12% |
+| centella | DIFÍCIL | **14.0%** (14/100) | 9%-22% | 66 s | 1.0 | 64% | 64% | 99% | 1% |
+| camille | DIFÍCIL | **16.0%** (16/100) | 10%-24% | 78 s | 1.0 | 86% | 86% | 96% | 4% |
+
+### Chefão baatar
+
+| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO | Terminou por tempo |
+|---|---|---|---|---|---|---|---|---|---|
+| hayato | NORMAL | **11.0%** (11/100) | 6%-19% | 40 s | 1.0 | 76% | 76% | 100% | 0% |
+| wei-long | NORMAL | **22.0%** (22/100) | 15%-31% | 41 s | 1.0 | 69% | 69% | 100% | 0% |
+| min-ji | NORMAL | **12.0%** (12/100) | 7%-20% | 39 s | 1.0 | 72% | 72% | 100% | 0% |
+| caio | NORMAL | **23.0%** (23/100) | 16%-32% | 38 s | 1.0 | 76% | 76% | 100% | 0% |
+| aminu | NORMAL | **19.0%** (19/100) | 13%-28% | 45 s | 1.0 | 74% | 74% | 100% | 0% |
+| centella | NORMAL | **16.0%** (16/100) | 10%-24% | 42 s | 1.0 | 82% | 82% | 100% | 0% |
+| camille | NORMAL | **18.0%** (18/100) | 12%-27% | 41 s | 1.0 | 75% | 75% | 100% | 0% |
+| nila | NORMAL | **25.0%** (25/100) | 18%-34% | 47 s | 1.0 | 81% | 81% | 100% | 0% |
+| hayato | DIFÍCIL | **12.0%** (12/100) | 7%-20% | 64 s | 1.0 | 60% | 60% | 100% | 0% |
+| wei-long | DIFÍCIL | **33.0%** (33/100) | 25%-43% | 62 s | 1.0 | 78% | 78% | 99% | 1% |
+| min-ji | DIFÍCIL | **9.0%** (9/100) | 5%-16% | 58 s | 1.0 | 55% | 55% | 100% | 0% |
+| caio | DIFÍCIL | **20.0%** (20/100) | 13%-29% | 60 s | 1.0 | 80% | 80% | 99% | 1% |
+| aminu | DIFÍCIL | **27.0%** (27/100) | 19%-36% | 71 s | 1.0 | 71% | 71% | 97% | 3% |
+| centella | DIFÍCIL | **18.0%** (18/100) | 12%-27% | 58 s | 1.0 | 60% | 60% | 100% | 0% |
+| camille | DIFÍCIL | **16.0%** (16/100) | 10%-24% | 67 s | 1.0 | 73% | 73% | 99% | 1% |
+| nila | DIFÍCIL | **17.0%** (17/100) | 11%-26% | 80 s | 1.0 | 78% | 78% | 90% | 10% |
+
+### Chefão zenon
+
+| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO | Terminou por tempo |
+|---|---|---|---|---|---|---|---|---|---|
+| hayato | NORMAL | **15.0%** (15/100) | 9%-23% | 41 s | 1.0 | 68% | 68% | 100% | 0% |
+| wei-long | NORMAL | **15.0%** (15/100) | 9%-23% | 43 s | 1.0 | 74% | 74% | 100% | 0% |
+| min-ji | NORMAL | **12.0%** (12/100) | 7%-20% | 39 s | 1.0 | 69% | 69% | 100% | 0% |
+| caio | NORMAL | **18.0%** (18/100) | 12%-27% | 39 s | 1.0 | 67% | 67% | 100% | 0% |
+| aminu | NORMAL | **28.0%** (28/100) | 20%-37% | 43 s | 1.0 | 80% | 80% | 100% | 0% |
+| centella | NORMAL | **12.0%** (12/100) | 7%-20% | 40 s | 1.0 | 63% | 63% | 100% | 0% |
+| camille | NORMAL | **17.0%** (17/100) | 11%-26% | 41 s | 1.0 | 74% | 74% | 100% | 0% |
+| nila | NORMAL | **14.0%** (14/100) | 9%-22% | 46 s | 1.0 | 80% | 80% | 100% | 0% |
+| baatar | NORMAL | **14.0%** (14/100) | 9%-22% | 44 s | 1.0 | 81% | 81% | 100% | 0% |
+| hayato | DIFÍCIL | **11.0%** (11/100) | 6%-19% | 63 s | 1.0 | 70% | 70% | 100% | 0% |
+| wei-long | DIFÍCIL | **6.0%** (6/100) | 3%-12% | 60 s | 1.0 | 71% | 71% | 100% | 0% |
+| min-ji | DIFÍCIL | **12.0%** (12/100) | 7%-20% | 64 s | 1.0 | 68% | 67% | 100% | 0% |
+| caio | DIFÍCIL | **14.0%** (14/100) | 9%-22% | 57 s | 1.0 | 70% | 70% | 100% | 0% |
+| aminu | DIFÍCIL | **17.0%** (17/100) | 11%-26% | 66 s | 1.0 | 82% | 82% | 100% | 0% |
+| centella | DIFÍCIL | **15.0%** (15/100) | 9%-23% | 59 s | 1.0 | 57% | 57% | 100% | 0% |
+| camille | DIFÍCIL | **10.0%** (10/100) | 6%-17% | 68 s | 1.0 | 68% | 67% | 98% | 2% |
+| nila | DIFÍCIL | **9.0%** (9/100) | 5%-16% | 75 s | 1.0 | 65% | 64% | 92% | 8% |
+| baatar | DIFÍCIL | **9.0%** (9/100) | 5%-16% | 64 s | 1.0 | 60% | 60% | 99% | 1% |
 
 ## Uso das mecânicas pela CPU
 

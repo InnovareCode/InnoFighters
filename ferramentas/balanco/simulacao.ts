@@ -3,6 +3,7 @@ import { criarRng } from '../../src/core/rng';
 import { Game, type FonteEntradas } from '../../src/fight/game';
 import type { Fighter } from '../../src/fight/fighter';
 import type { ProjetilLuta } from '../../src/fight/projetil';
+import type { ChefeDoHarness } from './chefoes';
 import type { Elenco } from './elenco';
 import { semente32 } from './estatistica';
 
@@ -26,7 +27,7 @@ export type Tarefa = {
   tipo: TipoTarefa;
   /** P1. No chefe é o "jogador" (uma CPU). */
   a: IdLutador;
-  /** P2. No chefe é sempre o BAATAR. */
+  /** P2. No chefe é o chefão da tarefa (um dos 6). */
   b: IdLutador;
   /** Nível da CPU (índice de `AI_LEVELS`): 1 = NORMAL, 2 = DIFÍCIL. Vale para os dois lados. */
   nivel: number;
@@ -43,6 +44,10 @@ export type ParametrosSim = {
   /** `a:b` separados por vírgula, `*` em qualquer lado (ex.: `aminu:*,*:nila`). Vazio = todos. */
   filtro: string | null;
   incluirChefe: boolean;
+  /** Só estes chefões (`--chefes aminu,zenon`). Ausente/null = os 6. */
+  chefes?: readonly string[] | null;
+  /** Não joga as lutas regulares (`--sem-regulares`): calibração rápida dos chefões. Com `idx` recomeçando em 0 (a semente não muda). */
+  semRegulares?: boolean;
   /** Liga a esquiva (V2) em todas as lutas. Ausente/false = como sempre. */
   esquiva?: boolean;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
@@ -103,9 +108,16 @@ export function casaFiltro(filtro: string | null, a: string, b: string): boolean
   });
 }
 
-/** A lista fixa de lutas do harness, na ordem estável: regulares (par ordenado, nível, índice) e depois o chefe. */
-export function montarTarefas(ids: readonly IdLutador[], chefe: IdLutador | null, p: ParametrosSim): Tarefa[] {
+/**
+ * A lista fixa de lutas do harness, na ordem estável: regulares (par ordenado, nível, índice) e depois os chefões, um a um.
+ * `chefes` é a lista de chefões com os desafiantes de cada um (`desafiantesDoChefe`); por compatibilidade aceita também UM id
+ * (o chefão único de antes: todos os outros lutadores o enfrentam) ou null (sem chefão). Os regulares vêm SEMPRE primeiro e
+ * com os mesmos `idx` e sementes de antes: acrescentar chefões não mexe neles.
+ */
+export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | null | readonly ChefeDoHarness[], p: ParametrosSim): Tarefa[] {
   const tarefas: Tarefa[] = [];
+  const lista: readonly ChefeDoHarness[] =
+    chefes === null ? [] : typeof chefes === 'string' ? [{ chefe: chefes, desafiantes: ids.filter((id) => id !== chefes) }] : chefes;
   const nova = (tipo: TipoTarefa, a: IdLutador, b: IdLutador, nivel: number, i: number): void => {
     tarefas.push({
       idx: tarefas.length,
@@ -117,17 +129,22 @@ export function montarTarefas(ids: readonly IdLutador[], chefe: IdLutador | null
       ...(p.esquiva ? { esquiva: true as const } : {}),
     });
   };
-  for (const a of ids) {
-    for (const b of ids) {
-      if (a === b || !casaFiltro(p.filtro, a, b)) continue;
-      for (const nivel of p.niveis) for (let i = 0; i < p.sementes; i++) nova('regular', a, b, nivel, i);
+  if (p.semRegulares !== true) {
+    for (const a of ids) {
+      for (const b of ids) {
+        if (a === b || !casaFiltro(p.filtro, a, b)) continue;
+        for (const nivel of p.niveis) for (let i = 0; i < p.sementes; i++) nova('regular', a, b, nivel, i);
+      }
     }
   }
-  // Sem chefão no jogo (`CHEFE` null, enquanto o Zenon não entra) não há tarefa de chefe, mesmo com `incluirChefe`.
-  if (p.incluirChefe && chefe !== null) {
-    for (const a of ids) {
-      if (a === chefe || !casaFiltro(p.filtro, a, chefe)) continue;
-      for (const nivel of p.niveis) for (let i = 0; i < p.sementes; i++) nova('chefe', a, chefe, nivel, i);
+  // Sem chefão no jogo (lista vazia) não há tarefa de chefe, mesmo com `incluirChefe`. `p.chefes` limita a quais chefões medir.
+  if (p.incluirChefe) {
+    for (const { chefe, desafiantes } of lista) {
+      if (p.chefes && !p.chefes.includes(chefe)) continue;
+      for (const a of desafiantes) {
+        if (a === chefe || !casaFiltro(p.filtro, a, chefe)) continue;
+        for (const nivel of p.niveis) for (let i = 0; i < p.sementes; i++) nova('chefe', a, chefe, nivel, i);
+      }
     }
   }
   return tarefas;

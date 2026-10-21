@@ -61,4 +61,13 @@ export const AMINU: LutadorDef = {
   },
   // Pose de preparação/golpe da MASHI: a arte própria entrou na E5 (atlas de produção); estas são as poses canônicas que todo atlas resolve.
   anim: { sFire: { s: ['hp0'], a: ['hp1'], r: ['hp1', 'hp0'] } },
+  // Guardião (spec chefões §4.2): luta com a ficha do jogável (sem fichaFase1/2), 2 barras de metade da vida cada. A cena da fase 2 usa só
+  // poses que o atlas já tem: carrega o MASHI (sa1) e solta (sa3). `danoRecebido` é a alavanca de dureza, calibrada em docs/balanco.
+  chefe: {
+    barras: 2,
+    hpPorBarra: 56,
+    cena: { duracao: 60, poses: ['sa1', 'sa3'] },
+    bonusVitoria: 3000,
+    danoRecebido: 0.925,
+  },
 };

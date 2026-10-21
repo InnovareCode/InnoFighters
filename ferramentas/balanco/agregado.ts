@@ -1,4 +1,5 @@
 import type { IdLutador } from '../../src/core/contratos';
+import { CRITERIOS_CHEFAO, metaDoChefe, type ChefeDoHarness, type Faixa } from './chefoes';
 import { hashDe, media, wilson } from './estatistica';
 import type { ContagemGolpe, ParametrosSim, Registro } from './simulacao';
 
@@ -34,6 +35,8 @@ export type LinhaLutador = {
 };
 
 export type LinhaChefe = {
+  /** O chefão (P2) desta linha. */
+  chefe: IdLutador;
   desafiante: IdLutador;
   nivel: number;
   jogador: Taxa;
@@ -42,8 +45,30 @@ export type LinhaChefe = {
   trocouBarra: number;
   fezCena: number;
   porKo: number;
+  /** Fração das lutas cujo round decisivo terminou por TEMPO. */
+  porTempo: number;
   roundsMedios: number;
   travadas: number;
+};
+
+/** O chefão num nível: a média dos desafiantes dele (somando as lutas) contra a meta da rampa e os critérios do spec §4.3. */
+export type ResumoChefe = {
+  chefe: IdLutador;
+  nivel: number;
+  /** Posição do chefão na progressão (0 = primeiro guardião) e quantos chefões há (a meta é uma rampa nessa posição). */
+  posicao: number;
+  total: number;
+  desafiantes: number;
+  jogador: Taxa;
+  meta: Faixa;
+  duracaoSeg: number;
+  porKo: number;
+  porTempo: number;
+  pior: { desafiante: IdLutador; taxa: number };
+  melhor: { desafiante: IdLutador; taxa: number };
+  travadas: number;
+  /** Cada critério: true = dentro. `taxa` é a média na faixa; os demais são os critérios de acompanhamento. */
+  ok: { taxa: boolean; ko: boolean; duracao: boolean; pior: boolean; melhor: boolean; travadas: boolean };
 };
 
 export type MecanicasCpu = {
@@ -64,6 +89,10 @@ export type Agregado = {
   matriz: Record<string, Record<string, Taxa>>;
   lado: { p1: Taxa };
   chefe: LinhaChefe[];
+  /** Uma linha por chefão e nível, contra a meta (vazio sem lutas de chefe). */
+  resumoChefes: ResumoChefe[];
+  /** `ConfigChefe.danoRecebido` de cada chefão NESTA rodada (o cli preenche a partir do elenco; ausente = 1). Só para o relatório. */
+  danoRecebido?: Record<string, number>;
   /** golpes[lutador][golpe] = [usos, acertos, bloqueios+paradas] (regulares). */
   golpes: Record<string, Record<string, ContagemGolpe>>;
   mecanicas: MecanicasCpu;
@@ -71,7 +100,11 @@ export type Agregado = {
 
 const fim = (r: Registro): 'ko' | 'tempo' | null => r.fim[r.fim.length - 1] ?? null;
 
-export function agregar(registros: readonly Registro[], ids: readonly IdLutador[], _chefeId: IdLutador | null, parametros: ParametrosSim): Agregado {
+/**
+ * `chefes` (a lista de `desafiantesDoChefe`) dá a ORDEM da progressão e a posição de cada chefão na rampa de metas. Ausente
+ * (ou um id só, como nos testes antigos), vale a ordem em que os chefões aparecem nos registros.
+ */
+export function agregar(registros: readonly Registro[], ids: readonly IdLutador[], chefes: IdLutador | null | readonly ChefeDoHarness[], parametros: ParametrosSim): Agregado {
   const regulares = registros.filter((r) => r.tipo === 'regular');
   const doChefe = registros.filter((r) => r.tipo === 'chefe');
 
@@ -131,22 +164,74 @@ export function agregar(registros: readonly Registro[], ids: readonly IdLutador[
   }
   const decididasReg = regulares.filter((r) => !r.travou);
 
+  // A ordem dos chefões: a da progressão (lista dada) e, para quem não está nela, a de aparição nos registros.
+  const ordem: IdLutador[] = Array.isArray(chefes) ? (chefes as readonly ChefeDoHarness[]).map((c) => c.chefe) : [];
+  for (const r of doChefe) if (!ordem.includes(r.b)) ordem.push(r.b);
   const chefe: LinhaChefe[] = [];
-  for (const nivel of parametros.niveis) {
-    for (const desafiante of ids) {
-      const l = doChefe.filter((r) => r.a === desafiante && r.nivel === nivel);
-      if (!l.length) continue;
-      const ok = l.filter((r) => !r.travou);
-      chefe.push({
-        desafiante,
+  const resumoChefes: ResumoChefe[] = [];
+  for (const boss of ordem) {
+    const doBoss = doChefe.filter((r) => r.b === boss);
+    if (!doBoss.length) continue;
+    for (const nivel of parametros.niveis) {
+      const linhasDoNivel: LinhaChefe[] = [];
+      for (const desafiante of ids) {
+        const l = doBoss.filter((r) => r.a === desafiante && r.nivel === nivel);
+        if (!l.length) continue;
+        const ok = l.filter((r) => !r.travou);
+        const linha: LinhaChefe = {
+          chefe: boss,
+          desafiante,
+          nivel,
+          jogador: taxaDe(ok.filter((r) => r.venc === 0).length, ok.length),
+          duracaoSeg: media(l.map((r) => r.ticks / 60)),
+          trocouBarra: l.filter((r) => r.chefe[0] > 0).length / l.length,
+          fezCena: l.filter((r) => r.chefe[1] > 0).length / l.length,
+          porKo: l.filter((r) => fim(r) === 'ko').length / l.length,
+          porTempo: l.filter((r) => fim(r) === 'tempo').length / l.length,
+          roundsMedios: media(l.map((r) => r.rounds)),
+          travadas: l.length - ok.length,
+        };
+        chefe.push(linha);
+        linhasDoNivel.push(linha);
+      }
+      if (!linhasDoNivel.length) continue;
+      const n = linhasDoNivel.reduce((s, c) => s + c.jogador.n, 0);
+      const k = linhasDoNivel.reduce((s, c) => s + c.jogador.k, 0);
+      const lutas = linhasDoNivel.reduce((s, c) => s + c.jogador.n + c.travadas, 0);
+      const ponderado = (pega: (c: LinhaChefe) => number): number => (lutas ? linhasDoNivel.reduce((s, c) => s + pega(c) * (c.jogador.n + c.travadas), 0) / lutas : 0);
+      const porTaxa = [...linhasDoNivel].sort((x, y) => x.jogador.taxa - y.jogador.taxa);
+      const pior = porTaxa[0] as LinhaChefe;
+      const melhor = porTaxa[porTaxa.length - 1] as LinhaChefe;
+      const posicao = ordem.indexOf(boss);
+      const metas = metaDoChefe(posicao, ordem.length);
+      const meta = nivel === 2 ? metas.dificil : metas.normal;
+      const jogador = taxaDe(k, n);
+      const duracaoSeg = ponderado((c) => c.duracaoSeg);
+      const porKo = ponderado((c) => c.porKo);
+      const travadas = linhasDoNivel.reduce((s, c) => s + c.travadas, 0);
+      resumoChefes.push({
+        chefe: boss,
         nivel,
-        jogador: taxaDe(ok.filter((r) => r.venc === 0).length, ok.length),
-        duracaoSeg: media(l.map((r) => r.ticks / 60)),
-        trocouBarra: l.filter((r) => r.chefe[0] > 0).length / l.length,
-        fezCena: l.filter((r) => r.chefe[1] > 0).length / l.length,
-        porKo: l.filter((r) => fim(r) === 'ko').length / l.length,
-        roundsMedios: media(l.map((r) => r.rounds)),
-        travadas: l.length - ok.length,
+        posicao,
+        total: ordem.length,
+        desafiantes: linhasDoNivel.length,
+        jogador,
+        meta,
+        duracaoSeg,
+        porKo,
+        porTempo: ponderado((c) => c.porTempo),
+        pior: { desafiante: pior.desafiante, taxa: pior.jogador.taxa },
+        melhor: { desafiante: melhor.desafiante, taxa: melhor.jogador.taxa },
+        travadas,
+        ok: {
+          taxa: jogador.taxa >= meta[0] - 1e-9 && jogador.taxa <= meta[1] + 1e-9,
+          ko: porKo >= CRITERIOS_CHEFAO.koMinimo,
+          duracao: duracaoSeg <= (CRITERIOS_CHEFAO.duracaoMax[nivel] ?? Infinity),
+          // "pior >= 5%" e "melhor <= 40%" valem para o NORMAL (spec §4.3); no DIFÍCIL a pior taxa pode ser baixa por desenho.
+          pior: nivel !== 1 || pior.jogador.taxa >= CRITERIOS_CHEFAO.piorMinimo,
+          melhor: nivel !== 1 || melhor.jogador.taxa <= CRITERIOS_CHEFAO.melhorMaximo,
+          travadas: travadas === 0,
+        },
       });
     }
   }
@@ -183,6 +268,7 @@ export function agregar(registros: readonly Registro[], ids: readonly IdLutador[
     matriz,
     lado: { p1: taxaDe(decididasReg.filter((r) => r.venc === 0).length, decididasReg.length) },
     chefe,
+    resumoChefes,
     golpes,
     mecanicas: {
       aminu: {
@@ -214,6 +300,11 @@ export function agregar(registros: readonly Registro[], ids: readonly IdLutador[
 export function hashDosRegistros(registros: readonly Registro[]): string {
   return hashDe([...registros].sort((a, b) => a.idx - b.idx));
 }
+
+/** Hash só das lutas regulares: prova que acrescentar/mexer em chefões não muda o jogável (spec §4.3, "regulares idênticos"). */
+export const hashRegulares = (registros: readonly Registro[]): string => hashDosRegistros(registros.filter((r) => r.tipo === 'regular'));
+/** Hash só das lutas contra os chefões. */
+export const hashChefes = (registros: readonly Registro[]): string => hashDosRegistros(registros.filter((r) => r.tipo === 'chefe'));
 
 /** Diferenças entre duas rodadas com os MESMOS parâmetros: o que mudou na taxa de vitória por lutador e no hash. */
 export type Diferenca = {

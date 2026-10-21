@@ -177,8 +177,8 @@ describe('E5 · escada do Arcade (5 rivais + o chefão ZENON no fim; jogando COM
 });
 
 describe('E5 · BAATAR lutador normal sobre o atlas real', () => {
-  it('sem `chefe` e sem fichas; 1 barra, hp 92 e pow 0,9 (E6b), ficha base, cenário mn', () => {
-    expect(LUTADORES.baatar.chefe).toBeUndefined();
+  it('sem fichas (o bloco `chefe` de guardião, R1, só vale na luta de chefe); 1 barra, hp 92 e pow 0,9 (E6b), ficha base, cenário mn', () => {
+    expect(LUTADORES.baatar.chefe).toMatchObject({ barras: 2, hpPorBarra: 46 });
     expect(LUTADORES.baatar.fichas).toBeUndefined();
     expect(Object.keys(real.baatar.fichas)).toEqual([]);
     expect([LUTADORES.baatar.hp, LUTADORES.baatar.pow]).toEqual([92, 0.9]);
@@ -189,10 +189,16 @@ describe('E5 · BAATAR lutador normal sobre o atlas real', () => {
     expect(l.g.stage).toBe('mn');
   });
 
-  it('`cfg.chefe` sem `LutadorDef.chefe` é ignorado de propósito: a luta é a do normal (nunca lança)', () => {
+  it('`cfg.chefe` com o bloco de guardião (R1): 2 barras de 46, ficha base (sem fichaFase1), chefe true', () => {
     const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'baatar', chefe: true }, real);
     const c = l.g.p2;
-    expect([c.barras, c.barrasMax, c.maxHp, c.ficha, c.chefe]).toEqual([1, 1, 92, null, false]);
+    expect([c.barras, c.barrasMax, c.maxHp, c.ficha, c.chefe]).toEqual([2, 2, 46, null, true]);
+  });
+
+  it('`cfg.chefe` sem `LutadorDef.chefe` segue ignorado de propósito (a luta é a do normal, nunca lança): o CAIO não tem bloco', () => {
+    const l = criarLuta({ mode: 'versus', c1: 'hayato', c2: 'caio', chefe: true }, real);
+    const c = l.g.p2;
+    expect([c.barras, c.barrasMax, c.ficha, c.chefe]).toEqual([1, 1, null, false]);
   });
 
   it('o →+ESP é o MERGULHO com a arte própria (dive0/dive1), a caixa de acerto sai do dive1 e o ABRAÇO não existe mais', () => {

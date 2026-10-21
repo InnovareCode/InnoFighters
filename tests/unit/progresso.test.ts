@@ -29,6 +29,8 @@ const REGRAS: Regras = {
   travadosNaEscada: true,
   esquiva: true,
   cinematica: true,
+  chefesDaFila: false, // mundo falso da regra de antes (a regra nova tem o proprio teste: p1-chefes-progressivos.test.ts)
+  temasMusicais: false,
 };
 
 const prog = (p: Partial<Progresso> = {}): Progresso => ({ ...progressoVazio(), ...p });

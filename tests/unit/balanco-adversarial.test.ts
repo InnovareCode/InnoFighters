@@ -47,8 +47,10 @@ describe('dados de produção: nada trivial nem degenerado', () => {
     expect(maior).toBeGreaterThan(15); // o teste enxerga os golpes fortes de verdade
   });
 
-  it('o BAATAR é lutador normal (sem chefe nem fichas), com 92 de vida e pow 0,9 (os números da E6b)', () => {
-    expect(prod.baatar.chefe).toBeUndefined();
+  it('o BAATAR é lutador normal (sem fichas), com 92 de vida e pow 0,9 (os números da E6b); o bloco de guardião (R1) não tem fichas de fase', () => {
+    expect(prod.baatar.chefe).toMatchObject({ barras: 2, hpPorBarra: 46 });
+    expect(prod.baatar.chefe?.fichaFase1).toBeUndefined();
+    expect(prod.baatar.chefe?.fichaFase2).toBeUndefined();
     expect(Object.keys(prod.baatar.fichas)).toEqual([]);
     expect([prod.baatar.hp, prod.baatar.pow]).toEqual([92, 0.9]);
   });

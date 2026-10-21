@@ -116,4 +116,14 @@ export const NILA: LutadorDef = {
       },
     },
   },
+  // Guardiã (spec chefões §4.2): ver AMINU. SEM `fichaFase1`/`fichaFase2`: o VADIVU troca de ficha sozinho e a retomada não pode
+  // desfazer a postura em que ela estava. Por isso o reforço (`danoRecebido`) mora aqui, no bloco do chefe, e não numa ficha.
+  // A cena da fase 2 é o `crouch` (não usa `sarpa*`, porque a postura continua a que estava).
+  chefe: {
+    barras: 2,
+    hpPorBarra: 54,
+    cena: { duracao: 60, poses: ['crouch'] },
+    bonusVitoria: 3000,
+    danoRecebido: 0.875,
+  },
 };

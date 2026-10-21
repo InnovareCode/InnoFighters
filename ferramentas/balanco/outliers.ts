@@ -13,7 +13,6 @@ export const METAS = {
   /** Limite inferior de Wilson de um par acima disso = o par é desequilibrado (docs 6.3). */
   parWilson: 0.65,
   tempoEsgotado: 0.1,
-  chefeJogador: [0.2, 0.4],
   chefeTrivial: 0.7,
   chefeImpossivel: 0.05,
   mashiNivel2: 0.3,
@@ -69,21 +68,24 @@ export function acharOutliers(agr: Agregado, frame: readonly MedidaGolpe[]): Ach
     r.push({ severidade: 'atencao', categoria: 'tempo', alvo: 'geral', texto: `${p1(agr.total.lutasPorTempo)} das lutas terminam por tempo (meta < 10%)` });
   }
 
-  for (const nivel of new Set(agr.chefe.map((c) => c.nivel))) {
-    const linhas = agr.chefe.filter((c) => c.nivel === nivel);
-    const n = linhas.reduce((s, c) => s + c.jogador.n, 0);
-    const k = linhas.reduce((s, c) => s + c.jogador.k, 0);
-    const t = n ? k / n : 0;
-    const rotulo = nivel === 1 ? 'NORMAL' : nivel === 2 ? 'DIFÍCIL' : `nível ${nivel}`;
-    if (t > METAS.chefeTrivial) r.push({ severidade: 'alerta', categoria: 'chefao', alvo: `chefão ${rotulo}`, texto: `TRIVIAL: o jogador vence ${p1(t)} (n=${n})` });
-    else if (t < METAS.chefeImpossivel) r.push({ severidade: 'alerta', categoria: 'chefao', alvo: `chefão ${rotulo}`, texto: `IMPOSSÍVEL: o jogador vence ${p1(t)} (n=${n})` });
-    else if (t < METAS.chefeJogador[0] || t > METAS.chefeJogador[1]) {
-      r.push({ severidade: 'atencao', categoria: 'chefao', alvo: `chefão ${rotulo}`, texto: `o jogador vence ${p1(t)} (n=${n}), fora da meta 20-40% (só vale para NORMAL)` });
-    }
-    for (const c of linhas) {
-      if (c.jogador.taxa === 0 && c.jogador.n >= 10) r.push({ severidade: 'info', categoria: 'chefao', alvo: `${c.desafiante} x chefão ${rotulo}`, texto: 'nunca vence o chefão' });
-      if (c.jogador.taxa >= 0.9 && c.jogador.n >= 10) r.push({ severidade: 'info', categoria: 'chefao', alvo: `${c.desafiante} x chefão ${rotulo}`, texto: `vence ${p1(c.jogador.taxa)} do chefão` });
-    }
+  // Um achado por chefão e nível, contra a meta da rampa (chefoes.ts). Os critérios de acompanhamento (KO, duração, pior/melhor) também.
+  for (const s of agr.resumoChefes) {
+    const rotulo = s.nivel === 1 ? 'NORMAL' : s.nivel === 2 ? 'DIFÍCIL' : `nível ${s.nivel}`;
+    const alvo = `chefão ${s.chefe} ${rotulo}`;
+    const t = s.jogador.taxa;
+    const faixa = `${Math.round(s.meta[0] * 100)}-${Math.round(s.meta[1] * 100)}%`;
+    if (t > METAS.chefeTrivial) r.push({ severidade: 'alerta', categoria: 'chefao', alvo, texto: `TRIVIAL: o jogador vence ${p1(t)} (n=${s.jogador.n})` });
+    else if (t < METAS.chefeImpossivel) r.push({ severidade: 'alerta', categoria: 'chefao', alvo, texto: `IMPOSSÍVEL: o jogador vence ${p1(t)} (n=${s.jogador.n})` });
+    else if (!s.ok.taxa) r.push({ severidade: 'atencao', categoria: 'chefao', alvo, texto: `o jogador vence ${p1(t)} (n=${s.jogador.n}), fora da meta ${faixa}` });
+    if (!s.ok.ko) r.push({ severidade: 'atencao', categoria: 'chefao', alvo, texto: `só ${p1(s.porKo)} das lutas terminam por KO (meta >= 90%)` });
+    if (!s.ok.duracao) r.push({ severidade: 'atencao', categoria: 'chefao', alvo, texto: `duração média ${s.duracaoSeg.toFixed(0)} s, acima do limite` });
+    if (!s.ok.pior) r.push({ severidade: 'atencao', categoria: 'chefao', alvo, texto: `${s.pior.desafiante} vence só ${p1(s.pior.taxa)} (meta >= 5% no NORMAL)` });
+    if (!s.ok.melhor) r.push({ severidade: 'atencao', categoria: 'chefao', alvo, texto: `${s.melhor.desafiante} vence ${p1(s.melhor.taxa)} (meta <= 40% no NORMAL)` });
+  }
+  for (const c of agr.chefe) {
+    const rotulo = c.nivel === 1 ? 'NORMAL' : c.nivel === 2 ? 'DIFÍCIL' : `nível ${c.nivel}`;
+    if (c.jogador.taxa === 0 && c.jogador.n >= 10) r.push({ severidade: 'info', categoria: 'chefao', alvo: `${c.desafiante} x chefão ${c.chefe} ${rotulo}`, texto: 'nunca vence o chefão' });
+    if (c.jogador.taxa >= 0.9 && c.jogador.n >= 10) r.push({ severidade: 'info', categoria: 'chefao', alvo: `${c.desafiante} x chefão ${c.chefe} ${rotulo}`, texto: `vence ${p1(c.jogador.taxa)} do chefão` });
   }
 
   const m = agr.mecanicas;

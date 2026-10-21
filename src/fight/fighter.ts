@@ -269,15 +269,16 @@ export class Fighter {
    * Chamar DEPOIS de `setChar`. Fica na ficha da fase 1 já (o `reset` do primeiro round a reaplica).
    */
   virarChefe(cfg: ConfigChefe): void {
-    // As DUAS fichas são validadas já no setup: a da fase 2 só seria usada 90 ticks depois da 1ª troca, no meio da luta.
-    this.exigirFicha(cfg.fichaFase1);
-    this.exigirFicha(cfg.fichaFase2);
+    // As DUAS fichas (quando existem) são validadas já no setup: a da fase 2 só seria usada 90 ticks depois da 1ª troca, no meio da luta.
+    // Ficha ausente = o guardião luta com a ficha do jogável (null = a base) e a retomada não a troca (NILA fica na postura em que estava).
+    if (cfg.fichaFase1 !== undefined) this.exigirFicha(cfg.fichaFase1);
+    if (cfg.fichaFase2 !== undefined) this.exigirFicha(cfg.fichaFase2);
     this.chefe = true;
     this.cfgChefe = cfg;
     this.barrasMax = cfg.barras;
-    this.fichaBase = cfg.fichaFase1;
+    this.fichaBase = cfg.fichaFase1 ?? null;
     this.maxHp = cfg.hpPorBarra;
-    this.trocarFicha(cfg.fichaFase1);
+    this.trocarFicha(this.fichaBase);
   }
 
   /**

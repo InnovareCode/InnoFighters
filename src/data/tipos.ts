@@ -100,16 +100,23 @@ export type ConfigChefe = {
   barras: 2;
   /** Vida de cada barra (vira `maxHp` do chefe). */
   hpPorBarra: number;
-  /** Ficha ativa na fase 1 (atributos do modo chefão) — chave de `LutadorDef.fichas`. */
-  fichaFase1: string;
-  /** Ficha ativa na fase 2, depois da cena. */
-  fichaFase2: string;
+  /** Ficha ativa na fase 1 (atributos do modo chefão) — chave de `LutadorDef.fichas`. Ausente = a ficha base do jogável (os guardiões). */
+  fichaFase1?: string;
+  /** Ficha ativa na fase 2, depois da cena. Ausente = não troca de ficha na retomada (a NILA mantém a postura em que estava). */
+  fichaFase2?: string;
   /** Cena da fase 2 (era `danca`): `duracao` ticks entre a troca de barra e a retomada, e as poses do chefe nela. */
   cena: CenaDef;
   /** Pontos para quem derrota o chefe (valor final na E6). */
   bonusVitoria: number;
   /** Trilha da luta de chefe (spec §5). Ausente = 'fight' (a de hoje). Tirar o campo é o rollback. */
   trilha?: TrilhaChefe;
+  /**
+   * Multiplicador do dano que a VIDA do chefe sofre (arremesso, raspão de bloqueio, armadura e golpe), aplicado depois de todas as
+   * contas do golpe. Mora aqui, e não numa ficha, porque a ficha do lutador pode mudar no meio da luta (VADIVU da NILA) e levaria o
+   * reforço junto. 0,60 <= x <= 1: abaixo disso o chefão vira esponja (spec chefões §4.3, R5). Ausente = 1 (como sempre). A energia
+   * (`drenaEnergia`) não passa por ele.
+   */
+  danoRecebido?: number;
 };
 
 /**

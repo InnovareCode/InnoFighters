@@ -152,5 +152,7 @@ export const ZENON_DEF: Omit<LutadorDef, 'id'> = {
     cena: { duracao: 90, poses: ['cena0', 'cena1', 'cena2'] },
     bonusVitoria: 5000,
     trilha: 'chefe',
+    // Calibrado na rampa de balanço (docs/balanco): o ZENON é o fim dela (jogador ~15-19% no NORMAL).
+    danoRecebido: 0.8,
   },
 };

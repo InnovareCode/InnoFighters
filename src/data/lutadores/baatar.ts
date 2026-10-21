@@ -76,4 +76,12 @@ export const BAATAR: LutadorDef = {
   // `dive1` o mergulho de braços à frente); a caixa de acerto sai de `dive1`. Sem o quadro (atlas provisório dos testes de motor)
   // vale o sc0/sc1 de sempre. (Era da ficha `chefe2`; agora é do def base.)
   poseDaFicha: { sc0: 'dive0', sc1: 'dive1' },
+  // Guardião (spec chefões §4.2): ver AMINU. A cena da fase 2 fecha a Dança da Águia (`devekh2`) e sobe em `win`.
+  chefe: {
+    barras: 2,
+    hpPorBarra: 46,
+    cena: { duracao: 60, poses: ['devekh2', 'win'] },
+    bonusVitoria: 3000,
+    danoRecebido: 0.85,
+  },
 };

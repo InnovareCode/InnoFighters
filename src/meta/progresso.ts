@@ -1,6 +1,6 @@
 import type { IdLutador } from '../core/contratos';
 import { REGRAS_PADRAO } from './regras';
-import type { Progresso, Regras, ResultadoVitoria } from './tipos';
+import type { Progresso, Regras, ResultadoVitoria, VitoriaArcade } from './tipos';
 
 /** Funcoes PURAS: sem DOM, sem storage, sem relogio. Nada aqui muta o que recebe. */
 
@@ -14,11 +14,17 @@ export const CHEFE_LEGADO = 'baatar';
  * Chefoes que SO se liberam derrotando-os (nao estao na fila de desbloqueio): ter o id em `desbloqueados` (ou em
  * `desconhecidos`, num build que ainda nao o conhece) prova a derrota. O saneamento usa isto para recompor
  * `chefesDerrotados` depois de um rollback, quando o build antigo apagou a lista mas guardou o desbloqueio.
- * NAO inclui o `baatar`: ele tambem sai da fila, entao ter o id nao prova que foi derrotado como chefe.
+ * NAO inclui o `baatar` nem os outros guardioes (aminu, centella, camille, nila): eles tambem saem da fila, e um save feito
+ * com a regra antiga (toda zerada libera o proximo) os tem liberados sem nunca os ter enfrentado como chefao. Ter o id nao
+ * prova a derrota.
  */
 export const CHEFOES_SO_POR_DERROTA: readonly string[] = ['zenon'];
-/** Teto da lista de chefoes derrotados (sao poucos; localStorage e editavel). */
-export const MAX_CHEFES_DERROTADOS = 8;
+/**
+ * Teto da lista de chefoes derrotados (sao poucos; localStorage e editavel). 16 (era 8): os 6 chefoes de hoje (5 guardioes +
+ * o Anfitriao) cabem com folga para a proxima onda. Subir o teto nao quebra nada: um build com teto 8 trunca na leitura, mas
+ * o desbloqueio mora em `desbloqueados` e o saneamento recompoe o ZENON.
+ */
+export const MAX_CHEFES_DERROTADOS = 16;
 
 /** Chefoes derrotados, olhando tambem o booleano legado (um `Progresso` montado a mao por codigo antigo). */
 export function chefesDerrotadosDe(prog: Progresso): readonly string[] {
@@ -46,14 +52,22 @@ export function proximoDaFila(prog: Progresso, regras: Regras = REGRAS_PADRAO): 
 }
 
 /**
- * Zerou o Arcade (qualquer dificuldade, com continues — ED9). Sempre conta uma zerada e libera o proximo da
- * fila (se houver). Se `derrotouChefe`, tambem libera o chefao na 1a vez (ED3a). Jogando COM o chefao nao ha
- * luta de chefe: o chamador passa `derrotouChefe: false` e a zerada so avanca a fila.
- * `novos` vem na ordem em que o desbloqueio deve ser mostrado (fila primeiro, chefao depois).
+ * Zerou o Arcade (qualquer dificuldade, com continues - ED9). Sempre conta uma zerada.
+ *
+ * Formato NOVO `{ chefe }` com `regras.chefesDaFila` (chefoes progressivos): quem avanca a fila e o chefao DERROTADO. Se
+ * `chefe` nao e `null` e ainda nao esta liberado, entra em `desbloqueados` e em `novos`; entra em `chefesDerrotados` (sem
+ * repetir). NADA mais e liberado: a zerada nao avanca a fila sozinha. `chefe` e o id da etapa da campanha, gravado no comeco do
+ * ARCADE (nao recalculado no fim: outra aba que liberou alguem no meio nao muda quem foi derrotado). Id fora do roster e
+ * tratado como "sem chefe". Liberar quem ja esta liberado nao gera `novos`.
+ *
+ * Formato ANTIGO `{ derrotouChefe }`, ou `{ chefe }` sem `chefesDaFila` (rollback, `?expansao=4`): a regra de antes. Libera o
+ * proximo da fila (se houver) e, se o chefao caiu, tambem `regras.chefe` na 1a vez (ED3a). Jogando COM o chefao nao ha luta de
+ * chefe: o chamador passa `derrotouChefe: false` e a zerada so avanca a fila. `novos` vem na ordem em que o desbloqueio deve
+ * ser mostrado (fila primeiro, chefao depois).
  */
 export function aplicarVitoriaArcade(
   prog: Progresso,
-  vitoria: { derrotouChefe: boolean },
+  vitoria: VitoriaArcade,
   regras: Regras = REGRAS_PADRAO,
 ): ResultadoVitoria {
   const desbloqueados = [...prog.desbloqueados];
@@ -62,17 +76,26 @@ export function aplicarVitoriaArcade(
     desbloqueados.push(id);
     novos.push(id);
   };
-
-  const proximo = proximoDaFila(prog, regras);
-  if (proximo !== undefined) liberar(proximo);
-
-  const chefe = regras.chefe;
-  if (vitoria.derrotouChefe && chefe !== null && !liberados(prog, regras).has(chefe) && !novos.includes(chefe)) {
-    liberar(chefe);
-  }
-  // QUAL chefao caiu: soma o atual (sem repetir) aos ja derrotados. Jogando COM o chefao nao ha luta de chefe.
+  // QUAL chefao caiu: soma o atual (sem repetir) aos ja derrotados.
   const derrotados = [...chefesDerrotadosDe(prog)];
-  if (vitoria.derrotouChefe && chefe !== null && !derrotados.includes(chefe)) derrotados.push(chefe);
+
+  if ('chefe' in vitoria && regras.chefesDaFila) {
+    const caiu = vitoria.chefe !== null && regras.roster.includes(vitoria.chefe) ? vitoria.chefe : null;
+    if (caiu !== null) {
+      if (!liberados(prog, regras).has(caiu)) liberar(caiu);
+      if (!derrotados.includes(caiu)) derrotados.push(caiu);
+    }
+  } else {
+    const derrotouChefe = 'chefe' in vitoria ? vitoria.chefe !== null : vitoria.derrotouChefe;
+    const proximo = proximoDaFila(prog, regras);
+    if (proximo !== undefined) liberar(proximo);
+
+    const chefe = regras.chefe;
+    if (derrotouChefe && chefe !== null && !liberados(prog, regras).has(chefe) && !novos.includes(chefe)) {
+      liberar(chefe);
+    }
+    if (derrotouChefe && chefe !== null && !derrotados.includes(chefe)) derrotados.push(chefe);
+  }
 
   return {
     prog: {

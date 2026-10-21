@@ -1,5 +1,6 @@
 import type { IdLutador } from '../core/contratos';
 import type { Rng } from '../core/rng';
+import { chefeDoArcade } from './chefes';
 import { liberados } from './progresso';
 import { REGRAS_PADRAO } from './regras';
 import type { Etapa, Progresso, Regras } from './tipos';
@@ -16,9 +17,10 @@ export type ParametrosEscada = {
 };
 
 /**
- * Escada do Arcade: N rivais sorteados (Fisher-Yates com o `rng`) entre `roster − {c1, chefe}` + chefao por
- * ultimo. Jogando COM o chefao nao ha luta de chefe (ED7): so os rivais, nenhuma etapa com `chefe: true`.
- * Sem chefao no jogo (`regras.chefe === null`) tambem nao ha etapa de chefe. Se `travadosNaEscada` e falso,
+ * Escada do Arcade: N rivais sorteados (Fisher-Yates com o `rng`) entre `roster − {c1, chefe, chefe da vez}` + chefao por
+ * ultimo. O chefao da vez e `chefeDoArcade` (com `chefesDaFila`: o proximo guardiao, ou o Anfitriao com a fila esgotada; sem
+ * ela, o `regras.chefe` fixo). O Anfitriao (`regras.chefe`) nunca e rival comum. Jogando COM o chefao nao ha luta de chefe
+ * (ED7): so os rivais, nenhuma etapa com `chefe: true`. Sem chefao no jogo tambem nao ha etapa de chefe. Se `travadosNaEscada` e falso,
  * so entram rivais ja liberados (ED5). Embaralha todos os candidatos e corta, entao o prefixo da escada nao
  * depende de `tamanho`.
  */
@@ -27,8 +29,9 @@ export function montarEscada(p: ParametrosEscada): Etapa[] {
   const tamanho = Math.max(0, Math.floor(p.tamanho ?? regras.tamanhoEscada));
   const ja = liberados(p.prog, regras);
 
+  const chefeDaVez = chefeDoArcade(p.c1, p.prog, regras);
   const candidatos = regras.roster.filter(
-    (id) => id !== p.c1 && id !== regras.chefe && (regras.travadosNaEscada || ja.has(id)),
+    (id) => id !== p.c1 && id !== regras.chefe && id !== chefeDaVez && (regras.travadosNaEscada || ja.has(id)),
   );
   for (let i = candidatos.length - 1; i > 0; i--) {
     const j = p.rng.inteiro(i + 1);
@@ -38,6 +41,6 @@ export function montarEscada(p: ParametrosEscada): Etapa[] {
   }
 
   const etapas: Etapa[] = candidatos.slice(0, tamanho).map((id) => ({ id, chefe: false }));
-  if (regras.chefe !== null && p.c1 !== regras.chefe) etapas.push({ id: regras.chefe, chefe: true });
+  if (chefeDaVez !== null) etapas.push({ id: chefeDaVez, chefe: true });
   return etapas;
 }

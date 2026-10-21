@@ -232,7 +232,7 @@ describe('"e se..." (--ajustes): ajusta em memória, não mexe nos dados do jogo
     expect(BAATAR_CHEFE.chefe?.hpPorBarra).toBe(40);
     expect(elenco['wei-long'].hp).toBe(96);
     expect(elenco['wei-long'].moves.sFire.proj?.dmg).toBe(20);
-    expect(elenco.baatar.chefe).toBeUndefined(); // o elenco de produção: BAATAR normal
+    expect(elenco.baatar.chefe?.hpPorBarra).toBe(46); // o elenco de produção: BAATAR guardião (R1), não o chefão antigo de 40
   });
 
   it('o ajuste muda o resultado da luta (e ajuste vazio não muda)', () => {
@@ -253,7 +253,8 @@ describe('"e se..." (--ajustes): ajusta em memória, não mexe nos dados do jogo
     expect(() => aplicarAjustes(e, { hayato: { hp: -1 } })).toThrow(/número/);
     expect(() => aplicarAjustes(e, { hayato: { moves: { zzz: { dmg: 1 } } } })).toThrow(/golpe/);
     expect(() => aplicarAjustes(e, { hayato: { chefe: { hpPorBarra: 1 } } })).toThrow(/chefe/);
-    expect(() => aplicarAjustes(e, { baatar: { chefe: { hpPorBarra: 1 } } })).toThrow(/só vale na ficha base de quem é chefe/); // BAATAR normal
+    expect(() => aplicarAjustes(e, { caio: { chefe: { hpPorBarra: 1 } } })).toThrow(/só vale na ficha base de quem é chefe/); // CAIO não tem bloco de chefe
+    expect(() => aplicarAjustes(e, { baatar: { chefe: { danoRecebido: 0.8 } } })).not.toThrow(); // o BAATAR guardião (R1) tem
     e.baatar = montarBaatarChefe();
     expect(() => aplicarAjustes(e, { 'baatar/chefe': { chefe: { hpPorBarra: 1 } } })).toThrow(/só vale na ficha base de quem é chefe/);
     expect(() => aplicarAjustes(e, { hayato: { voar: 1 } as never })).toThrow(/campo/);

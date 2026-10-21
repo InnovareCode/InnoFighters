@@ -73,6 +73,9 @@ export type CabecalhoRes = {
   versaoDados: string;
   modo: string;
   hashRegistros: string;
+  /** Hash só das lutas regulares / só das de chefe (a regular tem de ser idêntica antes e depois de mexer em chefão). */
+  hashRegulares?: string;
+  hashChefes?: string;
   segundos: number;
   processos: number;
   lutas: number;
@@ -85,12 +88,13 @@ export function resultadosMd(agr: Agregado, ids: readonly IdLutador[], achados: 
   o.push('## Entradas desta rodada', '');
   o.push(`- Modo **${cab.modo}**: ${p.sementes} sementes por combinação, níveis da CPU ${p.niveis.map((n) => (n === 1 ? 'NORMAL' : n === 2 ? 'DIFÍCIL' : String(n))).join(' e ')}, semente-base ${p.base}${p.filtro ? `, filtro \`${p.filtro}\`` : ''}.`);
   o.push('- Partida: 2 rounds, 99 s, os DOIS lados de cada par (A como P1 e como P2), espelho fora; teto de 21 600 ticks por luta.');
-  o.push(`- Total: ${cab.lutas} lutas (${agr.total.regulares} regulares + ${agr.total.chefe} contra o chefão), ${cab.segundos.toFixed(0)} s em ${cab.processos} processo(s).`);
+  o.push(`- Total: ${cab.lutas} lutas (${agr.total.regulares} regulares + ${agr.total.chefe} contra os chefões), ${cab.segundos.toFixed(0)} s em ${cab.processos} processo(s).`);
   o.push(`- Versão dos dados/motor: \`${cab.versaoDados}\` (hash de \`src/data\`, \`src/fight\`, \`src/core\` e dos \`atlas.json\`). Gerado em ${cab.geradoEm}.`);
   o.push('- A CPU joga todos os lados: mecânicas de leitura (PARADE, postura da NILA) tendem a parecer mais fracas do que são nas mãos de uma pessoa.', '');
 
   o.push('## Determinismo (diferença entre rodadas)', '');
   o.push(`Hash do resultado desta rodada: \`${cab.hashRegistros}\`.`);
+  if (cab.hashRegulares !== undefined) o.push(`Hash só das lutas regulares: \`${cab.hashRegulares}\` (tem de ser igual antes e depois de qualquer ajuste de chefão); só das lutas de chefe: \`${cab.hashChefes ?? '–'}\`.`);
   if (!dif) o.push('Não havia rodada anterior com os mesmos parâmetros neste diretório: esta passa a ser a referência.');
   else if (dif.igual) o.push(`**IDÊNTICA** à rodada anterior com os mesmos parâmetros (hash \`${dif.hashAntes}\`): mesma semente, mesmo código, mesmo resultado.`);
   else {
@@ -141,25 +145,34 @@ export function resultadosMd(agr: Agregado, ids: readonly IdLutador[], achados: 
   }
   o.push('');
 
-  o.push('## Chefão (CPU do nível indicado nos dois lados; sem chefão no jogo = não roda)', '');
+  o.push('## Chefões (CPU do nível indicado nos dois lados; cada chefão contra o elenco que existe no ponto dele da progressão)', '');
   if (!agr.chefe.length) o.push('Não rodado nesta rodada.', '');
   else {
-    o.push('"Jogador" = a CPU do desafiante como P1, no lugar de uma pessoa. Round único; empate repete o round.', '');
-    o.push('| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO |');
-    o.push('|---|---|---|---|---|---|---|---|---|');
-    for (const c of agr.chefe) {
+    o.push('"Jogador" = a CPU do desafiante como P1, no lugar de uma pessoa (uma APROXIMAÇÃO, não a taxa de uma pessoa). Round único, 2 barras; empate repete o round.', '');
+    o.push('Metas: rampa aprovada pelo dono (AMINU ~26-30% no NORMAL descendo até ZENON ~15-19%; DIFÍCIL proporcionalmente menor, centro x 0,575 ± 3 pontos). Acompanham: KO >= 90%, duração <= 75 s (NORMAL) / 90 s (DIFÍCIL), pior desafiante >= 5% e melhor <= 40% no NORMAL, 0 travadas, `danoRecebido` >= 0,60.', '');
+    const dr = (c: string): string => agr.danoRecebido?.[c] === undefined ? '1' : String(agr.danoRecebido[c]);
+    o.push('### Resumo', '');
+    o.push('| Chefão | Desafiantes | Fator `danoRecebido` | Nível | Jogador vence | IC95 | Meta | Na meta | Terminou por KO | Por tempo | Duração | Pior desafiante | Melhor desafiante | Travadas |');
+    o.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+    for (const s of agr.resumoChefes) {
+      const metaTxt = `${Math.round(s.meta[0] * 100)}-${Math.round(s.meta[1] * 100)}%`;
+      const crit = [s.ok.ko && s.ok.duracao && s.ok.pior && s.ok.melhor && s.ok.travadas ? '' : ' (critério fora)'].join('');
       o.push(
-        `| ${c.desafiante} | ${c.nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} | **${pct(c.jogador.taxa)}** (${c.jogador.k}/${c.jogador.n}) | ${pct(c.jogador.lo, 0)}-${pct(c.jogador.hi, 0)} | ${c.duracaoSeg.toFixed(0)} s | ${c.roundsMedios.toFixed(1)} | ${pct(c.trocouBarra, 0)} | ${pct(c.fezCena, 0)} | ${pct(c.porKo, 0)} |`,
+        `| **${s.chefe}** | ${s.desafiantes} | ${dr(s.chefe)} | ${s.nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} | **${pct(s.jogador.taxa)}** (${s.jogador.k}/${s.jogador.n}) | ${pct(s.jogador.lo, 0)}-${pct(s.jogador.hi, 0)} | ${metaTxt} | ${s.ok.taxa ? 'sim' : '**NÃO**'}${crit} | ${pct(s.porKo, 0)} | ${pct(s.porTempo, 0)} | ${s.duracaoSeg.toFixed(0)} s | ${s.pior.desafiante} ${pct(s.pior.taxa, 0)} | ${s.melhor.desafiante} ${pct(s.melhor.taxa, 0)} | ${s.travadas} |`,
       );
     }
     o.push('');
-    for (const nivel of [...new Set(agr.chefe.map((c) => c.nivel))]) {
-      const ls = agr.chefe.filter((c) => c.nivel === nivel);
-      const n = ls.reduce((s, c) => s + c.jogador.n, 0);
-      const k = ls.reduce((s, c) => s + c.jogador.k, 0);
-      o.push(`Média contra os ${ls.length} desafiantes, ${nivel === 1 ? 'NORMAL' : 'DIFÍCIL'}: o jogador vence **${pct(n ? k / n : 0)}** (meta 20-40% no NORMAL).`);
+    for (const chefe of [...new Set(agr.chefe.map((c) => c.chefe))]) {
+      o.push(`### Chefão ${chefe}`, '');
+      o.push('| Desafiante | Nível | Jogador vence | IC95 | Duração | Rounds | Chegou à 2ª barra | Viu a cena | Terminou por KO | Terminou por tempo |');
+      o.push('|---|---|---|---|---|---|---|---|---|---|');
+      for (const c of agr.chefe.filter((x) => x.chefe === chefe)) {
+        o.push(
+          `| ${c.desafiante} | ${c.nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} | **${pct(c.jogador.taxa)}** (${c.jogador.k}/${c.jogador.n}) | ${pct(c.jogador.lo, 0)}-${pct(c.jogador.hi, 0)} | ${c.duracaoSeg.toFixed(0)} s | ${c.roundsMedios.toFixed(1)} | ${pct(c.trocouBarra, 0)} | ${pct(c.fezCena, 0)} | ${pct(c.porKo, 0)} | ${pct(c.porTempo, 0)} |`,
+        );
+      }
+      o.push('');
     }
-    o.push('');
   }
 
   o.push('## Uso das mecânicas pela CPU', '');

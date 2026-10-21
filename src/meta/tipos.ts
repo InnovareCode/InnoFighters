@@ -58,7 +58,23 @@ export type Regras = {
   readonly esquiva: boolean;
   /** Cinematica do especial. `false` = nunca roda, nem com a preferencia do jogador em 'completa'. */
   readonly cinematica: boolean;
+  /**
+   * Chefoes progressivos (docs/spec-chefoes-progressivos-temas-e-dificuldade.md, 1). `true` = o chefao do ARCADE e o primeiro da
+   * `fila` ainda bloqueado (`chefeDoArcade`), e so com a fila esgotada e `chefe` (o Anfitriao); derrota-lo o libera
+   * (`aplicarVitoriaArcade` com `{ chefe }`), e a zerada deixa de avancar a fila sozinha. `false` = a regra de antes (o
+   * `chefe` fixo e toda zerada libera o proximo da fila): o rollback, o `?expansao=4` e os testes antigos.
+   */
+  readonly chefesDaFila: boolean;
+  /** Tema musical por lutador (spec 3). `false` = so `fight`/`menu`/`chefe` de antes (`?expansao=4`). Separado de `cinematica`. */
+  readonly temasMusicais: boolean;
 };
+
+/**
+ * O que a UI informa ao zerar o ARCADE. `{ chefe }` e o formato novo: QUEM caiu (o id vem da etapa da campanha, gravado no
+ * comeco do ARCADE; `null` = nao houve luta de chefe). `{ derrotouChefe }` e o formato ANTIGO: vale sempre a regra de antes
+ * (chefe fixo = `regras.chefe`, a zerada libera o proximo da fila), qualquer que seja `chefesDaFila`.
+ */
+export type VitoriaArcade = { chefe: IdLutador | null } | { derrotouChefe: boolean };
 
 /** Uma luta da escada do Arcade. */
 export type Etapa = { id: IdLutador; chefe: boolean };

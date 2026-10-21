@@ -94,6 +94,17 @@ function validarParametrosE3(id: string, nome: NomeGolpe, mv: GolpeMontado, fich
   }
 }
 
+/** Piso do `ConfigChefe.danoRecebido`: abaixo de 0,60 o chefão deixa de ser mais duro e passa a ser esponja de dano (spec chefões R5). */
+export const DANO_RECEBIDO_MIN = 0.6;
+
+/** `danoRecebido` fora de 0,60 a 1 (ou NaN/Infinity) é erro de dados: falha alto na montagem, não no meio da luta. */
+function validarDanoRecebido(onde: string, x: number | undefined): void {
+  if (x === undefined) return;
+  if (!Number.isFinite(x) || x < DANO_RECEBIDO_MIN || x > 1) {
+    throw new Error(`${onde}: danoRecebido deve estar entre ${DANO_RECEBIDO_MIN} e 1 (veio ${String(x)})`);
+  }
+}
+
 /**
  * Monta um lutador a partir dos dados estáticos e das poses do atlas. Função pura: porte
  * literal de setupChars() + buildMoves() do protótipo (linhas 387-395 e 597-615).
@@ -102,7 +113,10 @@ export function montarLutador(def: LutadorDef, pd: Poses, fichasDoLutador?: read
   // `fichasDoLutador` só é passado na recursão das fichas: uma ficha não tem `fichas` próprias, mas o VADIVU dela aponta
   // para as do lutador (ou para a base, null).
   const nomesDeFichas = fichasDoLutador ?? Object.keys(def.fichas ?? {});
-  if (def.chefe) validarCena(`${def.id}.chefe`, def.chefe.cena);
+  if (def.chefe) {
+    validarCena(`${def.id}.chefe`, def.chefe.cena);
+    validarDanoRecebido(`${def.id}.chefe`, def.chefe.danoRecebido);
+  }
   const idle = pd['idle0'] ?? pd['guard'];
   if (!idle) throw new Error(`${def.id}: atlas sem idle0/guard`);
   const g = pd['guard'] ?? pd['idle0'];

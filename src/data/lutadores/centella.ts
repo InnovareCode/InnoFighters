@@ -56,4 +56,12 @@ export const CENTELLA: LutadorDef = {
       ia: { papel: 'aproximar', alcance: [180, 700], espacoAtras: 200 },
     },
   },
+  // Guardiã (spec chefões §4.2): ver AMINU. A cena da fase 2 é a pose de braços para o público (`win`).
+  chefe: {
+    barras: 2,
+    hpPorBarra: 48,
+    cena: { duracao: 60, poses: ['win'] },
+    bonusVitoria: 3000,
+    danoRecebido: 0.875,
+  },
 };

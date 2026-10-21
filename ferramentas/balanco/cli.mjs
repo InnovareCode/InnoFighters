@@ -8,7 +8,10 @@
  *   --niveis 1,2    níveis da CPU (1 = NORMAL, 2 = DIFÍCIL)
  *   --pares a:b,... filtro de pares (curinga *), ex.: aminu:*,*:nila
  *   --base N        muda TODAS as sementes de uma vez (padrão 1)
- *   --sem-chefe     pula as lutas contra o chefão (sem efeito enquanto CHEFE for null)
+ *   --sem-chefe     pula as lutas contra os chefões
+ *   --chefes a,b    só estes chefões (ex.: aminu,zenon); cada um contra o elenco que existe no ponto dele da progressão (39 pares no total)
+ *   --sem-regulares não joga as 90 combinações regulares (só os chefões): calibração rápida. Nunca grava em docs/balanco
+ *   --varrer-dano 1,0.9,0.8  roda SÓ os chefões com cada fator `danoRecebido` (30 sementes por padrão) e imprime taxa x fator por chefão e nível
  *   --so frame|sim  só a frame data, ou só a simulação
  *   --jobs N        processos em paralelo (padrão: núcleos − 1, no máximo 8)
  *   --saida <pasta> onde gravar (padrão acima)
@@ -32,7 +35,7 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 function lerArgumentos(argv, env) {
   const a = {
     modo: 'rapido', sementes: null, niveis: null, pares: env.BALANCO_PARES ?? null, base: 1, chefe: true, so: null, jobs: null, saida: null,
-    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false,
+    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, chefes: null, semRegulares: false, varrerDano: null,
   };
   if (env.BALANCO_SEMENTES) a.sementes = Number(env.BALANCO_SEMENTES);
   if (env.BALANCO_NIVEIS) a.niveis = env.BALANCO_NIVEIS.split(',').map(Number);
@@ -55,19 +58,31 @@ function lerArgumentos(argv, env) {
     else if (t === '--saida') a.saida = resolve(valor());
     else if (t === '--ajustes') a.ajustes = JSON.parse(valor());
     else if (t === '--esquiva') a.esquiva = true;
+    else if (t === '--chefes') a.chefes = valor().split(',').map((x) => x.trim()).filter(Boolean);
+    else if (t === '--sem-regulares') a.semRegulares = true;
+    else if (t === '--varrer-dano') a.varrerDano = valor().split(',').map(Number);
     else if (t === '--verificar') a.verificar = true;
     else if (t === '--worker') a.worker = valor();
     else if (t === '--ajuda' || t === '-h' || t === '--help') a.ajuda = true;
     else throw new Error(`opção desconhecida: ${t}`);
   }
-  a.sementes ??= a.modo === 'completo' ? 100 : 6;
+  if (a.varrerDano) {
+    if (!a.varrerDano.every((f) => Number.isFinite(f) && f > 0 && f <= 1)) throw new Error('--varrer-dano: fatores entre 0 (exclusive) e 1, ex.: 1,0.9,0.8');
+    a.semRegulares = true;
+    if (a.chefe === false) throw new Error('--varrer-dano não combina com --sem-chefe');
+  }
+  if (a.semRegulares && a.so === null) a.so = 'sim'; // sem regulares a frame data não serve a nada: pula (o tempo vai para os chefões)
+  a.sementes ??= a.varrerDano ? 30 : a.modo === 'completo' ? 100 : 6;
   a.niveis ??= [1, 2];
   if (!Number.isInteger(a.sementes) || a.sementes < 1 || a.sementes > 5000) throw new Error('--sementes: inteiro de 1 a 5000');
   if (!a.niveis.every((n) => n === 1 || n === 2)) throw new Error('--niveis: use 1 (NORMAL) e/ou 2 (DIFÍCIL)');
   if (a.so !== null && a.so !== 'frame' && a.so !== 'sim') throw new Error('--so: frame ou sim');
   // O "e se..." nunca escreve nas pastas de referência. A referência versionada é a da PRODUÇÃO (esquiva ligada) em docs/balanco;
   // a rodada sem a flag fica ao lado, em docs/balanco/sem-esquiva (o `--completo` sem `--esquiva` NÃO sobrescreve a de produção).
+  // Rodada parcial (sem regulares ou só alguns chefões) NUNCA vira a referência de docs/balanco.
+  const parcial = a.semRegulares || a.chefes !== null;
   a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
+    : parcial ? join(RAIZ, 'relatorios', 'balanco-chefes')
     : a.modo === 'completo' ? join(RAIZ, 'docs', 'balanco', a.esquiva ? '' : 'sem-esquiva')
     : join(RAIZ, 'relatorios', a.esquiva ? 'balanco-esquiva' : 'balanco');
   return a;
@@ -86,6 +101,7 @@ async function carregarModulos() {
     out: await server.ssrLoadModule('/ferramentas/balanco/outliers.ts'),
     rel: await server.ssrLoadModule('/ferramentas/balanco/relatorio.ts'),
     regras: await server.ssrLoadModule('/src/meta/regras.ts'),
+    chefoes: await server.ssrLoadModule('/ferramentas/balanco/chefoes.ts'),
   };
   return { server, m };
 }
@@ -110,8 +126,15 @@ function versaoDosDados() {
 }
 
 function paramsDe(a) {
-  return { sementes: a.sementes, niveis: a.niveis, base: a.base, filtro: a.pares, incluirChefe: a.chefe, ...(a.ajustes ? { ajustes: a.ajustes } : {}), ...(a.esquiva ? { esquiva: true } : {}) };
+  return {
+    sementes: a.sementes, niveis: a.niveis, base: a.base, filtro: a.pares, incluirChefe: a.chefe,
+    ...(a.chefes ? { chefes: a.chefes } : {}), ...(a.semRegulares ? { semRegulares: true } : {}),
+    ...(a.ajustes ? { ajustes: a.ajustes } : {}), ...(a.esquiva ? { esquiva: true } : {}),
+  };
 }
+
+/** Os chefões da progressão (guardiões na ordem da fila, o final por último) e quem pode enfrentar cada um. */
+const chefoesDe = (m) => m.chefoes.desafiantesDoChefe(m.regras.REGRAS_PADRAO);
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Worker: roda a fatia k/n das tarefas e devolve os registros pelo canal IPC
@@ -122,7 +145,7 @@ async function modoWorker(a) {
   try {
     const elenco = m.elenco.montarElenco();
     if (a.ajustes) m.elenco.aplicarAjustes(elenco, a.ajustes);
-    const tarefas = m.sim.montarTarefas(m.elenco.ROSTER, m.regras.CHEFE, paramsDe(a)).filter((t) => t.idx % n === k);
+    const tarefas = m.sim.montarTarefas(m.elenco.ROSTER, chefoesDe(m), paramsDe(a)).filter((t) => t.idx % n === k);
     const registros = m.sim.rodarTarefas(elenco, tarefas);
     await new Promise((ok, falha) => process.send({ registros }, (e) => (e ? falha(e) : ok())));
   } finally {
@@ -165,7 +188,7 @@ async function principal() {
   if (a.worker) {
     // os parâmetros chegam do processo principal, já validados (a linha de comando do worker só leva o --worker)
     const p = JSON.parse(process.env.BALANCO_PARAMS ?? '{}');
-    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true });
+    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
     return modoWorker(a);
   }
 
@@ -179,9 +202,13 @@ async function principal() {
     if (a.ajustes) m.elenco.aplicarAjustes(elenco, a.ajustes);
     const relDir = relative(RAIZ, a.saida) || '.';
     console.log(`balanco: modo ${a.modo}, saída em ${relDir}, dados ${versaoDados}${a.ajustes ? `, AJUSTES ${JSON.stringify(a.ajustes)}` : ''}`);
+    if (a.varrerDano) {
+      await varrerDano(a, m, ids, versaoDados);
+      return;
+    }
 
     if (a.verificar) {
-      const amostra = m.sim.montarTarefas(ids, m.regras.CHEFE, { sementes: 2, niveis: [1, 2], base: a.base, filtro: 'hayato:caio,aminu:nila', incluirChefe: true });
+      const amostra = m.sim.montarTarefas(ids, chefoesDe(m), { sementes: 2, niveis: [1, 2], base: a.base, filtro: 'hayato:caio,aminu:nila,*:aminu,*:zenon', incluirChefe: true });
       const h1 = m.agr.hashDosRegistros(m.sim.rodarTarefas(elenco, amostra));
       const h2 = m.agr.hashDosRegistros(m.sim.rodarTarefas(elenco, amostra));
       console.log(`verificar: ${amostra.length} lutas x 2 rodadas -> ${h1 === h2 ? 'IDÊNTICAS' : 'DIFERENTES'} (${h1} / ${h2})`);
@@ -190,7 +217,8 @@ async function principal() {
 
     // Os workers saem PRIMEIRO: o processo principal fica ocupado medindo a frame data enquanto eles jogam.
     const params = paramsDe(a);
-    const tarefas = m.sim.montarTarefas(ids, m.regras.CHEFE, params);
+    const chefoes = chefoesDe(m);
+    const tarefas = m.sim.montarTarefas(ids, chefoes, params);
     let workers = null;
     if (a.so !== 'frame') {
       console.log(`simulação: ${tarefas.length} lutas (${a.sementes} sementes, níveis ${a.niveis.join(',')})`);
@@ -219,8 +247,11 @@ async function principal() {
     await jobFrame;
     const { registros, jobs, segundos } = await workers;
     registros.sort((x, y) => x.idx - y.idx);
-    const agr = m.agr.agregar(registros, ids, m.regras.CHEFE, params);
+    const agr = m.agr.agregar(registros, ids, chefoes, params);
+    agr.danoRecebido = Object.fromEntries(chefoes.map((c) => [c.chefe, elenco[c.chefe]?.chefe?.danoRecebido ?? 1]));
     const hash = m.agr.hashDosRegistros(registros);
+    const hashRegulares = m.agr.hashRegulares(registros);
+    const hashChefes = m.agr.hashChefes(registros);
     const achados = m.out.acharOutliers(agr, frame ?? []);
     const taxas = Object.fromEntries(ids.map((id) => [id, agr.porLutador[id].geral.taxa]));
     const arqJson = join(a.saida, 'resultados.json');
@@ -233,30 +264,92 @@ async function principal() {
         dif = null;
       }
     }
-    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : ""), hashRegistros: hash, segundos, processos: jobs, lutas: registros.length };
+    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
     writeFileSync(join(a.saida, 'resultados.md'), m.rel.resultadosMd(agr, ids, achados, dif, cab));
-    writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
-    resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir);
+    writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, hashRegulares, hashChefes, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
+    resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, { hashRegulares, hashChefes, semRegulares: a.semRegulares });
   } finally {
     await server.close();
   }
 }
 
-function resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir) {
+/**
+ * `--varrer-dano 1,0.9,0.8`: só os chefões, uma rodada por fator `danoRecebido` (aplicado em memória a TODOS os chefões do filtro).
+ * Imprime taxa x fator por chefão e nível. Sanidade (spec §4.4 item 5): a taxa tem de CAIR quando o fator cai; se o menor fator
+ * não der taxa menor que o maior, há bug no motor, e o comando falha.
+ */
+async function varrerDano(a, m, ids, versaoDados) {
+  const chefoes = chefoesDe(m).filter((c) => !a.chefes || a.chefes.includes(c.chefe));
+  const fatores = a.varrerDano;
+  console.log(`varredura: ${chefoes.map((c) => c.chefe).join(', ')} x fatores ${fatores.join(', ')} (${a.sementes} sementes, níveis ${a.niveis.join(',')})`);
+  const celulas = {};
+  for (const f of fatores) {
+    const ajustes = { ...(a.ajustes ?? {}) };
+    for (const c of chefoes) ajustes[c.chefe] = { ...(ajustes[c.chefe] ?? {}), chefe: { ...(ajustes[c.chefe]?.chefe ?? {}), danoRecebido: f } };
+    const af = { ...a, ajustes };
+    const tarefas = m.sim.montarTarefas(ids, chefoes, paramsDe(af));
+    const { registros } = await rodarWorkers(af, tarefas.length);
+    registros.sort((x, y) => x.idx - y.idx);
+    const agr = m.agr.agregar(registros, ids, chefoes, paramsDe(af));
+    for (const s of agr.resumoChefes) celulas[`${s.chefe}|${s.nivel}|${f}`] = s;
+    console.log(`  fator ${f}: ${registros.length} lutas`);
+  }
   const pc = (x) => `${(x * 100).toFixed(1).padStart(5)}%`;
-  console.log('\nlutador     lutas  vitórias   taxa  IC95        duração  tempo');
-  for (const id of ids) {
+  let falhou = false;
+  const saida = [];
+  for (const nivel of a.niveis) {
+    console.log(`\n${nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} (jogador vence / KO / duração) por fator`);
+    console.log(`chefão     meta    ${fatores.map((f) => String(f).padStart(15)).join('')}`);
+    for (const c of chefoes) {
+      const linha = fatores.map((f) => celulas[`${c.chefe}|${nivel}|${f}`]);
+      if (linha.some((x) => !x)) continue;
+      const meta = linha[0].meta;
+      console.log(
+        `${c.chefe.padEnd(10)} ${String(Math.round(meta[0] * 100)).padStart(2)}-${String(Math.round(meta[1] * 100)).padEnd(2)}%  ${linha
+          .map((s) => `${pc(s.jogador.taxa)} ${(s.porKo * 100).toFixed(0).padStart(3)}% ${s.duracaoSeg.toFixed(0).padStart(3)}s${s.ok.taxa ? '*' : ' '}`.padStart(15))
+          .join('')}`,
+      );
+      const primeiro = linha[0].jogador.taxa;
+      const ultimo = linha[linha.length - 1].jogador.taxa;
+      const decrescente = fatores.length < 2 || fatores[0] <= fatores[fatores.length - 1] || ultimo < primeiro;
+      if (!decrescente) {
+        falhou = true;
+        console.log(`  SANIDADE FALHOU: ${c.chefe} ${nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} não cai quando o fator cai (${pc(primeiro)} -> ${pc(ultimo)})`);
+      }
+      saida.push({ chefe: c.chefe, nivel, meta, pontos: fatores.map((f, i) => ({ fator: f, taxa: linha[i].jogador.taxa, n: linha[i].jogador.n, ko: linha[i].porKo, duracao: linha[i].duracaoSeg, pior: linha[i].pior, melhor: linha[i].melhor })) });
+    }
+  }
+  console.log('\n* = dentro da meta da rampa. Aproximação CPU x CPU: não é a taxa de uma pessoa.');
+  writeFileSync(join(a.saida, 'varredura.json'), JSON.stringify({ versaoDados, parametros: paramsDe(a), fatores, resultado: saida }, null, 1));
+  if (falhou) process.exitCode = 1;
+}
+
+/** Uma linha por chefão e nível: taxa do jogador contra a meta da rampa, KO, duração e o pior/melhor desafiante. */
+function imprimirChefoes(agr) {
+  const pc = (x) => `${(x * 100).toFixed(1).padStart(5)}%`;
+  if (!agr.resumoChefes.length) return;
+  console.log('\nchefão     fator nível   jogador vence  meta     KO     tempo  duração  pior            melhor');
+  for (const s of agr.resumoChefes) {
+    const f = agr.danoRecebido?.[s.chefe] ?? 1;
+    const bandeira = s.ok.taxa ? 'ok ' : 'FORA';
+    const crit = s.ok.ko && s.ok.duracao && s.ok.pior && s.ok.melhor && s.ok.travadas ? '' : ' [critério fora]';
+    console.log(
+      `${s.chefe.padEnd(10)} ${String(Number(f.toFixed(3))).padEnd(5)} ${s.nivel === 1 ? 'NORMAL ' : 'DIFÍCIL'} ${pc(s.jogador.taxa)} (${String(s.jogador.k).padStart(3)}/${String(s.jogador.n).padEnd(3)}) ${String(Math.round(s.meta[0] * 100)).padStart(2)}-${String(Math.round(s.meta[1] * 100)).padEnd(2)}% ${bandeira} ${pc(s.porKo)} ${pc(s.porTempo)} ${s.duracaoSeg.toFixed(0).padStart(4)} s  ${(s.pior.desafiante + ' ' + (s.pior.taxa * 100).toFixed(0) + '%').padEnd(15)} ${s.melhor.desafiante} ${(s.melhor.taxa * 100).toFixed(0)}%${crit}`,
+    );
+  }
+}
+
+function resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, hashes) {
+  const pc = (x) => `${(x * 100).toFixed(1).padStart(5)}%`;
+  if (!hashes.semRegulares) console.log('\nlutador     lutas  vitórias   taxa  IC95        duração  tempo');
+  for (const id of hashes.semRegulares ? [] : ids) {
     const l = agr.porLutador[id];
     console.log(
       `${id.padEnd(10)} ${String(l.lutas).padStart(6)} ${String(l.vitorias).padStart(9)} ${pc(l.geral.taxa)}  ${(l.geral.lo * 100).toFixed(0).padStart(3)}-${(l.geral.hi * 100).toFixed(0).padEnd(3)}   ${l.duracaoSeg.toFixed(0).padStart(5)} s  ${pc(l.lutasPorTempo)}`,
     );
   }
-  for (const nivel of [...new Set(agr.chefe.map((c) => c.nivel))]) {
-    const ls = agr.chefe.filter((c) => c.nivel === nivel);
-    const n = ls.reduce((s, c) => s + c.jogador.n, 0);
-    const k = ls.reduce((s, c) => s + c.jogador.k, 0);
-    console.log(`chefão ${nivel === 1 ? 'NORMAL ' : 'DIFÍCIL'}: jogador vence ${pc(n ? k / n : 0)} (${k}/${n})`);
-  }
+  imprimirChefoes(agr);
+  console.log(`hash das lutas regulares ${hashes.semRegulares ? '(não jogadas)' : hashes.hashRegulares}; das de chefe ${hashes.hashChefes}`);
   const cont = { alerta: 0, atencao: 0, info: 0 };
   for (const x of achados) cont[x.severidade]++;
   console.log(`\nsinalizações: ${cont.alerta} alerta(s), ${cont.atencao} atenção, ${cont.info} info (veja ${relDir}/resultados.md)`);

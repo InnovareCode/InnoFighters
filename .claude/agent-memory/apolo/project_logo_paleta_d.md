@@ -5,6 +5,8 @@ metadata:
   type: project
 ---
 
+SUPERADA em 2026-10-22 pela logo oficial raster do dono ([[project-logo-oficial]]); vale só como histórico.
+
 2026-10-21: dono pediu "a versão em que o INNO é azul". Entregue `docs/proposta-logo-paleta-d.md` + previews
 `arte-fonte/logo-paleta-d-preview.png` e `-cenarios.png`. D1 "Cobalto Real" (INNO royal 222-227 graus, aro de ouro
 `#ffe08a`, anel cobalto de um tom, FIGHTERS brasa igual à A) recomendada; D2 "Azul Elétrico" (201-215 graus, aro creme)

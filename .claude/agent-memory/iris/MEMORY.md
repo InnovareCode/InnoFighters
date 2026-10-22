@@ -5,3 +5,4 @@
 - [Temas T0-T2: N3 no Chromium](project_temas-n3-chromium.md) — mini motor x Chromium (saw/square -1,3 dB, triangle), CPU 4x, partida fria, voz +18 ms, hashes da regua
 - [Chefões UI (L1/E1): QA do conjunto E](project_chefoes-ui-l1e1-qa.md) — APROVADO; números de referência, medir entrada em tempo real, cena só após o chefe levantar, rollback
 - [Commit separado chefoes x sons](project_commit-separado-chefoes-sons.md) — sem sobreposicao, hashes de referencia, regua dos sons nao muda R5, armadilhas
+- [Bloco do dono: QA 2026-10-22](project_bloco-dono-qa.md) — audio-sys misto via patch, teste que le arte-fonte/ (CI), numeros N3, armadilhas da harness

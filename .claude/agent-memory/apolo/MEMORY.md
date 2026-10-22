@@ -1,9 +1,12 @@
 - [Curadoria de sprites](project_curadoria_sprites.md) — WEI; novos; BAATAR; NILA f5; ZENON (mapa v2, ZR 3/6, eco da referência); bota como régua
 - [Prompts no Runway](project_prompts_runway.md) — docs/prompts é gerado (mude fonte+script); 1 referência; SPACING; KO à esquerda; HAYATO A2
 - [Curadoria de cenários](project_curadoria_cenarios.md) — pés a 84,5%; contraste em escala; limpar canto; piso escuro (piso2.ps1)
+- [Logo oficial do dono (raster)](project_logo_oficial.md) — substitui a vetorial; recorte sem halo; WebP 250 KB = q54; RS=2 fixo
 - [Logo paleta D (INNO azul)](project_logo_paleta_d.md) — D1 Cobalto Real recomendada; aro claro obrigatório; Vite com paleta em memória
 - [Identidade dos especiais](project_identidade_especiais.md) — 1 estilo exclusivo por lutador; contraste 3:1; lacunas throw/sResp/MASHI
 - [Novo chefão](project_novo_chefao.md) — A ZENON recomendado; núcleo ônix só do chefão; teto escala 1,42; BAATAR 5º na fila
 - [Textos de provocação](project_textos_provocacao.md) — 232 balões formato spec §7.3; 34/linha; revanche = quem perdeu; † não é texto
+- [Balões premium](project_baloes_premium.md) — Tarja de Impacto; Bangers 24 +1px; injetar balao.ts por page.route; sombra/glow dentro da caixa
 - [Textos dos chefões](project_textos_chefoes.md) — Os Cinco Selos = pactos; aviso/seleção sem gênero; corte no 1º ". "; lore corrigida
+- [Controles de toque](project_controles_toque.md) — arcade de vidro; cor = função; fio claro + contorno; opacidade .9; injetar CSS no jogo real
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

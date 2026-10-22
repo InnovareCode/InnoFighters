@@ -6,4 +6,5 @@
 - [Provocação pré-round e vitória](project_provocacao.md) — 3º controlador fora do motor, 3 congelamentos, falas Record<IdLutador>, D-P1..D-P6
 - [Sons por lutador](project_sons-por-lutador.md) — identidade depois de sonsDoEvento (lock-step), vozFormante, régua calibrada antes do som, D-S1..D-S9
 - [Chefões progressivos, temas e dificuldade](project_chefoes-progressivos.md) — chefão derivado do progresso (sem migração), danoRecebido fora da ficha (NILA), D-A1..D-D5
+- [Trailer de abertura](project_trailer-abertura.md) — Games próprios c/ semente constante, escalação M2, relógio do áudio, ≤2 atlas não fixos, D-T1..D-T8
 - [Armadilhas da arte e do protótipo](project_armadilhas-arte.md) — linha 320 de 9 MB, tipX já escalado, chave magenta, FX rosa MIN-JI

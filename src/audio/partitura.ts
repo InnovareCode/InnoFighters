@@ -38,7 +38,7 @@ function hzDe(nota: number): number {
 }
 
 /** Uma camada vira uma chamada. `nota` (MIDI) só nas camadas de nota afinada; `durS` = duração escrita da nota em s. */
-function chamadaDaCamada(c: Camada, nota: number | null, durS: number, quando: number, pista: PistaMusical, vol: number, marca: number | undefined): ChamadaMusical {
+export function chamadaDaCamada(c: Camada, nota: number | null, durS: number, quando: number, pista: PistaMusical, vol: number, marca: number | undefined): ChamadaMusical {
   const hz = nota === null ? 0 : hzDe(nota);
   const m = marca === undefined ? {} : { nota: marca };
   if (c.k === 'R') {
@@ -240,16 +240,16 @@ export interface OrcamentoDoTema {
 }
 
 /** Folga do `stop()` do AudioSys depois do fim da nota (tone: t + 0,05; vozFormante: fim + 0,05). */
-const FOLGA_STOP = 0.05;
+export const FOLGA_STOP = 0.05;
 
-interface EventoAtivo {
+export interface EventoAtivo {
   readonly ini: number;
   readonly fim: number;
   readonly n: number;
 }
 
 /** Fontes ativas depois de cada instante em que alguma começa ou termina (o fim vem antes do início no empate). */
-function linhaDoTempo(evs: readonly EventoAtivo[]): { t: number[]; ativas: number[]; pico: number } {
+export function linhaDoTempo(evs: readonly EventoAtivo[]): { t: number[]; ativas: number[]; pico: number } {
   const marcas = evs.flatMap((e) => [
     { t: e.ini, d: e.n },
     { t: e.fim, d: -e.n },

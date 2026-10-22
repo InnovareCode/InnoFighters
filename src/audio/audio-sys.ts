@@ -2,6 +2,7 @@ import { midi } from '../core/math';
 import { criarRng, sementeAleatoria, type Rng } from '../core/rng';
 import type { IdTema } from '../data/musica/tipos';
 import type { TemaDef } from '../data/musica/tipos';
+import type { ArranjoCompilado, OpcoesDaAbertura } from './abertura';
 import type { Fase, TemaCompilado } from './partitura';
 import { tocarReceita, type ChamadaMusical } from './receitas';
 
@@ -207,6 +208,14 @@ export class AudioSys {
   private barramentoId: GainNode | null = null;
   private readonly gargantas: Garganta[] = [];
   private fontesAteQuando: number[] = [];
+  /** Abertura do jogo (o trailer): a música linear em curso, o seu relógio e o ganho próprio (para o fade). Nada disto existe antes de `tocarAbertura`. */
+  private abertura: ArranjoCompilado | null = null;
+  private aberturaPasso = 0;
+  private aberturaT0 = 0;
+  private aberturaTimer: unknown = null;
+  private aberturaGanho: GainNode | null = null;
+  /** Os efeitos ficam a 60% durante a abertura (a música manda); 1 fora dela. O `persist` do volume de efeitos não muda. */
+  private fatorSfx = 1;
 
   private readonly dep: Required<DepsBase>;
   private readonly limitador: boolean;
@@ -264,7 +273,7 @@ export class AudioSys {
   }
   setSfxVol(v: number): void {
     this.sfxVol = v;
-    if (this.sfx) this.sfx.gain.value = v;
+    if (this.sfx) this.sfx.gain.value = v * this.fatorSfx;
   }
   toggleMute(): boolean {
     this.muted = !this.muted;
@@ -685,6 +694,69 @@ export class AudioSys {
     this.musicOn = false;
   }
 
+  // --- a abertura do jogo (o trailer): música LINEAR, sem laço, fora do sequenciador das trilhas (nada do que está acima muda) ---
+  /**
+   * Começa a música da abertura. `false` (sem fazer nada) se o contexto não está `running`: nunca se chama `resume()` aqui, o iOS só destrava em gesto e o
+   * trailer então roda mudo. O compasso `aPartirDoCompasso` do arranjo começa daqui a `emSegundos` (padrão 0,12 s), de modo que a imagem, que corre no relógio do laço
+   * até a música entrar, e o áudio ficam alinhados no compasso. Para as trilhas de menu e de luta que estiverem tocando. Os efeitos caem a 60% até `pararAbertura`.
+   */
+  tocarAbertura(op: OpcoesDaAbertura): boolean {
+    const c = this.ctx;
+    if (!c || c.state !== 'running' || !this.music) return false;
+    this.pararAbertura(0);
+    this.stopMusic();
+    const comeco = c.currentTime + (op.emSegundos ?? FOLGA_PRIMEIRO_PASSO_TEMA);
+    this.abertura = op.arranjo;
+    this.aberturaT0 = comeco - op.aPartirDoCompasso * op.arranjo.compasso;
+    this.aberturaPasso = op.aPartirDoCompasso * op.arranjo.passosPorCompasso;
+    const g = c.createGain();
+    g.gain.value = 1;
+    g.connect(this.music);
+    this.aberturaGanho = g;
+    this.fatorSfx = 0.6;
+    if (this.sfx) this.sfx.gain.value = this.sfxVol * this.fatorSfx;
+    this.aberturaTimer = this.dep.setInterval(() => this.schedulerDaAbertura(), 25);
+    this.schedulerDaAbertura();
+    return true;
+  }
+  /** Segundos desde o compasso 0 do arranjo, no relógio do AudioContext (o relógio que manda no trailer); null se não há música da abertura. */
+  posicaoDaAbertura(): number | null {
+    if (!this.abertura || !this.ctx) return null;
+    return this.ctx.currentTime - this.aberturaT0;
+  }
+  /** Para a música da abertura com um fade (padrão 0,3 s; 0 = corta já) e devolve os efeitos ao volume de antes. */
+  pararAbertura(fadeSeg = 0.3): void {
+    if (this.aberturaTimer) this.dep.clearInterval(this.aberturaTimer);
+    this.aberturaTimer = null;
+    const c = this.ctx;
+    const g = this.aberturaGanho;
+    if (c && g) {
+      const agora = c.currentTime;
+      g.gain.cancelScheduledValues(agora);
+      if (fadeSeg > 0) {
+        g.gain.setValueAtTime(g.gain.value, agora);
+        g.gain.linearRampToValueAtTime(0, agora + fadeSeg);
+      } else g.gain.setValueAtTime(0, agora);
+    }
+    this.aberturaGanho = null;
+    this.abertura = null;
+    this.fatorSfx = 1;
+    if (this.sfx) this.sfx.gain.value = this.sfxVol;
+  }
+  private schedulerDaAbertura(): void {
+    const c = this.ctx;
+    const a = this.abertura;
+    if (!c || !a) return;
+    while (this.aberturaPasso < a.passosTotais) {
+      const t = this.aberturaT0 + this.aberturaPasso * a.passo;
+      if (t >= c.currentTime + 0.15) return;
+      tocarReceita(this, a.tabela[this.aberturaPasso] ?? [], { destino: 'musica', dest: this.aberturaGanho, inicio: Math.max(t, c.currentTime), agora: c.currentTime });
+      this.aberturaPasso++;
+    }
+    // tudo agendado: o relógio continua valendo (a cauda soa), mas o intervalo não precisa mais rodar
+    if (this.aberturaTimer) this.dep.clearInterval(this.aberturaTimer);
+    this.aberturaTimer = null;
+  }
   /**
    * Fase 2 da luta de chefe (a cena do ZENON): andamento +12%, bumbo nos 3 tempos e órgão uma oitava abaixo. NÃO corta o compasso em
    * andamento: só vira no início do próximo (passo % passosPorCompasso === 0). Sem efeito nas trilhas `fight` e `menu`.

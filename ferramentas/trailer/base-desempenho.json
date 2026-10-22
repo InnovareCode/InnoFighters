@@ -1,0 +1,76 @@
+{
+  "gerado": "2026-10-22T04:08:18.148Z",
+  "navegador": "156.0.8078.4",
+  "canvas": "acelerado",
+  "quadros": 300,
+  "rodadas": 2,
+  "taxaDeReferencia": 4,
+  "aviso": "Chromium headless (SwiftShader), máquina compartilhada: vale como RAZÃO entre cenas medidas no mesmo perfil e no mesmo minuto, não como número de aparelho.",
+  "lutas": {
+    "hayato:min-ji": {
+      "1": {
+        "custo": {
+          "p95": 1.2,
+          "mediana": 0.7,
+          "p99": 4.4,
+          "acima33": 0
+        },
+        "intervalo": {
+          "p95": 16.8,
+          "mediana": 16.7,
+          "p99": 16.8,
+          "acima33": 0
+        }
+      },
+      "4": {
+        "custo": {
+          "p95": 14.7,
+          "mediana": 6.7,
+          "p99": 37.6,
+          "acima33": 3
+        },
+        "intervalo": {
+          "p95": 50,
+          "mediana": 16.7,
+          "p99": 83.4,
+          "acima33": 26
+        }
+      }
+    },
+    "caio:wei-long": {
+      "1": {
+        "custo": {
+          "p95": 3.2,
+          "mediana": 0.8,
+          "p99": 6.7,
+          "acima33": 0
+        },
+        "intervalo": {
+          "p95": 16.8,
+          "mediana": 16.7,
+          "p99": 16.8,
+          "acima33": 0
+        }
+      },
+      "4": {
+        "custo": {
+          "p95": 21,
+          "mediana": 6.9,
+          "p99": 31.6,
+          "acima33": 1
+        },
+        "intervalo": {
+          "p95": 33.4,
+          "mediana": 16.7,
+          "p99": 100.1,
+          "acima33": 15
+        }
+      }
+    }
+  },
+  "razaoMaximaDoTrailer": 1.15,
+  "limiteDoTrailerP95Ms": {
+    "custo": 24.15,
+    "intervalo": 57.5
+  }
+}

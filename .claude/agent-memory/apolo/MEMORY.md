@@ -9,4 +9,7 @@
 - [Balões premium](project_baloes_premium.md) — Tarja de Impacto; Bangers 24 +1px; injetar balao.ts por page.route; sombra/glow dentro da caixa
 - [Textos dos chefões](project_textos_chefoes.md) — Os Cinco Selos = pactos; aviso/seleção sem gênero; corte no 1º ". "; lore corrigida
 - [Controles de toque](project_controles_toque.md) — arcade de vidro; cor = função; fio claro + contorno; opacidade .9; injetar CSS no jogo real
+- [Arte do trailer](project_trailer_arte.md) — frase dos cartões; pico no acerto DA TOMADA; ZENON ≤ 1,10; prévias via diretor real
+- [Sons realistas (samples IA -> CC0)](project_sons_realistas.md) — pacote v1 CC0 0,78 MB validado, não ouvido; 7z via x7z.py; régua; teto ±18 do ganho
+- [NEVE MALUCA (jogo irmão)](project_neve_maluca.md) — v2 LATERAL; CAPI F1 (8/4/0) e F2 (6/4/2) curadas; sem-texto no bloco A; teste do giro; "free hand"
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

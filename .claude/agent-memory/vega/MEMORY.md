@@ -17,3 +17,5 @@
 - [Temas musicais T0-T2](project_temas_t0_t2.md) — régua musical congelada, sequenciador puro, 9 temas; pico/grave/orçamento, falta T3 e escuta
 - [Ligação sons/temas S4+T3](project_ligacao_sons_temas_s4_t3.md) — sempre ligados, camadas lazy, desbloqueio iOS, painel ?escuta=1, armadilhas de medição
 - [Trailer T0-T3](project_trailer_t0_t3.md) — diretor puro, escalação M2, música com citação; régua dR, orçamento 15, testes de batida, CRLF
+- [Amostras reais (samples CC0)](project_amostras_reais.md) — plano anota/execucao decide, banco lazy, ataque do MP3 (vale), calibracao de ganho, armadilhas
+- [Neve Maluca core M0](project_neve_maluca_core_m0.md) — trig so com + - * / travado por hash, FNV64, varredura de camadas, prova V8 x WebKit, armadilhas

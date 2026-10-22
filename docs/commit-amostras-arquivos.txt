@@ -1,0 +1,51 @@
+# COMMIT 1/3 - AMOSTRAS (conjunto S, Vega): git add -A -- destes arquivos
+# Revalidacao FINAL da Iris em 2026-10-22 sobre o HEAD c3ad28f, arvore ja corrigida (Lyra: &trailer=0 em entrada.spec e marca.ts; Vega: manifesto a prova de falha, retentativa em revanche, trava do A/B). Nenhum arquivo e misto: S e T nao dividem arquivo, entao NAO ha patch. Ordem dos commits: 1) S amostras, 2) T trailer, 3) docs2.
+# public/assets/sons/** entra inteiro (11 folhas + manifesto.json + CREDITOS.txt + LEIA-ME.txt). main.ts e package.json sao SO do S.
+# Inclui tests/e2e-build/manifesto-fallback.spec.ts (fallback do manifesto contra o build + A/B da escuta com rede lenta; verificado com S sozinho).
+ferramentas/sons/gerar-pacote-teste.mjs
+package.json
+public/assets/sons/CREDITOS.txt
+public/assets/sons/LEIA-ME.txt
+public/assets/sons/base.mp3
+public/assets/sons/lutador-aminu.mp3
+public/assets/sons/lutador-baatar.mp3
+public/assets/sons/lutador-caio.mp3
+public/assets/sons/lutador-camille.mp3
+public/assets/sons/lutador-centella.mp3
+public/assets/sons/lutador-hayato.mp3
+public/assets/sons/lutador-min-ji.mp3
+public/assets/sons/lutador-nila.mp3
+public/assets/sons/lutador-wei-long.mp3
+public/assets/sons/lutador-zenon.mp3
+public/assets/sons/manifesto.json
+src/audio/amostras.ts
+src/audio/camadas.ts
+src/audio/chaves.ts
+src/audio/identidade-sonora.ts
+src/audio/plano-amostras.ts
+src/data/sons/amostras.ts
+src/main.ts
+src/platform/audio-desbloqueio.ts
+src/ui/escuta.ts
+tests/e2e-build/manifesto-fallback.spec.ts
+tests/fixtures/sons-pacote/base.mp3
+tests/fixtures/sons-pacote/lutador-aminu.mp3
+tests/fixtures/sons-pacote/lutador-baatar.mp3
+tests/fixtures/sons-pacote/lutador-caio.mp3
+tests/fixtures/sons-pacote/lutador-camille.mp3
+tests/fixtures/sons-pacote/lutador-centella.mp3
+tests/fixtures/sons-pacote/lutador-hayato.mp3
+tests/fixtures/sons-pacote/lutador-min-ji.mp3
+tests/fixtures/sons-pacote/lutador-nila.mp3
+tests/fixtures/sons-pacote/lutador-wei-long.mp3
+tests/fixtures/sons-pacote/lutador-zenon.mp3
+tests/fixtures/sons-pacote/manifesto.json
+tests/support/audio-offline.ts
+tests/support/calibracao-amostras.ts
+tests/support/pacote-teste.ts
+tests/unit/sons-amostras-banco.test.ts
+tests/unit/sons-amostras-camadas.test.ts
+tests/unit/sons-amostras-fixture.test.ts
+tests/unit/sons-amostras-plano.test.ts
+tests/unit/sons-amostras-volume.test.ts
+tests/unit/sons-temas-ligacao.test.ts

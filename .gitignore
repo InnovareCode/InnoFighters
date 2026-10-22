@@ -23,3 +23,6 @@ sprites-gerados/
 *.key
 *.log
 relatorios/
+
+# Contexto da sessao do Atlas (nao publicar)
+CONTEXTO-SESSAO.md

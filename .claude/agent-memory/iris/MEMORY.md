@@ -5,4 +5,6 @@
 - [Temas T0-T2: N3 no Chromium](project_temas-n3-chromium.md) — mini motor x Chromium (saw/square -1,3 dB, triangle), CPU 4x, partida fria, voz +18 ms, hashes da regua
 - [Chefões UI (L1/E1): QA do conjunto E](project_chefoes-ui-l1e1-qa.md) — APROVADO; números de referência, medir entrada em tempo real, cena só após o chefe levantar, rollback
 - [Commit separado chefoes x sons](project_commit-separado-chefoes-sons.md) — sem sobreposicao, hashes de referencia, regua dos sons nao muda R5, armadilhas
+- [Bloco 2 (trailer T + amostras S): APROVADO na 2a rodada](project_bloco2-trailer-amostras-qa.md) — 3 defeitos consertados, e2e-build manifesto-fallback, flaky sons-integracao/fidelidade, N3
+- [Neve Maluca M0: QA do portão](project_neve-maluca-m0-qa.md) — clone limpo verde, fps (blit cheio = 33 ms), stack sem mensagem no WebKit, laço platform x core, CRLF
 - [Bloco do dono: QA 2026-10-22](project_bloco-dono-qa.md) — audio-sys misto via patch, teste que le arte-fonte/ (CI), numeros N3, armadilhas da harness

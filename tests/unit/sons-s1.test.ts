@@ -429,13 +429,13 @@ describe('reagirComIdentidade', () => {
     { tipo: 'swing', lutador: 0, golpe: 'punch' }, { tipo: 'special', lutador: 0, pitch: 1.05, golpe: 'sFire', ficha: null, momento: 'inicio' }, hit(), { tipo: 'ko', defensor: 1, pitch: 1 },
     { tipo: 'round', fase: 'end', round: 1, vencedor: 0, fimDaLuta: true }, { tipo: 'perfect', vencedor: 0 },
   ];
-  it('IDENTIDADE_SONORA está DESLIGADA por padrão (rollback) e, desligada, o log é igual ao de reagirAosEventos', () => {
-    expect(IDENTIDADE_SONORA).toBe(false);
+  it('IDENTIDADE_SONORA está LIGADA por padrão (decisão do dono; a constante é só o rollback por código) e, desligada, o log é igual ao de reagirAosEventos', () => {
+    expect(IDENTIDADE_SONORA).toBe(true);
     const a = gravador();
     const b = gravador();
     const agenda: number[][] = [[], []];
     reagirAosEventos(a.audio, eventos, (fn, ms) => (agenda[0]?.push(ms), fn()));
-    reagirComIdentidade(b.audio as never, eventos, ctx('hayato', 'caio'), (fn, ms) => (agenda[1]?.push(ms), fn()), IDENTIDADE_SONORA, SINT);
+    reagirComIdentidade(b.audio as never, eventos, ctx('hayato', 'caio'), (fn, ms) => (agenda[1]?.push(ms), fn()), false, SINT);
     expect(b.log).toEqual(a.log);
     expect(agenda[1]).toEqual(agenda[0]);
   });

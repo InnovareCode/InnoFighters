@@ -1,9 +1,17 @@
+import type { Configuracoes } from '../core/contratos';
 import { salvarDadosV2, type ArmazenamentoLike, type DadosSalvosV2 } from '../core/storage';
 import type { Regras } from '../meta';
 import type { Persistencia } from './contexto';
 
 /** Texto do aviso quando a gravação falha (cota cheia, modo privado ou progresso de um build mais novo no disco). */
 export const MSG_NAO_SALVO = 'Progresso não salvo neste aparelho';
+
+/**
+ * Preferências de versões antigas que o jogo deixou de oferecer (cinemática do especial e provocações viraram parte do jogo, sempre
+ * ligadas: decisão do dono). O save segue aditivo: elas NÃO são apagadas do disco, só deixam de valer na memória. `criarPersistencia`
+ * as tira de `settings` ao carregar (nenhum consumidor as vê, inclusive a cena de luta) e as devolve ao gravar.
+ */
+const PREFERENCIAS_APOSENTADAS = ['cinematica', 'provocacoes'] as const;
 
 /**
  * Monta a `Persistencia` do jogo sobre o armazenamento. `salvar()` devolve o que `salvarDadosV2` devolveu
@@ -16,12 +24,19 @@ export function criarPersistencia(
   regras: Regras,
   aoFalhar: () => void,
 ): Persistencia {
+  const settings: Configuracoes = { ...inicial.s };
+  const retidas: Partial<Configuracoes> = {};
+  for (const k of PREFERENCIAS_APOSENTADAS) {
+    const v = settings[k];
+    if (v !== undefined) Object.assign(retidas, { [k]: v });
+    delete settings[k];
+  }
   return {
-    settings: inicial.s,
+    settings,
     hi: inicial.hi,
     prog: inicial.prog,
     salvar() {
-      const gravou = salvarDadosV2(armazenamento, { s: this.settings, hi: this.hi, prog: this.prog }, regras);
+      const gravou = salvarDadosV2(armazenamento, { s: { ...retidas, ...this.settings }, hi: this.hi, prog: this.prog }, regras);
       if (!gravou) aoFalhar();
       return gravou;
     },

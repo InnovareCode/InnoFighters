@@ -49,8 +49,11 @@ async function abrirJogo(page: Page, perfil: keyof typeof PERFIS, query = '', ma
     w.__espia = true;
     const o = CanvasRenderingContext2D.prototype.fillText;
     CanvasRenderingContext2D.prototype.fillText = function (this: CanvasRenderingContext2D, t: string, x: number, y: number, ...r: [number?]) {
-      const tf = this.getTransform();
-      w.__txt.push({ t: String(t), y: tf.f / 2 + y * (tf.d / 2) });
+      // só o canvas do JOGO: os balões pintam a plaquinha numa camada fora da tela (cache), com coordenadas locais, que não são o que o jogador lê
+      if (this.canvas.id === 'jogo') {
+        const tf = this.getTransform();
+        w.__txt.push({ t: String(t), y: tf.f / 2 + y * (tf.d / 2) });
+      }
       return o.call(this, t, x, y, ...(r as []));
     };
   });

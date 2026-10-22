@@ -339,10 +339,13 @@ test.describe('esquiva no controle e no toque', () => {
     expect(await page.locator('#esq').evaluate((el) => el.classList.contains('sem'))).toBe(false);
     await hook(page, '(h) => { h.mundo().game.p1.en = 10; h.avancar(2); }');
     expect(await page.locator('#esq').evaluate((el) => el.classList.contains('sem'))).toBe(true);
-    expect(+(await page.locator('#esq').evaluate((el) => getComputedStyle(el).opacity))).toBeLessThan(0.6);
+    // apagado: o desenho trocado pelo "desabilitado" e mais fraco que o aceso (0,9 x 0,8 contra 0,9)
+    expect(await page.locator('#esq').evaluate((el) => getComputedStyle(el, '::before').backgroundImage)).toContain('esquiva-desabilitado.svg');
+    await expect.poll(async () => +(await page.locator('#esq').evaluate((el) => getComputedStyle(el, '::before').opacity))).toBeLessThan(0.8); // a opacidade leva .06 s
     await hook(page, '(h) => { h.mundo().game.p1.en = 30; h.avancar(2); }');
     expect(await page.locator('#esq').evaluate((el) => el.classList.contains('sem'))).toBe(false);
-    expect(+(await page.locator('#esq').evaluate((el) => getComputedStyle(el).opacity))).toBe(1);
+    expect(await page.locator('#esq').evaluate((el) => getComputedStyle(el, '::before').backgroundImage)).toMatch(/esquiva\.svg/);
+    await expect.poll(async () => +(await page.locator('#esq').evaluate((el) => getComputedStyle(el, '::before').opacity))).toBeCloseTo(0.9, 2);
 
     // visível, dentro da janela e tocável (é o elemento que recebe o toque no próprio centro)
     expect(await page.locator('#esq').evaluate((el) => getComputedStyle(el).visibility)).toBe('visible');

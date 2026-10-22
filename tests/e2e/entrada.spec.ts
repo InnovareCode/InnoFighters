@@ -125,33 +125,40 @@ test.describe('camada de toque', () => {
           return { x: r.x, y: r.y, w: r.width, h: r.height };
         }, seletor);
       const m = Math.min(tela.width, tela.height);
-      const hit = Math.max(44, 0.115 * m);
+      // direção de arte do Apolo (docs/direcao-arte-controles-toque.md §6): D = clamp(44, 0,118 m, 56) é o lado do botão de ataque; joystick 2,1 D;
+      // ESQUIVA max(44, 0,92 D); ESPECIAL 1,12 D. O #pad virou só uma âncora (cobre a janela): o "aglomerado" é a união das caixas dos botões.
+      const D = Math.min(56, Math.max(44, 0.118 * m));
       const joy = await caixa('#joy');
       const knob = await caixa('#knob');
       const botoes = { hp: await caixa('#pad .hp'), lp: await caixa('#pad .lp'), hk: await caixa('#pad .hk'), lk: await caixa('#pad .lk') };
       const r1 = await caixa('#r1');
       const esq = await caixa('#esq');
-      const pad = await caixa('#pad');
       const pausa = await caixa('#bp');
       const cv = await caixa('canvas#jogo');
+      const uniao = (bs: Caixa[]): Caixa => {
+        const x0 = Math.min(...bs.map((b) => b.x));
+        const y0 = Math.min(...bs.map((b) => b.y));
+        return { x: x0, y: y0, w: Math.max(...bs.map((b) => b.x + b.w)) - x0, h: Math.max(...bs.map((b) => b.y + b.h)) - y0 };
+      };
+      const pad = uniao([...Object.values(botoes), r1, esq]);
 
       // tamanhos previstos (border-box: a caixa medida é o tamanho calculado)
-      expect(joy.w).toBeCloseTo(0.235 * m, 0);
-      expect(knob.w).toBeCloseTo(0.44 * 0.235 * m, 0);
-      for (const [nome, b] of Object.entries({ ...botoes, r1, esq })) {
-        expect(b.w, nome).toBeCloseTo(hit, 0);
-        expect(b.h, nome).toBeCloseTo(hit, 0);
-        expect(b.w, `${nome}: área de toque mínima`).toBeGreaterThanOrEqual(44);
+      expect(joy.w).toBeCloseTo(2.1 * D, 0);
+      expect(knob.w).toBeCloseTo(0.44 * 2.1 * D, 0);
+      for (const [nome, b] of Object.entries(botoes)) {
+        expect(b.w, nome).toBeCloseTo(D, 0);
+        expect(b.h, nome).toBeCloseTo(D, 0);
       }
-      expect(pausa.w).toBeGreaterThanOrEqual(44);
-      // o desenho visível é MENOR que a área de toque (semitransparente): confere pela caixa do ::before
+      expect(r1.w).toBeCloseTo(1.12 * D, 0);
+      expect(esq.w).toBeCloseTo(Math.max(44, 0.92 * D), 0);
+      for (const [nome, b] of Object.entries({ ...botoes, r1, esq, pausa })) expect(b.w, `${nome}: área de toque mínima`).toBeGreaterThanOrEqual(43.95);
+      // o desenho é um SVG por estado (disco de vidro com bisel), a 90% de opacidade em repouso: confere no ::before
       const visual = await page.evaluate(() => {
-        const el = document.querySelector('#pad .hk')!;
-        const s = getComputedStyle(el, '::before');
-        return { largura: parseFloat(s.width), alfa: s.backgroundColor };
+        const s = getComputedStyle(document.querySelector('#pad .hk')!, '::before');
+        return { imagem: s.backgroundImage, opacidade: +s.opacity };
       });
-      expect(visual.largura).toBeLessThan(hit - 4);
-      expect(visual.alfa).toMatch(/rgba\(.*0\.\d+\)/);
+      expect(visual.imagem).toContain('chute-forte.svg');
+      expect(visual.opacidade).toBeCloseTo(0.9, 2);
 
       // tudo dentro da janela
       for (const [nome, b] of Object.entries({ joy, pad, pausa })) {
@@ -165,23 +172,23 @@ test.describe('camada de toque', () => {
       expect(Math.abs(knob.x + knob.w / 2 - (joy.x + joy.w / 2))).toBeLessThanOrEqual(1);
       expect(Math.abs(knob.y + knob.h / 2 - (joy.y + joy.h / 2))).toBeLessThanOrEqual(1);
 
-      // ordem do aglomerado: [ESQUIVA][ESP] / [soco forte][chute forte] / [soco fraco][chute fraco]; sem sobreposição de áreas de toque
+      // ordem do aglomerado: ESQUIVA e ESPECIAL em cima; soco (coluna de dentro) e chute (coluna de fora, 0,28 D mais alta); leve embaixo, forte no meio
       expect(joy.x + joy.w).toBeLessThan(pad.x);
-      expect(esq.x).toBeLessThan(r1.x);
-      expect(Math.abs(esq.y - r1.y)).toBeLessThanOrEqual(1);
+      expect(esq.x + esq.w / 2, 'ESQUIVA na coluna do soco').toBeCloseTo(botoes.hp.x + botoes.hp.w / 2, 0);
+      expect(r1.x + r1.w / 2, 'ESPECIAL na coluna do chute').toBeCloseTo(botoes.hk.x + botoes.hk.w / 2, 0);
+      expect(esq.y + esq.h).toBeLessThanOrEqual(botoes.hp.y + 0.5);
       expect(r1.y + r1.h).toBeLessThanOrEqual(botoes.hk.y + 0.5);
       expect(botoes.hp.y + botoes.hp.h).toBeLessThanOrEqual(botoes.lp.y + 0.5);
+      expect(botoes.hk.y + botoes.hk.h).toBeLessThanOrEqual(botoes.lk.y + 0.5);
       expect(botoes.lp.x).toBeLessThan(botoes.lk.x);
+      expect(botoes.lk.y, 'a coluna do chute é mais alta (arco do polegar)').toBeLessThan(botoes.lp.y);
       const sobrepoe = (a: Caixa, b: Caixa) => a.x < b.x + b.w - 0.5 && a.x + a.w - 0.5 > b.x && a.y < b.y + b.h - 0.5 && a.y + a.h - 0.5 > b.y;
       const todos = { ...botoes, r1, esq };
       const lista = Object.entries(todos);
       for (let i = 0; i < lista.length; i++) for (let j = i + 1; j < lista.length; j++) expect(sobrepoe(lista[i]![1], lista[j]![1]), `${lista[i]![0]} x ${lista[j]![0]}`).toBe(false);
-      // a casa da ESQUIVA tem o botão ESQ (L1): é ele que recebe o toque no centro da casa, e não os vizinhos
+      // cada botão recebe o toque no próprio centro (a casa da ESQUIVA tem o botão ESQ, e não os vizinhos)
       expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.id ?? '', [esq.x + esq.w / 2, esq.y + esq.h / 2])).toBe('esq');
-      // e o desenho do ESQ é menor que a área de toque, como o dos outros botões (::before)
-      const visualEsq = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('#esq')!, '::before').width));
-      expect(visualEsq).toBeLessThan(hit - 2);
-      expect(visualEsq).toBeGreaterThan(hit * 0.8);
+      expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.id ?? '', [r1.x + r1.w / 2, r1.y + r1.h / 2])).toBe('r1');
 
       // TAMANHO: % da LARGURA da janela e % da área do jogo (canvas), medidos e limitados
       const pct = (v: number, total: number) => +((100 * v) / total).toFixed(1);
@@ -196,8 +203,8 @@ test.describe('camada de toque', () => {
         canvas: `${Math.round(cv.w)}x${Math.round(cv.h)} em x=${Math.round(cv.x)}`,
         joystickCss: Math.round(joy.w),
         joystickPctLargura: pct(joy.w, tela.width),
-        botaoToqueCss: Math.round(hit),
-        botaoPctLargura: pct(hit, tela.width),
+        botaoToqueCss: Math.round(D),
+        botaoPctLargura: pct(D, tela.width),
         aglomeradoCss: `${Math.round(pad.w)}x${Math.round(pad.h)}`,
         aglomeradoPctLargura: pct(pad.w, tela.width),
         aglomeradoPctAltura: pct(pad.h, tela.height),
@@ -209,9 +216,10 @@ test.describe('camada de toque', () => {
       if (tela.width > tela.height * 1.8) {
         // telas com margem preta dos lados (16:9 não preenche a janela): é onde o limite vale com folga
         expect(joy.w / tela.width, 'joystick').toBeLessThanOrEqual(LIMITE_LARGURA);
-        expect(pad.w / tela.width, 'aglomerado').toBeLessThanOrEqual(LIMITE_LARGURA);
-        expect(hit / tela.width, 'botão').toBeLessThanOrEqual(0.06);
-        expect(pad.h / tela.height, 'altura do aglomerado').toBeLessThanOrEqual(0.4);
+        expect(pad.w / tela.width, 'aglomerado').toBeLessThanOrEqual(LIMITE_LARGURA + 0.005); // a coluna do chute encosta no canto: 12,1% medido em 844x390
+        expect(D / tela.width, 'botão').toBeLessThanOrEqual(0.06);
+        // a arte nova tem 4 fileiras (ESQUIVA/ESPECIAL, forte, leve, mais o rótulo): até 46% da altura (era 40% no desenho antigo, de 3 fileiras)
+        expect(pad.h / tela.height, 'altura do aglomerado').toBeLessThanOrEqual(0.46);
         // não cobre o HUD: faixa de cima (retratos/barras, até 100 lógicos) e faixa de baixo (SUPER, a partir de 490 lógicos)
         const k = cv.w / 960;
         for (const [nome, b] of Object.entries({ joy, pad, pausa })) {
@@ -219,8 +227,8 @@ test.describe('camada de toque', () => {
           expect(b.y, `${nome} sobre o HUD de cima`).toBeGreaterThanOrEqual(cv.y + 100 * k);
           expect(b.y + b.h, `${nome} sobre o HUD de baixo`).toBeLessThanOrEqual(cv.y + 490 * k + 0.5);
         }
-        // e cobre pouco da arena: junto, no máximo 6% da área do jogo (antes da E7a: ver o handoff)
-        expect((sobreCanvas(joy) + sobreCanvas(pad)) / areaCanvas, 'controles sobre a arena').toBeLessThanOrEqual(0.06);
+        // e cobre pouco da arena: junto, no máximo 8% da área do jogo (6% no desenho antigo, ver o handoff da E7a; o novo tem o 4º botão e o rótulo)
+        expect((sobreCanvas(joy) + sobreCanvas(pad)) / areaCanvas, 'controles sobre a arena').toBeLessThanOrEqual(0.08);
       }
 
       await page.screenshot({ path: info.outputPath(`toque-${tela.width}x${tela.height}.png`) });

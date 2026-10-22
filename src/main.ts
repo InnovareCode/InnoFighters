@@ -3,6 +3,8 @@ import './platform/aviso.css';
 import './fontes.css';
 import { iniciarArte } from './assets/elenco';
 import { AudioSys } from './audio/audio-sys';
+import { carregarCamadasSonoras } from './audio/camadas';
+import { chavesSonoras, lerEscutaDaUrl } from './audio/chaves';
 import { carregarDadosV2, type ArmazenamentoLike } from './core/storage';
 import type { IdLutador } from './core/contratos';
 import { criarRng, sementeAleatoria } from './core/rng';
@@ -13,9 +15,11 @@ import { Game } from './fight/game';
 import { REGRAS_PADRAO } from './meta';
 import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
+import { verificarVersao } from './versao';
 import { mostrarErrosNaTela } from './platform/erros';
 import { observarFoco } from './platform/foco';
 import { criarAviso } from './platform/aviso';
+import { desbloquearAudio } from './platform/audio-desbloqueio';
 import { carregarFontes } from './platform/fontes';
 import { alternarTelaCheia } from './platform/tela-cheia';
 import { criarVinheta } from './render/cenario';
@@ -23,6 +27,7 @@ import { CampoDePetalas, Efeitos } from './render/efeitos';
 import { prepararCanvas } from './render/tela';
 import type { Contexto, Mundo } from './ui/contexto';
 import { criarFerramentas } from './ui/ferramentas';
+import { iniciarMarca } from './ui/logo';
 import { Navegador } from './ui/navegador';
 import { criarPersistencia, MSG_NAO_SALVO } from './ui/persistencia';
 
@@ -62,6 +67,8 @@ async function iniciar(): Promise<void> {
   mostrarErrosNaTela(window);
   ajustarEscala(canvas);
   window.addEventListener('resize', () => ajustarEscala(canvas));
+  // a logo oficial (splash, logo completa e horizontal) começa a baixar JÁ, em paralelo com as fontes, o áudio e a arte: o boot desenha o splash enquanto o resto carrega
+  iniciarMarca(import.meta.env.BASE_URL);
 
   // ---- semente e sorteios (a lógica e os efeitos visuais nunca dividem a mesma sequência) ----
   const semente = lerSemente();
@@ -83,10 +90,33 @@ async function iniciar(): Promise<void> {
   const armazenamento = obterArmazenamento();
   const salvos = carregarDadosV2(armazenamento, regras);
   const avisar = criarAviso(document.getElementById('aviso'));
+  // o Pages guarda o index.html por 10 min: se há versão mais nova no ar, avisa já no boot (o toque em Opções > aviso recarrega furando o cache)
+  void verificarVersao().then((r) => {
+    if (r.estado === 'nova') avisar('NOVA VERSÃO NO AR. Abra as Opções e toque em atualizar.');
+  });
   const persist = criarPersistencia(armazenamento, salvos, regras, () => avisar(MSG_NAO_SALVO));
 
-  // ---- áudio: só ganha contexto depois do primeiro gesto (a cena de abertura chama iniciarAudio) ----
-  const audio = new AudioSys({ rng: criarRng(semente + 3) });
+  // ---- áudio: só ganha contexto depois do primeiro gesto (a cena de abertura chama iniciarAudio; desbloquearAudio cobre o iOS) ----
+  // A identidade sonora e os temas por lutador estão SEMPRE ligados (decisão do dono); `chavesSonoras` é só rollback por código. `?escuta=1` abre o painel de escuta.
+  const escuta = lerEscutaDaUrl(window.location.search);
+  // `sementeVariacao` = semente + 6 (a variação dos sons por lutador; nunca o RNG da lógica nem o visual). O limitador do master (D-S6) acompanha as camadas novas:
+  // é na soma da voz, dos efeitos e da música que o pico estoura.
+  const audio = new AudioSys({ rng: criarRng(semente + 3), sementeVariacao: semente + 6, limitador: chavesSonoras.identidade || chavesSonoras.temas || escuta.painel });
+  // As camadas (voz e assinatura dos especiais; temas) são pedaços à parte, baixados já no boot em paralelo com as fontes. O carregamento VALIDA os dados
+  // (lutador sem voz/tema, ou fora do orçamento, derruba o boot, alto e cedo). No servidor de desenvolvimento carregam mesmo com a chave em `false`.
+  const camadas = carregarCamadasSonoras({
+    identidade: import.meta.env.DEV || chavesSonoras.identidade || escuta.painel,
+    temas: import.meta.env.DEV || chavesSonoras.temas || escuta.painel,
+  });
+  if (escuta.painel) {
+    // painel de escuta: não joga, só toca cada som e cada tema (src/ui/escuta.ts)
+    await camadas;
+    const { abrirEscuta } = await import('./ui/escuta');
+    abrirEscuta({ audio, musica: persist.settings.music, sfx: persist.settings.sfx });
+    return;
+  }
+  // iOS/WebKit: o AudioContext só destrava num gesto que ele reconhece (toque terminado, clique, tecla); o `touchstart` do canvas não conta
+  desbloquearAudio(window, audio);
 
   // ---- entrada: tudo passa pelo navegador de cenas ----
   let nav: Navegador | null = null;
@@ -125,7 +155,7 @@ async function iniciar(): Promise<void> {
     temToque: () => document.body.classList.contains('touch'),
   };
   // as fontes do canvas (Barlow, auto-hospedadas) ANTES do 1º quadro: sem isto o texto nasce na fonte de reserva e pisca ao trocar
-  const fontesOk = await carregarFontes();
+  const [fontesOk] = await Promise.all([carregarFontes(), camadas]);
   document.documentElement.dataset['fontes'] = fontesOk ? 'ok' : 'reserva';
   const ui = new Navegador(contexto);
   nav = ui;

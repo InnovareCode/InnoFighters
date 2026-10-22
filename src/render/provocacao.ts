@@ -11,6 +11,7 @@ import { APRESENTACAO } from './apresentacao-lutadores';
 import {
   desenharBalao,
   escalaDoPop,
+  escalaDoPopDoZenon,
   fontesProntas,
   colocarBalao,
   escolherPlano,
@@ -24,6 +25,7 @@ import {
   type CaixaDoBalao,
   type PlanoDoBalao,
   type Retangulo,
+  type VarianteDoBalao,
 } from './balao';
 import { ALTURA_DA_FAIXA, PULO_VALE_A_PARTIR_DE, SAIDA_AO_PULAR } from './entrada-chefe';
 import { chDaFicha } from './lutador';
@@ -133,6 +135,8 @@ export function duracaoCurta(n: number): number {
 
 export interface FalaDoRoteiro {
   readonly falante: IndiceLutador;
+  /** A variante da "Tarja de Impacto" (abertura, revanche, decisivo, vitória, vitória perfeita; guardião e ZENON entram em `varianteDaFala`). Ausente = abertura. */
+  readonly variante?: VarianteDoBalao;
   /** Texto final (com `{rival}` trocado). */
   readonly texto: string;
   /** Caracteres do texto (conta a duração). */
@@ -222,6 +226,13 @@ export interface BalaoDoQuadro {
   /** Índice da janela no roteiro. */
   readonly janela: number;
   readonly falante: IndiceLutador;
+  readonly variante: VarianteDoBalao;
+  /** Ticks desde que o balão abriu (o tremor de impacto e as linhas de velocidade crescendo). */
+  readonly desde: number;
+  /** Saída: 0 (aberto) a 1 (sumiu). */
+  readonly fechando: number;
+  /** Sem animação de entrada (movimento reduzido do sistema ou a CURTA): só alfa, brilhos parados. */
+  readonly reduz: boolean;
   readonly letras: number;
   readonly escala: number;
   readonly alfa: number;
@@ -280,13 +291,17 @@ export function linhaDaProvocacao(r: Roteiro, tick: number, pulouEm: number | nu
   r.janelas.forEach((j, i) => {
     if (tick < j.abre || tick >= j.fim) return;
     const abriu = tick - j.abre;
-    let alfa = j.revelar ? Math.min(1, abriu / P.pop) : Math.min(1, abriu / P.fade);
+    const zenon = j.variante === 'zenon';
+    // entrada (direção de arte §6): alfa 0 -> 1 em 4 ticks (ZENON 8; sem animação: 6 no movimento reduzido, `fade` na CURTA)
+    let alfa = Math.min(1, abriu / (zenon ? 8 : j.revelar ? 4 : r.reduz ? 6 : P.fade));
     if (tick >= j.fecha) alfa *= 1 - (tick - j.fecha) / P.fecha;
     alfa *= 1 - saindo;
-    const escala = j.revelar ? escalaDoPop(abriu / P.pop) : 1;
+    // pop com leve overshoot em 8 ticks; o ZENON 0,94 -> 1 em 12, sem overshoot
+    const escala = !j.revelar ? 1 : zenon ? escalaDoPopDoZenon(abriu / 12) : escalaDoPop(abriu / P.pop);
+    const fechando = clamp(Math.max(tick >= j.fecha ? (tick - j.fecha) / P.fecha : 0, saindo), 0, 1);
     const letras = j.revelar ? Math.max(0, (tick - j.letrasEm) * P.letrasPorTick) : Infinity;
     const completo = letras >= j.n;
-    baloes.push({ janela: i, falante: j.falante, letras, escala, alfa: Math.max(0, alfa), seta: r.tipo === 'vitoria' && completo && tick < j.fecha && pulouEm === null });
+    baloes.push({ janela: i, falante: j.falante, variante: j.variante ?? 'abertura', desde: abriu, fechando, reduz: !j.revelar, letras, escala, alfa: Math.max(0, alfa), seta: r.tipo === 'vitoria' && completo && tick < j.fecha && pulouEm === null });
   });
 
   // papéis: quem fala está em `provoca` enquanto o balão está aberto
@@ -375,14 +390,25 @@ export interface DadosDeFala {
   readonly nomes: readonly [string, string];
 }
 
-const comoFala = (falante: IndiceLutador, texto: string): FalaDoRoteiro => ({ falante, texto, n: texto.length });
+const comoFala = (falante: IndiceLutador, texto: string, variante: VarianteDoBalao): FalaDoRoteiro => ({ falante, texto, n: texto.length, variante });
+
+/**
+ * A variante final da fala. Precedência (direção de arte §3.1): ZENON > guardião > decisivo > revanche > vitória perfeita > vitória > abertura. `base` já traz as cinco últimas
+ * (as calcula `falasDaAbertura`/`falaDaRodada`/`falaDaVitoria`); aqui entram as duas de cima: quem fala com id `zenon` (em qualquer momento, jogável ou chefão) é ZENON, e o
+ * chefe da luta de chefão (o guardião do ARCADE) é guardião.
+ */
+export function varianteDaFala(base: VarianteDoBalao | undefined, falante: IdLutador, ehOChefeDaLuta: boolean): VarianteDoBalao {
+  if (falante === 'zenon') return 'zenon';
+  if (ehOChefeDaLuta) return 'guardiao';
+  return base ?? 'abertura';
+}
 
 /** Round 1: o P1 fala primeiro e o P2 responde (decisão do dono). */
 export function falasDaAbertura(d: DadosDeFala, op: OpcoesDoSorteio): FalaDoRoteiro[] {
   return ([0, 1] as const).map((i) => {
     const o = i === 0 ? 1 : 0;
     const pedido: PedidoDeFala = { tipo: 'abertura', falante: d.ids[i], rival: d.ids[o], nomeRival: d.nomes[o] };
-    return comoFala(i, sortearFala(pedido, op).texto);
+    return comoFala(i, sortearFala(pedido, op).texto, 'abertura');
   });
 }
 
@@ -391,14 +417,14 @@ export function falaDaRodada(d: DadosDeFala, e: EntradaDaRodada, op: OpcoesDoSor
   const { falante, decisivo } = quemFalaNaRodada(e);
   const o = falante === 0 ? 1 : 0;
   const pedido: PedidoDeFala = { tipo: 'rodada', falante: d.ids[falante], rival: d.ids[o], nomeRival: d.nomes[o], decisivo };
-  return [comoFala(falante, sortearFala(pedido, op).texto)];
+  return [comoFala(falante, sortearFala(pedido, op).texto, decisivo ? 'decisivo' : 'revanche')];
 }
 
 /** Fim da luta: o vencedor provoca o perdedor. */
 export function falaDaVitoria(d: DadosDeFala, vencedor: IndiceLutador, c: { perfeita?: boolean; porTempo?: boolean }, op: OpcoesDoSorteio): FalaDoRoteiro[] {
   const o = vencedor === 0 ? 1 : 0;
   const pedido: PedidoDeFala = { tipo: 'vitoria', falante: d.ids[vencedor], rival: d.ids[o], nomeRival: d.nomes[o], perfeita: c.perfeita, porTempo: c.porTempo };
-  return [comoFala(vencedor, sortearFala(pedido, op).texto)];
+  return [comoFala(vencedor, sortearFala(pedido, op).texto, c.perfeita ? 'vitoriaPerfeita' : 'vitoria')];
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------
@@ -589,8 +615,11 @@ export class Provocacao {
     return { fator: r.zoomFinal, x: paraATela(f.x, f.y, luta.cam).x };
   }
 
-  /** As faixas e os balões, por cima do mundo que a cena desenhou com `vista`. */
-  desenhar(ctx: Ctx, luta: Pick<LeituraLuta, 'fighters' | 'cam'>, elenco: Elenco, vista: VistaDaProvocacao): void {
+  /**
+   * As faixas e os balões, por cima do mundo que a cena desenhou com `vista`. `direitaMax` (px lógicos): onde o balão TERMINA no máximo; a cena o baixa quando há um botão de toque
+   * (a pausa) sobre a tela, para o balão não passar por baixo dele. Ausente = 948.
+   */
+  desenhar(ctx: Ctx, luta: Pick<LeituraLuta, 'fighters' | 'cam'>, elenco: Elenco, vista: VistaDaProvocacao, direitaMax?: number): void {
     const r = this.roteiro;
     if (!this.ativa || !r) return;
     const q = vista.quadro;
@@ -601,7 +630,8 @@ export class Provocacao {
       ctx.fillRect(0, ALTURA - q.faixa, LARGURA, q.faixa);
       ctx.restore();
     }
-    const limites = r.faixas ? LIMITES_COM_FAIXAS : LIMITES_COM_HUD;
+    const base = r.faixas ? LIMITES_COM_FAIXAS : LIMITES_COM_HUD;
+    const limites = direitaMax === undefined ? base : { ...base, direita: Math.max(base.esquerda + 200, Math.min(base.direita, direitaMax)) };
     const ocupados: Retangulo[] = [];
     for (const b of q.baloes) {
       const j = r.janelas[b.janela] as JanelaDeBalao;
@@ -627,7 +657,7 @@ export class Provocacao {
       const outroAgora = this.cabecaDe(luta, elenco, outro, poseAgora(outro), vista.zoom, vista.deslocamento[outro] ?? 0);
       const col = colocarBalao(caixa, plano, falanteAgora, [retanguloDaCabeca(outroAgora)], ocupados, limites);
       ocupados.push(retanguloDaColocacao(col));
-      desenharBalao(ctx, caixa, col, { letras: b.letras, escala: b.escala, alfa: b.alfa, seta: b.seta, tick: this.tick, piscar: !r.reduz, corDoNome: this.cores[j.falante] });
+      desenharBalao(ctx, caixa, col, { letras: b.letras, escala: b.escala, alfa: b.alfa, seta: b.seta, tick: this.tick, corDoNome: this.cores[j.falante], variante: b.variante, desde: b.desde, fechando: b.fechando, reduz: b.reduz });
     }
   }
 

@@ -10,7 +10,7 @@ import { SEM_PROVOCACAO } from './_luta';
  *  - as falas de TODOS os lutadores cabem nos limites, medidas na fonte carregada (`document.fonts.ready`) com o nome de rival mais largo;
  *  - o balão medido por A/B de pixels (o quadro com e sem balão): dentro da tela, abaixo do HUD/faixas, sem cobrir o rosto (ZENON: <= 16 px);
  *  - o fluxo real com o motor: parado durante os balões, pular por ataque/ENTER/toque/clique, a luta fecha pelo fim da vitória;
- *  - a linha PROVOCAÇÕES das Opções.
+ *  - as Opções NÃO têm chave de provocação (sempre ligadas; decisão do dono).
  *
  * SALVAR_CAPTURAS=<pasta> grava os quadros 1920x1080 (`SALVAR_CAPTURAS=arte-fonte/capturas npx playwright test provocacao`).
  */
@@ -61,13 +61,13 @@ const FALA_LARGA = 'Você lutou bem. Eu lutei melhor. Treine mais um pouco, rapa
 // 1) As falas de todos os lutadores, medidas na fonte carregada
 // ---------------------------------------------------------------------------------------------------------------------------------
 test.describe('P2: as falas cabem (medidas no navegador, fonte carregada, nome de rival mais largo)', () => {
-  test('todas as falas de todos os lutadores: linhas <= 372 px em FB(20), 2 linhas (1 em revanche/decisivo) e balão <= 400 px', async ({ page }, info) => {
+  test('todas as falas de todos os lutadores: linhas <= 372 px em Bangers 24 (caixa alta, +1 px de tracking), 2 linhas (1 em revanche/decisivo) e balão <= 404 px (372 + 2 x 16)', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'a medida do canvas não depende do viewport');
     const erros = coletarErros(page);
     await abrirJogo(page, 'desktop');
     const r = await page.evaluate(async () => {
       await document.fonts.ready;
-      await document.fonts.load('600 20px Barlow');
+      await document.fonts.load('400 24px Bangers');
       await document.fonts.load('italic 800 19px "Barlow Condensed"');
       const B: any = await import(/* @vite-ignore */ ('/src/render/balao.ts' as string));
       const D: any = await import(/* @vite-ignore */ ('/src/data/provocacoes.ts' as string));
@@ -76,7 +76,9 @@ test.describe('P2: as falas cabem (medidas no navegador, fonte carregada, nome d
       const elenco = h.mundo().elenco;
       const ids = Object.keys(elenco);
       const cv = document.createElement('canvas').getContext('2d')!;
-      cv.font = T.FB(20);
+      // a fala é medida como o balão a mede: Bangers 24, tracking de 1 px, em CAIXA ALTA
+      cv.font = T.FONTE_DA_FALA(24);
+      (cv as any).letterSpacing = '1px';
       const largura = (s: string): number => cv.measureText(s).width;
       const nomes: string[] = ids.map((id) => elenco[id].ch.name);
       const maisLargo = nomes.reduce((a, b) => (largura(b) > largura(a) ? b : a));
@@ -89,7 +91,7 @@ test.describe('P2: as falas cabem (medidas no navegador, fonte carregada, nome d
         for (const [i, modelo] of (lista ?? []).entries()) {
           total++;
           const texto = modelo.split('{rival}').join(maisLargo);
-          const linhas: string[] = B.quebrarPorMedida(texto, 372, largura);
+          const linhas: string[] = B.quebrarPorMedida(B.emCaixaAlta(texto), 372, largura);
           if (linhas.length > (maxLinhas[cat] as number)) problemas.push(`${onde}[${i}]: ${linhas.length} linhas (máx ${maxLinhas[cat]}): ${texto}`);
           for (const l of linhas) {
             const px = largura(l);
@@ -97,7 +99,7 @@ test.describe('P2: as falas cabem (medidas no navegador, fonte carregada, nome d
             if (px > maiorLinha.px) maiorLinha = { px, onde: `${onde}[${i}]` };
           }
           const caixa = B.medirBalao(cv, texto, 'WEI LONG');
-          if (caixa.w > 400) problemas.push(`${onde}[${i}]: balão de ${caixa.w} px > 400`);
+          if (caixa.w > 404) problemas.push(`${onde}[${i}]: balão de ${caixa.w} px > 404`);
           if (caixa.w > maiorBalao.px) maiorBalao = { px: caixa.w, onde: `${onde}[${i}]` };
         }
       };
@@ -291,7 +293,7 @@ async function medirCenario(page: Page, c: Cenario): Promise<Medida> {
       rosto.push({ id: f.id, pixels: pixels / (k * k), profundidade: profundidade / k, topo: topo / k, altura: altura / k });
     }
     const css = cv.clientWidth / 960;
-    return { hud: vista.quadro.hud, faixa: vista.quadro.faixa, rects, rosto, cssCorpo: 20 * css, cssNome: 19 * css, textos };
+    return { hud: vista.quadro.hud, faixa: vista.quadro.faixa, rects, rosto, cssCorpo: 24 * css, cssNome: 19 * css, textos };
   }, c);
 }
 
@@ -303,7 +305,7 @@ function conferirMedida(med: Medida, c: Cenario, quantos: number): void {
     expect(r.x1, `${c.nome} direita`).toBeLessThanOrEqual(949);
     expect(r.y0, `${c.nome} topo (HUD ${String(med.hud)})`).toBeGreaterThanOrEqual((med.hud ? 86 : 62) - 1);
     expect(r.y1 - r.y0, `${c.nome} altura`).toBeLessThanOrEqual(146 + BALAO_RABICHO + 2); // até 4 linhas (a variante estreita) + a faixa do ▶ da vitória
-    expect(r.x1 - r.x0, `${c.nome} largura`).toBeLessThanOrEqual(400 + BALAO_RABICHO + 2); // + o rabicho, quando o balão fica ao lado da cabeça
+    expect(r.x1 - r.x0, `${c.nome} largura`).toBeLessThanOrEqual(404 + BALAO_RABICHO + 4); // linhaMax 372 + 2 x 16 de margem (Tarja de Impacto; era 400 com margem de 14) + o rabicho + o contorno de 5 px
   }
   for (const f of med.rosto) {
     const alto = f.altura > 300; // ZENON (escala 1,32) e BAATAR (1,28): o corpo passa de 300 px
@@ -355,7 +357,7 @@ for (const perfil of ['desktop', 'celular'] as const) {
           expect(lado > 0 && alto > 0, `${c.nome}: os dois balões não se sobrepõem`).toBe(false);
         }
         // o texto do balão no aparelho: a fonte do corpo e a etiqueta do nome em px CSS
-        expect(med.cssCorpo, `${c.nome} corpo`).toBeGreaterThanOrEqual(perfil === 'celular' ? 13 : 20);
+        expect(med.cssCorpo, `${c.nome} corpo`).toBeGreaterThanOrEqual(perfil === 'celular' ? 17 : 24);
         expect(med.cssNome, `${c.nome} nome`).toBeGreaterThanOrEqual(perfil === "celular" ? 13 : 19);
         relato.push(`${c.nome}: ${med.rects.map((r) => `[${r.x0.toFixed(0)},${r.y0.toFixed(0)} ${(r.x1 - r.x0).toFixed(0)}x${(r.y1 - r.y0).toFixed(0)}]`).join(' ')} rosto ${med.rosto.map((f) => `${f.id}:${f.pixels.toFixed(0)}px²/${f.profundidade.toFixed(0)}px`).join(' ')} css ${med.cssCorpo.toFixed(1)}/${med.cssNome.toFixed(1)}`);
       }
@@ -543,10 +545,10 @@ test.describe('P2: o ZENON vencendo fala pelo balão, sem a legenda antiga', () 
 });
 
 // ---------------------------------------------------------------------------------------------------------------------------------
-// 5) A linha PROVOCAÇÕES das Opções
+// 5) As Opções NÃO têm a linha PROVOCAÇÕES (decisão do dono, 2026-10-21: as frentes pedidas ficam sempre ligadas)
 // ---------------------------------------------------------------------------------------------------------------------------------
 for (const perfil of ['desktop', 'celular'] as const) {
-  test(`P2: a linha PROVOCAÇÕES nas Opções (${perfil}): cabe na tela, alterna, grava e o RESTAURAR PADRÕES a apaga`, async ({ page }, info) => {
+  test(`P2: as Opções (${perfil}) não têm PROVOCAÇÕES nem CINEMÁTICA: 9 linhas que cabem, e um save antigo "desligadas" não desliga nada`, async ({ page }, info) => {
     test.skip(info.project.name !== perfil, `só no ${perfil}`);
     const erros = coletarErros(page);
     await abrirJogo(page, perfil, '');
@@ -555,43 +557,36 @@ for (const perfil of ['desktop', 'celular'] as const) {
       w.__textos = [];
       const o = CanvasRenderingContext2D.prototype.fillText;
       CanvasRenderingContext2D.prototype.fillText = function (this: CanvasRenderingContext2D, t: string, x: number, y: number, ...r: any[]) {
-        if (w.__textos) w.__textos.push({ t: String(t), x, y, px: parseFloat(/([\d.]+)px/.exec(this.font)?.[1] ?? '0') });
+        if (w.__textos) w.__textos.push({ t: String(t), x, y, px: parseFloat(/([d.]+)px/.exec(this.font)?.[1] ?? '0') });
         return (o as any).call(this, t, x, y, ...r);
       };
     });
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('options', { from: 'menu' }); h.avancar(2); }");
-    const ler = async (): Promise<Array<{ t: string; x: number; y: number; px: number }>> =>
-      page.evaluate(() => {
-        const w = window as any;
-        w.__textos = [];
-        w.__inno.desenhar();
-        return w.__textos;
-      });
     const itens = await hook(page, '(h) => h.ui.scene.m.items.map((i) => i.label)');
-    expect(itens).toHaveLength(11);
-    const idx = itens.indexOf('PROVOCAÇÕES');
-    expect(idx).toBeGreaterThan(-1);
-    let textos = await ler();
-    const linha = textos.find((x) => x.t === 'PROVOCAÇÕES')!;
-    expect(textos.some((x) => /(^|\s)LIGADAS(\s|$)/.test(x.t)), 'o valor LIGADAS (o padrão)').toBe(true);
-    // 11 linhas: a última (VOLTAR) e a dica de baixo cabem, sem se sobrepor
+    expect(itens).toHaveLength(9);
+    expect(itens).not.toContain('PROVOCAÇÕES');
+    expect(itens).not.toContain('CINEMÁTICA DO ESPECIAL');
+    const textos: Array<{ t: string; x: number; y: number; px: number }> = await page.evaluate(() => {
+      const w = window as any;
+      w.__textos = [];
+      w.__inno.desenhar();
+      return w.__textos;
+    });
+    expect(textos.some((x) => /PROVOCA/.test(x.t))).toBe(false);
+    // 9 linhas: a última (VOLTAR) e a dica de baixo cabem, sem se sobrepor
     const voltar = textos.find((x) => x.t === 'VOLTAR')!;
     const dica = textos.filter((x) => x.t.includes('escolher'))[0]!;
-    expect(linha.y).toBeGreaterThan(90);
     expect(voltar.y + 14).toBeLessThan(dica.y - dica.px / 2);
-    expect(voltar.y + 18).toBeLessThanOrEqual(540);
     await capturar(page, `provocacao-opcoes-${perfil}`);
-    // alterna pelo teclado (as setas ajustam a linha selecionada)
-    await hook(page, `(h) => { h.ui.scene.m.sel = ${idx}; }`);
-    await page.keyboard.press('ArrowRight');
-    await hook(page, '(h) => h.avancar(1)');
-    textos = await ler();
-    expect(textos.some((x) => /DESLIGADAS/.test(x.t)), 'o valor DESLIGADAS').toBe(true);
-    expect(await page.evaluate(() => JSON.parse(window.localStorage.getItem('inno-fighters-v2')!).s.provocacoes)).toBe('desligadas');
-    await capturar(page, `provocacao-opcoes-desligadas-${perfil}`);
-    // RESTAURAR PADRÕES apaga o campo
-    await hook(page, `(h) => { h.ui.scene.m.sel = ${itens.indexOf('RESTAURAR PADRÕES')}; h.ui.scene.m.items[${itens.indexOf('RESTAURAR PADRÕES')}].onOk(); }`);
-    expect(await page.evaluate(() => 'provocacoes' in JSON.parse(window.localStorage.getItem('inno-fighters-v2')!).s)).toBe(false);
+    // save de versão anterior com as provocações "desligadas": é ignorado (o gancho de teste não o vê, o disco o mantém)
+    await page.evaluate(() => {
+      const d = JSON.parse(window.localStorage.getItem('inno-fighters-v2') ?? '{"v":2,"s":{},"hi":0,"prog":{}}');
+      d.s.provocacoes = 'desligadas';
+      window.localStorage.setItem('inno-fighters-v2', JSON.stringify(d));
+    });
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+    expect(await hook(page, '(h) => h.persist.settings.provocacoes')).toBeUndefined();
     expect(erros).toEqual([]);
   });
 }

@@ -229,8 +229,10 @@ test.describe('A etiqueta do jogador (VOCÊ, ALVO, ADVERSÁRIO, JOGADOR 1/2) nã
       info.annotations.push({ type: 'celular', description: `${tag}: ${(css.x1 - css.x0).toFixed(0)}x${(css.y1 - css.y0).toFixed(0)} px CSS em (${css.x0.toFixed(0)},${css.y0.toFixed(0)}); canvas ${cv.width.toFixed(0)}x${cv.height.toFixed(0)}` });
       expect(r.sobre, `${tag}: sobre o lutador`).toBe(0);
       for (const t of teclas) {
-        const cruza = css.x0 < t.x + t.w && css.x1 > t.x && css.y0 < t.y + t.h && css.y1 > t.y;
-        expect(cruza, `${tag} x tecla ${t.id}`).toBe(false);
+        // a área de toque dos botões tem margem transparente (o disco desenhado ocupa 92% dela): 4 px de cada lado não contam; o joystick vale inteiro
+        const m = t.id === 'joy' ? 0 : 4;
+        const cruza = css.x0 < t.x + t.w - m && css.x1 > t.x + m && css.y0 < t.y + t.h - m && css.y1 > t.y + m;
+        expect(cruza, `${tag} x tecla ${t.id}: etiqueta x ${css.x0.toFixed(1)}..${css.x1.toFixed(1)} y ${css.y0.toFixed(1)}..${css.y1.toFixed(1)}; tecla x ${(t.x + m).toFixed(1)}..${(t.x + t.w - m).toFixed(1)} y ${(t.y + m).toFixed(1)}..${(t.y + t.h - m).toFixed(1)}`).toBe(false);
       }
       expect(css.y1 - css.y0, `${tag}: altura legível em px CSS`).toBeGreaterThanOrEqual(12);
     }

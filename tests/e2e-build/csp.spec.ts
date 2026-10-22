@@ -103,7 +103,7 @@ test.describe('CSP no build de produção', () => {
 
     // as fontes do canvas (woff2 auto-hospedados) vieram do próprio site com 200, carregaram antes do 1º quadro e nenhuma violação de font-src
     const fontes = [...recursos].filter(([p]) => p.endsWith('.woff2'));
-    expect(fontes.map(([p]) => p.split('/').pop()).sort()).toEqual(['barlow-600-latin.woff2', 'barlow-condensed-800-italic-latin.woff2']);
+    expect(fontes.map(([p]) => p.split('/').pop()).sort()).toEqual(['bangers-latin-400-normal.woff2', 'barlow-600-latin.woff2', 'barlow-condensed-800-italic-latin.woff2']);
     expect(fontes.filter(([, s]) => s !== 200)).toEqual([]);
     await expect(page.locator('html')).toHaveAttribute('data-fontes', 'ok');
     expect(await page.evaluate(() => document.fonts.check('italic 800 20px "Barlow Condensed"') && document.fonts.check('600 20px Barlow'))).toBe(true);

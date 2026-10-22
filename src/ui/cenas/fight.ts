@@ -1,4 +1,4 @@
-import { reagirAosEventos } from '../../audio/eventos';
+import { identidadeAtiva, reagirDoJogo, trilhaDoJogo } from '../../audio/camadas';
 import { tocarReceita, type SintetizadorLike } from '../../audio/receitas';
 import { ALTURA, GROUND, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
@@ -20,6 +20,7 @@ import {
   modoDaProvocacao,
   montarRoteiro,
   paraATela,
+  varianteDaFala,
   Provocacao,
   provocacaoLigada,
   SOM_DA_VITORIA,
@@ -52,6 +53,10 @@ export class CenaFight implements Cena {
   private ultimoTick = 0;
   /** Último estado aplicado ao botão ESQ do toque (barra abaixo do custo da esquiva); null = ainda não aplicado. */
   private botaoEsqSem: boolean | null = null;
+  /** Idem para o ESPECIAL (#r1): sem barra para o custo do especial (a mesma regra do "pronto" do HUD). */
+  private botaoEspSem: boolean | null = null;
+  /** Fim do estalo `.acendeu` do ESPECIAL (220 ms), para limpar ao sair da luta ou reacender. */
+  private fimDoAcendeu: ReturnType<typeof setTimeout> | null = null;
   /** CINEMÁTICA do especial (apresentação pura: enquanto roda a cena não chama `game.update`, como a pausa) e a sessão dos acertos dele. */
   readonly cine: Cinematica;
   readonly sessao: SessaoEspecial;
@@ -101,7 +106,11 @@ export class CenaFight implements Cena {
     // os sons da cinemática são chamados por ela, NÃO por audio/eventos.ts: o som do evento `special` não muda (o lock-step compara sons)
     this.cine = new Cinematica({
       rng: ui.c.rngVisual,
-      aoSom: (momento, id) => void tocarReceita(sintetizador(), momento === 'abertura' ? id.abertura : id.batida),
+      // identidade sonora ligada: a abertura da tarja cala (o grito e a conjuração do evento já tocaram no mesmo tick); a batida (o "pop" do nome) continua
+      aoSom: (momento, id) => {
+        if (momento === 'abertura' && identidadeAtiva()) return;
+        tocarReceita(sintetizador(), momento === 'abertura' ? id.abertura : id.batida);
+      },
     });
     this.entrada = new EntradaDoChefe({
       aoSom: (som) =>
@@ -116,6 +125,8 @@ export class CenaFight implements Cena {
     this.sessao = new SessaoEspecial({
       rng: ui.c.rngVisual,
       aoSom: (momento, id, dono, nivel) => {
+        // identidade sonora ligada: a estampa e a defesa da assinatura (e o MASHI por nível) já tocam no evento, com ou sem cinemática
+        if (identidadeAtiva()) return;
         if (momento === 'defesa') {
           tocarReceita(sintetizador(), id.batida, { abafado: true });
           return;
@@ -194,6 +205,10 @@ export class CenaFight implements Cena {
       if (game.matchWinner === null) return;
       falas = falaDaVitoria(dados, game.matchWinner, { perfeita: game.perfect, porTempo: this.roundPorTempo }, sorteio);
     }
+    // a variante da "Tarja de Impacto" (precedência: ZENON > guardião > decisivo > revanche > vitória perfeita > vitória > abertura): quem fala com id zenon vira ZENON e o chefe
+    // da luta de chefão (o guardião do ARCADE, c2) vira guardião; o resto já veio das falas
+    const chefeDaLuta = this.a?.cfg.chefe ? this.a.cfg.c2 : null;
+    falas = falas.map((f) => ({ ...f, variante: varianteDaFala(f.variante, ids[f.falante], chefeDaLuta !== null && ids[f.falante] === chefeDaLuta) }));
     this.provocacao.iniciar(montarRoteiro(tipo, modo, reduz, falas), {
       pitch: [elenco[ids[0]].ch.pitch, elenco[ids[1]].ch.pitch],
       nomes: dados.nomes,
@@ -253,6 +268,7 @@ export class CenaFight implements Cena {
     this.musicaBaixa = true; // força a volta ao volume salvo (a cena anterior pode ter saído no meio de uma cinemática)
     this.baixarMusica(false);
     this.botaoEsqSem = null;
+    this.botaoEspSem = null;
     this.atualizarBotaoEsquiva();
     this.entrada.zerar();
     this.provocacao.zerar();
@@ -267,7 +283,8 @@ export class CenaFight implements Cena {
     this.moedas.zerar();
     this.entradaPendente = this.modoDaEntrada(a) !== null;
     // a trilha do chefão (valsa 3/4) é uma flag do def: tirar `trilha` de `ConfigChefe` é o rollback para a música de luta
-    audio.startMusic(a.cfg.chefe ? (this.ui.m.elenco[a.cfg.c2].ch.chefe?.trilha ?? 'fight') : 'fight');
+    // sem temas: 'chefe' (a valsa) no chefão que tem `trilha`, 'fight' no resto. Com `?temas=1`: o tema do ADVERSÁRIO (c2) em todos os modos, a fase 2 do chefão via musicaDaFase(2)
+    audio.startMusic(trilhaDoJogo(a.cfg, this.ui.c.regras, this.ui.m.elenco[a.cfg.c2].ch.chefe?.trilha));
     this.montarMenus();
   }
 
@@ -437,7 +454,7 @@ export class CenaFight implements Cena {
     game.update(this.fonte);
     petalasLuta.avancar(t0);
     // eventos -> som e efeitos visuais; depois os efeitos andam um tick (só se a luta andou: hitstop congela)
-    reagirAosEventos(audio as unknown as { [m: string]: unknown }, game.events);
+    reagirDoJogo(audio, game, game.events);
     for (const ev of game.events) {
       if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
       this.anotarRound(ev);
@@ -482,13 +499,51 @@ export class CenaFight implements Cena {
     return chDaFicha(this.ui.m.elenco[f.id].ch, f.ficha).fire[0];
   }
 
-  /** Botão ESQ do toque: esmaece (.sem) quando a barra do P1 está abaixo do custo da esquiva. Só mexe no DOM quando o estado muda. */
+  /**
+   * Botões ESQ e ESPECIAL do toque: apagam (`.sem`) quando a barra do P1 está abaixo do custo (da esquiva e do especial, o mesmo "pronto" do HUD). Ao o
+   * ESPECIAL ficar pronto ganha `.acendeu` por 220 ms (um estalo; o pulso de "pronto" é CSS). Só mexe no DOM quando o estado muda.
+   */
   private atualizarBotaoEsquiva(): void {
     if (typeof document === 'undefined') return;
-    const sem = this.ui.m.game.p1.en < ESQUIVA_PADRAO.custo;
-    if (sem === this.botaoEsqSem) return;
-    this.botaoEsqSem = sem;
-    document.getElementById('esq')?.classList.toggle('sem', sem);
+    const p1 = this.ui.m.game.p1;
+    const semEsq = p1.en < ESQUIVA_PADRAO.custo;
+    if (semEsq !== this.botaoEsqSem) {
+      this.botaoEsqSem = semEsq;
+      document.getElementById('esq')?.classList.toggle('sem', semEsq);
+    }
+    const custo = chDaFicha(this.ui.m.elenco[p1.id].ch, p1.ficha).proj.cost;
+    const semEsp = p1.en < custo;
+    if (semEsp === this.botaoEspSem) return;
+    const acendeu = this.botaoEspSem === true && !semEsp;
+    this.botaoEspSem = semEsp;
+    const r1 = document.getElementById('r1');
+    r1?.classList.toggle('sem', semEsp);
+    if (this.fimDoAcendeu !== null) clearTimeout(this.fimDoAcendeu);
+    this.fimDoAcendeu = null;
+    r1?.classList.remove('acendeu');
+    if (acendeu && r1) {
+      // reinicia a animação mesmo se a classe já tivesse estado ligada (força o recálculo de estilo antes de pô-la de volta)
+      void r1.offsetWidth;
+      r1.classList.add('acendeu');
+      this.fimDoAcendeu = setTimeout(() => {
+        this.fimDoAcendeu = null;
+        r1.classList.remove('acendeu');
+      }, 220);
+    }
+  }
+
+  /**
+   * Até onde o balão da provocação pode ir à direita, em px lógicos: 948 na tela de sempre; no celular deitado estreito (844x390) o botão de pausa (canto de cima à direita)
+   * entra na área do jogo, e o balão para antes dele (8 px de respiro). Lê a caixa do #bp e a do canvas (só com toque).
+   */
+  private limiteDireitoDosBaloes(): number | undefined {
+    if (typeof document === 'undefined' || !this.ui.c.temToque()) return undefined;
+    const bp = document.getElementById('bp')?.getBoundingClientRect();
+    const cv = document.getElementById('jogo')?.getBoundingClientRect();
+    if (!bp || !cv || bp.width === 0 || cv.width === 0) return undefined;
+    const k = cv.width / LARGURA;
+    const esquerdaDoBotao = (bp.left - cv.left) / k;
+    return esquerdaDoBotao < LARGURA ? esquerdaDoBotao - 8 : undefined;
   }
 
   /** O chefe passou para a 2ª barra: flash e faíscas nele e o aviso na tela (o som e o tremor são da luta). */
@@ -648,7 +703,7 @@ export class CenaFight implements Cena {
       f.T(this.espera.falhou ? 'Não foi possível carregar os lutadores.' : `Carregando lutadores... ${this.espera.percentual}%`, W / 2, H / 2, 20, '#fff', 'center');
     }
     // a cinemática por cima do mundo; fora dela, a sessão dos acertos (números, "N HITS" e a vinheta de 20%)
-    if (pv) this.provocacao.desenhar(ctx, game, m.elenco, pv);
+    if (pv) this.provocacao.desenhar(ctx, game, m.elenco, pv, this.limiteDireitoDosBaloes());
     else if (this.cine.ativa) this.cine.desenhar(ctx, game, m.elenco);
     else if (!q) {
       this.sessao.desenhar(ctx, game, m.elenco);

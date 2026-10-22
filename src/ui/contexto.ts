@@ -9,6 +9,7 @@ import type { Efeitos, CampoDePetalas } from '../render/efeitos';
 import type { RecursosDeDesenho } from '../render/mundo';
 import type { Ctx } from '../render/tela';
 import type { Entrada } from '../input/entrada';
+import type { ResultadoTelaCheia } from '../platform/tela-cheia';
 import type { Ferramentas } from './ferramentas';
 
 /** Configurações e recorde salvos (C4). `salvar()` grava no armazenamento local. */
@@ -59,7 +60,8 @@ export interface Contexto {
   readonly reduzirMovimento?: () => boolean;
   /** Regras do desbloqueio e do elenco (padrão: `REGRAS_PADRAO`; testes injetam outras, ex.: 9 ids falsos). */
   readonly regras: Regras;
-  alternarTelaCheia(): void;
+  /** Entra/sai da tela cheia (tecla F e linha das Opções). Devolve o que aconteceu; os testes injetam um que não devolve nada. */
+  alternarTelaCheia(): Promise<ResultadoTelaCheia> | void;
   /** Aparelho com tela de toque (muda o texto "PRESSIONE ENTER"). */
   temToque(): boolean;
 }

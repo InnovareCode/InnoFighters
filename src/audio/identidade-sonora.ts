@@ -2,6 +2,7 @@ import type { EventoLuta, IdLutador, IndiceLutador, LeituraLuta } from '../core/
 import { DADOS_SONS } from '../data/sons';
 import type { AssinaturaEspecial, Chamada, DadosSons, Grito, PerfilVocal } from '../data/sons/tipos';
 import { FONTES_POR_PLANO } from './audio-sys';
+import { chavesSonoras, IDENTIDADE_SONORA } from './chaves';
 import { reagirAosEventos, sonsDoEvento, type ChamadaSom, type SomPorNome } from './eventos';
 import { cortarParaOrcamento, duracaoDaReceita, fontesDaReceita } from './orcamento-sonoro';
 import { tocarReceita, type ChamadaReceita, type SintetizadorLike } from './receitas';
@@ -11,15 +12,13 @@ import { sintetizarGrito } from './sintese-voz';
  * Camada de identidade sonora (docs/spec-sons-por-lutador.md, opção B): lê o evento da luta DEPOIS de `sonsDoEvento` e decide o que MANTER dos sons
  * genéricos e o que ACRESCENTAR (voz do lutador, assinatura do especial). `sonsDoEvento` NÃO muda (o lock-step com o protótipo compara a saída dele).
  *
- * PONTO DE LIGAÇÃO (S4, fora desta entrega; src/ui/cenas/fight.ts e src/main.ts são da Lyra):
- *   fight.ts:~438  reagirAosEventos(audio, game.events)  ->  reagirComIdentidade(audio, game.events, contextoSonoro(game, semente))
- *   main.ts:~89    new AudioSys({ rng, sementeVariacao: semente + 6, limitador: true })
- *   fight.ts:~103/116  com IDENTIDADE_SONORA ligada: a abertura da tarja e o som de acerto/defesa da SessaoEspecial não tocam.
- * Tudo atrás da chave IDENTIDADE_SONORA: falsa = o jogo de hoje.
+ * LIGADO (S4, sempre ligado por decisão do dono): src/audio/camadas.ts baixa este módulo no boot e `fight.ts` chama `reagirDoJogo` (que chama `reagirComIdentidade`);
+ * main.ts cria o AudioSys com `sementeVariacao: semente + 6`; a abertura da tarja e o som de acerto/defesa da SessaoEspecial não tocam.
+ * A chave (`IDENTIDADE_SONORA`, em ./chaves) é só rollback por código: falsa = o jogo de antes.
  */
 
-/** Chave de rollback. Só vira `true` depois da escuta do dono (S5). */
-export const IDENTIDADE_SONORA = false;
+// a constante mora em chaves.ts (módulo leve, que entra no pacote principal); aqui só se reexporta
+export { IDENTIDADE_SONORA };
 
 /** Gongo comum do KO (3.4): é a marca do KO do JOGO, não do lutador. A mesma coisa que `ko()` toca hoje depois da voz. */
 export const GONGO_KO: readonly ChamadaReceita[] = [
@@ -317,7 +316,7 @@ export function reagirComIdentidade(
   eventos: readonly EventoLuta[],
   ctx: ContextoSonoro,
   agendar: (fn: () => void, ms: number) => unknown = (fn, ms) => setTimeout(fn, ms),
-  ligada: boolean = IDENTIDADE_SONORA,
+  ligada: boolean = chavesSonoras.identidade,
   dados: DadosSons = DADOS_SONS,
 ): void {
   const porNome = audio as unknown as SomPorNome;

@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 
@@ -38,8 +39,39 @@ function cspSoNoBuild(): Plugin {
   };
 }
 
+/**
+ * Identidade do build: commit curto + instante da compilação. Vai para o código por `define` (`__INNO_BUILD__`, lido em src/versao.ts) e para
+ * `version.json` ao lado do index.html. Existe para o dono PROVAR qual versão está vendo (o Pages serve o index.html com `max-age=600` e não
+ * deixa mudar cabeçalhos) e para o jogo avisar quando há uma versão mais nova no ar.
+ */
+function identidadeDoBuild(): { commit: string; data: string; sujo: boolean } {
+  let commit = (process.env['GITHUB_SHA'] ?? '').slice(0, 7);
+  let sujo = false;
+  try {
+    commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || commit;
+    sujo = execSync('git status --porcelain', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim().length > 0;
+  } catch {
+    /* sem git (tarball): fica o que veio do ambiente */
+  }
+  return { commit: commit || 'dev', data: new Date().toISOString(), sujo };
+}
+
+const BUILD = identidadeDoBuild();
+
+/** Publica `version.json` (a mesma identidade) no build; o jogo o consulta com `cache: 'no-store'` para saber se há versão nova. */
+function versaoJson(): Plugin {
+  return {
+    name: 'inno-version-json',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify(BUILD) });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [cspSoNoBuild()],
+  plugins: [cspSoNoBuild(), versaoJson()],
+  define: { __INNO_BUILD__: JSON.stringify(BUILD) },
   server: { port: 5173, strictPort: true },
   preview: { port: 4173, strictPort: true },
   build: { target: 'es2022', sourcemap: true },

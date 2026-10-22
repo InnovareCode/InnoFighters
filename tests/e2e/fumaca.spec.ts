@@ -29,7 +29,7 @@ test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e
   expect(caixa.height).toBeLessThanOrEqual(janela.height);
 
   // a abertura (tela de carregamento / "clique ou pressione") foi realmente desenhada: o canto superior
-  // esquerdo tem o degradê roxo do boot (#1a0b33 no topo), não o fundo #000 do CSS, e há muitas cores
+  // esquerdo foi pintado pelo boot (o splash da logo oficial, azul-marinho escuro, ou o degradê roxo de antes enquanto a imagem não chega), não é o fundo #000 do CSS, e há muitas cores
   const desenhou = await canvas.evaluate((el) => {
     const c = el as HTMLCanvasElement;
     const g = c.getContext('2d')!;
@@ -39,8 +39,8 @@ test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e
     for (let i = 0; i < d.length; i += 4 * 997) cores.add((d[i]! << 16) | (d[i + 1]! << 8) | d[i + 2]!);
     return { topo: [px[0], px[1], px[2]], cores: cores.size };
   });
-  expect(Math.abs((desenhou.topo[0] ?? 0) - 0x1a)).toBeLessThanOrEqual(4);
-  expect(Math.abs((desenhou.topo[2] ?? 0) - 0x33)).toBeLessThanOrEqual(6);
+  expect(Math.max(...desenhou.topo.map((v) => v ?? 0)), 'canto do boot pintado (não #000)').toBeGreaterThan(0x0c);
+  expect(Math.max(...desenhou.topo.map((v) => v ?? 0)), 'e escuro (splash ou degradê)').toBeLessThan(0x60);
   expect(desenhou.cores).toBeGreaterThan(20);
 
   expect(erros).toEqual([]);

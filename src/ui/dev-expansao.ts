@@ -30,7 +30,8 @@ export function regrasExpansao(): Regras {
     cinematica: REGRAS_PADRAO.cinematica,
     // sem fila, o chefao e sempre o Anfitriao: a regra de antes basta (P1)
     chefesDaFila: false,
-    temasMusicais: false,
+    // o jogo com tudo liberado soa como o de produção (temas por lutador); só `?expansao=4` (fidelidade com o protótipo) fica com a música de antes
+    temasMusicais: REGRAS_PADRAO.temasMusicais,
   };
 }
 

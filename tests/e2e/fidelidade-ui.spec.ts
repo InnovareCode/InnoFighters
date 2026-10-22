@@ -24,6 +24,17 @@ import { aguardarFontesNoPrototipo, urlDoPrototipoComFontesDoJogo, usarArteDoPro
  * etiqueta foram trocadas (ver urlDoPrototipoComFontesDoJogo em _jp-prototipo.ts). Todo o resto segue pixel a pixel. Os 5 casos "seleção ..." e todos os outros com texto
  * têm baseline novo POR ISSO (fontes); a casa aleatória só existe na grade de 10, então a de 4 (que o protótipo tem) não mudou de layout.
  *
+ * QUINTA EXCEÇÃO INTENCIONAL (decisão do dono, 2026-10-22: a LOGO OFICIAL substituiu a logo desenhada, que também substituía o emblema): a logo agora é imagem e vive em 3 peças
+ * (`marca.desenharLogo`, `desenharLogoHorizontal`, `desenharSplash`). Do lado do jogo as três viram no-op (como antes o logo e o emblema); no protótipo continuam desligados. Com o splash
+ * desligado o boot cai no gradiente de antes, então o resto do boot (barra, textos) segue pixel a pixel. O centro da logo no título/abertura mudou (y 142 -> 169): o oráculo o devolve a
+ * 142 (`LAYOUT_DA_MARCA.y`) para raios de luz, onda de choque e faíscas do impacto continuarem comparáveis. No TÍTULO o subtítulo desenhado SAIU (está na faixa da arte) e o CTA e o recorde
+ * desceram (y 302-332/346 -> 337-367/381): só nesses casos uma faixa de 560x130 px lógicos (x 200..760, y 270..400) NÃO é comparada; o resto da tela (fundo, heróis, brasas, rodapé) segue
+ * pixel a pixel. A posição nova do CTA e do recorde, e a geometria da logo, são medidas em logo.spec.ts.
+ *
+ * QUARTA EXCEÇÃO INTENCIONAL (decisão do dono, 2026-10-21, versão do build): as Opções desenham no canto da barra de baixo o rótulo da versão (`versão <commit> · <data>`), que o protótipo
+ * não tem. Do lado do jogo novo `CenaOptions.desenharVersao` vira no-op (como o logo), e todo o resto continua pixel a pixel. As frentes sempre ligadas (cinemática, provocações)
+ * saíram das Opções: a tela em produção voltou a ter as 9 linhas do protótipo (a linha TELA CHEIA continua com o texto do protótipo no desktop).
+ *
  * Os nomes dos campos das cenas foram mantidos de propósito, então o mesmo trecho de código (`codigo`)
  * roda dos dois lados com S = cena, U = navegador/UI, G = partida, SET = configurações.
  */
@@ -42,7 +53,12 @@ type Caso = {
   codigo?: string;
   /** o que a captura precisa mostrar (guarda contra comparar duas telas vazias) */
   minCores?: number;
+  /** retângulo [x0, y0, x1, y1] em px LÓGICOS que NÃO entra na comparação (ver a quinta exceção no cabeçalho) */
+  mascara?: readonly [number, number, number, number];
 };
+
+/** Faixa do título que mudou de propósito (subtítulo, CTA e recorde): ver a quinta exceção. */
+const FAIXA_DO_TITULO = [200, 270, 760, 400] as const;
 
 const run = (idx: number, continues = 2, score = 7300) => ({
   c1: 'caio', order: ['hayato', 'wei-long', 'min-ji'], idx, score, continues, diff: 1, cont: 1,
@@ -58,8 +74,8 @@ const CASOS: Caso[] = [
   { nome: 'boot: pronto (texto aceso)', cena: 'boot', t: 12 },
   { nome: 'boot: pronto (texto apagado)', cena: 'boot', t: 40 },
   ...[20, 60, 100, 125, 155, 200, 250].map((t): Caso => ({ nome: `abertura t=${t}`, cena: 'intro', t, codigo: `S.t = ${t};` })),
-  ...[0, 90, 300].map((t): Caso => ({ nome: `título t=${t}`, cena: 'title', args: { fromIntro: false }, t, codigo: `S.t = ${t};` })),
-  { nome: 'título com recorde', cena: 'title', args: { fromIntro: false }, t: 50, hi: 12345, codigo: 'S.t = 50;' },
+  ...[0, 90, 300].map((t): Caso => ({ nome: `título t=${t}`, cena: 'title', args: { fromIntro: false }, t, codigo: `S.t = ${t};`, mascara: FAIXA_DO_TITULO })),
+  { nome: 'título com recorde', cena: 'title', args: { fromIntro: false }, t: 50, hi: 12345, codigo: 'S.t = 50;', mascara: FAIXA_DO_TITULO },
   ...[0, 150, 310, 600].map((t): Caso => ({ nome: `menu principal t=${t}`, cena: 'menu', t })),
   { nome: 'menu: 3º item', cena: 'menu', t: 80, codigo: 'S.m.sel = 2;' },
   { nome: 'seleção versus', cena: 'select', args: { mode: 'versus' }, t: 40 },
@@ -180,7 +196,7 @@ async function desenharNoPrototipo(proto: Page, caso: Caso, sorteio: Sorteio): P
 
 async function compararNoApp(app: Page, caso: Caso, png: string): Promise<{ diferentes: number; maximo: number; caixa: number[]; cores: number; grade: number[]; diff?: string }> {
   return app.evaluate(
-    async ({ png, minCores, gerarDiff }) => {
+    async ({ png, minCores, gerarDiff, mascara }) => {
       const h = (window as any).__inno;
       h.desenhar();
       const canvas = h.ui.c.ctx.canvas as HTMLCanvasElement;
@@ -205,6 +221,11 @@ async function compararNoApp(app: Page, caso: Caso, png: string): Promise<{ dife
       const cores = new Set<number>();
       const grade = new Array(48).fill(0);
       for (let i = 0; i < a.length; i += 4) {
+        if (mascara) {
+          const px = ((i / 4) % 1920) / 2;
+          const py = Math.floor(i / 4 / 1920) / 2;
+          if (px >= mascara[0] && px < mascara[2] && py >= mascara[1] && py < mascara[3]) continue;
+        }
         if (i % (4 * 613) === 0) cores.add((a[i]! << 16) | (a[i + 1]! << 8) | a[i + 2]!);
         const d = Math.max(Math.abs(a[i]! - b[i]!), Math.abs(a[i + 1]! - b[i + 1]!), Math.abs(a[i + 2]! - b[i + 2]!));
         if (d > maximo) maximo = d;
@@ -224,7 +245,7 @@ async function compararNoApp(app: Page, caso: Caso, png: string): Promise<{ dife
       dctx.putImageData(dimg, 0, 0);
       return { diferentes, maximo, caixa: [x0, y0, x1, y1], cores: cores.size, grade, ...(gerarDiff ? { diff: dc.toDataURL('image/png') } : {}) };
     },
-    { png, minCores: caso.minCores ?? 0, gerarDiff: !!process.env['SALVAR_QUADROS'] },
+    { png, minCores: caso.minCores ?? 0, gerarDiff: !!process.env['SALVAR_QUADROS'], mascara: caso.mascara ?? null },
   );
 }
 
@@ -263,7 +284,12 @@ test.describe('fidelidade das telas: ui/ novo x protótipo (pixel a pixel)', () 
     await app.evaluate(async () => {
       const L = await import(/* @vite-ignore */ ('/src/ui/logo.ts' as string));
       L.marca.desenharLogo = () => undefined;
-      L.marca.desenharEmblema = () => undefined;
+      L.marca.desenharLogoHorizontal = () => undefined;
+      L.marca.desenharSplash = () => undefined;
+      L.LAYOUT_DA_MARCA.y = 142; // o centro da logo do protótipo (a nova fica em 169)
+    });
+    await app.evaluate(() => {
+      (window as any).__inno.ui.cenas.options.desenharVersao = () => undefined;
     });
     await proto.evaluate(() => {
       const w = window as any;

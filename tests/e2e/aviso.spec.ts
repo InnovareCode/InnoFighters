@@ -50,7 +50,8 @@ test.describe('aviso "progresso não salvo" (persist.salvar() devolve false)', (
     // não captura ponteiro
     expect(await page.evaluate(([x, y]) => document.elementFromPoint(x!, y!)?.id, [a.x + a.w / 2, a.y + a.h / 2])).not.toBe('aviso');
     // não cobre nenhum controle de toque visível
-    for (const sel of ['#joy', '#pad', '#r1', '#bp']) {
+    // (desde a arte nova o #pad é só uma âncora que cobre a tela: o que conta são os botões)
+    for (const sel of ['#joy', '#esq', '#r1', '#pad .hp', '#pad .hk', '#pad .lp', '#pad .lk', '#bp']) {
       const b = await caixa(page, sel);
       if (!b.vis) continue;
       const cruza = a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;

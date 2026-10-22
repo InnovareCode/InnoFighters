@@ -2,7 +2,7 @@ import { ALTURA, LARGURA } from '../../core/constantes';
 import { clamp, easeOut, lerp } from '../../core/math';
 import { VITRINE } from '../../data/lutadores';
 import { desenharPose } from '../../render/pose';
-import { cenarioDoCiclo, CICLO_VITRINE, LOGO_S, LOGO_Y, marca, PALETA_MARCA } from '../logo';
+import { cenarioDoCiclo, CICLO_VITRINE, LAYOUT_DA_MARCA, LOGO_ALTURA, marca, PALETA_MARCA } from '../logo';
 import type { Navegador } from '../navegador';
 import type { Cena } from '../tipos';
 import type { CenaTitle } from './title';
@@ -34,7 +34,7 @@ export class CenaIntro implements Cena {
         const a = rngVisual.entre(0, 6.3);
         const s = rngVisual.entre(3, 13);
         this.boom.push({
-          x: LARGURA / 2, y: LOGO_Y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rngVisual.entre(30, 60),
+          x: LARGURA / 2, y: LAYOUT_DA_MARCA.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rngVisual.entre(30, 60),
           c: PALETA_MARCA.brasas[k % PALETA_MARCA.brasas.length] ?? '#ff9a3d',
         });
       }
@@ -164,8 +164,7 @@ export class CenaIntro implements Cena {
       const shake = t >= 128 && t < 150 ? (150 - t) * 0.6 : 0;
       ctx.save();
       ctx.translate(rngVisual.entre(-shake, shake), rngVisual.entre(-shake, shake));
-      marca.desenharEmblema(ctx, W / 2, LOGO_Y, 132 * Math.min(1, (t - 124) / 18 + 0.3), t, clamp((t - 126) / 20, 0, 1));
-      marca.desenharLogo(ctx, W / 2, LOGO_Y, LOGO_S * sc, (t - 136) / 40, clamp(k * 1.5, 0, 1));
+      marca.desenharLogo(ctx, W / 2, LAYOUT_DA_MARCA.y, LOGO_ALTURA * sc, (t - 136) / 40, clamp(k * 1.5, 0, 1));
       ctx.restore();
       if (t >= 128 && t < 170) {
         // onda de choque
@@ -175,7 +174,7 @@ export class CenaIntro implements Cena {
         ctx.strokeStyle = `rgba(255,230,180,${1 - (t - 128) / 42})`;
         ctx.lineWidth = 10 * (1 - (t - 128) / 42) + 1;
         ctx.beginPath();
-        ctx.arc(W / 2, LOGO_Y, r, 0, Math.PI * 2);
+        ctx.arc(W / 2, LAYOUT_DA_MARCA.y, r, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }

@@ -48,14 +48,16 @@ describe('quebrarPorMedida', () => {
 
 describe('medirBalao', () => {
   const ctx = gravador().ctx; // measureText devolve 10 px fixos por texto
-  it('1 linha = 60 px de altura e 2 linhas = 84 (nome + linhas + margens), com as margens de 14 dos lados', () => {
+  it('Tarja de Impacto: 1 linha = 62 px de altura e 2 linhas = 90 (plaquinha + texto em Bangers 24 + margens + sombra); a largura é a do texto + 2 x 16 (ou a da plaquinha + 32)', () => {
     const um = medirBalao(ctx, 'Uma linha só.', 'HAYATO');
-    expect(um.linhas).toEqual(['Uma linha só.']);
-    expect(um.h).toBe(60);
-    expect(um.w).toBe(10 + 28);
+    expect(um.linhas).toEqual(['UMA LINHA SÓ.']); // Bangers só tem caixa alta
+    expect(um.h).toBe(62);
+    // o medidor falso dá 10 px a qualquer texto: a plaquinha (10 + 2 x 9 + 6 = 34) + 2 x 12 + 8 = 66 manda sobre o texto (10 + 32)
+    expect(um.larguraPlaca).toBe(10 + 18 + BALAO.placaInclina);
+    expect(um.w).toBe(66);
     const dois = medirBalao(ctx, 'Primeira linha.\nSegunda linha.', 'CAIO');
     expect(dois.linhas).toHaveLength(2);
-    expect(dois.h).toBe(84);
+    expect(dois.h).toBe(90);
     expect(dois.letras).toBe('Primeira linha.'.length + 'Segunda linha.'.length);
     expect(BALAO.linhaMax).toBe(372);
   });
@@ -187,46 +189,54 @@ describe('desenharBalao', () => {
   const ctx0 = gravador().ctx;
   const caixa = medirBalao(ctx0, 'Frase de teste.\nSegunda linha.', 'HAYATO');
   const col = colocarBalao(caixa, { lado: 'cima', nivel: 'topo' }, { x: 270, topo: 215, meiaLargura: 43, altura: 92 }, [], [], LIMITES_COM_HUD);
-  const quadro = { letras: Infinity, escala: 1, alfa: 1, seta: false, tick: 0, piscar: false, corDoNome: '#6fe0ff' };
+  const quadro = { letras: Infinity, escala: 1, alfa: 1, seta: false, tick: 0, corDoNome: '#6fe0ff', variante: 'abertura' as const };
+  /** Só o texto da fala (as sombras duras impressas saem em dobro: cada palavra é escrita duas vezes, a sombra e a letra). */
+  const fala = (g: ReturnType<typeof gravador>) => g.chamadas.filter(([n]) => n === 'fillText').map(([, t]) => String(t));
 
-  it('escreve o nome e as linhas (inteiras com letras = Infinity); alfa 0 não desenha nada', () => {
+  it('escreve a plaquinha com o nome e as palavras em CAIXA ALTA, uma a uma, cada uma com a sombra dura impressa (inteiras com letras = Infinity); alfa 0 não desenha nada', () => {
     const g = gravador();
     desenharBalao(g.ctx, caixa, col, quadro);
-    expect(g.textos()).toEqual(['HAYATO', 'Frase de teste.', 'Segunda linha.']);
+    // a plaquinha (nome, 1x) e depois, por palavra, a sombra e a letra
+    expect(fala(g)).toEqual(['HAYATO', 'FRASE', 'FRASE', 'DE', 'DE', 'TESTE.', 'TESTE.', 'SEGUNDA', 'SEGUNDA', 'LINHA.', 'LINHA.']);
     const vazio = gravador();
     desenharBalao(vazio.ctx, caixa, col, { ...quadro, alfa: 0 });
     expect(vazio.chamadas).toEqual([]);
   });
 
-  it('revela letra a letra, atravessando as linhas: com 20 letras, a 1ª linha inteira e 5 da 2ª', () => {
+  it('revela letra a letra, atravessando as linhas: com 20 letras, a 1ª linha inteira e 5 da 2ª (palavra parcial: só as letras já reveladas)', () => {
     const g = gravador();
     desenharBalao(g.ctx, caixa, col, { ...quadro, letras: 20 });
-    expect(g.textos()).toEqual(['HAYATO', 'Frase de teste.', 'Segun']);
+    expect([...new Set(fala(g))]).toEqual(['HAYATO', 'FRASE', 'DE', 'TESTE.', 'SEGUN']);
     const antes = gravador();
     desenharBalao(antes.ctx, caixa, col, { ...quadro, letras: 0 });
-    expect(antes.textos()).toEqual(['HAYATO']);
+    expect(fala(antes)).toEqual(['HAYATO']);
   });
 
-  it('o ▶ é um triângulo DESENHADO (a fonte não tem o glifo): nenhum fillText o escreve; com `piscar`, some de 20 em 20 ticks', () => {
-    const a = gravador();
-    desenharBalao(a.ctx, caixa, col, { ...quadro, seta: true });
-    expect(a.textos().some((t) => t.includes('▶'))).toBe(false);
+  it('o ▶ é um triângulo DESENHADO (a fonte não tem o glifo): nenhum fillText o escreve; fica na faixa reservada e balança 2 px (parado no movimento reduzido)', () => {
+    const comSeta = gravador();
+    desenharBalao(comSeta.ctx, caixa, col, { ...quadro, seta: true });
+    expect(fala(comSeta).some((t) => t.includes('▶'))).toBe(false);
     const fills = (g: ReturnType<typeof gravador>) => g.chamadas.filter(([n]) => n === 'fill').length;
     const sem = gravador();
     desenharBalao(sem.ctx, caixa, col, quadro);
-    expect(fills(a)).toBe(fills(sem) + 1);
-    const on = gravador();
-    desenharBalao(on.ctx, caixa, col, { ...quadro, seta: true, piscar: true, tick: 5 });
-    const off = gravador();
-    desenharBalao(off.ctx, caixa, col, { ...quadro, seta: true, piscar: true, tick: 25 });
-    expect(fills(on)).toBe(fills(sem) + 1);
-    expect(fills(off)).toBe(fills(sem));
+    expect(fills(comSeta)).toBe(fills(sem) + 1);
+    // a ponta do triângulo (o 2º vértice) anda com o tick; no movimento reduzido fica parada
+    const ponta = (tick: number, reduz: boolean): number => {
+      const g = gravador();
+      desenharBalao(g.ctx, caixa, col, { ...quadro, seta: true, tick, reduz });
+      const pts = g.chamadas.filter(([n]) => n === 'moveTo' || n === 'lineTo').slice(-3) as Array<[string, number, number]>;
+      return pts[1]?.[1] ?? NaN;
+    };
+    const xs = [0, 7, 14, 21, 28].map((t) => ponta(t, false));
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(2);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(4);
+    expect(new Set([0, 7, 14, 21, 28].map((t) => ponta(t, true))).size).toBe(1);
   });
 
-  it('o pop: escala 0,85 -> 1 em torno da ponta do rabicho', () => {
-    expect(escalaDoPop(0)).toBeCloseTo(0.85, 9);
+  it('o pop: escala 0,6 -> overshoot -> 1 em torno da ponta do rabicho', () => {
+    expect(escalaDoPop(0)).toBeCloseTo(0.6, 9);
     expect(escalaDoPop(1)).toBe(1);
-    expect(escalaDoPop(0.5)).toBeGreaterThan(0.85);
+    expect(escalaDoPop(0.6)).toBeGreaterThan(1);
     const g = gravador();
     desenharBalao(g.ctx, caixa, col, { ...quadro, escala: 0.9 });
     expect(g.chamadas.some(([n, a]) => n === 'scale' && a === 0.9)).toBe(true);
@@ -243,20 +253,21 @@ describe('a faixa reservada ao ▶ da vitória (o ▶ não cobre a última letra
     expect(com.w).toBe(sem.w);
     expect(com.reserva).toBe(14);
     expect(sem.reserva).toBe(0);
-    expect(variantesDoBalao(ctx0, 'Uma fala.', 'X', RESERVA_DA_SETA)[0]?.h).toBe(60 + 14);
+    expect(variantesDoBalao(ctx0, 'Uma fala.', 'X', RESERVA_DA_SETA)[0]?.h).toBe(62 + 14);
   });
 
   it('o triângulo é desenhado DENTRO da faixa reservada: todos os pontos dele ficam abaixo da última linha de texto', () => {
     const caixa = medirBalao(ctx0, 'Frase de teste.\nSegunda linha.', 'HAYATO', 372, RESERVA_DA_SETA);
     const col = colocarBalao(caixa, { lado: 'cima', nivel: 'topo' }, { x: 270, topo: 215, meiaLargura: 43, altura: 92 }, [], [], LIMITES_COM_HUD);
     const g = gravador();
-    desenharBalao(g.ctx, caixa, col, { letras: Infinity, escala: 1, alfa: 1, seta: true, tick: 0, piscar: false, corDoNome: '#fff' });
+    desenharBalao(g.ctx, caixa, col, { letras: Infinity, escala: 1, alfa: 1, seta: true, tick: 0, reduz: true, corDoNome: '#ffffff' });
     const pontos = g.chamadas.filter(([n]) => n === 'moveTo' || n === 'lineTo').slice(-3) as Array<[string, number, number]>;
     expect(pontos).toHaveLength(3);
-    const fimDoTexto = col.y + BALAO.margemTopo + BALAO.alturaDoNome + BALAO.alturaDaLinha * caixa.linhas.length;
+    // a última linha de base (Bangers: as letras sobem 0,727 em e descem ~5 px: Ç e vírgula) e a borda de baixo do painel
+    const ultimaBase = col.y + BALAO.placaAltura + 1 + BALAO.acento * BALAO.corpo + BALAO.linha * (caixa.linhas.length - 1);
     for (const [, , y] of pontos) {
-      expect(y).toBeGreaterThanOrEqual(fimDoTexto);
-      expect(y).toBeLessThanOrEqual(col.y + col.h - BALAO.margemBase);
+      expect(y, 'topo do ▶ abaixo da última linha de base (direção de arte §6)').toBeGreaterThanOrEqual(ultimaBase + 3);
+      expect(y).toBeLessThanOrEqual(col.y + col.h - BALAO.sombra - BALAO.margemBase + 8);
     }
   });
 });

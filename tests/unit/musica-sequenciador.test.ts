@@ -222,7 +222,7 @@ describe('AudioSys.startMusic("tema:<id>") e o scheduler', () => {
   it('a fase 2 pedida no meio do compasso só vale no início do compasso seguinte; o andamento muda ali', () => {
     const s = criarSeq();
     s.audio.startMusic('tema:hayato');
-    const t0 = s.audio.nextTime;
+    const t0 = (s.passos[0] as Passo).t; // o 1º passo já foi agendado no startMusic (folga de 0,12 s): é ele, e não o `nextTime`, que marca o início
     s.ate(0.4 * barra);
     s.audio.musicaDaFase(2); // no meio do compasso 0
     s.ate(2.6 * barra);
@@ -286,9 +286,13 @@ describe('trilhaDaLuta (spec §3.3)', () => {
     expect(trilhaDaLuta({ c2: espelho }, regras, true)).toBe('tema:caio');
     for (const id of IDS_LUTADORES) expect(temaDoLutador(id) === null).toBe(id === 'zenon');
   });
-  it('o padrão da chave é desligado (o jogo toca a música de hoje até a escuta do dono)', () => {
-    expect(trilhaDaLuta({ c2: 'hayato' }, regras)).toBe('fight');
-    expect(trilhaDaLuta({ c2: 'hayato', chefe: true }, regras, undefined, 'chefe')).toBe('chefe');
+  it('o padrão da chave é LIGADO (decisão do dono): o tema do adversário; a chave desligada (rollback) e as regras sem temas devolvem a música de antes', () => {
+    expect(trilhaDaLuta({ c2: 'hayato' }, regras)).toBe('tema:hayato');
+    expect(trilhaDaLuta({ c2: 'hayato', chefe: true }, regras, undefined, 'chefe')).toBe('tema:hayato');
+    expect(trilhaDaLuta({ c2: 'zenon', chefe: true }, regras, undefined, 'chefe')).toBe('chefe');
+    expect(trilhaDaLuta({ c2: 'hayato' }, regras, false)).toBe('fight');
+    expect(trilhaDaLuta({ c2: 'hayato', chefe: true }, regras, false, 'chefe')).toBe('chefe');
+    expect(trilhaDaLuta({ c2: 'hayato' }, { temasMusicais: false })).toBe('fight');
   });
 });
 
@@ -306,13 +310,14 @@ describe('tocarReceita com destino "musica" e início absoluto', () => {
     { k: 'R', tipo: 'lowpass', f0: 1000, Q: 1, t: 0.1, vol: 0.2, quando: 0.02 },
     { k: 'V', onda: 'sawtooth', f: [100, 100, 100], t: 1, vol: 0.1, formantes: [500, 1000, 2500], q: 5, ganhoF3: 0.3, quando: 0.03 },
   ];
-  it('com `inicio`, toca em `at` absoluto no barramento da música, sem `when`; a voz converte para `when` e não entra no teto de 32 fontes', () => {
+  it('com `inicio`, toca em `at` absoluto no barramento da música, sem `when`; a voz recebe o instante ABSOLUTO (`inicioAbs`) e não entra no teto de 32 fontes', () => {
     const f = fake();
     expect(tocarReceita(f.audio, receita, { destino: 'musica', inicio: 5, agora: 4.9 })).toBe(3);
     expect(f.tons[0]).toMatchObject({ at: 5.01, dest: (f.audio as unknown as { music: unknown }).music });
     expect(f.tons[0]).not.toHaveProperty('when');
     expect(f.ruidos[0]).toMatchObject({ at: 5.02 });
-    expect(f.vozes[0]?.['when'] as number).toBeCloseTo(5.03 - 4.9, 9);
+    expect(f.vozes[0]?.['inicioAbs'] as number).toBeCloseTo(5.03, 9);
+    expect(f.vozes[0]).not.toHaveProperty('when');
     expect(f.vozes[0]).toMatchObject({ registrar: false });
   });
   it('sem `destino`/`inicio` nada muda: `when` relativo, sem `dest`, e a voz continua se registrando', () => {

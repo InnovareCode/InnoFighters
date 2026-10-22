@@ -192,14 +192,25 @@ describe('linhaDaProvocacao (pura do tick)', () => {
     expect(linhaDaProvocacao(r1, 54 + 124).papeis).toEqual(['parado', 'provoca']);
   });
 
-  it('o balão: pop de 8 ticks (escala 0,85 -> 1 e alfa), letras a 1,5 por tick, fecha em 6', () => {
+  it('o balão (Tarja de Impacto): pop de 8 ticks com overshoot (escala 0,6 -> ~1,05 -> 1), alfa em 4 ticks, letras a 1,5 por tick, fecha em 6', () => {
     const b = (t: number) => linhaDaProvocacao(r1, t).baloes[0];
     expect(b(43)).toBeUndefined();
     expect(b(44)?.alfa).toBe(0);
-    expect(b(44)?.escala).toBeCloseTo(0.85, 6);
-    expect(b(48)?.alfa).toBeCloseTo(0.5, 6);
+    expect(b(44)?.escala).toBeCloseTo(0.6, 6);
+    expect(b(46)?.alfa).toBeCloseTo(0.5, 6);
+    expect(b(48)?.alfa).toBe(1);
+    const pico = Math.max(...Array.from({ length: 9 }, (_, k) => b(44 + k)?.escala ?? 0));
+    expect(pico, 'overshoot do pop (direção de arte: ~1,05 perto do tick 5)').toBeGreaterThan(1.03);
+    expect(pico).toBeLessThan(1.08);
+    expect(b(44 + 8)?.escala).toBe(1);
     expect(b(52)?.escala).toBe(1);
     expect(b(52)?.alfa).toBe(1);
+    // a variante, os ticks desde que abriu e a saída que o desenho usa
+    expect(b(50)?.variante).toBe('abertura');
+    expect(b(50)?.desde).toBe(6);
+    expect(b(50)?.fechando).toBe(0);
+    expect(b(50)?.reduz).toBe(false);
+    expect(b(44 + 124 + 3)?.fechando).toBeCloseTo(0.5, 6);
     expect(b(44 + 10)?.letras).toBeCloseTo(15, 6);
     expect(b(44 + 124 + 3)?.alfa).toBeCloseTo(0.5, 6);
     expect(b(44 + 124 + 6)).toBeUndefined();

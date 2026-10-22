@@ -36,7 +36,7 @@ function coletarErros(page: Page): string[] {
 }
 
 test.describe('Tipografia do jogo (Barlow Condensed + Barlow, auto-hospedadas)', () => {
-  test('as duas fontes carregam ANTES do 1º quadro, vêm só do próprio site (woff2) e o canvas e o CSS as usam de verdade', async ({ page }, info) => {
+  test('as três fontes carregam ANTES do 1º quadro, vêm só do próprio site (woff2) e o canvas e o CSS as usam de verdade', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'igual em qualquer aparelho');
     const erros = coletarErros(page);
     const pedidos: string[] = [];
@@ -48,7 +48,7 @@ test.describe('Tipografia do jogo (Barlow Condensed + Barlow, auto-hospedadas)',
     const fora = pedidos.filter((u) => !u.startsWith('http://127.0.0.1:5173/') && !u.startsWith('data:') && !u.startsWith('blob:'));
     expect(fora, 'pedidos para fora do próprio site').toEqual([]);
     const fontes = pedidos.filter((u) => u.endsWith('.woff2')).map((u) => new URL(u).pathname).sort();
-    expect(fontes).toEqual(['/assets/fontes/barlow-600-latin.woff2', '/assets/fontes/barlow-condensed-800-italic-latin.woff2']);
+    expect(fontes).toEqual(['/assets/fontes/bangers-latin-400-normal.woff2', '/assets/fontes/barlow-600-latin.woff2', '/assets/fontes/barlow-condensed-800-italic-latin.woff2']);
     const r = await page.evaluate(async () => {
       const c = document.createElement('canvas').getContext('2d')!;
       const largura = (fonte: string, texto: string): number => {
@@ -74,7 +74,7 @@ test.describe('Tipografia do jogo (Barlow Condensed + Barlow, auto-hospedadas)',
     expect(Math.abs(r.corpo[0]! - r.corpo[1]!), 'o canvas usa a fonte de corpo').toBeGreaterThan(5);
     for (const f of r.css) expect(f).toMatch(/Barlow/);
     expect(r.pesoDoBotao).toBe('600');
-    expect(r.carregadas).toEqual(['Barlow Condensed/italic/800', 'Barlow/normal/600']);
+    expect(r.carregadas).toEqual(['Bangers/normal/400', 'Barlow Condensed/italic/800', 'Barlow/normal/600']); // a Bangers é só das falas dos balões
     expect(erros).toEqual([]);
   });
 
@@ -95,9 +95,9 @@ test.describe('Tipografia do jogo (Barlow Condensed + Barlow, auto-hospedadas)',
     await page.waitForTimeout(800);
     const usadas: string[] = await page.evaluate(() => [...(window as any).__fontesUsadas]);
     expect(usadas.length).toBeGreaterThan(0);
-    // a única exceção é o LOGO da marca (paleta D1, ui/logo.ts: `italic 900 ... Impact`): identidade já aprovada pelo dono, fora desta troca (ver o handoff)
-    for (const u of usadas.filter((x) => x !== 'italic 900 Npx Impact')) expect(u, `fonte usada no canvas: ${u}`).toMatch(/Barlow/);
-    expect(usadas.filter((x) => !/Barlow/.test(x))).toEqual(['italic 900 Npx Impact']);
+    // sem exceção: a logo é imagem (a oficial do dono, 2026-10-22) e a última fonte de reserva do canvas (Impact, do desenho antigo) saiu
+    for (const u of usadas) expect(u, `fonte usada no canvas: ${u}`).toMatch(/Barlow/);
+    expect(usadas.filter((x) => !/Barlow/.test(x))).toEqual([]);
   });
 
   test('os acentos do português têm glifo na própria fonte (nada vem da reserva): trocar a reserva não muda a largura de nenhuma letra acentuada', async ({ page }, info) => {

@@ -1,8 +1,27 @@
 import { midi } from '../core/math';
 import { criarRng, sementeAleatoria, type Rng } from '../core/rng';
 import type { IdTema } from '../data/musica/tipos';
-import { tocarReceita } from './receitas';
-import { duracaoDoPasso, partituraDaTroca, partituraDoPasso, temaDaTrilha, type TemaCompilado } from './temas';
+import type { TemaDef } from '../data/musica/tipos';
+import type { Fase, TemaCompilado } from './partitura';
+import { tocarReceita, type ChamadaMusical } from './receitas';
+
+/**
+ * O que o AudioSys precisa dos temas por lutador, SEM importá-los: os dados (`data/musica`) e o compilador (`partitura`) pesam ~31 kB e só são
+ * baixados quando a chave dos temas está ligada. `src/audio/temas.ts` se registra aqui ao carregar (efeito colateral intencional, no fim do módulo).
+ * Sem motor registrado, uma trilha `tema:<id>` cai na música de luta de hoje (nunca fica muda nem derruba o jogo).
+ */
+export interface MotorDeTemas {
+  temaDaTrilha(trilha: TrilhaMusica): TemaCompilado | null;
+  duracaoDoPasso(def: TemaDef, fase: Fase): number;
+  partituraDoPasso(tema: TemaCompilado, passo: number, laco: number, fase: Fase): readonly ChamadaMusical[];
+  partituraDaTroca(tema: TemaCompilado): readonly ChamadaMusical[];
+}
+let motorDeTemas: MotorDeTemas | null = null;
+export function registrarMotorDeTemas(m: MotorDeTemas | null): void {
+  motorDeTemas = m;
+}
+/** Folga do 1º passo de um tema (s): o `startMusic` das trilhas fixas usa 0,05 e, no Chromium com CPU 4x, o passo 0 saía 35 a 121 ms atrasado. */
+export const FOLGA_PRIMEIRO_PASSO_TEMA = 0.12;
 
 /*
  * AudioSys do protótipo (seção 2 + extensões das linhas 257-317 e 1743-1756), porte fiel.
@@ -64,6 +83,8 @@ export type OpcoesVozFormante = {
   t: number;
   vol: number;
   when?: number;
+  /** Instante ABSOLUTO (relógio do contexto) do início. Vence `when`: o caminho da música agenda a voz no instante exato do passo e não relê o `currentTime` (que atrasava até 18,7 ms com CPU 4x). */
+  inicioAbs?: number;
   /** F1, F2, F3 em Hz (já multiplicados pelo trato vocal `k`). */
   formantes: readonly [number, number, number];
   /** Vogal de chegada (ditongo): os formantes deslizam até aqui em 80% da duração. */
@@ -234,7 +255,8 @@ export class AudioSys {
     for (let i = 0; i < len; i++) d[i] = this.dep.rng.proximo() * 2 - 1;
   }
   resume(): void {
-    if (this.ctx && this.ctx.state === 'suspended') void this.ctx.resume();
+    // `interrupted` é o estado do iOS depois de uma ligação ou de voltar do segundo plano (não está no tipo do DOM)
+    if (this.ctx && (this.ctx.state === 'suspended' || (this.ctx.state as string) === 'interrupted')) void this.ctx.resume();
   }
   setMusicVol(v: number): void {
     this.musicVol = v;
@@ -396,7 +418,7 @@ export class AudioSys {
     const c = this.ctx;
     const destino = o.dest ?? this.barramentoIdentidade();
     if (!c || !this.sfx || !destino) return;
-    const now = c.currentTime + (o.when ?? 0);
+    const now = o.inicioAbs ?? c.currentTime + (o.when ?? 0);
     const { t } = o;
     const fim = now + t;
     const [f0, f1, f2] = o.f;
@@ -646,19 +668,23 @@ export class AudioSys {
     if (this.musicOn && this.kind === kind) return;
     this.stopMusic();
     this.kind = kind;
-    this.temaAtual = temaDaTrilha(kind);
+    this.temaAtual = motorDeTemas?.temaDaTrilha(kind) ?? null;
     this.fase = 1;
     this.musicOn = true;
     this.step = 0;
     this.loops = 0;
-    this.nextTime = this.ctx.currentTime + 0.05;
+    // só o ramo de tema: o 1º passo ganha folga maior e o 1º lote é agendado AGORA, sem esperar o 1º tique do intervalo (a 4x de CPU ele chegava tarde).
+    // As trilhas fixas (fight/menu/chefe) ficam como sempre: o lock-step compara o `nextTime` delas.
+    this.nextTime = this.ctx.currentTime + (this.temaAtual ? FOLGA_PRIMEIRO_PASSO_TEMA : 0.05);
     this.timer = this.dep.setInterval(() => this.scheduler(), 25);
+    if (this.temaAtual) this.scheduler();
   }
   stopMusic(): void {
     if (this.timer) this.dep.clearInterval(this.timer);
     this.timer = null;
     this.musicOn = false;
   }
+
   /**
    * Fase 2 da luta de chefe (a cena do ZENON): andamento +12%, bumbo nos 3 tempos e órgão uma oitava abaixo. NÃO corta o compasso em
    * andamento: só vira no início do próximo (passo % passosPorCompasso === 0). Sem efeito nas trilhas `fight` e `menu`.
@@ -669,8 +695,8 @@ export class AudioSys {
   scheduler(): void {
     const c = this.ctx;
     if (!c) return;
-    if (this.temaAtual) {
-      this.schedulerTema(c, this.temaAtual);
+    if (this.temaAtual && motorDeTemas) {
+      this.schedulerTema(c, this.temaAtual, motorDeTemas);
       return;
     }
     const def = TRILHAS[this.kind === 'menu' ? 'menu' : this.kind === 'chefe' ? 'chefe' : 'fight'];
@@ -693,7 +719,7 @@ export class AudioSys {
    * Sequenciador dos temas por lutador (spec §3.2): o mesmo contrato do `scheduler` das trilhas fixas (passo, `nextTime`, laço, fase que só vira no
    * início do compasso seguinte), mas a música vem da partitura PURA do tema. Na virada para a fase 2 toca o trecho de troca no 1º passo do compasso.
    */
-  private schedulerTema(c: AudioContext, tema: TemaCompilado): void {
+  private schedulerTema(c: AudioContext, tema: TemaCompilado, motor: MotorDeTemas): void {
     while (this.nextTime < c.currentTime + 0.15) {
       if (this.step % tema.passosPorCompasso === 0) {
         const antes = this.fase;
@@ -701,7 +727,7 @@ export class AudioSys {
         if (antes === 1 && this.fase === 2) this.tocarTroca(tema, this.nextTime);
       }
       this.playTema(tema, this.step, this.nextTime);
-      this.nextTime += duracaoDoPasso(tema.def, this.fase);
+      this.nextTime += motor.duracaoDoPasso(tema.def, this.fase);
       this.step++;
       if (this.step >= tema.passosTotais) {
         this.step = 0;
@@ -711,11 +737,11 @@ export class AudioSys {
   }
   /** Toca um passo de um tema por lutador no barramento da música (`t` = instante absoluto do passo). A música fica fora do teto de 32 fontes. */
   playTema(tema: TemaCompilado, step: number, t: number): void {
-    tocarReceita(this, partituraDoPasso(tema, step, this.loops, this.fase), { destino: 'musica', inicio: t, agora: this.ctx?.currentTime ?? 0 });
+    tocarReceita(this, motorDeTemas?.partituraDoPasso(tema, step, this.loops, this.fase) ?? [], { destino: 'musica', inicio: t, agora: this.ctx?.currentTime ?? 0 });
   }
   /** Trecho de troca de fase (impacto e subida) no instante `t`, o início do 1º compasso da fase 2. */
   private tocarTroca(tema: TemaCompilado, t: number): void {
-    tocarReceita(this, partituraDaTroca(tema), { destino: 'musica', inicio: t, agora: this.ctx?.currentTime ?? 0 });
+    tocarReceita(this, motorDeTemas?.partituraDaTroca(tema) ?? [], { destino: 'musica', inicio: t, agora: this.ctx?.currentTime ?? 0 });
   }
   playStep(step: number, t: number, spb: number): void {
     const s16 = step % 16;

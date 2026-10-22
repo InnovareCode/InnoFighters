@@ -1,44 +1,122 @@
 /*
- * Camada de toque (celular): controle virtual compacto, no estilo gamepad de console. O HTML está em index.html.
- * (E7a: o porte literal do protótipo tinha botões de 65 px e um losango que ocupava 66% da altura e cobria a arena; ver
- * docs/handoff-lyra-e7a.md. Os ids e os data-k continuam os mesmos: #joy, #knob, #pad .hp/.lp/.hk/.lk, #r1, #bp.)
+ * Camada de toque (celular): painel arcade de vidro (direção de arte do Apolo, 2026-10-21: docs/direcao-arte-controles-toque.md; a referência
+ * validada está em arte-fonte/toque/toque-referencia.css e os 33 SVGs em public/assets/ui/toque, gerados por arte-fonte/toque/gerar-toque.mjs).
+ * O HTML está em index.html. Os ids e os data-k continuam os mesmos: #joy, #knob, #pad .hp/.lp/.hk/.lk, #esq, #r1, #bp.
+ *
+ * Decisões do dono: modo NORMAL com rótulos (LEVE/FORTE/ESQUIVA/ESPECIAL), opacidade 90% fixa e nenhuma opção de tamanho, mão ou opacidade nas Opções
+ * (por isso não existem aqui os modos compacto e canhoto da referência).
  *
  * --m = o MENOR lado da janela (a altura no celular deitado, a largura em pé): tudo escala por ele.
- * --hit = lado da área de toque de um botão (>= 44 px CSS); o desenho visível é menor que a área de toque (::before).
- * Esquerda: joystick analógico (base fixa; a zona morta é 25%/35%/30% do raio, em toque.ts).
- * Direita: aglomerado 2 colunas x 3 linhas, soco à esquerda e chute à direita, leve embaixo e forte no meio:
- *            [ESQUIVA         ] [ESP]
- *            [soco forte      ] [chute forte]
- *            [soco fraco      ] [chute fraco]
- * A casa da ESQUIVA (#esq): botão ESQ (L1). Some, sem soltar a casa, quando as regras não têm a mecânica (?expansao=4).
+ * --D = lado da área de toque de um botão de ataque (>= 44 px CSS: 48,6 px em 915x412, 46 px em 844x390). O desenho ocupa 92% dela (viewBox 0 0 100 100 = área inteira).
+ * Esquerda: joystick analógico (base fixa; a zona morta é 25%/35%/30% do raio, em toque.ts), base 2,1 D.
+ * Direita: aglomerado ancorado no canto seguro inferior direito; cada botão se posiciona pelo próprio CENTRO (--x/--y, em unidades de D). Soco à esquerda,
+ * chute à direita, leve embaixo, forte no meio, ESQUIVA e ESPECIAL em cima; a coluna do chute fica 0,28 D mais alta (o arco do polegar).
+ * Estados: .on (apertado), .sem (sem barra: #esq e #r1; apaga), .acendeu (o ESPECIAL acabou de ficar pronto), #joy.ativo (o polegar está nele).
+ * A casa da ESQUIVA (#esq): some, sem soltar a casa, quando as regras não têm a mecânica (?expansao=4).
  */
-#touch { display: none; position: fixed; inset: 0; pointer-events: none; z-index: 5; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; --m: min(100vh, 100vw); --hit: max(44px, calc(var(--m) * .115)); --joy: calc(var(--m) * .235); --pad-gap: 2px; }
+#touch {
+  display: none; position: fixed; inset: 0; pointer-events: none; z-index: 5;
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none;
+  --m: min(100vh, 100vw);
+  --D: clamp(44px, calc(var(--m) * .118), 56px);
+  --J: calc(var(--D) * 2.1);                 /* diâmetro da base do joystick */
+  --toque-opacidade: .9;                     /* repouso; apertado = 1 sempre. 0,9 é o menor valor que garante 3:1 de silhueta contra qualquer fundo */
+  --seg-esq: max(env(safe-area-inset-left, 0px), 8px);
+  --seg-dir: max(env(safe-area-inset-right, 0px), 8px);
+  --seg-base: max(env(safe-area-inset-bottom, 0px), 6px);
+  --seg-topo: max(env(safe-area-inset-top, 0px), 6px);
+  --rotulo-tam: clamp(10px, calc(var(--D) * .22), 12.5px);
+  --brilho-especial: rgba(255, 194, 31, .9);
+}
 body.touch #touch { display: block; }
 
-#joy { position: absolute; pointer-events: auto; touch-action: none; box-sizing: border-box; left: calc(1vw + env(safe-area-inset-left,0px)); bottom: calc(10vh + env(safe-area-inset-bottom,0px)); width: var(--joy); height: var(--joy); border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.03) 0%, rgba(255,255,255,.10) 100%); border: 2px solid rgba(255,255,255,.30); }
-#knob { position: absolute; box-sizing: border-box; left: 50%; top: 50%; width: calc(var(--joy) * .44); height: calc(var(--joy) * .44); margin: calc(var(--joy) * -.22) 0 0 calc(var(--joy) * -.22); border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.45), rgba(255,255,255,.16)); border: 2px solid rgba(255,255,255,.55); box-shadow: 0 2px 6px rgba(0,0,0,.4); pointer-events: none; }
+/* ---------------------------------------------------------------- joystick (esquerda) */
+#joy {
+  position: absolute; pointer-events: auto; touch-action: none; box-sizing: border-box;
+  width: var(--J); height: var(--J); border-radius: 50%;
+  left: calc(var(--seg-esq) + var(--D) * .12);
+  bottom: calc(var(--seg-base) + var(--D) * 1.95 - var(--J) / 2);
+  background: url(/assets/ui/toque/joystick-aro.svg) center / 100% no-repeat, url(/assets/ui/toque/joystick-base.svg) center / 100% no-repeat;
+  opacity: var(--toque-opacidade);
+  transition: opacity .12s;
+}
+/* zona de captura maior que o desenho: o polegar não precisa acertar a base (o centro do cálculo continua o da base) */
+#joy::after { content: ""; position: absolute; inset: calc(var(--D) * -.3); border-radius: 50%; }
+#joy.ativo { opacity: 1; background-image: url(/assets/ui/toque/joystick-aro-ativo.svg), url(/assets/ui/toque/joystick-base.svg); }
+#knob {
+  position: absolute; box-sizing: border-box; left: 50%; top: 50%;
+  width: calc(var(--J) * .44); height: calc(var(--J) * .44); margin: calc(var(--J) * -.22) 0 0 calc(var(--J) * -.22);
+  border-radius: 50%; pointer-events: none;
+  background: url(/assets/ui/toque/joystick-bolinha.svg) center / 100% no-repeat;
+}
+#joy.ativo #knob { background-image: url(/assets/ui/toque/joystick-bolinha-pressionada.svg); }
 
-#pad { position: absolute; pointer-events: none; right: calc(1.2vw + env(safe-area-inset-right,0px)); bottom: calc(10vh + env(safe-area-inset-bottom,0px)); display: grid; grid-template-columns: repeat(2, var(--hit)); grid-template-rows: repeat(3, var(--hit)); gap: var(--pad-gap); }
-#touch .b { position: relative; box-sizing: border-box; pointer-events: auto; touch-action: none; display: flex; align-items: center; justify-content: center; width: var(--hit); height: var(--hit); font: 600 calc(var(--hit) * .24) var(--fonte-corpo); letter-spacing: .3px; color: #fff; text-shadow: 0 1px 3px #000; }
-/* o desenho do botão: menor que a área de toque, semitransparente */
-#touch .b::before { content: ""; position: absolute; z-index: -1; inset: calc(var(--hit) * .09); border-radius: 50%; border: 2px solid rgba(255,255,255,.5); background: var(--cor, rgba(0,0,0,.3)); box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: transform .05s; }
-#touch .b > b, #touch .b > span { position: relative; }
-#pad .b > b { font-size: calc(var(--hit) * .42); font-weight: 900; line-height: 1; }
-#touch .b.on::before { transform: scale(.92); filter: brightness(1.5); }
-#touch #pad .hp { grid-area: 2 / 1; --cor: rgba(40,190,120,.30); }
-#touch #pad .lp { grid-area: 3 / 1; --cor: rgba(225,100,185,.30); }
-#touch #pad .hk { grid-area: 2 / 2; --cor: rgba(240,80,80,.30); }
-#touch #pad .lk { grid-area: 3 / 2; --cor: rgba(80,140,250,.30); }
-#touch #r1 { grid-area: 1 / 2; --cor: rgba(250,200,60,.34); font-size: calc(var(--hit) * .26); }
-#touch #r1::before { inset: calc(var(--hit) * .04); }
-/* ESQUIVA (L1): ocupa a casa de cima à esquerda do aglomerado; a direção vem do joystick. `.sem` = barra abaixo do custo (esmaece); body.sem-esquiva = regras sem a mecânica (some, mas a casa fica) */
-#touch #esq { grid-area: 1 / 1; --cor: rgba(127,227,255,.34); font-size: calc(var(--hit) * .26); }
-#touch #esq::before { inset: calc(var(--hit) * .04); }
-#touch #esq.sem { opacity: .42; }
+/* ---------------------------------------------------------------- botões (direita) */
+/* Cada botão: --x/--y = CENTRO, em unidades de D, medido a partir do canto seguro inferior direito; --tam = lado da área de toque. */
+#pad { position: absolute; inset: 0; pointer-events: none; }
+#touch .b {
+  position: absolute; box-sizing: border-box; pointer-events: auto; touch-action: none;
+  --tam: var(--D); --folga: 0%;
+  width: var(--tam); height: var(--tam);
+  right: calc(var(--seg-dir) + var(--D) * var(--x) - var(--tam) / 2);
+  bottom: calc(var(--seg-base) + var(--D) * var(--y) - var(--tam) / 2);
+  font-size: 0; color: transparent; /* sem glifo: o desenho é o SVG e o texto é o rótulo (::after) */
+  font-family: var(--fonte-corpo); font-weight: 600; /* a família do jogo mesmo sem glifo (nada cai na fonte do navegador) */
+}
+#touch .b::before {
+  content: ""; position: absolute; inset: var(--folga);
+  background: var(--img) center / 100% no-repeat;
+  opacity: var(--toque-opacidade);
+  transition: transform .06s ease-out, opacity .06s;
+}
+#touch .b.on::before { background-image: var(--img-on); transform: scale(.94); opacity: 1; }
+#touch .b.sem::before { background-image: var(--img-off); }
+#touch .b.sem.on::before { background-image: var(--img-off); transform: scale(.97); }
+/* rótulo: plaquinha em Barlow Condensed (a fonte do HUD) sobre o pé do bisel */
+#touch .b::after {
+  content: attr(data-rotulo); position: absolute; left: 50%; top: calc(50% + var(--tam) * .4);
+  transform: translate(-50%, -50%);
+  font: italic 800 var(--rotulo-tam) / 1 "Barlow Condensed", var(--fonte-corpo);
+  letter-spacing: .04em; white-space: nowrap; padding: 2px 5px 1px; border-radius: 4px;
+  background: rgba(5, 6, 15, .9); border: 1px solid var(--rotulo-borda); color: var(--rotulo-cor);
+  opacity: var(--toque-opacidade); pointer-events: none;
+}
+#touch .b.on::after { opacity: 1; }
+#touch .b.sem::after { color: #8a93a8; border-color: #3a4152; }
+
+#touch .lp { --x: 1.78; --y: 1.2; --img: url(/assets/ui/toque/soco-leve.svg); --img-on: url(/assets/ui/toque/soco-leve-pressionado.svg); --img-off: url(/assets/ui/toque/soco-leve-desabilitado.svg); --rotulo-cor: #ffc9a0; --rotulo-borda: #ff6a1f; }
+#touch .hp { --x: 1.78; --y: 2.36; --img: url(/assets/ui/toque/soco-forte.svg); --img-on: url(/assets/ui/toque/soco-forte-pressionado.svg); --img-off: url(/assets/ui/toque/soco-forte-desabilitado.svg); --rotulo-cor: #ffc9a0; --rotulo-borda: #ff6a1f; }
+#touch .lk { --x: .62; --y: 1.48; --img: url(/assets/ui/toque/chute-leve.svg); --img-on: url(/assets/ui/toque/chute-leve-pressionado.svg); --img-off: url(/assets/ui/toque/chute-leve-desabilitado.svg); --rotulo-cor: #b8d0ff; --rotulo-borda: #4d7bff; }
+#touch .hk { --x: .62; --y: 2.64; --img: url(/assets/ui/toque/chute-forte.svg); --img-on: url(/assets/ui/toque/chute-forte-pressionado.svg); --img-off: url(/assets/ui/toque/chute-forte-desabilitado.svg); --rotulo-cor: #b8d0ff; --rotulo-borda: #4d7bff; }
+/* ESQUIVA (L1): a direção vem do joystick. `.sem` = barra abaixo do custo; body.sem-esquiva = regras sem a mecânica (some, mas a casa fica) */
+#touch #esq { --x: 1.78; --y: 3.5; --tam: max(44px, calc(var(--D) * .92)); --img: url(/assets/ui/toque/esquiva.svg); --img-on: url(/assets/ui/toque/esquiva-pressionado.svg); --img-off: url(/assets/ui/toque/esquiva-desabilitado.svg); --rotulo-cor: #d8f7ff; --rotulo-borda: #62dcff; }
+#touch #r1 { --x: .62; --y: 3.88; --tam: calc(var(--D) * 1.12); --img: url(/assets/ui/toque/especial.svg); --img-on: url(/assets/ui/toque/especial-pressionado.svg); --img-off: url(/assets/ui/toque/especial-desabilitado.svg); --rotulo-cor: #fff3b0; --rotulo-borda: #ffc21f; }
+#touch #esq.sem::before, #touch #r1.sem::before { opacity: calc(var(--toque-opacidade) * .8); }
 body.sem-esquiva #touch #esq { visibility: hidden; pointer-events: none; }
-#touch #bp { position: absolute; --cor: rgba(0,0,0,.35); width: max(44px, calc(var(--m) * .1)); height: max(44px, calc(var(--m) * .1)); right: calc(1.2vw + env(safe-area-inset-right,0px)); top: calc(2vh + env(safe-area-inset-top,0px)); font-size: calc(var(--m) * .04); }
-#touch #bp::before { inset: 14%; }
 
-#rot { display: none; position: fixed; left: 0; right: 0; bottom: 12px; text-align: center; color: #ddd; font: 600 15px var(--fonte-corpo); z-index: 4; pointer-events: none; }
+/* ESPECIAL pronto (barra >= custo): respira em ouro; ao acender, um estalo curto (classe .acendeu, 220 ms, posta por fight.ts) */
+#touch #r1:not(.sem)::before { animation: toque-pronto 1.2s ease-in-out infinite alternate; }
+#touch #r1.acendeu::before { animation: toque-acendeu .22s ease-out 1, toque-pronto 1.2s ease-in-out .22s infinite alternate; }
+@keyframes toque-pronto { from { filter: drop-shadow(0 0 1px var(--brilho-especial)); } to { filter: drop-shadow(0 0 7px var(--brilho-especial)); } }
+@keyframes toque-acendeu { from { transform: scale(1.14); filter: drop-shadow(0 0 12px #fff6c8); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  #touch #r1:not(.sem)::before, #touch #r1.acendeu::before { animation: none; filter: drop-shadow(0 0 4px var(--brilho-especial)); }
+}
+
+/* PAUSA: canto superior direito, abaixo da faixa do HUD (no 844x390 com entalhe o canto colidia com o retrato do P2) */
+#touch #bp {
+  --tam: 44px; --folga: 9%;
+  right: calc(var(--seg-dir) + 2px); bottom: auto; top: calc(var(--seg-topo) + var(--m) * .17);
+  --img: url(/assets/ui/toque/pausa.svg); --img-on: url(/assets/ui/toque/pausa-pressionado.svg); --img-off: url(/assets/ui/toque/pausa-desabilitado.svg);
+}
+#touch #bp::after { display: none; }
+
+/* AVISO "vire o aparelho" (retrato): tela cheia com a logo oficial acima do texto. z-index ACIMA da camada de toque (#touch = 5), senão os botões apareceriam por cima. */
+#rot {
+  position: fixed; left: 0; right: 0; top: 0; bottom: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+  gap: 28px; padding: 0 24px; z-index: 50; pointer-events: none; text-align: center; color: #e8ecff; font: 600 15px var(--fonte-corpo);
+  background: radial-gradient(120% 70% at 50% 38%, #26324a 0%, #0b1120 55%, #05070d 100%);
+}
+#rot::before { content: ""; width: min(86vw, 420px); aspect-ratio: 1600 / 1127; background: url(/assets/ui/logo/logo-v1-720.webp) center / contain no-repeat; }
 /* DESVIO DO PROTOTIPO: la esta regra vinha ANTES do #rot { display: none }, que a anulava, e o aviso nunca aparecia. Aqui vem depois, como era a intencao. */
-@media (orientation: portrait) { #rot { display: block; } }
+@media (orientation: portrait) { #rot { display: flex; } }

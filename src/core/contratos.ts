@@ -44,6 +44,8 @@ export const INPUT_VAZIO: Readonly<InputFrame> = Object.freeze({
 });
 
 /**
+ * APOSENTADA como opção (decisão do dono, 2026-10-21): a cinemática do especial é parte do jogo, sempre COMPLETA (CURTA com movimento reduzido do SISTEMA).
+ * O tipo e o campo ficam para ler saves antigos sem quebrá-los; `ui/persistencia.ts` tira o valor da memória ao carregar (e o devolve ao gravar).
  * Preferência do jogador para a cinemática do especial (spec esquiva/cinemática, C4/B14).
  * 'completa' = animação premium inteira; 'curta' = versão reduzida; 'desligada' = sem cinemática.
  */
@@ -53,6 +55,7 @@ export type PreferenciaCinematica = (typeof CINEMATICAS_VALIDAS)[number];
 export const CINEMATICA_PADRAO: PreferenciaCinematica = 'completa';
 
 /**
+ * APOSENTADA como opção (decisão do dono, 2026-10-21): as provocações são parte do jogo, sempre ligadas. Mesmo tratamento da cinemática (save aditivo, valor ignorado).
  * Preferência do jogador para as PROVOCAÇÕES (balões antes do round e na vitória; docs/spec-provocacao-prerround-e-vitoria.md).
  * Opção PRÓPRIA, separada da cinemática do especial (decisão do dono). 'ligadas' = fala; 'desligadas' = nenhuma.
  */

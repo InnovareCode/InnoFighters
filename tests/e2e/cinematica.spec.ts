@@ -304,40 +304,50 @@ test.describe('cinemática do especial (padrão: COMPLETA, 48 ticks)', () => {
   });
 });
 
-test.describe('opção CINEMÁTICA DO ESPECIAL', () => {
+test.describe('cinemática do especial: parte do jogo, sem chave nas Opções (decisão do dono, 2026-10-21)', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'só Chromium');
   test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop', 'só no desktop'));
 
   async function irParaAsOpcoes(page: Page): Promise<void> {
     await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('options', { from: 'menu' }); }`);
   }
-  const linha = (page: Page): Promise<number> => hook(page, `(h) => h.ui.scene.m.items.findIndex((i) => i.label === 'CINEMÁTICA DO ESPECIAL')`);
+  const rotulos = (page: Page): Promise<string[]> => hook(page, '(h) => h.ui.scene.m.items.map((i) => i.label)');
 
-  test('mostra a linha, troca pelas setas, grava e persiste (recarregar continua DESLIGADA e a luta não congela)', async ({ page }) => {
+  test('as Opções não têm a linha (nem em ?expansao=4): são as 9 do protótipo e cabem na tela', async ({ page }) => {
     await abrir(page);
     await irParaAsOpcoes(page);
-    const i = await linha(page);
-    expect(i).toBeGreaterThan(-1);
-    expect(await hook(page, `(h) => h.ui.scene.m.items[${i}].value()`)).toBe('COMPLETA');
-    await hook(page, `(h) => { h.ui.scene.m.sel = ${i}; }`);
-    await page.keyboard.press('ArrowRight'); // COMPLETA -> CURTA
-    expect(await hook(page, `(h) => h.ui.scene.m.items[${i}].value()`)).toBe('CURTA');
-    await page.keyboard.press('ArrowRight');
-    expect(await hook(page, `(h) => h.ui.scene.m.items[${i}].value()`)).toBe('DESLIGADA');
-    expect(await hook(page, '(h) => h.persist.settings.cinematica')).toBe('desligada');
-    // a tela cabe: a última linha termina acima da dica (y < 530)
-    await hook(page, '(h) => h.desenhar()');
-    await page.reload();
+    const r = await rotulos(page);
+    expect(r).toHaveLength(9);
+    expect(r).not.toContain('CINEMÁTICA DO ESPECIAL');
+    await page.goto('/?seed=7&manual=1&expansao=4');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    expect(await hook(page, '(h) => h.persist.settings.cinematica')).toBe('desligada');
-    await prepararDuelo(page, 'hayato', 'caio');
-    await dispararEspecial(page, 'sFire');
-    expect((await cine(page)).ativa).toBe(false);
-    const t = await hook(page, '(h) => { const t0 = h.mundo().game.tick; h.avancar(1); return h.mundo().game.tick - t0; }');
-    expect(t).toBe(1);
+    await irParaAsOpcoes(page);
+    expect(await rotulos(page)).toHaveLength(9);
   });
 
-  test('CURTA: 20 ticks, sem tarja; RESTAURAR PADRÕES apaga a preferência (volta COMPLETA)', async ({ page }) => {
+  test('save antigo com a cinemática DESLIGADA: o disco guarda o campo, mas ele não vale (o especial abre a cinemática COMPLETA)', async ({ page }) => {
+    await abrir(page);
+    // grava como um save de versão anterior (campo aditivo da v2) e recarrega
+    await page.evaluate(() => {
+      const chave = 'inno-fighters-v2';
+      const d = JSON.parse(window.localStorage.getItem(chave) ?? '{"v":2,"s":{},"hi":0,"prog":{}}');
+      d.s.cinematica = 'desligada';
+      d.s.provocacoes = 'desligadas';
+      window.localStorage.setItem(chave, JSON.stringify(d));
+    });
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+    expect(await hook(page, '(h) => h.persist.settings.cinematica')).toBeUndefined();
+    expect(await hook(page, '(h) => h.persist.settings.provocacoes')).toBeUndefined();
+    await prepararDuelo(page, 'hayato', 'caio');
+    await dispararEspecial(page, 'sFire');
+    expect((await cine(page)).estado?.modo).toBe('completa');
+    // gravar outra coisa não apaga o campo antigo do disco (save aditivo)
+    await hook(page, '(h) => { h.persist.settings.rounds = 3; h.persist.salvar(); }');
+    expect(await page.evaluate(() => JSON.parse(window.localStorage.getItem('inno-fighters-v2')!).s.cinematica)).toBe('desligada');
+  });
+
+  test('CURTA (gancho de teste): 20 ticks, sem tarja', async ({ page }) => {
     await abrir(page);
     await hook(page, `(h) => { h.persist.settings.cinematica = 'curta'; }`);
     await prepararDuelo(page, 'hayato', 'caio');
@@ -345,35 +355,25 @@ test.describe('opção CINEMÁTICA DO ESPECIAL', () => {
     expect((await cine(page)).estado?.modo).toBe('curta');
     const r = await contarCongelamento(page);
     expect(r.parados).toBe(20);
-    await irParaAsOpcoes(page);
-    const i = await linha(page);
-    const iRest = await hook(page, `(h) => h.ui.scene.m.items.findIndex((x) => x.label === 'RESTAURAR PADRÕES')`);
-    await hook(page, `(h) => { h.ui.scene.m.sel = ${iRest}; }`);
-    await page.keyboard.press('Enter');
-    expect(await hook(page, '(h) => h.persist.settings.cinematica')).toBeUndefined();
-    expect(await hook(page, `(h) => h.ui.scene.m.items[${i}].value()`)).toBe('COMPLETA');
   });
 
-  test('prefers-reduced-motion sem preferência salva = CURTA; com COMPLETA salva continua COMPLETA', async ({ page }) => {
+  test('prefers-reduced-motion (SISTEMA) = CURTA; sem ele = COMPLETA', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await abrir(page);
-    await irParaAsOpcoes(page);
-    const i = await linha(page);
-    expect(await hook(page, `(h) => h.ui.scene.m.items[${i}].value()`)).toBe('CURTA');
     await prepararDuelo(page, 'hayato', 'caio');
     await dispararEspecial(page, 'sFire');
     expect((await cine(page)).estado?.modo).toBe('curta');
-    await hook(page, `(h) => { h.persist.settings.cinematica = 'completa'; }`);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await prepararDuelo(page, 'hayato', 'caio');
     await dispararEspecial(page, 'sFire');
     expect((await cine(page)).estado?.modo).toBe('completa');
   });
 
-  test('?expansao=4 (fidelidade dos 4 originais): sem a linha nas Opções e sem cinemática, qualquer que seja a preferência', async ({ page }) => {
+  test('?expansao=4 (fidelidade dos 4 originais): sem cinemática, qualquer que seja a preferência', async ({ page }) => {
     await page.goto('/?seed=7&manual=1&expansao=4');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    await irParaAsOpcoes(page);
-    expect(await linha(page)).toBe(-1);
     await hook(page, `(h) => { h.persist.settings.cinematica = 'completa'; }`);
     await abrirLuta(page, { mode: 'versus', c1: 'hayato', c2: 'caio', cpu: null });
     await hook(page, '(h) => { const g = h.mundo().game; g.p1.en = 100; g.p1.startMove("sFire", g); h.avancar(1); }');

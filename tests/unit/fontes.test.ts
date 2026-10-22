@@ -2,16 +2,20 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { carregarFontes, FACES_DO_JOGO } from '../../src/platform/fontes';
-import { FAMILIA_CORPO, FAMILIA_TITULO, FB, FH } from '../../src/render/texto';
+import { FAMILIA_CORPO, FAMILIA_TITULO, FB, FH, FONTE_DA_FALA } from '../../src/render/texto';
 
 /*
- * Tipografia (2026-10-21): Barlow Condensed (títulos) + Barlow (corpo), AUTO-HOSPEDADAS em public/assets/fontes (OFL), sem CDN. Aqui: as strings de
+ * Tipografia (2026-10-21): Barlow Condensed (títulos) + Barlow (corpo), AUTO-HOSPEDADAS em public/assets/fontes (OFL), sem CDN. Desde 2026-10-22 também a Bangers, SÓ nas falas dos balões. Aqui: as strings de
  * fonte do canvas, a carga antes do 1º quadro e a integridade dos arquivos. A fonte carregar e desenhar de verdade é provado no navegador
  * (tests/e2e/tipografia.spec.ts e tests/e2e-build/csp.spec.ts).
  */
 const PASTA = resolve('public/assets/fontes');
 
 describe('strings de fonte do canvas', () => {
+  it('a fala dos balões é Bangers 400 (só caixa alta), com a Barlow Condensed e a Impact de reserva', () => {
+    expect(FONTE_DA_FALA(24)).toBe('400 24px Bangers, "Barlow Condensed", Impact, sans-serif');
+  });
+
   it('títulos em Barlow Condensed ExtraBold itálico e corpo em Barlow SemiBold, com reserva', () => {
     expect(FH(20)).toBe('italic 800 20px "Barlow Condensed", "Arial Narrow", Impact, sans-serif');
     expect(FB(13)).toBe('600 13px Barlow, "Segoe UI", "Trebuchet MS", Arial, sans-serif');
@@ -20,7 +24,8 @@ describe('strings de fonte do canvas', () => {
   });
 
   it('as faces pedidas antes do 1º quadro são exatamente as que FH e FB usam (estilo, peso e família)', () => {
-    expect(FACES_DO_JOGO).toEqual(['italic 800 20px "Barlow Condensed"', '600 20px "Barlow"']);
+    expect(FACES_DO_JOGO).toEqual(['italic 800 20px "Barlow Condensed"', '600 20px "Barlow"', '400 24px "Bangers"']);
+    expect(FONTE_DA_FALA(24).startsWith('400 24px Bangers')).toBe(true);
     expect(FH(20).startsWith(FACES_DO_JOGO[0]!)).toBe(true);
     expect(FB(20).replace('Barlow,', '"Barlow"').startsWith(FACES_DO_JOGO[1]!)).toBe(true);
   });
@@ -32,7 +37,7 @@ describe('carregarFontes (antes do 1º quadro)', () => {
     const ok = await carregarFontes({ load: async (f, t) => void pedidos.push([f, t]) }, FACES_DO_JOGO, 500);
     expect(ok).toBe(true);
     expect(pedidos.map(([f]) => f)).toEqual([...FACES_DO_JOGO]);
-    for (const [, t] of pedidos) for (const c of 'ÃÕÇÁÉÍÓÚÂÊÔÀ') expect(t).toContain(c);
+    for (const [, t] of pedidos) for (const c of 'ÃÕÇÁÉÍÓÚÂÊÔÀ¡') expect(t).toContain(c);
   });
 
   it('falha de carga (arquivo 404, rede) resolve false e NÃO rejeita: o jogo abre com a fonte de reserva', async () => {
@@ -53,8 +58,8 @@ describe('carregarFontes (antes do 1º quadro)', () => {
 });
 
 describe('arquivos das fontes', () => {
-  it('os 2 woff2 existem, são woff2 de verdade (assinatura wOF2) e leves (subset latino, < 40 KB cada)', () => {
-    for (const arq of ['barlow-condensed-800-italic-latin.woff2', 'barlow-600-latin.woff2']) {
+  it('os 3 woff2 existem, são woff2 de verdade (assinatura wOF2) e leves (subset latino, < 40 KB cada)', () => {
+    for (const arq of ['barlow-condensed-800-italic-latin.woff2', 'barlow-600-latin.woff2', 'bangers-latin-400-normal.woff2']) {
       const caminho = join(PASTA, arq);
       expect(existsSync(caminho), arq).toBe(true);
       expect(readFileSync(caminho).subarray(0, 4).toString('latin1'), arq).toBe('wOF2');
@@ -68,17 +73,22 @@ describe('arquivos das fontes', () => {
       expect(txt, arq).toContain('SIL OPEN FONT LICENSE Version 1.1');
       expect(txt, arq).toContain('The Barlow Project Authors');
     }
-    expect(readdirSync(PASTA).sort()).toEqual(['LEIA-ME.txt', 'OFL-barlow-condensed.txt', 'OFL-barlow.txt', 'barlow-600-latin.woff2', 'barlow-condensed-800-italic-latin.woff2']);
+    const bangers = readFileSync(join(PASTA, 'OFL-bangers.txt'), 'utf8');
+    expect(bangers).toContain('SIL OPEN FONT LICENSE Version 1.1');
+    expect(bangers).toContain('The Bangers Project Authors');
+    expect(readdirSync(PASTA).sort()).toEqual(['LEIA-ME.txt', 'OFL-bangers.txt', 'OFL-barlow-condensed.txt', 'OFL-barlow.txt', 'bangers-latin-400-normal.woff2', 'barlow-600-latin.woff2', 'barlow-condensed-800-italic-latin.woff2']);
   });
 
   it('o CSS declara exatamente esses arquivos (caminho local, woff2) e o index.html os precarrega; nada de CDN em lugar nenhum', () => {
     const css = readFileSync(resolve('src/fontes.css'), 'utf8');
     const html = readFileSync(resolve('index.html'), 'utf8');
-    for (const arq of ['barlow-condensed-800-italic-latin.woff2', 'barlow-600-latin.woff2']) {
+    for (const arq of ['barlow-condensed-800-italic-latin.woff2', 'barlow-600-latin.woff2', 'bangers-latin-400-normal.woff2']) {
       expect(css).toContain(`url("/assets/fontes/${arq}") format("woff2")`);
       expect(html).toContain(`href="/assets/fontes/${arq}" as="font" type="font/woff2" crossorigin`);
     }
     expect(css).toMatch(/font-display:\s*block/);
+    expect(css).toContain('font-family: "Bangers";');
+    expect(readFileSync(resolve('public/assets/fontes/LEIA-ME.txt'), 'utf8')).toContain('bangers-latin-400-normal.woff2');
     for (const texto of [css, html, readFileSync(resolve('src/input/toque.css'), 'utf8'), readFileSync(resolve('src/platform/aviso.css'), 'utf8')]) {
       expect(texto).not.toMatch(/googleapis|gstatic|fonts\.google|cdn\.|https?:\/\//i);
     }

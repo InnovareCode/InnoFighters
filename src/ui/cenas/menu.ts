@@ -1,7 +1,7 @@
 import { VITRINE } from '../../data/lutadores';
 import { desenharFundoMenu } from '../../render/cenario';
 import { descricaoArcade } from '../escada-texto';
-import { marca } from '../logo';
+import { LOGO_MENU, marca } from '../logo';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
 import { mostrarLutador } from '../personagens';
@@ -56,7 +56,7 @@ export class CenaMenu implements Cena {
     ctx.restore();
     f.A(m.elenco[id].ch.name, 720, 90, 40, '#fff', '#000', 'center', 1, Math.min(1, Math.min(k * 8, (1 - k) * 8)));
     this.ui.desenharPetalas();
-    marca.desenharLogo(ctx, 140, 46, 0.3, ((t % 360) - 30) / 60);
+    marca.desenharLogoHorizontal(ctx, LOGO_MENU.x, LOGO_MENU.y, LOGO_MENU.altura, ((t % 360) - 30) / 60);
     this.m.draw(34, 100, 380, 54, { size: 25, t });
     f.panel(34, 430, 520, 62, { r: 8 });
     f.wrap(this.m.items[this.m.sel]?.desc ?? '', 50, 452, 490, 20, 15, '#e8ecff');

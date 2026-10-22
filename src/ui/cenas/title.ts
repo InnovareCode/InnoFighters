@@ -1,10 +1,9 @@
 import { ALTURA, LARGURA } from '../../core/constantes';
-import { FB } from '../../render/texto';
-import { Brasas, desenharCicloDeCenarios, fileiraDeHerois, gradacaoCinema, LOGO_S, LOGO_Y, marca, STAGE_OF } from '../logo';
+import { Brasas, desenharCicloDeCenarios, fileiraDeHerois, gradacaoCinema, LAYOUT_DA_MARCA, LOGO_ALTURA, marca, STAGE_OF } from '../logo';
 import type { Navegador } from '../navegador';
 import type { ArgsTitle, Cena } from '../tipos';
 
-/** Tela de título: ciclo de cenários, os 4 lutadores, logo e "PRESSIONE ENTER". */
+/** Tela de título: ciclo de cenários, os 4 lutadores, a logo oficial e "PRESSIONE ENTER". */
 export class CenaTitle implements Cena {
   t = 0;
   private readonly brasas: Brasas;
@@ -32,7 +31,7 @@ export class CenaTitle implements Cena {
     // raios de luz atrás do logo
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.translate(W / 2, LOGO_Y);
+    ctx.translate(W / 2, LAYOUT_DA_MARCA.y);
     for (let i = 0; i < 12; i++) {
       ctx.rotate(Math.PI / 6);
       ctx.globalAlpha = 0.05 + 0.03 * Math.sin(t / 30 + i);
@@ -48,26 +47,9 @@ export class CenaTitle implements Cena {
     fileiraDeHerois(f, m, t, STAGE_OF[idx] ?? 'hayato');
     this.brasas.desenhar(ctx, t);
     if (!comTexto) return;
-    const fl = Math.sin(t / 45) * 4;
-    marca.desenharEmblema(ctx, W / 2, LOGO_Y + fl, 132, t, 1);
-    marca.desenharLogo(ctx, W / 2, LOGO_Y + fl, LOGO_S, ((t % 300) - 30) / 60);
-    // linha do subtítulo com traços laterais
-    const st = 'TORNEIO MUNDIAL DE ARTES MARCIAIS';
-    ctx.save();
-    ctx.font = FB(13);
-    const tw = ctx.measureText(st).width + st.length * 3;
-    ctx.restore();
-    ctx.fillStyle = 'rgba(255,210,150,.8)';
-    ctx.fillRect(W / 2 - tw / 2 - 70, 283, 56, 2);
-    ctx.fillRect(W / 2 + tw / 2 + 14, 283, 56, 2);
-    ctx.save();
-    ctx.font = FB(13);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#ffe2b8';
-    if ('letterSpacing' in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = '3px';
-    ctx.fillText(st, W / 2, 284);
-    ctx.restore();
+    // a logo oficial (a faixa do subtítulo já está na arte): altura 330, topo em y 4, flutuando 3 px
+    const fl = Math.sin(t / 45) * 3;
+    marca.desenharLogo(ctx, W / 2, LAYOUT_DA_MARCA.y + fl, LOGO_ALTURA, ((t % 300) - 30) / 60);
     // chamada para jogar
     const lab = this.ui.c.temToque() ? 'TOQUE PARA JOGAR' : 'PRESSIONE ENTER';
     const pa = 0.55 + 0.45 * Math.abs(Math.sin(t / 26));
@@ -78,10 +60,10 @@ export class CenaTitle implements Cena {
     pg.addColorStop(0.5, 'rgba(255,150,60,.35)');
     pg.addColorStop(1, 'rgba(255,120,40,0)');
     ctx.fillStyle = pg;
-    ctx.fillRect(W / 2 - 150, 302, 300, 30);
+    ctx.fillRect(W / 2 - 150, 337, 300, 30);
     ctx.restore();
-    f.A(lab, W / 2, 317, 22, ['#ffffff', '#ffd27a'], '#2a0d00', 'center', 1, pa);
-    if (persist.hi > 0) f.T(`RECORDE  ${String(persist.hi).padStart(6, '0')}`, W / 2, 346, 13, '#ffd23f', 'center');
+    f.A(lab, W / 2, 352, 22, ['#ffffff', '#ffd27a'], '#2a0d00', 'center', 1, pa);
+    if (persist.hi > 0) f.T(`RECORDE  ${String(persist.hi).padStart(6, '0')}`, W / 2, 381, 13, '#ffd23f', 'center');
     f.T('© 2026 Innovare Code  •  personagens e arte originais', W / 2, H - 12, 11, 'rgba(230,225,255,.7)', 'center');
   }
 

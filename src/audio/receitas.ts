@@ -22,7 +22,7 @@ export type CamadaSom = 'ataque' | 'corpo' | 'cauda' | 'extra';
 export type ChamadaReceita =
   | { readonly k: 'T'; readonly tipo: OscillatorType; readonly f0: number; readonly f1?: number; readonly t: number; readonly vol: number; readonly quando?: number; readonly filtro?: { readonly tipo: BiquadFilterType; readonly f: number }; readonly Q?: number; readonly atq?: number; readonly desafina?: number; readonly camada?: CamadaSom }
   | { readonly k: 'R'; readonly tipo: BiquadFilterType; readonly f0: number; readonly f1?: number; readonly Q: number; readonly t: number; readonly vol: number; readonly quando?: number; readonly atq?: number; readonly camada?: CamadaSom }
-  | ({ readonly k: 'V'; readonly quando?: number; readonly camada?: CamadaSom } & Omit<OpcoesVozFormante, 'when' | 'dest'>);
+  | ({ readonly k: 'V'; readonly quando?: number; readonly camada?: CamadaSom } & Omit<OpcoesVozFormante, 'when' | 'inicioAbs' | 'dest'>);
 
 /** Pista de uma chamada musical: harmonia entra em `baixo`. A régua de timbre mede uma pista por vez. */
 export type PistaMusical = 'lead' | 'baixo' | 'perc';
@@ -50,7 +50,7 @@ export interface OpcoesReceita {
   readonly destino?: 'sfx' | 'musica';
   /** Instante ABSOLUTO (relógio do contexto) do início da receita: cada chamada toca em `inicio + quando`. Ausente = agora + `quando`, como sempre. */
   readonly inicio?: number;
-  /** Relógio do contexto agora: a `vozFormante` só aceita `when` relativo, então `inicio` absoluto vira `inicio - agora`. */
+  /** Relógio do contexto agora. Já não é usado pela voz (ela recebe o instante ABSOLUTO em `inicioAbs`); fica por compatibilidade com quem o passa. */
   readonly agora?: number;
 }
 
@@ -96,9 +96,8 @@ export function tocarReceita(audio: SintetizadorLike | null | undefined, receita
     } else {
       if (typeof audio.vozFormante !== 'function') continue;
       const { k: _k, quando, camada: _camada, ...voz } = c;
-      // a voz só sabe `when` (relativo ao relógio): com `inicio` absoluto converte; a música não entra na conta das 32 fontes dos efeitos
-      const when = inicio === undefined ? (quando ?? 0) : inicio + (quando ?? 0) - (o.agora ?? 0);
-      audio.vozFormante({ ...voz, vol: c.vol * k, when, ...(musica ? { registrar: false } : {}), ...dest });
+      // com `inicio` absoluto a voz agenda no instante exato (`inicioAbs`), sem reler o relógio; a música não entra na conta das 32 fontes dos efeitos
+      audio.vozFormante({ ...voz, vol: c.vol * k, ...(inicio === undefined ? { when: quando ?? 0 } : { inicioAbs: inicio + (quando ?? 0) }), ...(musica ? { registrar: false } : {}), ...dest });
     }
     n++;
   }

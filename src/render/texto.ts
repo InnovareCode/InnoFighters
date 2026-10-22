@@ -10,6 +10,11 @@ export const FAMILIA_CORPO = 'Barlow, "Segoe UI", "Trebuchet MS", Arial, sans-se
 /** Fonte de títulos (arcade, itálico condensado) e de corpo. Porte de FH/FB (famílias novas desde a tipografia do dono, 2026-10-21). */
 export const FH = (tamanho: number): string => `italic 800 ${tamanho}px ${FAMILIA_TITULO}`;
 export const FB = (tamanho: number): string => `600 ${tamanho}px ${FAMILIA_CORPO}`;
+/**
+ * Fonte das FALAS dos balões (letreiro de quadrinho, só caixa alta; direção de arte "Tarja de Impacto", docs/direcao-arte-baloes.md): Bangers auto-hospedada, com a
+ * Barlow Condensed e a Impact como reserva (a Bangers só tem caixa alta: o texto vai em maiúsculas, `toLocaleUpperCase('pt-BR')`).
+ */
+export const FONTE_DA_FALA = (tamanho: number): string => `400 ${tamanho}px Bangers, "Barlow Condensed", Impact, sans-serif`;
 
 export type Alinhamento = 'left' | 'center' | 'right';
 /** Cor sólida ou gradiente vertical [topo, base]. */

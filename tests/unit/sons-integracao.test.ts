@@ -7,6 +7,7 @@ import { cortarParaOrcamento, fontesDaReceita } from '../../src/audio/orcamento-
 import { ASSINATURAS } from '../../src/data/sons';
 import { Contexto, comoAudioContext } from '../support/audio-offline';
 import { TAXA } from '../support/descritores';
+import { menorP99, p99DaFight, percentil, RUIDO_RELOGIO_MS } from '../support/orcamento-musica';
 
 /* Sons por lutador: o jogo inteiro com os DADOS REAIS (10 vozes, 33 assinaturas) pelo caminho de produção, no AudioSys real sobre o motor offline. */
 const TXT = { x: 0, y: 0, s: '', col: '', size: 1 };
@@ -62,18 +63,41 @@ describe('integração com os dados reais', () => {
     expect(itens).toBeGreaterThan(500);
   });
 
-  it('o plano é barato: p99 < 1 ms por evento (Node; o orçamento do celular é medido no Chromium, N3)', () => {
+  it('o plano é barato, RELATIVO à trilha `fight`: o p99 de planejar um evento não passa do p99 de um tick do `scheduler()` da `fight` de hoje (Node; o celular é do N3)', () => {
+    // o absoluto `p99 < 1 ms` não vale nem para a `fight` no Chromium com CPU 4x (N3 da Íris: 9,5 ms), então a régua é a música que já está no jogo
+    const p99Fight = p99DaFight();
     const ev = hit({ especial: true, golpe: 'sFire', projetil: true, snd: 'fireballHit' });
-    const tempos: number[] = [];
-    for (let tick = 0; tick < 3000; tick++) {
-      const t0 = performance.now();
-      planoSonoro(ev, ctx('hayato', 'caio', tick));
-      tempos.push(performance.now() - t0);
-    }
-    tempos.sort((a, b) => a - b);
-    const p99 = tempos[Math.floor(tempos.length * 0.99)] as number;
-    console.log(`planoSonoro: p50 ${(tempos[1500] as number).toFixed(3)} ms, p99 ${p99.toFixed(3)} ms`);
-    expect(p99).toBeLessThan(1);
+    const p99 = menorP99(() => {
+      const tempos: number[] = [];
+      for (let tick = 0; tick < 3000; tick++) {
+        const t0 = performance.now();
+        planoSonoro(ev, ctx('hayato', 'caio', tick));
+        tempos.push(performance.now() - t0);
+      }
+      return tempos;
+    }, 3);
+    console.log(`planoSonoro: p99 ${p99.toFixed(3)} ms (tick da fight: p99 ${p99Fight.toFixed(3)} ms)`);
+    expect(p99).toBeLessThanOrEqual(p99Fight + RUIDO_RELOGIO_MS);
+  });
+
+  it('o evento inteiro (plano + montar o grafo no AudioSys real, o pior caso: especial + projétil + dano) custa, no p99, no máximo 10 x um tick da `fight` (relativo, Node)', () => {
+    const p99Fight = p99DaFight();
+    const ev = hit({ especial: true, golpe: 'sFire', projetil: true, snd: 'fireballHit' });
+    const p99 = menorP99(() => {
+      const c = new Contexto(TAXA);
+      const audio = new AudioSys({ criarContexto: () => comoAudioContext(c), rng: criarRng(5), limitador: true, sementeVariacao: 23 });
+      audio.init();
+      const tempos: number[] = [];
+      for (let tick = 0; tick < 800; tick++) {
+        c.currentTime = tick * 0.5; // cada evento num instante novo: as fontes do anterior já acabaram (o teto de 32 não interfere na medida)
+        const t0 = performance.now();
+        reagirComIdentidade(audio, [ev], ctx('hayato', 'caio', tick), (fn) => fn(), true);
+        tempos.push(performance.now() - t0);
+      }
+      return tempos;
+    }, 3);
+    console.log(`evento inteiro: p99 ${p99.toFixed(3)} ms (tick da fight: p99 ${p99Fight.toFixed(3)} ms)`);
+    expect(p99).toBeLessThanOrEqual(10 * p99Fight + RUIDO_RELOGIO_MS);
   });
 
   it('mesma semente + mesmo tick = mesmo plano (determinismo); a ordem dos outros eventos não desloca a variação', () => {
@@ -90,5 +114,56 @@ describe('integração com os dados reais', () => {
       expect(algo, chave).toBe(true);
     }
     void ({} as IndiceLutador);
+  });
+});
+
+describe('tudo ligado (tema do adversário + identidade sonora) contra o jogo de antes (`fight` + sons genéricos), no mesmo AudioSys offline', () => {
+  /** Uma luta sintética de 20 s: a música e, a cada 0,4 s, o pior pacote de eventos (especial + 2 danos pesados + impacto de projétil + guarda quebrada). */
+  const rodar = (musica: 'fight' | 'tema:caio', identidade: boolean): { fontesTotaisPico: number; efeitosPico: number; nosPorSegundo: number; tickP99: number } => {
+    const c = new Contexto(TAXA);
+    let tick: (() => void) | null = null;
+    const audio = new AudioSys({ criarContexto: () => comoAudioContext(c), rng: criarRng(5), limitador: identidade, sementeVariacao: 23, setInterval: (fn) => ((tick = fn), 1), clearInterval: () => undefined });
+    audio.init();
+    const nosInit = c.nos.length;
+    audio.startMusic(musica);
+    const eventos: EventoLuta[] = [
+      { tipo: 'special', lutador: 0, pitch: 1, golpe: 'sFire', ficha: null, momento: 'inicio' },
+      hit({ grande: true }),
+      hit({ grande: true, atacante: 1, defensor: 0 }),
+      hit({ especial: true, golpe: 'sFire', projetil: true, snd: 'fireballHit' }),
+      { tipo: 'quebra-guarda', atacante: 1, defensor: 0, x: 0, y: 0, texto: TXT },
+    ];
+    let efeitosPico = 0;
+    const ticks: number[] = [];
+    let proximo = 0.4;
+    for (let t = 0; t < 20; t += 0.025) {
+      c.currentTime = t;
+      const a = performance.now();
+      (tick as (() => void) | null)?.();
+      ticks.push(performance.now() - a);
+      if (t >= proximo) {
+        proximo += 0.4;
+        reagirComIdentidade(audio, eventos, ctx('hayato', 'caio', Math.round(t * 60)), (fn) => fn(), identidade);
+      }
+      efeitosPico = Math.max(efeitosPico, audio.fontesAtivas());
+    }
+    const fontes = c.nos.filter((n) => 'inicio' in n && (n as { inicio: number }).inicio >= 0) as unknown as { inicio: number; fim: number }[];
+    const marcas = fontes.flatMap((f) => [{ t: f.inicio, d: 1 }, { t: Number.isFinite(f.fim) ? f.fim : f.inicio, d: -1 }]).sort((a, b) => a.t - b.t || a.d - b.d);
+    let atual = 0;
+    let pico = 0;
+    for (const m of marcas) pico = Math.max(pico, (atual += m.d));
+    return { fontesTotaisPico: pico, efeitosPico, nosPorSegundo: (c.nos.length - nosInit) / 20, tickP99: percentil(ticks, 0.99) };
+  };
+
+  it('o teto de 32 fontes dos efeitos vale com tudo ligado e o custo do grafo fica perto do de antes (medido; Node, sem o iOS)', () => {
+    const antes = rodar('fight', false);
+    const agora = rodar('tema:caio', true);
+    console.log(`ANTES (fight + genéricos): fontes totais no pico ${antes.fontesTotaisPico}, efeitos ${antes.efeitosPico}, ${antes.nosPorSegundo.toFixed(0)} nós/s`);
+    console.log(`AGORA (tema CAIO + identidade): fontes totais no pico ${agora.fontesTotaisPico}, efeitos ${agora.efeitosPico}, ${agora.nosPorSegundo.toFixed(0)} nós/s (${(agora.nosPorSegundo / antes.nosPorSegundo).toFixed(2)} x)`);
+    expect(agora.efeitosPico).toBeLessThanOrEqual(32);
+    // a música tem teto próprio (15 ativas); os efeitos, 32: o total possível é a soma, e o pior pacote de eventos de uma luta real fica abaixo disso
+    expect(agora.fontesTotaisPico).toBeLessThanOrEqual(15 + 32);
+    // o grafo montado por segundo (a CPU do agendamento no celular), no PIOR caso (5 eventos a cada 0,4 s): a identidade acrescenta nós por evento (a voz tem ~15 nós) e o tema tira (menos nós que a `fight`); medido 1,75 x
+    expect(agora.nosPorSegundo).toBeLessThanOrEqual(2.2 * antes.nosPorSegundo);
   });
 });

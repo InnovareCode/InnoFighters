@@ -10,13 +10,14 @@ export class CenaBoot implements Cena {
   draw(): void {
     const { ctx, f } = this.ui.c;
     const ui = this.ui;
-    const g = ctx.createLinearGradient(0, 0, 0, ALTURA);
-    g.addColorStop(0, '#1a0b33');
-    g.addColorStop(1, '#05030c');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, LARGURA, ALTURA);
-    marca.desenharEmblema(ctx, LARGURA / 2, 200, 140, ui.t, 0.7);
-    marca.desenharLogo(ctx, LARGURA / 2, 200, 0.85, ((ui.t % 240) - 20) / 60);
+    // o splash da logo oficial em tela cheia; até ele chegar (é a 1ª coisa que o jogo baixa), o gradiente de antes
+    if (!marca.desenharSplash(ctx)) {
+      const g = ctx.createLinearGradient(0, 0, 0, ALTURA);
+      g.addColorStop(0, '#1a0b33');
+      g.addColorStop(1, '#05030c');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, LARGURA, ALTURA);
+    }
     if (ui.erroCarga) {
       f.T('Não foi possível carregar a arte do jogo.', LARGURA / 2, 372, 18, '#ff9a9a', 'center');
       f.T(ui.erroCarga, LARGURA / 2, 400, 13, '#cfd6f5', 'center');

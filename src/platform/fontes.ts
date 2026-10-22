@@ -5,8 +5,8 @@
  */
 
 /** As faces usadas (a mesma lista de src/fontes.css e do `FH`/`FB` de render/texto.ts). O texto de amostra tem os acentos do português. */
-export const FACES_DO_JOGO: readonly string[] = ['italic 800 20px "Barlow Condensed"', '600 20px "Barlow"'];
-const AMOSTRA = 'ÃÕÇÁÉÍÓÚÂÊÔÀaeiou•';
+export const FACES_DO_JOGO: readonly string[] = ['italic 800 20px "Barlow Condensed"', '600 20px "Barlow"', '400 24px "Bangers"'];
+const AMOSTRA = 'ÃÕÇÁÉÍÓÚÂÊÔÀaeiou•¡¿';
 
 /** Teto de espera pelas fontes (ms): em rede ruim o jogo abre com a fonte de reserva em vez de esperar para sempre. */
 export const ESPERA_MAXIMA_DAS_FONTES_MS = 4000;

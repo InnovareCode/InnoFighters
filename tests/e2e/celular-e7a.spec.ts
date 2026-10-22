@@ -277,15 +277,33 @@ test.describe('aviso "vire o aparelho" e layout em retrato', () => {
       const cv = await caixa('canvas#jogo');
       expect(cv.width).toBeLessThanOrEqual(tela.width);
       expect(cv.height / cv.width).toBeCloseTo(540 / 960, 1);
+      // controles de toque dentro da janela (o aviso os cobre: a logo oficial ocupa a tela inteira em retrato, acima da camada de toque)
       for (const s of ['#joy', '#r1', '#pad .hp', '#pad .lp', '#pad .hk', '#pad .lk', '#bp']) {
         const b = await caixa(s);
         expect(b.x, s).toBeGreaterThanOrEqual(0);
         expect(b.y, s).toBeGreaterThanOrEqual(0);
         expect(b.x + b.width, s).toBeLessThanOrEqual(tela.width);
         expect(b.y + b.height, s).toBeLessThanOrEqual(tela.height);
-        const sobrepoe = b.x < rot.x + rot.width && b.x + b.width > rot.x && b.y < rot.y + rot.height && b.y + b.height > rot.y;
-        expect(sobrepoe, `${s} sobre o aviso`).toBe(false);
       }
+      // o aviso é a tela cheia (a logo + o texto) e fica ACIMA da camada de toque: nenhum botão aparece por cima dele
+      expect([rot.x, rot.y, rot.width, rot.height]).toEqual([0, 0, tela.width, tela.height]);
+      const z = (sel: string) => page.locator(sel).evaluate((el) => +getComputedStyle(el).zIndex);
+      expect(await z('#rot')).toBeGreaterThan(await z('#touch'));
+      // a logo oficial acima do texto: largura min(86vw, 420px), proporção 1600:1127, imagem do site (não vazia) e o texto abaixo dela
+      const logo = await page.locator('#rot').evaluate((el) => {
+        const c = getComputedStyle(el, '::before');
+        return { w: parseFloat(c.width), h: parseFloat(c.height), img: c.backgroundImage };
+      });
+      expect(logo.w).toBeCloseTo(Math.min(0.86 * tela.width, 420), 0);
+      expect(logo.h / logo.w).toBeCloseTo(1127 / 1600, 2);
+      expect(logo.img).toContain('logo-v1-720.webp');
+      const texto = await page.evaluate(() => {
+        const r = document.createRange();
+        r.selectNodeContents(document.getElementById('rot')!);
+        const q = r.getBoundingClientRect();
+        return { y: q.y, h: q.height };
+      });
+      expect(texto.y, 'o texto fica abaixo da logo').toBeGreaterThan(rot.y + rot.height / 2 - 1);
       // o aviso não rouba toque (pointer-events: none): o mesmo ponto no centro do aviso cai no que está embaixo
       expect(await page.locator('#rot').evaluate((el) => getComputedStyle(el).pointerEvents)).toBe('none');
       // girar o aparelho (viewport paisagem): o aviso some sem recarregar

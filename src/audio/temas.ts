@@ -1,21 +1,20 @@
 import type { IdLutador } from '../core/contratos';
 import { TEMAS } from '../data/musica';
 import type { IdTema, TemaDef } from '../data/musica/tipos';
-import type { TrilhaMusica } from './audio-sys';
-import { compilarTema, orcamentoDoTema, type TemaCompilado } from './partitura';
+import { registrarMotorDeTemas, type TrilhaMusica } from './audio-sys';
+import { chavesSonoras, trilhaDeHoje, TEMAS_POR_LUTADOR } from './chaves';
+import { compilarTema, duracaoDoPasso, orcamentoDoTema, partituraDaTroca, partituraDoPasso, type TemaCompilado } from './partitura';
 
 export { compilarTema, duracaoDoPasso, orcamentoDoTema, partituraDaTroca, partituraDoPasso, varianteDoLaco, type Fase, type TemaCompilado } from './partitura';
+// a constante mora em chaves.ts (módulo leve, que entra no pacote principal); aqui só se reexporta
+export { TEMAS_POR_LUTADOR };
 
 /*
  * Temas musicais por lutador (docs/spec-chefoes-progressivos-temas-e-dificuldade.md §3). Este módulo liga os DADOS (src/data/musica) ao AudioSys
  * (`playTema`) e escolhe a trilha de uma luta (`trilhaDaLuta`, pura). As 3 trilhas de hoje (`fight`, `menu`, `chefe`) NÃO mudam.
  */
 
-/**
- * Chave de rollback e de escuta do dono. Enquanto `false` o jogo toca exatamente a música de hoje: `trilhaDaLuta` devolve `'fight'` (ou `'chefe'`
- * no chefão que tem `trilha`). Só vira `true` depois da escuta do dono dos 10 temas (T3/Q).
- */
-export const TEMAS_POR_LUTADOR = false;
+// `TEMAS_POR_LUTADOR` (rollback por código; `false` = o jogo toca a música de antes) mora em ./chaves. Sempre ligado por decisão do dono.
 
 /** O tema do lutador, ou null no ZENON (a valsa de hoje é a trilha `'chefe'`). */
 export function temaDoLutador(id: IdLutador): TemaDef | null {
@@ -41,8 +40,8 @@ export interface LutaParaMusica {
  * `'chefe'` no chefão que tem `trilha` (`trilhaDoChefe`), `'fight'` no resto. Ligada: o tema do `c2` em todos os modos (ARCADE rival e chefão,
  * LUTA vs CPU, VERSUS, TREINO, demo); o ZENON, que não tem TemaDef, toca a valsa (`'chefe'`), sempre na fase 1 se não for chefão.
  */
-export function trilhaDaLuta(cfg: LutaParaMusica, regras: { readonly temasMusicais: boolean }, chave: boolean = TEMAS_POR_LUTADOR, trilhaDoChefe?: 'chefe'): TrilhaMusica {
-  if (!chave || !regras.temasMusicais) return cfg.chefe ? (trilhaDoChefe ?? 'fight') : 'fight';
+export function trilhaDaLuta(cfg: LutaParaMusica, regras: { readonly temasMusicais: boolean }, chave: boolean = chavesSonoras.temas, trilhaDoChefe?: 'chefe'): TrilhaMusica {
+  if (!chave || !regras.temasMusicais) return trilhaDeHoje(cfg, trilhaDoChefe);
   return temaDoLutador(cfg.c2) ? (`tema:${cfg.c2 as IdTema}` as TrilhaMusica) : 'chefe';
 }
 
@@ -74,3 +73,6 @@ export function validarOrcamentoDosTemas(): void {
 }
 
 validarOrcamentoDosTemas();
+
+// liga o sequenciador ao AudioSys (que não importa os temas, para o pacote principal não carregar os dados com a chave desligada)
+registrarMotorDeTemas({ temaDaTrilha, duracaoDoPasso, partituraDoPasso, partituraDaTroca });

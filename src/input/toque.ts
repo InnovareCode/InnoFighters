@@ -52,6 +52,21 @@ function acharToque(lista: TouchList, id: number): Touch | null {
   return null;
 }
 
+/** Desenhos de estado dos controles (apertado, apagado, joystick ativo): carregados ao ligar o toque; sem isso o 1º aperto pode piscar sem desenho. */
+const SVGS_DE_ESTADO: readonly string[] = [
+  ...['soco-leve', 'soco-forte', 'chute-leve', 'chute-forte', 'esquiva', 'especial', 'pausa'].map((n) => `${n}-pressionado`),
+  'esquiva-desabilitado',
+  'especial-desabilitado',
+  'joystick-aro-ativo',
+  'joystick-bolinha-pressionada',
+];
+
+/** Pede os SVGs de estado ao navegador (ficam no cache; o CSS os usa por `url()`). Fora do navegador (testes em Node) não faz nada. */
+export function precarregarDesenhosDoToque(base: string = import.meta.env.BASE_URL): void {
+  if (typeof Image === 'undefined') return;
+  for (const nome of SVGS_DE_ESTADO) new Image().src = `${base}assets/ui/toque/${nome}.svg`;
+}
+
 /**
  * Camada de toque (joystick à esquerda, 4 botões + R1 + pausa à direita), porte da IIFE do protótipo.
  * Os controles viram teclas virtuais do jogador 1. Devolve `null` quando o aparelho não tem toque.
@@ -61,6 +76,7 @@ export function ligarToque(op: OpcoesToque): (() => void) | null {
   if (!temToque(op.alvo)) return null;
   const doc = op.alvo.document;
   doc.body.classList.add('touch');
+  precarregarDesenhosDoToque();
   const desfazer: Array<() => void> = [];
   const ouvir = (el: HTMLElement, tipo: 'touchstart' | 'touchmove' | 'touchend' | 'touchcancel', fn: (e: TouchEvent) => void): void => {
     const ouvinte = fn as EventListener;
@@ -118,6 +134,7 @@ export function ligarToque(op: OpcoesToque): (() => void) | null {
     };
     const fim = (): void => {
       id = null;
+      joy.classList.remove('ativo');
       knob.style.transform = '';
       (Object.keys(ativas) as DirecaoToque[]).forEach((k) => mudar(k, false));
     };
@@ -127,6 +144,7 @@ export function ligarToque(op: OpcoesToque): (() => void) | null {
       const t = e.changedTouches.item(0);
       if (!t) return;
       id = t.identifier;
+      joy.classList.add('ativo');
       mover(t);
     });
     ouvir(joy, 'touchmove', (e) => {

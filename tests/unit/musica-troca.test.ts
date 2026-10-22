@@ -17,6 +17,7 @@ vi.mock('../../src/audio/receitas', async (importOriginal) => {
 });
 
 const { AudioSys } = await import('../../src/audio/audio-sys');
+await import('../../src/audio/temas'); // registra o sequenciador dos temas no AudioSys (que não os importa)
 const { duracaoDoPasso, partituraDaTroca, partituraDoPasso } = await import('../../src/audio/partitura');
 const { TEMAS } = await import('../../src/data/musica');
 const { criarRng } = await import('../../src/core/rng');
@@ -32,7 +33,8 @@ describe('trecho de troca de fase', () => {
     const audio = new AudioSys({ criarContexto: () => comoAudioContext(ctx), rng: criarRng(5), setInterval: (fn) => ((tick = fn), 1), clearInterval: () => undefined });
     audio.init();
     audio.startMusic('tema:hayato');
-    const t0 = audio.nextTime;
+    // o 1º passo é agendado já no startMusic (folga de 0,12 s) e o `nextTime` já andou: o instante do passo 0 é o da 1ª chamada
+    const t0 = chamadas[0]?.inicio as number;
     const barra = 16 * duracaoDoPasso(def, 1);
     const avanca = (ate: number): void => {
       for (let x = ctx.currentTime; x <= ate + 1e-9; x += 0.025) {

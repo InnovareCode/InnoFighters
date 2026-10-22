@@ -1,197 +1,226 @@
-import { criarCanvasPadrao } from '../assets/canvas';
+import { criarCanvasPadrao, type CriarCanvas } from '../assets/canvas';
 import { ALTURA, LARGURA } from '../core/constantes';
 import type { IdLutador } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import { LUTADORES, VITRINE } from '../data/lutadores';
 import { desenharVinheta } from '../render/cenario';
 import { desenharPose } from '../render/pose';
-import type { Ctx } from '../render/tela';
+import { RS, type Ctx } from '../render/tela';
 import type { Ferramentas } from './ferramentas';
 import type { Mundo } from './contexto';
 
 export const GAME_NAME = 'INNO FIGHTERS';
-export const LOGO_Y = 142;
-export const LOGO_S = 0.84;
 /** Quem aparece no título (e a ordem do ciclo de cenários): a VITRINE, não o elenco inteiro. */
 export const STAGE_OF: readonly IdLutador[] = VITRINE;
 
 /** Cenário da casa de cada lutador da vitrine, na ordem da vitrine: é o ciclo de fundos do título. */
 export const CICLO_VITRINE: readonly string[] = VITRINE.map((id) => LUTADORES[id].stage);
 
-// ---------- logotipo (desenhado uma vez em canvases próprios, em alta resolução) ----------
-type Logo = { art: HTMLCanvasElement; mask: HTMLCanvasElement; tmp: HTMLCanvasElement; w: number; h: number };
-let logoCache: Logo | null = null;
+// ---------- a logo oficial do dono (docs/logo-oficial.md): imagem, não desenho ----------
+
+/** Altura (px lógicos, em 960x540) da logo completa no título e na abertura. A largura sai da proporção da imagem (1,42). */
+export const LOGO_ALTURA = 330;
 
 /**
- * Paleta D1, "Cobalto Real" (docs/proposta-logo-paleta-d.md, escolhida pelo dono): INNO é azul-royal escuro metálico com aro
- * de ouro; FIGHTERS continua em brasa (os stops da paleta A). Um contorno interno só (ouro, o piso do contraste da borda: o aro
- * TEM que ser claro), contorno externo e volume comuns às duas palavras (índigo profundo), anel do emblema de um tom só (azul).
- * É a cor da marca do torneio: não pertence a nenhum lutador e não muda quando o elenco crescer. As brasas do título ficam
- * quentes (são o fogo de FIGHTERS).
+ * Centro vertical da logo completa no título e na abertura (topo y 4 + metade da altura). Também é de onde saem os raios de luz do título e a onda de choque
+ * e as faíscas do impacto. É um OBJETO só porque o oráculo de fidelidade com o protótipo (cuja logo ficava em y 142) o reajusta no navegador: no jogo ninguém o muda.
+ */
+export const LAYOUT_DA_MARCA = { y: 169 };
+
+/** Altura (px lógicos) da logo horizontal (sem a faixa do subtítulo) no menu; centro em (124, 50). */
+export const LOGO_MENU = { altura: 86, x: 124, y: 50 } as const;
+
+/**
+ * Cores da marca que o JOGO ainda usa (a logo em si é imagem). As brasas do título e as faíscas do impacto ficam na família brasa (o fogo de FIGHTERS), sem relação com os
+ * lutadores; `brilho` é a cor da varredura de luz que atravessa a logo.
  */
 export const PALETA_MARCA = {
-  contornoInterno: '#ffe08a',
-  contornoExterno: '#07060f',
-  volumeLonge: '#04040c',
-  volumePerto: '#1b1650',
-  fioDeLuz: '#f2f6ff',
   brilho: [236, 244, 255] as const,
-  /** Anel do emblema: gelo -> cobalto -> gelo (um tom só). */
-  anel: ['#a8c8ff', '#2f63ff', '#a8c8ff'] as const,
-  anelInterno: 'rgba(205,225,255,.55)',
-  halo: 'rgba(60,110,255,.30)',
-  /** Brasas do título e faíscas do impacto do logo: família brasa, sem relação com os lutadores. */
   brasas: ['#ffd27a', '#ff9a3d', '#ff5a12'] as readonly string[],
 } as const;
 
-type Palavra = { s: string; y: number; size: number; fill: ReadonlyArray<readonly [number, string]>; edge: string };
-const PALAVRAS: readonly Palavra[] = [
-  {
-    s: 'INNO', y: 150, size: 168, edge: PALETA_MARCA.contornoInterno,
-    fill: [[0, '#e8f0ff'], [0.4, '#93b4ff'], [0.5, '#0c2068'], [0.55, '#4f80ff'], [0.82, '#2452e2'], [1, '#aac6ff']],
-  },
-  {
-    s: 'FIGHTERS', y: 262, size: 104, edge: PALETA_MARCA.contornoInterno,
-    fill: [[0, '#fff3c4'], [0.42, '#ffbe33'], [0.56, '#ff5a12'], [1, '#b0101c']],
-  },
-];
+export type VarianteDaMarca = 'principal' | 'horizontal' | 'splash';
+type Fonte = CanvasImageSource & { readonly width: number; readonly height: number };
 
-function obterLogo(): Logo {
-  if (logoCache) return logoCache;
-  const S = 2;
-  const Wl = 760 * S;
-  const Hl = 300 * S;
-  const art = criarCanvasPadrao(Wl, Hl);
-  const mask = criarCanvasPadrao(Wl, Hl);
-  const tmp = criarCanvasPadrao(Wl, Hl);
-  const desenhar = (g: CanvasRenderingContext2D, soMascara: boolean): void => {
-    g.save();
-    g.scale(S, S);
-    g.textAlign = 'center';
-    g.textBaseline = 'alphabetic';
-    g.lineJoin = 'round';
-    for (const w of PALAVRAS) {
-      g.font = `italic 900 ${w.size}px Impact, "Arial Black", "Segoe UI Black", sans-serif`;
-      const x = 380;
-      if (soMascara) {
-        g.lineWidth = 14;
-        g.strokeStyle = '#fff';
-        g.strokeText(w.s, x, w.y);
-        g.fillStyle = '#fff';
-        g.fillText(w.s, x, w.y);
-        continue;
-      }
-      for (let i = 16; i >= 1; i--) {
-        g.fillStyle = i > 12 ? PALETA_MARCA.volumeLonge : PALETA_MARCA.volumePerto; // volume 3D
-        g.fillText(w.s, x + i * 0.7, w.y + i * 1.1);
-      }
-      g.lineWidth = 22;
-      g.strokeStyle = PALETA_MARCA.contornoExterno;
-      g.strokeText(w.s, x, w.y);
-      g.lineWidth = 7;
-      g.strokeStyle = w.edge;
-      g.strokeText(w.s, x, w.y);
-      const gr = g.createLinearGradient(0, w.y - w.size * 0.82, 0, w.y + 4);
-      w.fill.forEach(([o, c]) => gr.addColorStop(o, c));
-      g.fillStyle = gr;
-      g.fillText(w.s, x, w.y);
-      g.save();
-      g.globalAlpha = 0.55;
-      g.lineWidth = 2;
-      g.strokeStyle = PALETA_MARCA.fioDeLuz;
-      g.strokeText(w.s, x - 1, w.y - 2);
-      g.restore();
-    }
-    g.restore();
-  };
-  try {
-    const a = art.getContext('2d');
-    const m = mask.getContext('2d');
-    if (a) desenhar(a, false);
-    if (m) desenhar(m, true);
-  } catch {
-    /* sem canvas */
-  }
-  logoCache = { art, mask, tmp, w: 760, h: 300 };
-  return logoCache;
+/**
+ * Arquivos de `public/assets/ui/logo` (versão no nome: uma logo nova do dono vira `-v2`, e isso também quebra o cache do navegador). `larguraPre` é a largura em
+ * pixels de CANVAS (= px lógicos x RS) em que a imagem é desenhada no tamanho normal: a imagem é reduzida UMA vez para essa largura, e não a cada quadro.
+ */
+const VARIANTES: Readonly<Record<VarianteDaMarca, { readonly arquivo: string; readonly larguraPre: number }>> = {
+  principal: { arquivo: 'logo-v1-1600.webp', larguraPre: Math.round(LOGO_ALTURA * (1600 / 1127) * RS) },
+  horizontal: { arquivo: 'logo-horizontal-v1-600.webp', larguraPre: Math.round(LOGO_MENU.altura * (600 / 336) * RS) },
+  splash: { arquivo: 'splash-v1-1920x1080.webp', larguraPre: 0 },
+};
+
+interface ImagemDaMarca {
+  readonly fonte: Fonte;
+  /** A mesma imagem já reduzida ao tamanho normal de desenho (null = a fonte já é pequena, ou é o splash). */
+  readonly pre: HTMLCanvasElement | null;
 }
 
-/** Desenha o logo centralizado em (x, y); `shine` (0..1) é a posição do brilho que atravessa as letras. */
-export function desenharLogo(ctx: Ctx, x: number, y: number, sc: number, shine: number, alpha = 1): void {
-  const L = obterLogo();
-  const w = L.w * sc;
-  const h = L.h * sc;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.drawImage(L.art, x - w / 2, y - h / 2, w, h);
-  if (shine >= 0 && shine <= 1) {
-    const g = L.tmp.getContext('2d');
-    if (g) {
-      const Wt = L.tmp.width;
-      const Ht = L.tmp.height;
-      g.globalCompositeOperation = 'source-over';
-      g.clearRect(0, 0, Wt, Ht);
-      g.drawImage(L.mask, 0, 0);
-      g.globalCompositeOperation = 'source-in';
-      const cx = -Wt * 0.3 + shine * Wt * 1.6;
-      const gr = g.createLinearGradient(cx - 160, 0, cx + 160, Ht * 0.4);
-      const [br, bg, bb] = PALETA_MARCA.brilho;
-      gr.addColorStop(0, `rgba(${br},${bg},${bb},0)`);
-      gr.addColorStop(0.5, `rgba(${br},${bg},${bb},0.85)`);
-      gr.addColorStop(1, `rgba(${br},${bg},${bb},0)`);
-      g.fillStyle = gr;
-      g.fillRect(0, 0, Wt, Ht);
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.drawImage(L.tmp, x - w / 2, y - h / 2, w, h);
-    }
-  }
-  ctx.restore();
+/** Reduz a fonte UMA vez para `larguraPre` (alta qualidade). Sem necessidade de reduzir (fonte menor ou igual, ou `larguraPre` 0): sem pré-redimensionada. */
+export function prepararImagemDaMarca(fonte: Fonte, larguraPre: number, criar: CriarCanvas = criarCanvasPadrao): ImagemDaMarca {
+  if (larguraPre <= 0 || fonte.width <= larguraPre) return { fonte, pre: null };
+  const altura = Math.round((fonte.height * larguraPre) / fonte.width);
+  const c = criar(larguraPre, altura);
+  const g = c.getContext('2d');
+  if (!g) return { fonte, pre: null };
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(fonte, 0, 0, larguraPre, altura);
+  return { fonte, pre: c };
 }
 
-/** Segmentos do anel do emblema: constante da marca, não depende de quantos lutadores existem. */
-const SEGMENTOS_DO_ANEL = 4;
+export type CarregadorDeImagem = (url: string) => Promise<Fonte>;
 
-/** Emblema atrás do logo: anel dourado/laranja da marca (cor única, o mesmo para qualquer elenco). */
-export function desenharEmblema(ctx: Ctx, x: number, y: number, r: number, t: number, alpha = 1): void {
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.globalAlpha = alpha;
+/** Carrega e DECODIFICA uma imagem do próprio site (a CSP libera `img-src 'self'`). Fora do navegador (Node) falha: a marca só não aparece. */
+const carregadorDeRede: CarregadorDeImagem = (url) =>
+  new Promise((ok, falhou) => {
+    if (typeof Image === 'undefined') {
+      falhou(new Error('sem Image'));
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const pronta = typeof img.decode === 'function' ? img.decode().catch(() => undefined) : Promise.resolve();
+      void pronta.then(() => ok(img));
+    };
+    img.onerror = () => falhou(new Error(`não carregou ${url}`));
+    img.src = url;
+  });
+
+let carregador: CarregadorDeImagem = carregadorDeRede;
+let criarCanvas: CriarCanvas = criarCanvasPadrao;
+let baseDaMarca = '/';
+const estado = new Map<VarianteDaMarca, ImagemDaMarca | 'carregando' | 'falhou'>();
+const camadasDeBrilho = new Map<VarianteDaMarca, HTMLCanvasElement>();
+
+/** Só para teste: troca o carregamento por um falso e esquece o que já carregou. */
+export function reiniciarMarcaParaTeste(c: CarregadorDeImagem = carregadorDeRede, base = '/', canvas: CriarCanvas = criarCanvasPadrao): void {
+  carregador = c;
+  criarCanvas = canvas;
+  baseDaMarca = base;
+  estado.clear();
+  camadasDeBrilho.clear();
+}
+
+function carregarVariante(v: VarianteDaMarca): void {
+  if (estado.has(v)) return;
+  estado.set(v, 'carregando');
+  const { arquivo, larguraPre } = VARIANTES[v];
+  carregador(`${baseDaMarca}assets/ui/logo/${arquivo}`).then(
+    (fonte) => {
+      try {
+        estado.set(v, prepararImagemDaMarca(fonte, larguraPre, criarCanvas));
+      } catch {
+        estado.set(v, 'falhou');
+      }
+    },
+    () => estado.set(v, 'falhou'),
+  );
+}
+
+/**
+ * Começa a baixar a marca (splash, logo completa e logo horizontal), sem esperar ninguém: chamada cedo no boot, em paralelo com as fontes e a arte. Idempotente.
+ * Até ficarem prontas, as `desenhar*` devolvem false e a cena cai no que desenhava antes (o fundo liso do boot).
+ */
+export function iniciarMarca(base: string = import.meta.env.BASE_URL): void {
+  baseDaMarca = base.endsWith('/') ? base : `${base}/`;
+  for (const v of Object.keys(VARIANTES) as VarianteDaMarca[]) carregarVariante(v);
+}
+
+/** A imagem pronta da variante (ou null: ainda carregando, falhou ou nunca pedida; pedir aqui já inicia o carregamento). */
+function imagemPronta(v: VarianteDaMarca): ImagemDaMarca | null {
+  if (!estado.has(v)) carregarVariante(v);
+  const e = estado.get(v);
+  return typeof e === 'object' ? e : null;
+}
+
+/** A variante já está pronta para desenhar? (testes e o aviso de carregamento) */
+export function marcaPronta(v: VarianteDaMarca): boolean {
+  return imagemPronta(v) !== null;
+}
+
+/** Retângulo (px lógicos) que `desenharLogo`/`desenharLogoHorizontal` ocupam, centrado em (x, y) com essa altura; null se a imagem ainda não chegou. */
+export function retanguloDaMarca(v: VarianteDaMarca, x: number, y: number, altura: number): { x: number; y: number; w: number; h: number } | null {
+  const im = imagemPronta(v);
+  if (!im) return null;
+  const w = (altura * im.fonte.width) / im.fonte.height;
+  return { x: x - w / 2, y: y - altura / 2, w, h: altura };
+}
+
+/** Varredura de luz: só onde há logo (`source-in` sobre a própria imagem), somada com `lighter`. Só roda enquanto `shine` está em [0, 1]. */
+function varredura(ctx: Ctx, v: VarianteDaMarca, fonte: Fonte, x: number, y: number, w: number, h: number, shine: number): void {
+  let tmp = camadasDeBrilho.get(v);
+  if (!tmp || tmp.width !== fonte.width || tmp.height !== fonte.height) {
+    tmp = criarCanvas(fonte.width, fonte.height);
+    camadasDeBrilho.set(v, tmp);
+  }
+  const g = tmp.getContext('2d');
+  if (!g) return;
+  const Wt = tmp.width;
+  const Ht = tmp.height;
+  g.globalCompositeOperation = 'source-over';
+  g.clearRect(0, 0, Wt, Ht);
+  g.drawImage(fonte, 0, 0);
+  g.globalCompositeOperation = 'source-in';
+  const meia = Wt * 0.1;
+  const cx = -Wt * 0.3 + shine * Wt * 1.6;
+  const gr = g.createLinearGradient(cx - meia, 0, cx + meia, Ht * 0.4);
+  const [br, bg, bb] = PALETA_MARCA.brilho;
+  gr.addColorStop(0, `rgba(${br},${bg},${bb},0)`);
+  gr.addColorStop(0.5, `rgba(${br},${bg},${bb},0.55)`);
+  gr.addColorStop(1, `rgba(${br},${bg},${bb},0)`);
+  g.fillStyle = gr;
+  g.fillRect(0, 0, Wt, Ht);
   ctx.globalCompositeOperation = 'lighter';
-  const glow = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r * 1.5);
-  glow.addColorStop(0, PALETA_MARCA.halo);
-  glow.addColorStop(1, 'rgba(0,0,0,0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(0, 0, r * 1.5, 0, Math.PI * 2);
-  ctx.fill();
-  const giro = t / 90;
-  // anel principal: degradê cônico dourado -> laranja -> dourado girando devagar
-  const cone = ctx.createConicGradient(giro, 0, 0);
-  PALETA_MARCA.anel.forEach((c, i) => cone.addColorStop(i / (PALETA_MARCA.anel.length - 1), c));
-  ctx.strokeStyle = cone;
-  ctx.lineWidth = 7;
-  ctx.lineCap = 'round';
-  const passo = (Math.PI * 2) / SEGMENTOS_DO_ANEL;
-  for (let i = 0; i < SEGMENTOS_DO_ANEL; i++) {
-    const a0 = giro + i * passo;
-    ctx.beginPath();
-    ctx.arc(0, 0, r, a0 + 0.12, a0 + passo - 0.12);
-    ctx.stroke();
-  }
-  // arcos internos finos, girando ao contrário
-  ctx.strokeStyle = PALETA_MARCA.anelInterno;
-  ctx.lineWidth = 2;
-  for (let i = 0; i < SEGMENTOS_DO_ANEL; i++) {
-    const a0 = -giro * 1.4 + i * 1.57;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.86, a0, a0 + 0.9);
-    ctx.stroke();
-  }
-  ctx.restore();
+  ctx.drawImage(tmp, x, y, w, h);
 }
 
-/** As duas peças da marca. As cenas chamam por aqui, então um teste pode trocá-las (ex.: medir o resto da tela sem o logo). */
-export const marca = { desenharLogo, desenharEmblema };
+function desenharVariante(ctx: Ctx, v: VarianteDaMarca, x: number, y: number, altura: number, shine: number, alpha: number): boolean {
+  const im = imagemPronta(v);
+  if (!im || altura <= 0) return false;
+  const w = (altura * im.fonte.width) / im.fonte.height;
+  // no tamanho normal (ou menor) usa a versão já reduzida; ampliada (o impacto da abertura chega a 3,2x) usa a original
+  const fonte: Fonte = im.pre && w * RS <= im.pre.width * 1.02 ? im.pre : im.fonte;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(fonte, x - w / 2, y - altura / 2, w, altura);
+  if (shine >= 0 && shine <= 1) varredura(ctx, v, fonte, x - w / 2, y - altura / 2, w, altura, shine);
+  ctx.restore();
+  return true;
+}
+
+/**
+ * Desenha a logo completa, centrada em (x, y), com `altura` em px lógicos (título e abertura: `LOGO_ALTURA`); `shine` (0..1) é a posição da varredura de luz.
+ * Devolve false se a imagem ainda não está pronta (nada é desenhado).
+ */
+export function desenharLogo(ctx: Ctx, x: number, y: number, altura: number, shine: number, alpha = 1): boolean {
+  return desenharVariante(ctx, 'principal', x, y, altura, shine, alpha);
+}
+
+/** A logo horizontal (sem a faixa do subtítulo): o menu. Mesmo contrato de `desenharLogo`. */
+export function desenharLogoHorizontal(ctx: Ctx, x: number, y: number, altura: number, shine: number, alpha = 1): boolean {
+  return desenharVariante(ctx, 'horizontal', x, y, altura, shine, alpha);
+}
+
+/** O splash do carregamento, em tela cheia (960x540 lógicos). Devolve false se ainda não chegou (a cena pinta o fundo liso de antes). */
+export function desenharSplash(ctx: Ctx, alpha = 1): boolean {
+  const im = imagemPronta('splash');
+  if (!im) return false;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(im.fonte, 0, 0, LARGURA, ALTURA);
+  ctx.restore();
+  return true;
+}
+
+/** As peças da marca. As cenas chamam por aqui, então um teste pode trocá-las (ex.: medir o resto da tela sem a logo). */
+export const marca = { desenharLogo, desenharLogoHorizontal, desenharSplash };
 
 const imagemDoCenario = (m: Mundo, id: string): CanvasImageSource => m.rec.cenarios.get(id) ?? m.rec.cenarioPadrao;
 export const cenarioDoCiclo = imagemDoCenario;

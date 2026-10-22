@@ -3,13 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#000000" />
+    <meta name="theme-color" content="#070b15" />
+    <!-- tela cheia no celular: o iPhone (Safari e Chrome) nao tem Fullscreen API; "Adicionar a Tela de Inicio" abre o jogo sem barras (standalone) com estas metas + manifest -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="InnoFighters" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/ui/logo/icones/apple-touch-icon-v1-180.png" />
+    <!-- favicon: o "IF" legivel em 16/32 px (a arte inteira da logo nao le); /favicon.ico tambem existe para quem o pede sozinho -->
+    <link rel="icon" href="/assets/ui/logo/icones/favicon-v1.ico" sizes="16x16 32x32 48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/ui/logo/icones/favicon-v1-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/ui/logo/icones/favicon-v1-16.png" />
+    <!-- o splash do boot e a 1a coisa que o jogo desenha: baixa ja, antes do JS -->
+    <link rel="preload" href="/assets/ui/logo/splash-v1-1920x1080.webp" as="image" type="image/webp" />
+    <!-- compartilhamento: og:image exige URL ABSOLUTA, so no dominio definitivo (o site atual e de teste, noindex). Arquivo pronto em arte-fonte/logo/webp-entregues-nao-usadas/og-v1-1200x630.jpg (copiar para public/ ao entrar o dominio) -->
+    <meta property="og:title" content="InnoFighters" />
+    <meta property="og:description" content="Torneio Mundial de Artes Marciais. Jogo de luta 2D no navegador." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- site de TESTE publico (Pages temporario): nao indexar. Remover ao entrar no servidor definitivo. -->
     <meta name="robots" content="noindex" />
     <title>InnoFighters</title>
     <!-- fontes do canvas (auto-hospedadas, OFL): precarga para a 1a cena nao esperar; declaradas em src/fontes.css -->
     <link rel="preload" href="/assets/fontes/barlow-condensed-800-italic-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/assets/fontes/barlow-600-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/assets/fontes/bangers-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
     <style>
       html, body { margin: 0; height: 100%; background: #05030a; overflow: hidden; }
       body { display: grid; place-items: center; touch-action: none; }
@@ -23,14 +42,14 @@
     <div id="touch">
       <div id="joy"><div id="knob"></div></div>
       <div id="pad">
-        <div class="b" id="esq" data-k="n" role="button" aria-label="Esquiva">ESQ</div><!-- ESQUIVA (L1): escondido com Regras.esquiva desligada (body.sem-esquiva) -->
-        <div class="b" id="r1" data-k="b" role="button" aria-label="Especial">ESP</div>
-        <div class="b hp" data-k="x" role="button" aria-label="Soco forte"><b>△</b></div>
-        <div class="b hk" data-k="v" role="button" aria-label="Chute forte"><b>○</b></div>
-        <div class="b lp" data-k="z" role="button" aria-label="Soco fraco"><b>□</b></div>
-        <div class="b lk" data-k="c" role="button" aria-label="Chute fraco"><b>✕</b></div>
+        <div class="b" id="esq" data-k="n" data-rotulo="ESQUIVA" role="button" aria-label="Esquiva"></div><!-- ESQUIVA (L1): escondido com Regras.esquiva desligada (body.sem-esquiva) -->
+        <div class="b" id="r1" data-k="b" data-rotulo="ESPECIAL" role="button" aria-label="Especial"></div>
+        <div class="b hp" data-k="x" data-rotulo="FORTE" role="button" aria-label="Soco forte"></div>
+        <div class="b hk" data-k="v" data-rotulo="FORTE" role="button" aria-label="Chute forte"></div>
+        <div class="b lp" data-k="z" data-rotulo="LEVE" role="button" aria-label="Soco fraco"></div>
+        <div class="b lk" data-k="c" data-rotulo="LEVE" role="button" aria-label="Chute fraco"></div>
       </div>
-      <div class="b" id="bp" data-k="Escape" role="button" aria-label="Pausar">II</div>
+      <div class="b" id="bp" data-k="Escape" role="button" aria-label="Pausar"></div>
     </div>
     <div id="rot" role="status">Vire o aparelho para o modo paisagem</div>
     <!-- avisos discretos que somem sozinhos (platform/aviso.ts), ex.: progresso nao salvo -->

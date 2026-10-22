@@ -4,6 +4,7 @@
  * orçamento do tema é RELATIVO ao da `fight` (spec §3.5), e não um número inventado.
  */
 import { AudioSys, type TrilhaMusica } from '../../src/audio/audio-sys';
+import '../../src/audio/temas'; // registra o sequenciador dos temas no AudioSys (que não os importa)
 import { criarRng } from '../../src/core/rng';
 import { Contexto, FonteBuffer, Oscilador, comoAudioContext } from './audio-offline';
 
@@ -34,8 +35,22 @@ export function rodarTrilha(kind: TrilhaMusica, segundos: number, opcoes: { spb:
   });
   audio.init();
   const nosDoInit = ctx.nos.length;
+  // os instantes reais dos passos (a fase 2 muda a duração do passo no meio da medida, e num tema o 1º passo já nasce no startMusic, com folga maior)
+  const passosT: number[] = [];
+  for (const nome of ['playStep', 'playMenu', 'playChefe'] as const) {
+    const orig = audio[nome].bind(audio);
+    audio[nome] = (step, t, spb) => {
+      passosT.push(t);
+      orig(step, t, spb);
+    };
+  }
+  const origTema = audio.playTema.bind(audio);
+  audio.playTema = (tema, step, t) => {
+    passosT.push(t);
+    origTema(tema, step, t);
+  };
   audio.startMusic(kind);
-  const t0 = audio.nextTime;
+  const t0 = passosT[0] ?? audio.nextTime;
   const ticksMs: number[] = [];
   let pediu2 = false;
   for (let t = 0; t < segundos; t += 0.025) {
@@ -52,7 +67,16 @@ export function rodarTrilha(kind: TrilhaMusica, segundos: number, opcoes: { spb:
   const fontes = ctx.nos.filter((n): n is Oscilador | FonteBuffer => (n instanceof Oscilador || n instanceof FonteBuffer) && n.inicio >= 0);
   const porPasso = new Map<number, number>();
   for (const f of fontes) {
-    const p = Math.floor((f.inicio - t0) / opcoes.spb + 0.3);
+    // o passo a que a fonte pertence: o último que começou até 0,3 passo depois do início dela (deslocamentos de swing/quando)
+    let lo = 0;
+    let hi = passosT.length - 1;
+    const x = f.inicio + 0.3 * opcoes.spb;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if ((passosT[mid] as number) <= x) lo = mid;
+      else hi = mid - 1;
+    }
+    const p = lo;
     porPasso.set(p, (porPasso.get(p) ?? 0) + 1);
   }
   let pico = 0;
@@ -77,3 +101,26 @@ export const percentil = (v: readonly number[], p: number): number => {
   const s = [...v].sort((a, b) => a - b);
   return s[Math.min(s.length - 1, Math.floor(p * s.length))] ?? 0;
 };
+
+/**
+ * Referência de tempo do agendamento: o p99 do tick do `scheduler()` da trilha `fight` de hoje, como MEDIANA de 5 execuções (o tempo de um tick em Node varia
+ * 5x de uma execução para outra por JIT e coleta de lixo: uma só medida faria o critério relativo tremer). Os critérios de tempo comparam com isto, e não
+ * com um absoluto: nem a `fight` cumpre `p99 < 1 ms` no Chromium com CPU 4x (N3 da Íris: 9,5 ms).
+ */
+let _p99Fight: number | null = null;
+export function p99DaFight(): number {
+  if (_p99Fight === null) {
+    const todos = Array.from({ length: 5 }, () => percentil(rodarTrilha('fight', 20, { spb: 0.1 }).medida.ticksMs, 0.99));
+    todos.sort((a, b) => a - b);
+    _p99Fight = todos[2] as number;
+  }
+  return _p99Fight;
+}
+/** Ruído do relógio (ms) somado aos limites relativos de tempo. */
+export const RUIDO_RELOGIO_MS = 0.05;
+/** O menor p99 de `reps` execuções (o melhor caso do mesmo código: tira o pico de coleta de lixo, que não é custo do tema). */
+export function menorP99(rodar: () => readonly number[], reps: number): number {
+  let m = Infinity;
+  for (let i = 0; i < reps; i++) m = Math.min(m, percentil(rodar(), 0.99));
+  return m;
+}

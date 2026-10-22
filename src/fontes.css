@@ -18,6 +18,14 @@
   font-display: block;
   src: url("/assets/fontes/barlow-600-latin.woff2") format("woff2");
 }
+/* Bangers (letreiro de quadrinho de luta): SÓ as falas dos balões das provocações (render/balao.ts, FONTE_DA_FALA), em caixa alta. */
+@font-face {
+  font-family: "Bangers";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("/assets/fontes/bangers-latin-400-normal.woff2") format("woff2");
+}
 :root {
   --fonte-corpo: Barlow, "Segoe UI", "Trebuchet MS", Arial, sans-serif;
 }

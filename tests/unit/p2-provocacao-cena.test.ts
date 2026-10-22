@@ -187,7 +187,9 @@ describe('o desenho do round 1', () => {
     const p1 = t.desenhar().textos();
     expect(p1).toContain('HAYATO'); // a etiqueta do balão do P1
     expect(p1).not.toContain('CAIO');
-    expect(p1.some((x) => x.length > 3 && a.texto.replace('\n', ' ').includes(x.trim()))).toBe(true);
+    // a fala vai em CAIXA ALTA (Bangers), palavra a palavra: alguma palavra de mais de 3 letras da fala do P1 já foi escrita
+    const alta = a.texto.replace('\n', ' ').toLocaleUpperCase('pt-BR');
+    expect(p1.some((x) => x.length > 3 && alta.includes(x.trim()))).toBe(true);
     t.ate(() => t.cena.provocacao.tick >= b.abre + 60);
     const p2 = t.desenhar().textos();
     expect(p2).toContain('CAIO');

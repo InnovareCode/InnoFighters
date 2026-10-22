@@ -1,5 +1,8 @@
 import { midi } from '../core/math';
 import { criarRng, sementeAleatoria, type Rng } from '../core/rng';
+import type { IdTema } from '../data/musica/tipos';
+import { tocarReceita } from './receitas';
+import { duracaoDoPasso, partituraDaTroca, partituraDoPasso, temaDaTrilha, type TemaCompilado } from './temas';
 
 /*
  * AudioSys do protótipo (seção 2 + extensões das linhas 257-317 e 1743-1756), porte fiel.
@@ -74,6 +77,8 @@ export type OpcoesVozFormante = {
   coro?: { cents: number; sub: number };
   extra?: { f: number; q: number; ganho: number };
   dest?: AudioNode | null;
+  /** `false` = não conta nas 32 fontes dos efeitos (a música fica fora do teto). Padrão: conta. */
+  registrar?: boolean;
 };
 
 /** Fontes (OscillatorNode/AudioBufferSourceNode iniciados) que uma `vozFormante` cria. Pura: o orçamento conta antes de tocar. */
@@ -89,11 +94,13 @@ export const ANTI_METRALHADORA_S = 0.08;
 
 type Garganta = { gate: GainNode; fim: number; ko: boolean; ultimoDano: number };
 
-export type TrilhaMusica = 'fight' | 'menu' | 'chefe';
+/** As trilhas de código fixo (o protótipo e a valsa do chefão). Os temas por lutador (`tema:<id>`) são dados: src/data/musica. */
+export type TrilhaFixa = 'fight' | 'menu' | 'chefe';
+export type TrilhaMusica = TrilhaFixa | `tema:${IdTema}`;
 
 /** Forma de cada trilha: andamento, passos por compasso e compassos do laço. `fight` e `menu` são as do protótipo, bit a bit. */
 type DefTrilha = { bpm: number; passosPorCompasso: number; compassos: number; andamentoFase2?: number };
-export const TRILHAS: Readonly<Record<TrilhaMusica, DefTrilha>> = {
+export const TRILHAS: Readonly<Record<TrilhaFixa, DefTrilha>> = {
   fight: { bpm: 150, passosPorCompasso: 16, compassos: 4 },
   menu: { bpm: 92, passosPorCompasso: 16, compassos: 4 },
   // Valsa 3/4 em semicolcheias: 12 passos por compasso, 8 compassos (96 passos). Fase 2 do chefão: +12% de andamento.
@@ -170,6 +177,8 @@ export class AudioSys {
   timer: unknown = null;
   loops = 0;
   kind: TrilhaMusica | null = null;
+  /** O tema compilado quando `kind` é `tema:<id>` (null nas trilhas fixas). */
+  private temaAtual: TemaCompilado | null = null;
   /** Fase da trilha do chefão em uso (1 ou 2) e a pedida por `musicaDaFase`: a troca só vale no início do compasso seguinte. */
   fase: 1 | 2 = 1;
   private faseAlvo: 1 | 2 = 1;
@@ -494,7 +503,7 @@ export class AudioSys {
       osc.start(now);
       osc.stop(fim + 0.05);
     }
-    this.registrarFontes(fontesDaVoz(o), fim + 0.05);
+    if (o.registrar !== false) this.registrarFontes(fontesDaVoz(o), fim + 0.05);
   }
 
   // --- efeitos sonoros ---
@@ -637,6 +646,7 @@ export class AudioSys {
     if (this.musicOn && this.kind === kind) return;
     this.stopMusic();
     this.kind = kind;
+    this.temaAtual = temaDaTrilha(kind);
     this.fase = 1;
     this.musicOn = true;
     this.step = 0;
@@ -659,6 +669,10 @@ export class AudioSys {
   scheduler(): void {
     const c = this.ctx;
     if (!c) return;
+    if (this.temaAtual) {
+      this.schedulerTema(c, this.temaAtual);
+      return;
+    }
     const def = TRILHAS[this.kind === 'menu' ? 'menu' : this.kind === 'chefe' ? 'chefe' : 'fight'];
     const len = def.passosPorCompasso * def.compassos;
     while (this.nextTime < c.currentTime + 0.15) {
@@ -674,6 +688,34 @@ export class AudioSys {
         this.loops++;
       }
     }
+  }
+  /**
+   * Sequenciador dos temas por lutador (spec §3.2): o mesmo contrato do `scheduler` das trilhas fixas (passo, `nextTime`, laço, fase que só vira no
+   * início do compasso seguinte), mas a música vem da partitura PURA do tema. Na virada para a fase 2 toca o trecho de troca no 1º passo do compasso.
+   */
+  private schedulerTema(c: AudioContext, tema: TemaCompilado): void {
+    while (this.nextTime < c.currentTime + 0.15) {
+      if (this.step % tema.passosPorCompasso === 0) {
+        const antes = this.fase;
+        this.fase = this.faseAlvo;
+        if (antes === 1 && this.fase === 2) this.tocarTroca(tema, this.nextTime);
+      }
+      this.playTema(tema, this.step, this.nextTime);
+      this.nextTime += duracaoDoPasso(tema.def, this.fase);
+      this.step++;
+      if (this.step >= tema.passosTotais) {
+        this.step = 0;
+        this.loops++;
+      }
+    }
+  }
+  /** Toca um passo de um tema por lutador no barramento da música (`t` = instante absoluto do passo). A música fica fora do teto de 32 fontes. */
+  playTema(tema: TemaCompilado, step: number, t: number): void {
+    tocarReceita(this, partituraDoPasso(tema, step, this.loops, this.fase), { destino: 'musica', inicio: t, agora: this.ctx?.currentTime ?? 0 });
+  }
+  /** Trecho de troca de fase (impacto e subida) no instante `t`, o início do 1º compasso da fase 2. */
+  private tocarTroca(tema: TemaCompilado, t: number): void {
+    tocarReceita(this, partituraDaTroca(tema), { destino: 'musica', inicio: t, agora: this.ctx?.currentTime ?? 0 });
   }
   playStep(step: number, t: number, spb: number): void {
     const s16 = step % 16;

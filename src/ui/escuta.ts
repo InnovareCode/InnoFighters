@@ -1,6 +1,8 @@
 import { IDS_LUTADORES, type EventoLuta, type IdLutador, type IndiceLutador, type TextoFlutuante } from '../core/contratos';
 import type { AudioSys } from '../audio/audio-sys';
+import { bancoDeAmostrasAtivo, prepararLutaSonora } from '../audio/camadas';
 import { reagirComIdentidade, tocarItem, type ContextoSonoro } from '../audio/identidade-sonora';
+import { pedidoDeVoz } from '../audio/plano-amostras';
 import { sintetizarGrito } from '../audio/sintese-voz';
 import { temaDoLutador } from '../audio/temas';
 import { LUTADORES } from '../data/lutadores';
@@ -10,6 +12,10 @@ import type { AssinaturaEspecial } from '../data/sons/tipos';
 /*
  * PAINEL DE ESCUTA (`?escuta=1`): o dono ouve, no navegador do PC ou do celular, cada som e cada tema novos SEM jogar. Não persiste nada nem mexe no
  * save: o painel chama as camadas direto (`ligada = true`), ou as de antes (caixa de comparação).
+ *
+ * AMOSTRAS REAIS (docs/plano-sons-realistas.md §6.3): a caixa "amostras reais" é o A/B amostra x síntese (desmarcada, o banco calado toca a síntese que a amostra
+ * substitui); os botões "A/B" tocam as duas em fila; o vidro sintético da guarda quebrada e o volume das amostras são ajustáveis aqui, que é onde o dono e o Apolo
+ * decidem. O estado das folhas (baixando, decodificando, pronta) aparece na tela: amostra que não tocou quase sempre é folha que ainda não chegou.
  *
  * O que sai daqui é o que o jogo toca: cada botão monta o MESMO evento de luta que o motor emitiria (`special`, `projectile`, `hit`, `ko`, `quebra-guarda`,
  * `round`...) e o entrega a `reagirComIdentidade`, que é a função que `fight.ts` usa. Os temas vão pelo `startMusic` real (e a troca de fase pelo
@@ -78,6 +84,7 @@ export function abrirEscuta(o: OpcoesEscuta): void {
   let tocandoAgora = '';
   const teclas = new Map<string, () => void>();
   let estadoEl: HTMLElement | null = null;
+  let estadoAmostras: HTMLElement | null = null;
   const timers = new Set<ReturnType<typeof setTimeout>>();
 
   const garantirAudio = (): boolean => {
@@ -91,7 +98,12 @@ export function abrirEscuta(o: OpcoesEscuta): void {
       dizer('Este navegador não tem Web Audio: nada para ouvir aqui.');
       return false;
     }
+    prepararAmostras();
     return true;
+  };
+  /** As folhas da base e dos dois lutadores da escuta (o escolhido e um rival qualquer): baixa e decodifica, em fila. Idempotente. */
+  const prepararAmostras = (): void => {
+    if (bancoDeAmostrasAtivo()) prepararLutaSonora([sel, outroLutador(sel)], audio.ctx);
   };
   const dizer = (texto: string): void => {
     tocandoAgora = texto;
@@ -113,6 +125,36 @@ export function abrirEscuta(o: OpcoesEscuta): void {
     if (!garantirAudio()) return;
     reagirComIdentidade(audio, eventos, contexto(ficha), undefined, !hoje);
     dizer(`${hoje ? 'DE ANTES' : 'ATUAL'}: ${texto}`);
+  };
+
+  /** Toca a mesma coisa duas vezes em fila: primeiro a amostra, depois a síntese que ela substitui. Sem banco carregado (ou no modo "de antes"), só uma vez. */
+  const ab = (acao: () => void, texto: string): void => {
+    const banco = bancoDeAmostrasAtivo();
+    if (!banco || hoje) {
+      acao();
+      return;
+    }
+    // sem a base (e as folhas dos dois lutadores) decodificada o 1º "AMOSTRA" tocaria síntese: nas duas metades, sem diferença. Cria o contexto (a decodificação só
+    // começa com ele), pede as folhas e AVISA em vez de tocar; o estado das folhas na tela mostra quando acabou.
+    if (!garantirAudio()) return;
+    const emEspera = banco.folhasEmEspera([sel, outroLutador(sel)]);
+    if (emEspera.length > 0) {
+      dizer(`Carregando as amostras (${emEspera.join(', ')})... tente o A/B de novo em instantes.`);
+      return;
+    }
+    const antes = banco.ligado;
+    banco.ligado = true;
+    acao();
+    dizer(`A/B ${texto}: 1º a AMOSTRA...`);
+    setTimeout(() => {
+      banco.ligado = false;
+      acao();
+      dizer(`A/B ${texto}: ...2º a SÍNTESE de hoje.`);
+      // as sequências agendam partes depois: a chave só volta quando elas acabarem (setTimeout puro: redesenhar a tela cancela `depois`, e a chave não pode ficar presa)
+      setTimeout(() => {
+        banco.ligado = antes;
+      }, 2000);
+    }, 1300);
   };
 
   // ---- eventos de luta, como o motor os emite (só os campos que o som lê, mais os obrigatórios do tipo) ----
@@ -199,6 +241,49 @@ export function abrirEscuta(o: OpcoesEscuta): void {
     barra.appendChild(lh);
     raiz.appendChild(barra);
 
+    // amostras reais: A/B, vidro da guarda, volume e o estado das folhas
+    const banco = bancoDeAmostrasAtivo();
+    const caixaAmostras = el('div', undefined, 'cartao');
+    caixaAmostras.appendChild(el('h3', 'Amostras reais'));
+    if (banco) {
+      const linhaAmostras = el('div', undefined, 'linha');
+      const marcador = (rotulo: string, ligado: boolean, aplicar: (v: boolean) => void): void => {
+        const l = el('label', rotulo);
+        const c = el('input');
+        c.type = 'checkbox';
+        c.checked = ligado;
+        c.addEventListener('change', () => aplicar(c.checked));
+        l.prepend(c);
+        linhaAmostras.appendChild(l);
+      };
+      marcador('Amostras reais (desmarque para ouvir só a síntese)', banco.ligado, (v) => {
+        banco.ligado = v;
+        dizer(v ? 'Amostras reais LIGADAS.' : 'Amostras DESLIGADAS: toca a síntese de hoje.');
+      });
+      marcador('Vidro sintetizado sobre a guarda quebrada', banco.vidroSobreGuarda, (v) => {
+        banco.vidroSobreGuarda = v;
+        dizer(v ? 'Guarda quebrada: amostra + vidro sintético.' : 'Guarda quebrada: só a amostra.');
+      });
+      const lv = el('label', 'Volume das amostras');
+      const rv = el('input');
+      rv.type = 'range';
+      rv.min = '0';
+      rv.max = '1.5';
+      rv.step = '0.05';
+      rv.value = String(banco.volume);
+      rv.setAttribute('aria-label', 'Volume das amostras');
+      rv.addEventListener('input', () => {
+        banco.volume = Number(rv.value);
+      });
+      lv.appendChild(rv);
+      linhaAmostras.appendChild(lv);
+      caixaAmostras.appendChild(linhaAmostras);
+      estadoAmostras = el('p', banco.resumo());
+      estadoAmostras.setAttribute('role', 'status');
+      caixaAmostras.appendChild(estadoAmostras);
+    } else caixaAmostras.appendChild(el('p', 'Sem pacote de amostras (o manifesto não está no ar ou a rede falhou): tudo o que se ouve aqui é síntese.'));
+    raiz.appendChild(caixaAmostras);
+
     // lutadores
     const nav = el('nav');
     nav.setAttribute('aria-label', 'Lutadores');
@@ -209,6 +294,7 @@ export function abrirEscuta(o: OpcoesEscuta): void {
       b.addEventListener('click', () => {
         sel = outro;
         desenhar();
+        if (audio.ctx) prepararAmostras(); // com o contexto já criado, as folhas do novo lutador começam a vir já
       });
       nav.appendChild(b);
     }
@@ -233,13 +319,18 @@ export function abrirEscuta(o: OpcoesEscuta): void {
       botao(vozes, 'Kiai', '1', () => {
         if (!garantirAudio()) return;
         if (hoje) audio.special(pitch());
-        else tocarItem(audio, { receita: sintetizarGrito(perfil, gritos.kiai), prioridade: 3, garganta: 0 as IndiceLutador, tipo: 'voz' });
+        else tocarItem(audio, { receita: sintetizarGrito(perfil, gritos.kiai), prioridade: 3, garganta: 0 as IndiceLutador, tipo: 'voz', amostra: pedidoDeVoz(id, null, 'kiai', () => 0.5, 0, false) });
         dizer(`${hoje ? 'DE ANTES' : 'ATUAL'}: kiai`);
       });
       botao(vozes, 'Dano leve', '2', () => tocar([evHit({})], null, 'dano leve'));
       botao(vozes, 'Dano pesado', '3', () => tocar([evHit({ grande: true, dano: 16 })], null, 'dano pesado'));
+      botao(vozes, 'Soco leve · A/B', null, () => ab(() => tocar([evHit({ atacante: 1, defensor: 0 })], null, 'soco leve'), 'soco leve'));
+      botao(vozes, 'Chute pesado · A/B', null, () => ab(() => tocar([evHit({ snd: 'kick', grande: true, dano: 16 })], null, 'chute pesado'), 'chute pesado'));
+      botao(vozes, 'Defesa · A/B', null, () => ab(() => tocar([{ tipo: 'block', atacante: 1, defensor: 0, x: 0, y: 0, dir: 1, texto: null }], null, 'defesa'), 'defesa'));
+      botao(vozes, 'Golpe no ar · A/B', null, () => ab(() => tocar([{ tipo: 'swing', lutador: 0, golpe: 'kick' }], null, 'golpe no ar'), 'golpe no ar'));
       botao(vozes, 'Guarda quebrada', '4', () => tocar([{ tipo: 'quebra-guarda', atacante: 1, defensor: 0, x: 0, y: 0, texto: TEXTO_VAZIO }], null, 'guarda quebrada'));
       botao(vozes, 'KO', '5', () => tocar([{ tipo: 'ko', defensor: 0, pitch: pitch() }], null, 'KO'));
+      botao(vozes, 'KO · A/B', null, () => ab(() => tocar([{ tipo: 'ko', defensor: 0, pitch: pitch() }], null, 'KO'), 'KO'));
       botao(vozes, 'Vitória (grito atrasa ~1 s, como no fim da luta)', '6', () => tocar([{ tipo: 'round', fase: 'end', round: 1, vencedor: 0, fimDaLuta: true }], null, 'vitória'));
       if (gritos.esforco) botao(vozes, 'Esforço (armadura)', '7', () => tocar([{ tipo: 'armor', atacante: 1, defensor: 0, x: 0, y: 0, snd: 'punch', texto: TEXTO_VAZIO }], null, 'esforço da armadura'));
     } else vozes.appendChild(el('p', 'Este lutador não tem voz nos dados (cai nos sons genéricos).'));
@@ -273,6 +364,7 @@ export function abrirEscuta(o: OpcoesEscuta): void {
       const tecla = indiceTecla < TECLAS_ESPECIAIS.length ? (TECLAS_ESPECIAIS[indiceTecla] as string) : null;
       indiceTecla++;
       botao(linha, 'Sequência', tecla, sequencia);
+      botao(linha, 'Sequência · A/B', null, () => ab(sequencia, golpe));
       botao(linha, 'Início (grito + conjuração)', null, () => tocar([evSpecial(golpe, fichaEv)], fichaEv, `${golpe}: início`));
       if (a.lancamento && a.estilo) {
         const estilo = a.estilo;
@@ -345,6 +437,12 @@ export function abrirEscuta(o: OpcoesEscuta): void {
     rodape.appendChild(volta);
     raiz.appendChild(rodape);
   };
+
+  // o estado das folhas muda sozinho (baixando, decodificando, pronta): reescreve a linha a cada meio segundo, só se ela mudou
+  setInterval(() => {
+    const b = bancoDeAmostrasAtivo();
+    if (b && estadoAmostras && estadoAmostras.isConnected && estadoAmostras.textContent !== b.resumo()) estadoAmostras.textContent = b.resumo();
+  }, 500);
 
   doc.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;

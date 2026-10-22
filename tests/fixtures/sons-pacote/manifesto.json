@@ -1,0 +1,1266 @@
+{
+ "versao": 1,
+ "taxa": 44100,
+ "folhas": {
+  "base": {
+   "arquivo": "base.mp3",
+   "bytes": 40377
+  },
+  "hayato": {
+   "arquivo": "lutador-hayato.mp3",
+   "bytes": 31599
+  },
+  "wei-long": {
+   "arquivo": "lutador-wei-long.mp3",
+   "bytes": 31599
+  },
+  "min-ji": {
+   "arquivo": "lutador-min-ji.mp3",
+   "bytes": 31599
+  },
+  "caio": {
+   "arquivo": "lutador-caio.mp3",
+   "bytes": 31599
+  },
+  "aminu": {
+   "arquivo": "lutador-aminu.mp3",
+   "bytes": 31599
+  },
+  "centella": {
+   "arquivo": "lutador-centella.mp3",
+   "bytes": 31599
+  },
+  "camille": {
+   "arquivo": "lutador-camille.mp3",
+   "bytes": 31599
+  },
+  "nila": {
+   "arquivo": "lutador-nila.mp3",
+   "bytes": 38078
+  },
+  "baatar": {
+   "arquivo": "lutador-baatar.mp3",
+   "bytes": 35988
+  },
+  "zenon": {
+   "arquivo": "lutador-zenon.mp3",
+   "bytes": 33898
+  }
+ },
+ "sons": {
+  "imp.soco.leve": [
+   {
+    "folha": "base",
+    "inicio": 0.04,
+    "dur": 0.22,
+    "picoDb": -3,
+    "rmsDb": -17.5,
+    "ganhoDb": 0,
+    "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+    "licenca": "CC0"
+   },
+   {
+    "folha": "base",
+    "inicio": 0.3,
+    "dur": 0.22,
+    "picoDb": -3,
+    "rmsDb": -17.97,
+    "ganhoDb": 0,
+    "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+    "licenca": "CC0"
+   }
+  ],
+  "imp.soco.forte": [
+   {
+    "folha": "base",
+    "inicio": 0.56,
+    "dur": 0.22,
+    "picoDb": -3,
+    "rmsDb": -17.66,
+    "ganhoDb": 0,
+    "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+    "licenca": "CC0"
+   },
+   {
+    "folha": "base",
+    "inicio": 0.82,
+    "dur": 0.22,
+    "picoDb": -3,
+    "rmsDb": -18.07,
+    "ganhoDb": 0,
+    "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+    "licenca": "CC0"
+   }
+  ],
+  "imp.chute.leve": {
+   "folha": "base",
+   "inicio": 1.08,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.5,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "imp.chute.forte": {
+   "folha": "base",
+   "inicio": 1.34,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.72,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "defesa": {
+   "folha": "base",
+   "inicio": 1.6,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.99,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "guarda.quebra": {
+   "folha": "base",
+   "inicio": 1.86,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.82,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "arremesso": {
+   "folha": "base",
+   "inicio": 2.12,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.21,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "ko.queda": {
+   "folha": "base",
+   "inicio": 2.38,
+   "dur": 0.8,
+   "picoDb": -3,
+   "rmsDb": -18.32,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "golpe.ar.leve": {
+   "folha": "base",
+   "inicio": 3.22,
+   "dur": 0.2,
+   "picoDb": -3,
+   "rmsDb": -17.67,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "golpe.ar.forte": {
+   "folha": "base",
+   "inicio": 3.46,
+   "dur": 0.2,
+   "picoDb": -3,
+   "rmsDb": -17.57,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esquiva": {
+   "folha": "base",
+   "inicio": 3.7,
+   "dur": 0.2,
+   "picoDb": -3,
+   "rmsDb": -17.7,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "pouso": {
+   "folha": "base",
+   "inicio": 3.94,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.42,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "salto": {
+   "folha": "base",
+   "inicio": 4.2,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.68,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "magia.lanca": {
+   "folha": "base",
+   "inicio": 4.46,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.5,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "magia.impacto": {
+   "folha": "base",
+   "inicio": 4.72,
+   "dur": 0.22,
+   "picoDb": -3,
+   "rmsDb": -17.69,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.kiai": {
+   "folha": "hayato",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.9,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.leve": {
+   "folha": "hayato",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.28,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.leve2": {
+   "folha": "hayato",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.08,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.pesado": {
+   "folha": "hayato",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.72,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.pesado2": {
+   "folha": "hayato",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.66,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.ko": {
+   "folha": "hayato",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -17.85,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.guarda": {
+   "folha": "hayato",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.91,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.esforco": {
+   "folha": "hayato",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.55,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.hayato.vitoria": {
+   "folha": "hayato",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.92,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e1.raio": {
+   "folha": "hayato",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -18.07,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.kiai": {
+   "folha": "wei-long",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.69,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.leve": {
+   "folha": "wei-long",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.5,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.leve2": {
+   "folha": "wei-long",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.78,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.pesado": {
+   "folha": "wei-long",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.72,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.pesado2": {
+   "folha": "wei-long",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.95,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.ko": {
+   "folha": "wei-long",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.37,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.guarda": {
+   "folha": "wei-long",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.7,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.esforco": {
+   "folha": "wei-long",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.86,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.wei-long.vitoria": {
+   "folha": "wei-long",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.66,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e2.dragao": {
+   "folha": "wei-long",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -17.84,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.kiai": {
+   "folha": "min-ji",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.77,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.leve": {
+   "folha": "min-ji",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.6,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.leve2": {
+   "folha": "min-ji",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.97,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.pesado": {
+   "folha": "min-ji",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.86,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.pesado2": {
+   "folha": "min-ji",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.65,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.ko": {
+   "folha": "min-ji",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.27,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.guarda": {
+   "folha": "min-ji",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.03,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.esforco": {
+   "folha": "min-ji",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.85,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.min-ji.vitoria": {
+   "folha": "min-ji",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e3.lamina": {
+   "folha": "min-ji",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -18.2,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.kiai": {
+   "folha": "caio",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.62,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.leve": {
+   "folha": "caio",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.01,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.leve2": {
+   "folha": "caio",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.18,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.pesado": {
+   "folha": "caio",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.48,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.pesado2": {
+   "folha": "caio",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.67,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.ko": {
+   "folha": "caio",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.22,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.guarda": {
+   "folha": "caio",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.7,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.esforco": {
+   "folha": "caio",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.86,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.caio.vitoria": {
+   "folha": "caio",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.81,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e4.ginga": {
+   "folha": "caio",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -17.65,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.kiai": {
+   "folha": "aminu",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.9,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.leve": {
+   "folha": "aminu",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.48,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.leve2": {
+   "folha": "aminu",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.51,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.pesado": {
+   "folha": "aminu",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -18.12,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.pesado2": {
+   "folha": "aminu",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.62,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.ko": {
+   "folha": "aminu",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.16,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.guarda": {
+   "folha": "aminu",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.46,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.esforco": {
+   "folha": "aminu",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.86,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.aminu.vitoria": {
+   "folha": "aminu",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.9,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e5.tambor": {
+   "folha": "aminu",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -17.91,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.kiai": {
+   "folha": "centella",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.77,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.leve": {
+   "folha": "centella",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.73,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.leve2": {
+   "folha": "centella",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.81,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.pesado": {
+   "folha": "centella",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.82,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.pesado2": {
+   "folha": "centella",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.77,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.ko": {
+   "folha": "centella",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.26,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.guarda": {
+   "folha": "centella",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.99,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.esforco": {
+   "folha": "centella",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.94,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.centella.vitoria": {
+   "folha": "centella",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.59,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e6.ringue": {
+   "folha": "centella",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -17.98,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.kiai": {
+   "folha": "camille",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.06,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.leve": {
+   "folha": "camille",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.9,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.leve2": {
+   "folha": "camille",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.54,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.pesado": {
+   "folha": "camille",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.85,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.pesado2": {
+   "folha": "camille",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.62,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.ko": {
+   "folha": "camille",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.45,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.guarda": {
+   "folha": "camille",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.87,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.esforco": {
+   "folha": "camille",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.79,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.camille.vitoria": {
+   "folha": "camille",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.7,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e7.florete": {
+   "folha": "camille",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -18.2,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.kiai": {
+   "folha": "nila",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.78,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.leve": {
+   "folha": "nila",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.02,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.leve2": {
+   "folha": "nila",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.54,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.pesado": {
+   "folha": "nila",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.76,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.pesado2": {
+   "folha": "nila",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.72,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.ko": {
+   "folha": "nila",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.07,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.guarda": {
+   "folha": "nila",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.87,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.esforco": {
+   "folha": "nila",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.62,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.vitoria": {
+   "folha": "nila",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.55,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.nila.sarpa.kiai": {
+   "folha": "nila",
+   "inicio": 3.34,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.36,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e8.chenda": {
+   "folha": "nila",
+   "inicio": 3.62,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -18.43,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e9.serpente": {
+   "folha": "nila",
+   "inicio": 4.16,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -18.1,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.kiai": {
+   "folha": "baatar",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.82,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.leve": {
+   "folha": "baatar",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.19,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.leve2": {
+   "folha": "baatar",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.74,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.pesado": {
+   "folha": "baatar",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -18.09,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.pesado2": {
+   "folha": "baatar",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -18.11,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.ko": {
+   "folha": "baatar",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.56,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.guarda": {
+   "folha": "baatar",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.46,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.esforco": {
+   "folha": "baatar",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.29,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.baatar.vitoria": {
+   "folha": "baatar",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e10.estepe": {
+   "folha": "baatar",
+   "inicio": 3.34,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -18.19,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e11.aguia": {
+   "folha": "baatar",
+   "inicio": 3.88,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -17.96,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.kiai": {
+   "folha": "zenon",
+   "inicio": 0.04,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.99,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.leve": {
+   "folha": "zenon",
+   "inicio": 0.32,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.85,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.leve2": {
+   "folha": "zenon",
+   "inicio": 0.6,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.42,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.pesado": {
+   "folha": "zenon",
+   "inicio": 0.88,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -18.15,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.pesado2": {
+   "folha": "zenon",
+   "inicio": 1.22,
+   "dur": 0.3,
+   "picoDb": -3,
+   "rmsDb": -17.85,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.ko": {
+   "folha": "zenon",
+   "inicio": 1.56,
+   "dur": 0.9,
+   "picoDb": -3,
+   "rmsDb": -18.59,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.guarda": {
+   "folha": "zenon",
+   "inicio": 2.5,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.96,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.esforco": {
+   "folha": "zenon",
+   "inicio": 2.78,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.71,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.vitoria": {
+   "folha": "zenon",
+   "inicio": 3.06,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -18.04,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "voz.zenon.riso": {
+   "folha": "zenon",
+   "inicio": 3.34,
+   "dur": 0.24,
+   "picoDb": -3,
+   "rmsDb": -17.83,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  },
+  "esp.e12.selo": {
+   "folha": "zenon",
+   "inicio": 3.62,
+   "dur": 0.5,
+   "picoDb": -3,
+   "rmsDb": -18.15,
+   "ganhoDb": 0,
+   "origem": "pacote de teste sintético (tests/support/pacote-teste.ts), não é som real",
+   "licenca": "CC0"
+  }
+ }
+}

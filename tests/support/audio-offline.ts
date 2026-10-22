@@ -289,8 +289,11 @@ export class Biquad extends No {
 
 export class Buffer {
   private readonly dados: Float32Array;
-  constructor(readonly canais: number, readonly length: number, readonly sampleRate: number) {
-    this.dados = new Float32Array(length);
+  constructor(readonly canais: number, readonly length: number, readonly sampleRate: number, dados?: Float32Array) {
+    this.dados = dados ?? new Float32Array(length);
+  }
+  get duration(): number {
+    return this.length / this.sampleRate;
   }
   getChannelData(_c: number): Float32Array {
     return this.dados;
@@ -301,8 +304,19 @@ export class FonteBuffer extends No {
   buffer: Buffer | null = null;
   inicio = -1;
   fim = Infinity;
-  start(t = 0): void {
+  /** Amostras reais: `playbackRate` e o recorte `start(quando, deslocamento, duração)` (duração em tempo do BUFFER, como a spec). Sem eles, o caminho é o de sempre. */
+  readonly playbackRate: Param;
+  private deslocamento = 0;
+  private duracao: number | undefined;
+  constructor(ctx: Contexto) {
+    super(ctx);
+    this.playbackRate = new Param(1, ctx);
+  }
+  start(t = 0, deslocamento = 0, duracao?: number): void {
     this.inicio = t;
+    this.deslocamento = deslocamento;
+    this.duracao = duracao;
+    if (duracao !== undefined) this.ctx.registrarFim(t + duracao / this.playbackRate.value); // o recorte tem fim próprio: o render para onde ele acaba
   }
   stop(t = 0): void {
     this.fim = t;
@@ -315,10 +329,25 @@ export class FonteBuffer extends No {
     const d = this.buffer.getChannelData(0);
     const i0 = Math.max(0, Math.ceil(this.inicio * sr - 1e-6)); // primeiro quadro >= o início (como o Web Audio): floor deixava 1 amostra com o ganho ainda no valor padrão (estalo)
     const i1 = Math.min(n, Number.isFinite(this.fim) ? Math.ceil(this.fim * sr) : n);
+    if (this.deslocamento === 0 && this.duracao === undefined && this.playbackRate.value === 1) {
+      for (let i = i0; i < i1; i++) {
+        const k = i - i0;
+        if (k >= d.length) break;
+        out[i] = d[k] as number;
+      }
+      return out;
+    }
+    // recorte + taxa: lê o buffer em tempo de buffer, com interpolação linear
+    const taxa = this.playbackRate.value;
+    const sb = this.buffer.sampleRate;
     for (let i = i0; i < i1; i++) {
-      const k = i - i0;
-      if (k >= d.length) break;
-      out[i] = d[k] as number;
+      const tBuffer = this.deslocamento + (i / sr - this.inicio) * taxa;
+      if (this.duracao !== undefined && tBuffer - this.deslocamento >= this.duracao) break;
+      const pos = tBuffer * sb;
+      const k = Math.floor(pos);
+      if (k + 1 >= d.length) break;
+      const f = pos - k;
+      out[i] = (d[k] as number) * (1 - f) + (d[k + 1] as number) * f;
     }
     return out;
   }

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { AudioSys, FOLGA_PRIMEIRO_PASSO_TEMA } from '../../src/audio/audio-sys';
 import { carregarCamadasSonoras, identidadeAtiva, reagirDoJogo, trilhaDoJogo } from '../../src/audio/camadas';
-import { chavesSonoras, IDENTIDADE_SONORA, lerEscutaDaUrl, TEMAS_POR_LUTADOR, trilhaDeHoje } from '../../src/audio/chaves';
+import { AMOSTRAS_REALISTAS, chavesSonoras, IDENTIDADE_SONORA, lerEscutaDaUrl, TEMAS_POR_LUTADOR, trilhaDeHoje } from '../../src/audio/chaves';
 import { IDENTIDADE_SONORA as IDENTIDADE_REEXPORTADA } from '../../src/audio/identidade-sonora';
 import { TEMAS_POR_LUTADOR as TEMAS_REEXPORTADO } from '../../src/audio/temas';
 import { IDS_LUTADORES, type EventoLuta } from '../../src/core/contratos';
@@ -19,6 +19,7 @@ import { Contexto, Oscilador, comoAudioContext } from '../support/audio-offline'
 const resetar = (): void => {
   chavesSonoras.identidade = IDENTIDADE_SONORA;
   chavesSonoras.temas = TEMAS_POR_LUTADOR;
+  chavesSonoras.amostras = AMOSTRAS_REALISTAS;
 };
 afterEach(resetar);
 
@@ -30,7 +31,8 @@ describe('as chaves (rollback por código) e o painel de escuta', () => {
     expect(TEMAS_POR_LUTADOR).toBe(true);
     expect(IDENTIDADE_REEXPORTADA).toBe(IDENTIDADE_SONORA);
     expect(TEMAS_REEXPORTADO).toBe(TEMAS_POR_LUTADOR);
-    expect(chavesSonoras).toEqual({ identidade: true, temas: true });
+    expect(AMOSTRAS_REALISTAS).toBe(true); // 3ª chave: as amostras reais (docs/plano-sons-realistas.md), também só rollback por código
+    expect(chavesSonoras).toEqual({ identidade: true, temas: true, amostras: true });
     expect(REGRAS_PADRAO.temasMusicais).toBe(true);
   });
 
@@ -58,7 +60,7 @@ describe('as chaves (rollback por código) e o painel de escuta', () => {
 describe('o pacote principal não carrega as camadas pesadas de forma estática (import tardio, em pedaços à parte)', () => {
   // só imports de VALOR contam: `import type` some na compilação e não carrega nada
   const estaticos = (fonte: string): string[] => [...fonte.matchAll(/^\s*(?:import|export)\s+(?!type\s)[^;]*?from\s+'([^']+)'/gm)].map((m) => m[1] as string);
-  const PESADOS = [/identidade-sonora/, /\/temas$/, /\/partitura$/, /data\/sons/, /data\/musica/, /sintese-voz/, /orcamento-sonoro/, /\/escuta$/];
+  const PESADOS = [/identidade-sonora/, /\/amostras$/, /plano-amostras/, /\/temas$/, /\/partitura$/, /data\/sons/, /data\/musica/, /sintese-voz/, /orcamento-sonoro/, /\/escuta$/];
   it.each(['src/main.ts', 'src/ui/cenas/fight.ts', 'src/audio/audio-sys.ts', 'src/audio/camadas.ts', 'src/audio/chaves.ts', 'src/audio/receitas.ts', 'src/audio/eventos.ts'])('%s não importa os pesados de forma estática', (arq) => {
     const importados = estaticos(ler(arq));
     for (const re of PESADOS) for (const i of importados) expect(re.test(i), `${arq} importa ${i}`).toBe(false);
@@ -72,6 +74,8 @@ describe('o pacote principal não carrega as camadas pesadas de forma estática 
     const camadas = ler('src/audio/camadas.ts');
     expect(camadas).toContain("import('./identidade-sonora')");
     expect(camadas).toContain("import('./temas')");
+    expect(camadas).toContain("import('./amostras')");
+    expect(main).toMatch(/amostras: import\.meta\.env\.DEV \|\| chavesSonoras\.amostras/);
   });
 });
 

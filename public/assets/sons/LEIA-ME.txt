@@ -1,0 +1,26 @@
+Sons realistas da luta do InnoFighters (impactos, defesa, quedas, golpes no ar, magia, parte dos especiais e a voz de cada lutador).
+
+Origem: bibliotecas livres, TODAS sob Creative Commons Zero (CC0 1.0, dominio publico): Kenney, OpenGameArt (qubodup, artisticdude, StarNinjas, rubberduck,
+faxcorp, wolfwoot, HaelDB, Cici Fyre, AuraVoice, EmoPreben, AntumDeluge). Nenhum som foi gerado por inteligencia artificial e nenhuma voz de pessoa real
+e clonada ou imitada. A lista completa, com autor, pagina e licenca de cada fonte, esta em CREDITOS.txt; a origem de CADA corte esta em manifesto.json
+(campos `origem`, `fonte` e `licenca`).
+
+O que ha aqui:
+- base.mp3                  foley compartilhado (impactos, defesa, guarda, arremesso, queda do KO, golpes no ar, esquiva, pouso, salto) e a magia comum.
+- lutador-<id>.mp3          a voz (kiai, dano leve e pesado, KO, guarda, esforco, vitoria) e as familias de especial de cada lutador.
+- manifesto.json            o indice: para cada som, a folha, o instante e a duracao do corte, pico e RMS medidos, o ganho de mixagem (`ganhoDb`, calibrado
+                            a +-3 dB do som sintetizado que o corte substitui), a taxa fixa da voz, a origem e a licenca. O jogo VALIDA este arquivo no boot
+                            (src/data/sons/amostras.ts): corte sem origem ou sem CC0, id fora da tabela ou peso acima de 1,2 MB derrubam o carregamento.
+- CREDITOS.txt              os creditos de audio.
+
+Como o jogo usa (src/audio/amostras.ts): as folhas baixam sob demanda (a base no boot; a dos dois lutadores quando a luta e montada), sao decodificadas
+so depois que o AudioContext existe, e cada corte e tocado direto na folha, com variacao de tom e ganho calculada por codigo (sem Math.random).
+Os sons de interface, os jingles, o gongo do KO, a musica e os especiais sem amostra livre (tambores, berimbau, serpente, estepe, aguia, orgao)
+sao sintetizados pelo proprio jogo. Sem estes arquivos, ou com falha de rede, o jogo toca a sintese de antes: nada fica mudo.
+
+Chave de rollback: AMOSTRAS_REALISTAS em src/audio/chaves.ts (false = so a sintese, e as folhas nem sao baixadas). Sem opcao no menu.
+
+Plano, regras de curadoria e pesquisa de fontes: docs/plano-sons-realistas.md, docs/pesquisa-sons-cc0.md.
+Curadoria: Apolo (arte-fonte/sons/pacote-v1, fora do git). Integracao e calibracao de volume: Vega.
+
+Estado: pacote v1 de 2026-10-22 (88 sons, 159 cortes, 11 folhas, 783 KB).

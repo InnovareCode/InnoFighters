@@ -17,6 +17,7 @@
     "test:e2e:build": "playwright test -c playwright.build.config.ts",
     "sprites": "node ferramentas/sprites/cli.mjs",
     "balanco": "node ferramentas/balanco/cli.mjs",
+    "sons:pacote-teste": "node ferramentas/sons/gerar-pacote-teste.mjs",
     "trailer:escalar": "node ferramentas/trailer/cli.mjs",
     "trailer:medir": "node ferramentas/trailer/medir.mjs"
   },

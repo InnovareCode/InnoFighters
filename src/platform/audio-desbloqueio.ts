@@ -15,12 +15,30 @@ export interface AudioDestravavel {
 
 const GESTOS = ['touchend', 'pointerup', 'mouseup', 'click', 'keydown'] as const;
 
+/**
+ * Quem quer saber que o contexto existe depois de um gesto (as amostras reais decodificam as folhas AGORA, não no meio da primeira luta). Roda em todo gesto, com o
+ * contexto já `running` ou não, e precisa ser barato; erro de um ouvinte nunca derruba o desbloqueio.
+ */
+const ouvintes = new Set<(audio: AudioDestravavel) => void>();
+export function aoGestoDeAudio(fn: (audio: AudioDestravavel) => void): () => void {
+  ouvintes.add(fn);
+  return () => void ouvintes.delete(fn);
+}
+
 /** Liga o desbloqueio em `alvo` (a janela). Devolve a função que o desfaz. */
 export function desbloquearAudio(alvo: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>, audio: AudioDestravavel): () => void {
   const aoGesto = (): void => {
-    if (audio.ctx?.state === 'running') return;
-    audio.init();
-    audio.resume();
+    if (audio.ctx?.state !== 'running') {
+      audio.init();
+      audio.resume();
+    }
+    for (const fn of ouvintes) {
+      try {
+        fn(audio);
+      } catch (e) {
+        console.error('ouvinte do desbloqueio de áudio falhou', e);
+      }
+    }
   };
   for (const g of GESTOS) alvo.addEventListener(g, aoGesto, { capture: true, passive: true });
   return () => {

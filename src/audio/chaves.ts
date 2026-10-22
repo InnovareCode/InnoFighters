@@ -15,8 +15,15 @@ export const IDENTIDADE_SONORA = true;
 /** Rollback dos temas musicais por lutador (o ZENON mantém a valsa). Sempre ligados; `Regras.temasMusicais` os desliga só em `?expansao=4` (fidelidade). */
 export const TEMAS_POR_LUTADOR = true;
 
+/**
+ * Rollback das AMOSTRAS REAIS (docs/plano-sons-realistas.md): samples de impacto, voz e família de especial, por cima da identidade sonora. Sempre ligada, sem
+ * opção no menu e sem URL. `false` = o som sintetizado de antes (a camada nem é baixada). Depende da identidade: sem ela não há amostra. Sem os arquivos
+ * (ou com falha de rede) o jogo toca a síntese, folha por folha, sem calar nada.
+ */
+export const AMOSTRAS_REALISTAS = true;
+
 /** O estado VIVO das chaves (o que o jogo consulta). Começa nas constantes acima; só `camadas.ts` (camada que não carregou) e os testes o mudam. Nunca é salvo. */
-export const chavesSonoras: { identidade: boolean; temas: boolean } = { identidade: IDENTIDADE_SONORA, temas: TEMAS_POR_LUTADOR };
+export const chavesSonoras: { identidade: boolean; temas: boolean; amostras: boolean } = { identidade: IDENTIDADE_SONORA, temas: TEMAS_POR_LUTADOR, amostras: AMOSTRAS_REALISTAS };
 
 export interface EscutaDaUrl {
   /** `?escuta=1` */

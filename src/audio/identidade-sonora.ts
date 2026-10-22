@@ -1,10 +1,13 @@
 import type { EventoLuta, IdLutador, IndiceLutador, LeituraLuta } from '../core/contratos';
 import { DADOS_SONS } from '../data/sons';
+import { ATRASO_QUEDA_KO_MS, GANHO_ASSINATURA_SOB_FAMILIA, TAXA_CARGA, familiaDaAssinatura, familiaDaTrocaDeFicha, type PedidoAmostra, type TrocaDeAmostra } from '../data/sons/amostras';
 import type { AssinaturaEspecial, Chamada, DadosSons, Grito, PerfilVocal } from '../data/sons/tipos';
+import type { BancoDeAmostras } from './amostras';
 import { FONTES_POR_PLANO } from './audio-sys';
 import { chavesSonoras, IDENTIDADE_SONORA } from './chaves';
 import { reagirAosEventos, sonsDoEvento, type ChamadaSom, type SomPorNome } from './eventos';
 import { cortarParaOrcamento, duracaoDaReceita, fontesDaReceita } from './orcamento-sonoro';
+import { pedidoDeFamilia, pedidoDeFoley, pedidoDeVoz, trocasDoEvento } from './plano-amostras';
 import { tocarReceita, type ChamadaReceita, type SintetizadorLike } from './receitas';
 import { sintetizarGrito } from './sintese-voz';
 
@@ -80,11 +83,25 @@ export interface ItemDoPlano {
   readonly atrasoMs?: number;
   /** Multiplica o volume do item inteiro (o ganho em dB dos dados, já convertido). Ausente = 1. */
   readonly vol?: number;
+  /**
+   * AMOSTRA REAL (só quando o plano é montado com `amostras = true`): a amostra que este item pede. PURO, o plano não sabe se ela existe; a execução (`tocarItem`)
+   * resolve. Sem buffer decodificado, o item toca a `receita` como sempre.
+   */
+  readonly amostra?: PedidoAmostra;
+  /**
+   * `trocar` (padrão): com a amostra pronta ela toca NO LUGAR da `receita` (voz, impacto). `sobrepor` (família do especial): a amostra toca e a `receita` (a assinatura
+   * sintetizada) fica por baixo, a -6 dB, só nas camadas `ataque` e `corpo`.
+   */
+  readonly amostraModo?: 'trocar' | 'sobrepor';
+  /** O vidro sintetizado da guarda quebrada: a escuta pode calá-lo quando a amostra toca (decisão de ouvido, plano §6.3). */
+  readonly tag?: 'vidro-guarda';
 }
 export interface Plano {
   /** O que continua vindo de `sonsDoEvento`, pelo nome do método (a mesma forma). */
   readonly manter: readonly ChamadaSom[];
   readonly tocar: readonly ItemDoPlano[];
+  /** Só com `amostras = true`: os métodos de `manter` que uma amostra pode trocar. A execução decide; sem a amostra, o método toca como sempre. */
+  readonly trocas?: readonly TrocaDeAmostra[];
 }
 
 const comoReceita = (cs: readonly Chamada[], mudar?: (c: Chamada) => ChamadaReceita, quando = 0): ChamadaReceita[] =>
@@ -121,8 +138,12 @@ function assinaturaOnde(dados: DadosSons, id: IdLutador, ficha: string | null, s
 /**
  * O plano sonoro de UM evento. PURA: (evento, contexto, dados) -> plano. Mesmo evento + mesma semente + mesmo tick = mesmo plano.
  * Lutador sem voz (ou golpe sem assinatura) cai nos sons genéricos de hoje: `manter` = `sonsDoEvento(ev)` inteiro e nada a acrescentar.
+ *
+ * `amostras` (padrão `false`): o plano ANOTA a amostra real que cada som pediria (`item.amostra`, `plano.trocas`) e acrescenta os itens de amostra pura (corpo da
+ * magia, queda do KO, quebra da guarda). Com `false` o plano é BYTE A BYTE o de antes (os testes do plano seguem valendo). O plano segue puro: quem decide se a
+ * amostra existe é `tocarItem`/`reagirComIdentidade`, na hora de tocar.
  */
-export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSons = DADOS_SONS): Plano {
+export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSons = DADOS_SONS, amostras = false): Plano {
   const base = sonsDoEvento(ev);
   let manter: ChamadaSom[] = [...base];
   const tocar: ItemDoPlano[] = [];
@@ -137,8 +158,19 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
     const perfil = perfilDe(dados, ctx, i);
     if (!perfil) return false;
     const receita = sintetizarGrito(perfil, g, { tom: 1 + (v(i, 0) * 2 - 1) * 0.03, vol: (0.9 + 0.1 * v(i, 1)) * gDb(perfil.ganhoDb?.[cat]) * gDb(extraDb), espelho: espelho(i) });
-    tocar.push({ receita, prioridade, garganta: i, tipo, ...(atrasoMs ? { atrasoMs } : {}) });
+    tocar.push({ receita, prioridade, garganta: i, tipo, ...(atrasoMs ? { atrasoMs } : {}), ...(amostras ? { amostra: pedidoDeVoz(ctx.ids[i], ctx.fichas[i], cat, v, i, espelho(i)) } : {}) });
     return true;
+  };
+  /** A família do especial (amostra por cima da assinatura sintetizada). `{}` sem `amostras`, ou se a assinatura não tem família. */
+  const familia = (a: AssinaturaEspecial, lutador: IndiceLutador, parte?: 'inicio' | 'fim', fator = 1, quando = 0): Partial<ItemDoPlano> => {
+    if (!amostras) return {};
+    const chave = Object.keys(dados.assinaturas).find((k) => dados.assinaturas[k] === a);
+    const f = chave ? familiaDaAssinatura(chave) : undefined;
+    return f ? { amostra: pedidoDeFamilia(f, v, lutador, parte, fator, quando), amostraModo: 'sobrepor' } : {};
+  };
+  /** Item de amostra pura (sem síntese por baixo): o corpo comum da magia, a queda do KO. Só existe com `amostras`. */
+  const soAmostra = (ids: readonly string[], lutador: number, prioridade: PrioridadeSom, atrasoMs?: number): void => {
+    if (amostras) tocar.push({ receita: [], prioridade, amostra: pedidoDeFoley(ids, v, lutador), ...(atrasoMs ? { atrasoMs } : {}) });
   };
   const efeito = (cs: readonly Chamada[] | undefined, prioridade: PrioridadeSom, extra: Partial<ItemDoPlano> = {}, quando = 0, ganho?: number): void => {
     if (cs && cs.length) tocar.push({ receita: comoReceita(cs, undefined, quando), prioridade, ...(ganho !== undefined && ganho !== 1 ? { vol: ganho } : {}), ...extra });
@@ -158,7 +190,7 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
       if (!a) break;
       tira('special');
       if (a.grito) voz(ev.lutador, a.grito, 2, 'voz', undefined, 'kiai', a.ganhoDb?.inicio);
-      efeito(a.conjuracao, 2, {}, 0, gDb(a.ganhoDb?.inicio));
+      efeito(a.conjuracao, 2, familia(a, ev.lutador, 'inicio'), 0, gDb(a.ganhoDb?.inicio)); // a conjuração é a 1ª metade do sample da família
       break;
     }
     case 'projectile': {
@@ -166,7 +198,8 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
       const a = assinaturaOnde(dados, id, ctx.fichas[ev.lutador], (x) => x.estilo === ev.style && x.lancamento !== undefined);
       if (!a?.lancamento) break;
       tira('fireballLaunch');
-      efeito(a.lancamento, 1, {}, 0, gDb(a.ganhoDb?.lancamento));
+      soAmostra(['magia.lanca'], ev.lutador, 1); // o corpo comum do lançamento, por baixo da família
+      efeito(a.lancamento, 1, familia(a, ev.lutador, 'fim'), 0, gDb(a.ganhoDb?.lancamento)); // o lançamento é a 2ª metade (a 1ª foi a conjuração)
       break;
     }
     case 'hit':
@@ -180,19 +213,22 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
         const a = assinaturaOnde(dados, dono, ficha, (x) => x.resposta?.golpe === 'sResp');
         if (a?.resposta) {
           voz(ev.atacante, a.resposta.grito, 2, 'voz', undefined, 'kiai', a.ganhoDb?.estampa);
-          efeito(a.resposta.estampa, 1, {}, 0, gDb(a.ganhoDb?.estampa));
+          efeito(a.resposta.estampa, 1, familia(a, ev.atacante), 0, gDb(a.ganhoDb?.estampa));
         }
         break;
       }
       const a = assinaturaDe(dados, dono, ficha, ev.golpe);
       if (!a) break;
       const projetil = ev.tipo === 'hit' && ev.projetil;
-      if (projetil) tira(ev.snd);
+      if (projetil) {
+        tira(ev.snd);
+        soAmostra(['magia.impacto'], ev.atacante, 1); // o corpo comum do impacto da magia (a estampa e a família vêm por cima)
+      }
       const repete = ev.tipo === 'hit' && a.porNivel && ev.nivelCarga ? ev.nivelCarga : 1;
       const fator = ev.tipo === 'hit' && a.porAcerto && a.porAcerto.length ? (a.porAcerto[Math.min(a.porAcerto.length, Math.max(1, ev.acertos)) - 1] ?? 1) : 1;
       const muda = fator === 1 ? undefined : (c: Chamada): ChamadaReceita => (c.k === 'T' ? { ...c, f0: c.f0 * fator, ...(c.f1 === undefined ? {} : { f1: c.f1 * fator }) } : c);
       const ge = gDb(a.ganhoDb?.estampa);
-      for (let n = 0; n < repete; n++) tocar.push({ receita: comoReceita(a.estampa, muda, n * PASSO_NIVEL_S), prioridade: 1, ...(ge === 1 ? {} : { vol: ge }) });
+      for (let n = 0; n < repete; n++) tocar.push({ receita: comoReceita(a.estampa, muda, n * PASSO_NIVEL_S), prioridade: 1, ...(ge === 1 ? {} : { vol: ge }), ...familia(a, ev.atacante, undefined, fator, n * PASSO_NIVEL_S) });
       if (ev.tipo === 'hit' && ev.contraEspecial) efeito(a.contraEspecial, 1, {}, 0, ge);
       if (ev.tipo === 'hit' && (ev.dreno ?? 0) > 0) efeito(a.comDreno, 1, {}, 0, ge);
       break;
@@ -203,6 +239,7 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
       if (voz(ev.defensor, g.ko, 3, 'ko', undefined, 'ko')) {
         tira('ko');
         tocar.push({ receita: GONGO_KO, prioridade: 3 });
+        soAmostra(['ko.queda'], ev.defensor, 2, ATRASO_QUEDA_KO_MS); // o corpo cai depois do golpe; o gongo sintetizado fica (é a marca do KO do jogo)
       }
       break;
     }
@@ -211,7 +248,8 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
       if (!g) break;
       if (voz(ev.defensor, g.guarda, 2, 'voz', undefined, 'guarda')) {
         tira('fireballHit');
-        tocar.push({ receita: VIDRO_GUARDA, prioridade: 1 });
+        // com `amostras`, o vidro leva o pedido da quebra da guarda (sobreposto: a amostra toca e o vidro fica a -6 dB); a escuta pode calar o vidro quando a amostra toca
+        tocar.push({ receita: VIDRO_GUARDA, prioridade: 1, ...(amostras ? { amostra: pedidoDeFoley(['guarda.quebra'], v, ev.defensor), amostraModo: 'sobrepor' as const, tag: 'vidro-guarda' as const } : {}) });
       }
       break;
     }
@@ -230,7 +268,7 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
       const a = assinaturaDe(dados, ctx.ids[ev.defensor], ctx.fichas[ev.defensor], ev.golpe ?? 'sFire');
       if (!a?.sucesso) break;
       if (a.sucesso.grito) voz(ev.defensor, a.sucesso.grito, 2, 'voz', undefined, 'kiai', a.ganhoDb?.inicio);
-      efeito(a.sucesso.chamadas, 2, {}, 0, gDb(a.ganhoDb?.inicio));
+      efeito(a.sucesso.chamadas, 2, familia(a, ev.defensor), 0, gDb(a.ganhoDb?.inicio));
       break;
     }
     case 'clash': {
@@ -238,7 +276,7 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
       const a = assinaturaDe(dados, ctx.ids[ev.lutador], ctx.fichas[ev.lutador], ev.golpe);
       if (!a?.sucesso) break;
       if (a.sucesso.grito) voz(ev.lutador, a.sucesso.grito, 2, 'voz', undefined, 'kiai', a.ganhoDb?.inicio);
-      efeito(a.sucesso.chamadas, 2, {}, 0, gDb(a.ganhoDb?.inicio));
+      efeito(a.sucesso.chamadas, 2, familia(a, ev.lutador), 0, gDb(a.ganhoDb?.inicio));
       break;
     }
     case 'block': {
@@ -252,7 +290,7 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
       const batidas = a?.carga?.[ev.nivel - 1];
       if (!batidas) break;
       tira('uiSelect');
-      efeito(batidas, 1);
+      efeito(batidas, 1, familia(a, ev.lutador, undefined, TAXA_CARGA[ev.nivel - 1] ?? 1)); // o tambor sobe de tom a cada nível
       break;
     }
     case 'rebote': {
@@ -262,13 +300,13 @@ export function planoSonoro(ev: EventoLuta, ctx: ContextoSonoro, dados: DadosSon
     }
     case 'troca-ficha': {
       const t = perfilDe(dados, ctx, ev.lutador)?.troca;
-      efeito(t?.[ev.ficha ?? 'base'], 1);
+      efeito(t?.[ev.ficha ?? 'base'], 1, amostras ? { amostra: pedidoDeFoley([familiaDaTrocaDeFicha(ev.ficha)], v, ev.lutador), amostraModo: 'sobrepor' } : {});
       break;
     }
     default:
       break;
   }
-  return { manter, tocar };
+  return { manter, tocar, ...(amostras ? { trocas: trocasDoEvento(ev, v) } : {}) };
 }
 
 // --- execução ---
@@ -288,7 +326,18 @@ export interface AudioIdentidade extends SintetizadorLike {
  */
 export function tocarItem(audio: AudioIdentidade, item: ItemDoPlano): boolean {
   if (!audio.ctx || (audio.sfxVol ?? 1) <= 0) return false;
-  const duracao = duracaoDaReceita(item.receita);
+  // AMOSTRA REAL: o plano só PEDE; aqui se decide. Buffer decodificado = toca a amostra; senão (banco ausente, folha ainda no ar, falha de rede) toca a receita de hoje.
+  const banco = item.amostra ? bancoAtivo : null;
+  const escolha = banco && item.amostra ? banco.escolher(item.amostra) : null;
+  if (!escolha && item.receita.length === 0) return false; // item de amostra pura sem amostra: não há o que tocar
+  const sobrepor = escolha !== null && item.amostraModo === 'sobrepor';
+  let sintese: readonly ChamadaReceita[] = item.receita;
+  if (escolha) {
+    if (!sobrepor) sintese = []; // a amostra toma o lugar da síntese
+    else if (item.tag === 'vidro-guarda' && banco && !banco.vidroSobreGuarda) sintese = [];
+    else sintese = item.receita.filter((c) => c.k === 'V' || (c.camada ?? 'corpo') === 'ataque' || (c.camada ?? 'corpo') === 'corpo'); // a assinatura fica sob a família: só ataque e corpo
+  }
+  const duracao = Math.max(escolha ? escolha.quando + escolha.duracao : 0, duracaoDaReceita(sintese));
   let dest: AudioNode | null = audio.barramentoIdentidade?.() ?? null;
   if (item.garganta !== undefined) {
     const g = audio.abrirGarganta?.(item.garganta, duracao, { ko: item.tipo === 'ko', dano: item.tipo === 'dano' });
@@ -296,14 +345,42 @@ export function tocarItem(audio: AudioIdentidade, item: ItemDoPlano): boolean {
     if (g) dest = g;
   }
   const livres = audio.fontesLivres?.() ?? FONTES_POR_PLANO;
-  const receita = cortarParaOrcamento(item.receita, Math.min(FONTES_POR_PLANO, livres));
-  const fontes = fontesDaReceita(receita);
+  const fontesDaAmostra = escolha ? 1 : 0; // cada amostra conta 1 fonte
+  const receita = cortarParaOrcamento(sintese, Math.min(FONTES_POR_PLANO, Math.max(0, livres - fontesDaAmostra)));
+  const fontes = fontesDaReceita(receita) + fontesDaAmostra;
   // sem espaço nem cortando camadas: só KO e vitória (3) tocam mesmo assim; o resto (grito, sucesso, dano, impacto) cede, para o teto de 32 valer
   if (fontes > livres && item.prioridade < 3) return false;
-  tocarReceita(audio, receita, { dest, ...(item.abafado ? { abafado: true } : {}), ...(item.vol === undefined ? {} : { vol: item.vol }) });
-  // a voz se registra sozinha (`vozFormante`); aqui entram só as fontes dos T/R
+  const vol = sobrepor ? (item.vol ?? 1) * GANHO_ASSINATURA_SOB_FAMILIA : item.vol;
+  if (receita.length) tocarReceita(audio, receita, { dest, ...(item.abafado ? { abafado: true } : {}), ...(vol === undefined ? {} : { vol }) });
+  const agora = ((audio.ctx as { currentTime?: number }).currentTime ?? 0);
+  if (escolha && banco) banco.tocar(audio.ctx as BaseAudioContext, escolha, dest);
+  // a voz sintetizada se registra sozinha (`vozFormante`); aqui entram só as fontes dos T/R e a amostra
   const soTR = receita.filter((c) => c.k !== 'V');
-  audio.registrarFontes?.(fontesDaReceita(soTR), ((audio.ctx as { currentTime?: number }).currentTime ?? 0) + duracao + 0.1);
+  audio.registrarFontes?.(fontesDaReceita(soTR) + fontesDaAmostra, agora + duracao + 0.1);
+  return true;
+}
+
+/** O banco de amostras ativo (registrado por `camadas.ts` quando o pedaço `amostras` carrega). Sem banco, o jogo é o de antes. */
+let bancoAtivo: BancoDeAmostras | null = null;
+export function registrarBancoDeAmostras(b: BancoDeAmostras | null): void {
+  bancoAtivo = b;
+}
+export function bancoDeAmostras(): BancoDeAmostras | null {
+  return bancoAtivo;
+}
+
+/**
+ * Toca a amostra que TROCA um método genérico (`punch`, `kick`, `block`, `swing`...). Devolve true se tocou (o método NÃO toca); false = sem amostra pronta ou sem espaço
+ * nas 32 fontes (o método toca como sempre: o jogo nunca fica mudo e nunca toca pior que hoje).
+ */
+export function tocarTroca(audio: AudioIdentidade, pedido: PedidoAmostra): boolean {
+  const banco = bancoAtivo;
+  if (!banco || !audio.ctx || (audio.sfxVol ?? 1) <= 0) return false;
+  const escolha = banco.escolher(pedido);
+  if (!escolha) return false;
+  if ((audio.fontesLivres?.() ?? FONTES_POR_PLANO) < 1) return false;
+  const fim = banco.tocar(audio.ctx as BaseAudioContext, escolha, audio.barramentoIdentidade?.() ?? null);
+  audio.registrarFontes?.(1, fim + 0.05);
   return true;
 }
 
@@ -324,16 +401,20 @@ export function reagirComIdentidade(
     reagirAosEventos(porNome, eventos, agendar);
     return;
   }
+  // AMOSTRAS REAIS (3ª camada, depois da identidade): só com a chave ligada E o banco registrado. Sem banco, o plano e as chamadas são os de antes.
+  const comAmostras = chavesSonoras.amostras && bancoAtivo !== null;
   eventos.forEach((ev, indice) => {
     if ((audio.sfxVol ?? 1) <= 0) {
       reagirAosEventos(porNome, [ev], agendar);
       return;
     }
-    const plano = planoSonoro(ev, { ...ctx, indice }, dados);
+    const plano = planoSonoro(ev, { ...ctx, indice }, dados, comAmostras);
     for (const c of plano.manter) {
       const f = porNome[c.metodo];
       if (typeof f !== 'function') continue;
+      const troca = plano.trocas?.find((t) => t.metodo === c.metodo);
       const tocar = (): void => {
+        if (troca && tocarTroca(audio, troca.pedido)) return; // a amostra tomou o lugar do método genérico
         (f as (...a: number[]) => void).apply(audio, c.args as number[]);
       };
       if (c.atrasoMs) agendar(tocar, c.atrasoMs);

@@ -107,6 +107,7 @@ async function iniciar(): Promise<void> {
   const camadas = carregarCamadasSonoras({
     identidade: import.meta.env.DEV || chavesSonoras.identidade || escuta.painel,
     temas: import.meta.env.DEV || chavesSonoras.temas || escuta.painel,
+    amostras: import.meta.env.DEV || chavesSonoras.amostras || escuta.painel,
   });
   if (escuta.painel) {
     // painel de escuta: não joga, só toca cada som e cada tema (src/ui/escuta.ts)

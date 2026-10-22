@@ -1,0 +1,54 @@
+InnoFighters: creditos de audio
+================================
+
+Os sons de luta realistas do InnoFighters (impactos, defesa, quedas, golpes no ar, magia,
+parte dos especiais e as vozes dos lutadores) vem de bibliotecas livres. Todos estao sob
+Creative Commons Zero (CC0 1.0, dominio publico): nao exigem atribuicao. Registramos a
+origem mesmo assim, por transparencia e como agradecimento a quem os gravou.
+Licenca: https://creativecommons.org/publicdomain/zero/1.0/
+Conferencia das licencas e download: 2026-10-22 (paginas abaixo, sem login).
+
+Os sons foram cortados, mixados em camadas, filtrados, normalizados, convertidos para MP3
+mono e alterados em tom pelo jogo. As vozes sao usadas so como gritos e gemidos, sem
+palavras, e nao representam a pessoa que as gravou.
+
+Foley e efeitos
+- Kenney (kenney.nl): "Impact Sounds" e "RPG Audio". CC0.
+  https://kenney.nl/assets/impact-sounds  https://kenney.nl/assets/rpg-audio
+- qubodup (Iwan Gabovitch): "40 wet towel club/pound/hit/attack sounds" e "12 wet towel
+  hitting/falling/punching floor sounds". CC0 conforme a pagina do autor, que pede para
+  ignorar o arquivo de texto antigo dentro do .7z (que cita licencas MIT/zlib/BSD de 2009).
+  https://opengameart.org/content/40-wet-towel-clubpoundhitattack-sounds
+  https://opengameart.org/content/12-wet-towel-hittingfallingpunching-floor-sounds
+- artisticdude: "Swishes Sound Pack". CC0.  https://opengameart.org/content/swishes-sound-pack
+- StarNinjas: "10 Impact/Shield Blocks" e "20 Sword Sound Effects". CC0.
+  https://opengameart.org/content/10-impactshield-blocks
+  https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes
+- rubberduck: "75 CC0 breaking / falling / hit sfx" e "80 CC0 RPG SFX". CC0.
+  https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+  https://opengameart.org/content/80-cc0-rpg-sfx
+- faxcorp: "Electricity Game Sound Pack". CC0.
+  https://opengameart.org/content/electricity-game-sound-pack
+
+Vozes
+- wolfwoot: "Voice Clip Pack - Male Adventurer RPG". CC0.
+  https://opengameart.org/content/voice-clip-pack-male-adventurer-rpg
+- HaelDB: "Male Grunt/Yelling sounds". Oferecido em OGA-BY 3.0 e CC0; usado sob CC0.
+  https://opengameart.org/content/male-gruntyelling-sounds
+- Cici Fyre (cicifyre): "Female RPG Voice Starter Pack". CC0.
+  https://opengameart.org/content/female-rpg-voice-starter-pack
+- AuraVoice (Nocturnal_Vanguard): "Female Hurt Grunts & Groans" e "Female Scream 1". CC0.
+  https://opengameart.org/content/female-hurt-grunts-groans
+  https://opengameart.org/content/female-scream-1
+- EmoPreben: "Playersounds 1" e "Pain sounds". CC0.
+  https://opengameart.org/content/playersounds-1-by-emopreben
+  https://opengameart.org/content/pain-sounds-by-emopreben
+- AntumDeluge: "Evil Laugh". CC0.  https://opengameart.org/content/evil-laugh
+
+Sintese propria do jogo
+- Musica, interface, gongo do KO, jingles de rodada, as moedas do dreno e os especiais sem
+  sample livre (o bumbo do dragao, berimbau, tambor falante, chenda, serpente, estepe,
+  aguia, orgao, torcida) sao sintetizados pelo proprio jogo. Sem os arquivos de som, ou com
+  falha de rede, o jogo toca a sintese: nada fica mudo.
+
+Nenhum som gerado por inteligencia artificial esta neste pacote.

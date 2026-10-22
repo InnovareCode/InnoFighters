@@ -2,4 +2,6 @@
 - [Esquiva: áreas frágeis e 3 bugs pegos](project_esquiva-areas-frageis.md) — bufEsq na Dança, separate dx=0 por índice, renumeração de controles
 - [Técnicas de QA do projeto](reference_tecnicas-de-qa-do-projeto.md) — vitest, mutação em sandbox, junction, worktree isolado, porta do e2e, armadilhas de shell, harness de balanço
 - [Provocação: QA P4, bug do ▶ e provas](project_provocacao-areas-frageis.md) — ▶ sobre o texto (44% das vitórias), varredura de balões, o que foi provado
+- [Temas T0-T2: N3 no Chromium](project_temas-n3-chromium.md) — mini motor x Chromium (saw/square -1,3 dB, triangle), CPU 4x, partida fria, voz +18 ms, hashes da regua
+- [Chefões UI (L1/E1): QA do conjunto E](project_chefoes-ui-l1e1-qa.md) — APROVADO; números de referência, medir entrada em tempo real, cena só após o chefe levantar, rollback
 - [Commit separado chefoes x sons](project_commit-separado-chefoes-sons.md) — sem sobreposicao, hashes de referencia, regua dos sons nao muda R5, armadilhas

@@ -14,3 +14,4 @@
 - [Provocações P1](project_provocacoes_p1.md) — dados/lógica pura das falas, validação no import (main.ts importa por efeito), pref storage, armadilhas
 - [Sons por lutador S0-S3](project_sons_regua_s0.md) — régua congelada, 10 vozes, 33 assinaturas; armadilhas da régua (P, estalo), falta S4/S5
 - [Chefões R1: danoRecebido](project_chefoes_r1_dano_recebido.md) — fator no motor so no chefe, rampa, DIFÍCIL fora em 4/6, hash regulares f420ce92, aura da Lyra
+- [Temas musicais T0-T2](project_temas_t0_t2.md) — régua musical congelada, sequenciador puro, 9 temas; pico/grave/orçamento, falta T3 e escuta

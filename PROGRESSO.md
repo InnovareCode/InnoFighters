@@ -1,8 +1,20 @@
 # InnoFighters — Progresso
 
-Atualizado em 2026-10-21 (Alexandria, Z8; HEAD `3f72613`, com alterações não commitadas do Zenon). Histórico de estados mais antigos abaixo; o bloco mais novo é o primeiro.
+Atualizado em 2026-10-21 (Alexandria; HEAD `73f0074`, com alterações não commitadas dos chefões da Lyra na árvore de trabalho). Histórico de estados mais antigos abaixo; o bloco mais novo é o primeiro.
 
-## Estado em 2026-10-21 (commit `0684548`) — o mais novo
+## Estado em 2026-10-21 (commits `0db7120`..`73f0074`) — o mais novo
+- **No `main`, do mais novo para o mais antigo** (base `0db7120`): `73f0074` temas musicais por lutador (inertes); `a6227d5` memórias dos agentes; `59f3b75` sons por lutador (inertes); `955e720` chefões progressivos (contrato, `danoRecebido`, harness e balanço); `bfa3347` provocação antes dos rounds e na vitória (ligada); `ac57a80` seleção (casa aleatória, rótulo VOCÊ, tipografia Barlow).
+- **Ligado no jogo (HEAD):** provocação (balão antes do round e na vitória; opção PROVOCAÇÕES em Opções); ZENON como chefão do Arcade, com `danoRecebido` 0,80; casa aleatória na seleção; casa de honra 204x44.
+- **Pronto e desligado:** identidade sonora (`IDENTIDADE_SONORA = false`) e temas musicais (`TEMAS_POR_LUTADOR = false`). A ligação na luta (S4 e T3, em `src/ui/cenas/fight.ts`) e a escuta do dono (S5) não foram feitas.
+- **Chefões na fila: NÃO commitado.** No HEAD, `REGRAS_PADRAO.chefesDaFila` é `false` (`src/meta/regras.ts:36`). A árvore de trabalho tem a virada para `true` (feita pela L1 da Lyra, por isso o handoff do Cronos diz `false`), o `fim.ts` novo, a aura da fase 2 corrigida, a UI de desbloqueio e a seleção. Quem commitar isso precisa saber que o chefão do Arcade muda de ZENON para o próximo guardião.
+- **Árvore de trabalho (não commitada):** `src/ui`, `src/render` e `src/meta` (Lyra: chefões); `docs/handoff-lyra-chefoes.md` (novo); `docs/textos-chefoes.md`, `.claude/agent-memory/*` (alterados). Há também listas `docs/commit-*-arquivos.txt` criadas pelos agentes para montar os commits (a confirmar se saem do repositório).
+- **Documentação desta passada** (Alexandria): `README.md`, `CHANGELOG.md`, `docs/arquitetura.md`, `docs/como-adicionar-um-lutador.md` e este arquivo. Alterações **não commitadas**, aguardando OK do dono.
+- **Correções feitas nesta passada:** `docs/arquitetura.md` descrevia a fala de derrota do chefão em `roundend`; o código do HEAD já segue a decisão 6 (derrota só no KO final, vitória só no `matchend`). Os `arquivo:linha` de `arquitetura.md` e `como-adicionar-um-lutador.md` foram refeitos contra o HEAD (ex.: `MAX_PAGINAS` é 8, `MAX_CHEFES_DERROTADOS` é 16, a tecla H está em `fight.ts:571`).
+- **Testes:** `npm run typecheck` passou na árvore atual (sem escrita). Os números de unidade e e2e vêm dos handoffs e **não foram reconferidos aqui**: temas, 2 126 testes em 92 arquivos (`docs/handoff-vega-temas.md`); chefões da Lyra, e2e 217 passaram, 0 falharam (`docs/handoff-lyra-chefoes.md`). A suíte inteira não foi rodada nesta passada, porque a árvore está em edição.
+- **Balanço de produção (com esquiva):** `docs/balanco/` regravado em `955e720`, 25 800 lutas, 0 travadas. Hash das lutas regulares `f420ce928e06b304`, igual ao de antes da mudança. NORMAL dentro da rampa nos seis chefões; DIFÍCIL fora em 4 de 6 (ver "Decisões em aberto").
+- **Handoff ausente:** `docs/handoff-vega-provocacao-p1.md`, citado no pedido, **não existe** em nenhum commit. Os dados da Vega sobre a provocação estão na memória dela (`.claude/agent-memory/vega/project_provocacoes_p1.md`), e foi isso que a documentação usou.
+
+## Estado em 2026-10-21 (commit `0684548`, histórico)
 - No `main`: `0684548` (Zenon Argyros, o Arconte), sobre `9b63acb` (esquiva, cinemática única por especial, BAATAR normal, balanço) e `1cb1ccd`. A árvore estava limpa na data desta revisão.
 - **Zenon no jogo:** chefão final (`CHEFE = 'zenon'`, `src/meta/regras.ts`), 10º lutador. Luta em duas barras, cena da fase 2 (90 ticks), trilha da valsa, dreno (TRIBUTO e DECRETO), armadura da fase 2, SELO com projétil próprio, entrada dramática (COMPLETA de 270 ticks, 4,5 s; CURTA de 60 ticks) e casa de honra na grade de 10. Depois de derrotado, jogável.
 - **Fila e elenco:** AMINU > CENTELLA > CAMILLE > NILA > BAATAR (lutador comum, 5º da fila). A Dança da Águia virou só a entrada e a vitória do BAATAR.
@@ -142,8 +154,26 @@ Decisões do dono sobre as 8 dúvidas registradas pela Alexandria no mesmo dia. 
 7. **DECIDIDO: manter a entrada do chefão com cinemática DESLIGADA, em CURTA.** Sem mudança: `modoDaEntrada` (`src/ui/cenas/fight.ts`) devolve CURTA quando a preferência não é `completa`.
 8. **DECIDIDO: balanço regerado com a esquiva (produção).** Feito: `docs/balanco/` = COM esquiva (ZENON 51,4%; chefão 31,9% no NORMAL e 23,0% no DIFÍCIL). `docs/balanco/sem-esquiva/` guarda a comparação (ZENON 52,6%; chefão 28,0% e 14,9%).
 
-## Decisões em aberto
-Nenhuma no momento. As dúvidas do Zenon de 2026-10-21 foram decididas (ver a seção acima).
+## Decisões em aberto (dependem do dono)
+
+1. **Escuta dos sons e dos temas.** Nada disso foi ouvido. Os testes provam que os sons e os temas são diferentes e cabem no orçamento; não provam que são bons. Sem a escuta, `IDENTIDADE_SONORA` e `TEMAS_POR_LUTADOR` ficam `false`. Os nomes dos temas (`nome` em cada `TemaDef`) são provisórios e pedem revisão cultural do Apolo.
+2. **Difícil dos chefões fora da faixa em 4 de 6** (balanço com esquiva, `docs/balanco/resultados.md`): AMINU 10,0% (meta 13-19), CENTELLA 25,8% (12-18), NILA 16,3% (9-15), BAATAR 19,0% (8-14). CAMILLE e ZENON estão dentro. Motivo: o `danoRecebido` é um fator por chefão, e o NORMAL tem prioridade. Opções: **aceitar (decisão provisória, vale por enquanto)**; afrouxar a faixa do DIFÍCIL (a faixa "centro x 0,575, ± 3" é leitura da Vega, a confirmar); fator por nível (campo e `if` no motor); mexer na IA do chefão (a spec evitou).
+3. **Seleção: como distinguir o próximo guardião.** Hoje o nome em toda casa fechada é "???". O próximo guardião se distingue só pelo texto do painel (`TEXTOS_COMUNS.selecao.proximo`: "Guarda o próximo selo do torneio."); os outros dizem "A vez dessa luta ainda não chegou." O pedido fala em "?" vs "???", mas no código o "?" simples só aparece na casa aleatória. Decidir: manter a distinção (revela a posição na fila, sem nome nem gênero) ou igualar as linhas (esconde a posição).
+4. **Round 1 da provocação mais curto que a spec.** Com os textos finais, curtos, o round 1 COMPLETA dura cerca de **4,8 s**. A spec estimava 5,5 a 6,8 s para textos de 40 a 56 caracteres. Decidir: aceitar 4,8 s, ou alongar (constantes em `PROVOCACAO` e `duracaoDoBalao`, `src/render/provocacao.ts`). O e2e exige no mínimo 4 s (`tests/e2e/provocacao-p4.spec.ts`).
+5. **Revisão de falante nativo das palavras marcadas.** Guardiões: "caída", "lucha", "lucha libre", "Touché", "riposte", "Avarga" (`docs/textos-chefoes.md` §8; o `†` já saiu do texto). Provocações: termos de japonês, hauçá, espanhol e francês (`docs/textos-provocacao.md` §3). Gritos dos sons marcados "(rev.)" (`GRITOS_LEXICAIS`).
+6. **Teste em aparelho real.** Nada disso foi medido em celular de verdade, só no Pixel 7 emulado do Chromium: balões da provocação, a fonte de 8 px dos nomes de especial novos (ARREMESSO DO AVARGA, MERGULHO DA ÁGUIA, PASSO DO ELEFANTE), a entrada dos guardiões em retrato (não medida), e como os sons e temas soam no celular.
+7. **Régua de sons: dois limiares não cumpridos.** R6 com o bloco de tom `P` (10 de 180 variações acima de 0,4) e R7 espelho (S entre 0,14 e 0,40, piso 0,3). Opções: baixar o piso do R7 ou aumentar o espelho (`docs/handoff-vega-sons.md`, item 2). Decisão da Nova com o dono (D-S7).
+
+## DECISÕES DO ATLAS (a confirmar pelo dono)
+
+O Atlas decidiu estes pontos durante a equipe. Ficam registrados para o dono confirmar ou reverter:
+
+- **Tolerância N3 aceita por escrito.** O mini motor de teste (`tests/support/audio-offline.ts`) gera sawtooth e square cerca de 1,1 a 1,4 dB mais alto que o Chromium, e triangle não é band-limited (a diferença cresce com a frequência). O limiar de S ≤ 0,3 não é cumprido em todos os pares. A distinção entre temas se confirma no Chromium: dT por par de 3,79, 3,79 e 4,86, contra o limiar de 3,413 (registro da Íris, `.claude/agent-memory/iris/project_temas-n3-chromium.md`).
+- **Critério de agendamento relativo à trilha `fight`**, e não p99 < 1 ms absoluto. Em CPU 4x, o p99 do `scheduler()` é 9,5 ms na `fight` de hoje e 6,3 a 8,0 ms nos temas (custo de 0,66 a 0,84 vez a `fight`). O critério absoluto não é atingível nem pela trilha atual. O teste `tests/unit/sons-integracao.test.ts` ainda usa 1 ms por tempo de parede (a confirmar se muda).
+- **Pico dos temas abaixo da trilha atual, com teto de 0,70.** A meta de pico ≤ 0,5 da spec não é cumprida por todos os temas (0,38 a 0,66). A própria `fight` tem pico de 0,93. O teste impõe ≤ 0,70 e abaixo da `fight`.
+- **Grave da fase 2 até +4 dB.** A spec pedia até +2 dB. O baixo, uma oitava abaixo, cai na faixa de grave por física. O teste (`tests/unit/musica-mix.test.ts`) impõe ≤ +4 dB na fase 2.
+- **MIN-JI a 120 bpm** (semínima pontuada), não 108 como na spec. Com 108, o par WEI LONG x MIN-JI ficava com só uma dimensão acima do limiar. Laço de 16,0 s.
+- **Duas correções da régua de sons depois do congelamento** (`tests/support/regua-sons.ts` e o motor offline): (1) o estimador de tom passou a usar pente de 5 harmônicos, em 70-650 Hz (antes escolhia a subharmônica e rastreava ruído); (2) o início do oscilador cai no primeiro quadro >= o instante. A Íris registrou que os limiares não mudam e que o R5 reproduz (pisos 0,67 / 0,96 / 0,83; positivo 2,15). **Ressalva:** o S0b mudou de 2,30 para 3,19. Então "sem alterar números" vale para os limiares e o R5, não para o S0b. Falta o veredito formal da Íris sobre essas correções, que a Vega pediu.
 
 ### Decisões anteriores (2026-10-20)
 - D4 APROVADA em 2026-10-20 (proposta em `docs/proposta-wei-long.md`): conjunto canônico = folhas 153007 (base), 153112 (reação), 153710 (golpes), 153054 (especiais); descartadas 153049, rncovy.jfif, 8hwvqp.jfif. A 153710 entra como está no MVP (braçadeira marrom, faixa, barba longa). A ombrada do TIE SHAN KAO fica como soco com aura por enquanto.

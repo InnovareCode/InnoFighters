@@ -7,10 +7,11 @@ export const porExtenso = (n: number): string => NUMEROS[n] ?? String(n);
 
 /**
  * Quantos rivais a escada tem antes do chefão: o tamanho da regra, limitado ao que existe (todos menos o jogador
- * e o chefão). Com os 4 lutadores de hoje e sem chefão são 3, como no protótipo.
+ * e o chefão). Com os 4 lutadores de hoje e sem chefão são 3, como no protótipo. Com os chefões da fila (`chefesDaFila`) o chefão da vez
+ * (um guardião, que não é o chefão final) também não é rival: desconta 2, o final e o guardião (10 lutadores = 7 candidatos; a escada segue com 5).
  */
 export function rivaisDaEscada(regras: Regras): number {
-  const candidatos = regras.roster.filter((id) => id !== regras.chefe).length - 1;
+  const candidatos = regras.roster.filter((id) => id !== regras.chefe).length - 1 - (regras.chefesDaFila ? 1 : 0);
   return Math.max(0, Math.min(regras.tamanhoEscada, candidatos));
 }
 

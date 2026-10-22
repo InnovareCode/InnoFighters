@@ -9,6 +9,7 @@ import { desenharPetalas, desenharProjetil, projetilParaVisual, type CampoDePeta
 import { desenharHUD, desenharOverlay, type OpcoesHud } from './hud';
 import { comPose, leituraApresentada } from './apresentacao-lutadores';
 import { chDaFicha, desenharLutador } from './lutador';
+import { desenharVeuDeFase2 } from './veu-de-fase2';
 import { limparQuadro, type Ctx } from './tela';
 
 /** Imagens e dados montados de que a cena de luta precisa para desenhar. */
@@ -69,7 +70,10 @@ export function desenharMundo(
   // fase 2 do chefão: a rampa vem do ESTADO (barras < barrasMax), não de um evento; só o chefe tem aura e só a arena registrada muda
   const chefe = chefeDaLeitura(luta);
   const rampa = chefe ? rampaDaFase2(luta, chefe, rec.elenco[chefe.id]?.ch) : 0;
-  SOBREPOSICOES_DE_CENARIO[luta.stage]?.(ctx, { rampa, t: luta.tick, camX: luta.cam.x, ...(opcoes.acesos === undefined ? {} : { acesos: opcoes.acesos }) });
+  const sobreposicao = SOBREPOSICOES_DE_CENARIO[luta.stage];
+  if (sobreposicao) sobreposicao(ctx, { rampa, t: luta.tick, camX: luta.cam.x, ...(opcoes.acesos === undefined ? {} : { acesos: opcoes.acesos }) });
+  // a arena de um GUARDIÃO (sem sobreposição própria, como a `gr` do ZENON) escurece e ganha o tom do guardião na fase 2 (véu procedural, spec §1.7)
+  else if (chefe && rampa > 0) desenharVeuDeFase2(ctx, rampa, rec.elenco[chefe.id]?.ch.accent ?? '#888888');
 
   const [a, b] = luta.fighters;
   // quem está atacando fica por cima (desenhado por último)

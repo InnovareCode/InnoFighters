@@ -3,6 +3,7 @@ import type { IdLutador } from '../../core/contratos';
 import type { Rng } from '../../core/rng';
 import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
+import { TEXTOS_COMUNS } from '../../render/textos-dos-chefoes';
 import { liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
 import { embaralhar, passoDaRolagem, rostoEmRepouso, rostosDaRolagem, sortear, TICKS_DA_REVELACAO, TICKS_DA_ROLAGEM } from '../aleatoria';
 import { dicaArcadeSelecao } from '../escada-texto';
@@ -324,12 +325,21 @@ export class CenaSelect implements Cena {
     }
   }
 
-  /** Texto do painel quando a casa não está liberada (sem revelar a fila: só o próximo vira "?"). */
-  private textosDeCasaFechada(id: IdLutador): { nome: string; linhas: string[] } {
+  /**
+   * Texto do painel quando a casa não está liberada. A fila continua SECRETA: o nome é "???" e nenhuma linha diz quem é nem o gênero (três guardiões são mulheres; "Derrote-o" no
+   * "?" revelaria que é homem). Com os chefões progressivos (`chefesDaFila`) o PRÓXIMO guardião diz que guarda o próximo selo e os outros que a vez deles não chegou; o
+   * Anfitrião (ZENON) diz que só recebe quem traz os Cinco Selos. Sem `chefesDaFila` (rollback, `?expansao=4`), os textos de antes.
+   */
+  textosDeCasaFechada(id: IdLutador): { nome: string; linhas: string[] } {
     const { regras, persist } = this.ui.c;
+    const proximo = proximoDaFila(persist.prog, regras) === id;
+    if (regras.chefesDaFila) {
+      if (this.estado(id) === 'chefe-oculto') return { nome: '???', linhas: [...TEXTOS_COMUNS.selecao.anfitriao] };
+      return { nome: '???', linhas: [...(proximo ? TEXTOS_COMUNS.selecao.proximo : TEXTOS_COMUNS.selecao.outros)] };
+    }
     if (this.estado(id) === 'chefe-oculto') return { nome: '???', linhas: ['Aparece no fim do ARCADE.', 'Derrote-o para liberar.'] };
     const linhas = ['Zere o ARCADE para liberar.'];
-    if (proximoDaFila(persist.prog, regras) === id) linhas.push('É o próximo a ser liberado.');
+    if (proximo) linhas.push('É o próximo a ser liberado.');
     return { nome: '???', linhas };
   }
 
@@ -358,7 +368,12 @@ export class CenaSelect implements Cena {
       const tx = this.textosDeCasaFechada(id);
       f.panel(px, 374, 284, 132, { stroke: P_COL[p] });
       f.A(tx.nome, px + 14, 394, 28, '#fff', '#000', 'left');
-      tx.linhas.forEach((l, i) => f.T(l, px + 14, 424 + i * 20, 14, i === 0 ? '#e8ecff' : '#ffd23f', 'left'));
+      // cada linha quebra se passar do painel (a mais longa dos chefões, 36 letras, encosta nos 256 px); uma linha curta fica onde sempre ficou (y 424 e 444)
+      let yy = 424;
+      tx.linhas.forEach((l, i) => {
+        const n = f.wrap(l, px + 14, yy, 256, 18, 14, i === 0 ? '#e8ecff' : '#ffd23f');
+        yy += n * 18 + 2;
+      });
       this.etiqueta(p, px, tag);
       return;
     }
@@ -614,7 +629,7 @@ export class CenaSelect implements Cena {
       f.wrap(hc.desc, 366, textoY, 228, linha, 13, '#e8ecff');
     } else {
       f.A('???', 480, nomeY, 22, '#9fa6c9', '#000');
-      f.wrap(this.estado(idc) === 'chefe-oculto' ? 'Aparece no fim do ARCADE.' : 'Zere o ARCADE para liberar.', 366, textoY, 228, linha, 13, '#e8ecff');
+      f.wrap(this.textosDeCasaFechada(idc).linhas.join(' '), 366, textoY, 228, linha, 13, '#e8ecff');
     }
     f.hint(this.versus ? 'P1: ← ↑ ↓ → e Z      P2: WASD e J      X / K desfazer     ESC menu' : '← ↑ ↓ → mover     ENTER / Z confirmar     ESC / X voltar');
   }

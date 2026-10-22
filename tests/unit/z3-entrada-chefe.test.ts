@@ -256,8 +256,10 @@ describe('a tabela de apresentação', () => {
     expect(APRESENTACAO['baatar']?.vitoria).toEqual({ duracao: 60, poses: ['devekh0', 'win'] });
     expect(APRESENTACAO['zenon']?.entrada).toEqual({ duracao: 90, poses: ['entrada0', 'entrada1', 'entrada2'] });
     expect(APRESENTACAO['zenon']?.vitoria).toEqual({ duracao: 80, poses: ['vitoria0', 'vitoria1'] });
-    expect(APRESENTACAO['baatar']?.falas).toBeUndefined(); // sem provocação
+    // o BAATAR é o 5º guardião (chefões progressivos): ganhou falas, aviso e ROTEIRO próprios (o cartão mora em `roteiro`; `entradaDramatica` segue só do ZENON)
+    expect(APRESENTACAO['baatar']?.falas?.entrada).toBe('Guardo o último selo. Depois de mim, só o Arconte.');
     expect(APRESENTACAO['baatar']?.entradaDramatica).toBeUndefined();
+    expect(APRESENTACAO['baatar']?.roteiro?.cartao.nome).toBe('BAATAR');
     expect(APRESENTACAO['zenon']?.aviso).toEqual(['O ANFITRIÃO', 'ESTÁ À SUA ESPERA']);
   });
 
@@ -508,8 +510,8 @@ describe('a CENA da luta com a entrada: o motor e o lock-step não a veem', () =
     expect(nova.cena.entrada.modo).toBe('completa');
   });
 
-  it('só o chefão com `entradaDramatica` faz a entrada: lutador comum, BAATAR comum e treino não', () => {
-    for (const [c2, chefe] of [['caio', false], ['baatar', false], ['baatar', true]] as const) {
+  it('só o chefão com roteiro faz a entrada: lutador comum e BAATAR comum (fora de luta de chefe) não; um chefe SEM roteiro (CAIO) também não', () => {
+    for (const [c2, chefe] of [['caio', false], ['baatar', false], ['caio', true]] as const) {
       const t = montar({}, REGRAS_PADRAO, run(), c2, chefe);
       t.update();
       expect(t.cena.entrada.ativa, `${c2} chefe=${String(chefe)}`).toBe(false);

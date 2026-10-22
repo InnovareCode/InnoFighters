@@ -197,7 +197,7 @@ export class CenaContinue implements Cena {
 export class CenaEnding implements Cena {
   private run: CampanhaArcade | null = null;
   private rec = false;
-  /** Lutadores liberados por esta vitória (fila primeiro, chefão depois): um aviso para cada. */
+  /** Lutadores liberados por esta vitória (o chefão que caiu; com a regra antiga, a fila primeiro e o chefão depois): um aviso para cada. Vazio na revanche do ZENON. */
   novos: IdLutador[] = [];
 
   constructor(private readonly ui: Navegador) {}
@@ -207,8 +207,9 @@ export class CenaEnding implements Cena {
     this.run = a.run;
     this.rec = a.run.score > persist.hi;
     if (this.rec) persist.hi = a.run.score;
-    // zerou o ARCADE: conta a vitória e libera o próximo da fila (e o chefão, se ele estava na escada e caiu)
-    const v = aplicarVitoriaArcade(persist.prog, { derrotouChefe: a.run.etapas.some((e) => e.chefe) }, regras);
+    // zerou o ARCADE: conta a vitória e libera QUEM CAIU. O id é o da ETAPA de chefe, gravado no começo do ARCADE (nunca recalculado aqui: outra aba pode ter liberado alguém no meio da
+    // campanha). Sem etapa de chefe (jogando de ZENON com tudo liberado: escada de 5) o chefão é null e a zerada só conta.
+    const v = aplicarVitoriaArcade(persist.prog, { chefe: a.run.etapas.find((e) => e.chefe)?.id ?? null }, regras);
     persist.prog = v.prog;
     this.novos = v.novos;
     persist.salvar();

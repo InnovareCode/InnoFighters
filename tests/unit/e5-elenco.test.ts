@@ -118,24 +118,36 @@ describe('E5 · fila de desbloqueio (regras reais; BAATAR é o 5º, sem chefão 
   });
 });
 
-describe('E5 · escada do Arcade (5 rivais + o chefão ZENON no fim; jogando COM o ZENON não há chefe)', () => {
+describe('E5 · escada do Arcade (5 rivais + o chefão da vez no fim; o ZENON só com a fila toda liberada; jogando COM o ZENON e tudo liberado não há chefe)', () => {
   it('TAMANHO_ESCADA é 5', () => {
     expect(TAMANHO_ESCADA).toBe(5);
   });
 
-  it('para cada um dos 10: 5 rivais distintos sem o próprio jogador e, no fim, o chefão ZENON (jogando COM ele: só os 5 rivais, ED7)', () => {
+  it('para cada um dos 10: 5 rivais distintos sem o próprio jogador e, no fim, o chefão da vez (save vazio = AMINU; jogando COM o AMINU = CENTELLA)', () => {
     for (const c1 of IDS_LUTADORES) {
       for (const semente of [1, 2, 3, 99]) {
         const e = montarEscada({ c1, prog: progressoVazio(), rng: criarRng(semente) });
         const rivais = e.filter((x) => !x.chefe);
+        const chefe = c1 === 'aminu' ? 'centella' : 'aminu'; // o 1º da fila que não é o jogador (defesa em profundidade; a UI não deixa escolher casa travada)
+        expect(rivais, `${c1}/${semente}`).toHaveLength(5);
+        expect(rivais.every((x) => x.id !== c1 && x.id !== 'zenon' && x.id !== chefe), `${c1}/${semente}`).toBe(true);
+        expect(new Set(rivais.map((x) => x.id)).size).toBe(5);
+        expect(e, `${c1}/${semente}`).toHaveLength(6);
+        expect(e[5], `${c1}/${semente}`).toEqual({ id: chefe, chefe: true });
+      }
+    }
+  });
+
+  it('com a fila toda liberada o chefão é o ZENON (os outros 9 o enfrentam); jogando COM ele não há etapa de chefe (ED7): só os 5 rivais', () => {
+    const tudo = { ...progressoVazio(), desbloqueados: [...FILA_DESBLOQUEIO] };
+    for (const c1 of IDS_LUTADORES) {
+      for (const semente of [1, 2, 3, 99]) {
+        const e = montarEscada({ c1, prog: tudo, rng: criarRng(semente) });
+        const rivais = e.filter((x) => !x.chefe);
         expect(rivais, `${c1}/${semente}`).toHaveLength(5);
         expect(rivais.every((x) => x.id !== c1 && x.id !== 'zenon'), `${c1}/${semente}`).toBe(true);
-        expect(new Set(rivais.map((x) => x.id)).size).toBe(5);
         if (c1 === 'zenon') expect(e, `${c1}/${semente}`).toHaveLength(5);
-        else {
-          expect(e, `${c1}/${semente}`).toHaveLength(6);
-          expect(e[5], `${c1}/${semente}`).toEqual({ id: 'zenon', chefe: true });
-        }
+        else expect(e[5], `${c1}/${semente}`).toEqual({ id: 'zenon', chefe: true });
       }
     }
   });
@@ -145,17 +157,21 @@ describe('E5 · escada do Arcade (5 rivais + o chefão ZENON no fim; jogando COM
     for (let s = 1; s <= 40; s++) for (const x of montarEscada({ c1: 'hayato', prog: progressoVazio(), rng: criarRng(s) })) vistos.add(x.id);
     expect(vistos.has('baatar')).toBe(true);
     const e = montarEscada({ c1: 'baatar', prog: progressoVazio(), rng: criarRng(7) });
-    expect(e).toHaveLength(6); // 5 rivais + o ZENON
+    expect(e).toHaveLength(6); // 5 rivais + o chefão da vez (AMINU)
+    expect(e[5]).toEqual({ id: 'aminu', chefe: true });
     expect(e.slice(0, 5).some((x) => x.chefe || x.id === 'baatar')).toBe(false);
   });
 
-  it('com um chefão injetado nas regras (o Zenon, quando entrar) a escada volta a ter 5 rivais + o chefe no fim, e ele nunca é rival', () => {
+  it('com um chefão final injetado nas regras e a fila toda liberada a escada tem 5 rivais + o final no fim, e ele nunca é rival; com a regra antiga o final vem desde o save vazio', () => {
     const comChefe: Regras = { ...REGRAS_PADRAO, chefe: 'baatar' };
+    const tudo = { ...progressoVazio(), desbloqueados: FILA_DESBLOQUEIO.filter((id) => id !== 'baatar') };
     for (const c1 of IDS_LUTADORES.filter((id) => id !== 'baatar')) {
-      const e = montarEscada({ c1, prog: progressoVazio(), rng: criarRng(3), regras: comChefe });
+      const e = montarEscada({ c1, prog: tudo, rng: criarRng(3), regras: comChefe });
       expect(e).toHaveLength(6);
       expect(e[5]).toEqual({ id: 'baatar', chefe: true });
       expect(e.slice(0, 5).some((x) => x.id === 'baatar')).toBe(false);
+      const antiga = montarEscada({ c1, prog: progressoVazio(), rng: criarRng(3), regras: { ...comChefe, chefesDaFila: false } });
+      expect(antiga[5]).toEqual({ id: 'baatar', chefe: true });
     }
   });
 

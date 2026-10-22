@@ -15,10 +15,11 @@ import { mundoFalso, mundoFalso9, navegadorFalso } from './_ui';
 const id = (s: string): IdLutador => s as IdLutador;
 // R9 = as regras de produção de ANTES do Zenon: 9 lutadores (o BAATAR é o 5º da fila) e SEM chefão. A mecânica da UI com 9 e a grade 3x3 seguem testadas
 // com ela (injetada); a produção de hoje tem 10 lutadores e o ZENON como chefão (grade de 10 = casa de honra: Lyra, Z2).
-const R9: Regras = { ...REGRAS_PADRAO, roster: REGRAS_PADRAO.roster.slice(0, 9), chefe: null };
+// `chefesDaFila: false`: o mundo de antes dos chefões progressivos (sem chefão nenhum na escada), a regra antiga que segue valendo como rollback.
+const R9: Regras = { ...REGRAS_PADRAO, roster: REGRAS_PADRAO.roster.slice(0, 9), chefe: null, chefesDaFila: false };
 // A mecânica de chefão da UI (centro da grade, etapa de chefe, aviso do chefão, desbloqueio do chefão) segue testada com estas regras
 // injetadas, que reproduzem o desenho anterior (fila de 4 + um chefão fora da fila; o id é só um stand-in de 9 lutadores).
-const R9C: Regras = { ...R9, fila: ['aminu', 'centella', 'camille', 'nila'], chefe: 'baatar' };
+const R9C: Regras = { ...R9, fila: ['aminu', 'centella', 'camille', 'nila'], chefe: 'baatar', chefesDaFila: true };
 const [A, B, C, D]: [IdLutador, IdLutador, IdLutador, IdLutador] = ['aminu', 'centella', 'camille', 'nila'];
 const CHEFE_FALSO: IdLutador = 'baatar';
 
@@ -232,12 +233,32 @@ describe('escada do ARCADE pela UI', () => {
     d.enter({ mode: 'arcade', c1: id('hayato'), c2: id('caio') });
     d.nav('ok');
     const run = t.ui.run!;
+    // regra dos chefões progressivos (L1): com o save vazio o chefão é o PRIMEIRO guardião da fila (AMINU), não o chefão final
     expect(run.etapas).toHaveLength(6);
-    expect(run.etapas.at(-1)).toEqual({ id: CHEFE_FALSO, chefe: true });
-    expect(run.etapas.slice(0, 5).every((e) => !e.chefe && e.id !== 'hayato' && e.id !== CHEFE_FALSO)).toBe(true);
+    expect(run.etapas.at(-1)).toEqual({ id: A, chefe: true });
+    expect(run.etapas.slice(0, 5).every((e) => !e.chefe && e.id !== 'hayato' && e.id !== CHEFE_FALSO && e.id !== A)).toBe(true);
     expect(new Set(run.etapas.map((e) => e.id)).size).toBe(6);
     expect(run.etapas.slice(0, 5).some((e) => !R9.iniciais.includes(e.id))).toBe(true);
     expect((ir[0]?.[1] as { cfg: { chefe?: boolean } }).cfg.chefe).toBeUndefined();
+  });
+
+  it('com a fila toda liberada o chefão é o FINAL (o stand-in do Anfitrião) e ele nunca é rival; a regra antiga (chave desligada) continua valendo', () => {
+    const final = { ...progressoVazio(), desbloqueados: [A, B, C, D] };
+    const t = navegadorFalso({}, R9C);
+    const d = t.ui.cenas.diff as CenaDiff;
+    t.persist.prog = final;
+    t.ui.pronto(mundoFalso9());
+    t.ui.go = (() => undefined) as never;
+    d.enter({ mode: 'arcade', c1: id('hayato'), c2: id('caio') });
+    d.nav('ok');
+    expect(t.ui.run!.etapas.at(-1)).toEqual({ id: CHEFE_FALSO, chefe: true });
+    expect(t.ui.run!.etapas.slice(0, 5).some((e) => e.id === CHEFE_FALSO)).toBe(false);
+    const antiga = navegadorFalso({}, { ...R9C, chefesDaFila: false });
+    antiga.ui.pronto(mundoFalso9());
+    antiga.ui.go = (() => undefined) as never;
+    (antiga.ui.cenas.diff as CenaDiff).enter({ mode: 'arcade', c1: id('hayato'), c2: id('caio') });
+    (antiga.ui.cenas.diff as CenaDiff).nav('ok');
+    expect(antiga.ui.run!.etapas.at(-1)).toEqual({ id: CHEFE_FALSO, chefe: true });
   });
 
   it('produção hoje (sem chefão): 5 rivais sorteados, sem etapa de chefe, o BAATAR pode ser rival', () => {
@@ -258,8 +279,9 @@ describe('escada do ARCADE pela UI', () => {
     expect(vistos.has('baatar')).toBe(true);
   });
 
-  it('jogando COM o chefão: escada só de rivais, sem etapa de chefe', () => {
+  it('jogando COM o chefão final e com a fila toda liberada: escada só de rivais, sem etapa de chefe (ED7); com a fila ainda aberta o guardião da vez segue sendo o chefão', () => {
     const t = navegadorFalso({}, R9C);
+    t.persist.prog = { ...progressoVazio(), desbloqueados: [A, B, C, D] };
     t.ui.pronto(mundoFalso9());
     const d = t.ui.cenas.diff as CenaDiff;
     t.ui.go = (() => undefined) as never;
@@ -267,6 +289,13 @@ describe('escada do ARCADE pela UI', () => {
     d.nav('ok');
     expect(t.ui.run!.etapas).toHaveLength(5);
     expect(t.ui.run!.etapas.some((e) => e.chefe)).toBe(false);
+    // fila ainda aberta (save vazio): mesmo jogando com o final, o guardião A é o chefão da vez
+    const aberta = navegadorFalso({}, R9C);
+    aberta.ui.pronto(mundoFalso9());
+    aberta.ui.go = (() => undefined) as never;
+    (aberta.ui.cenas.diff as CenaDiff).enter({ mode: 'arcade', c1: CHEFE_FALSO, c2: id('caio') });
+    (aberta.ui.cenas.diff as CenaDiff).nav('ok');
+    expect(aberta.ui.run!.etapas.at(-1)).toEqual({ id: A, chefe: true });
   });
 });
 
@@ -283,10 +312,14 @@ describe('desbloqueio ao zerar o ARCADE', () => {
     e.enter({ run });
     return { ...t, e, ir };
   }
+  // REGRA ANTIGA (chave desligada: rollback e `?expansao=4`): a escada termina no chefão fixo e a zerada libera o próximo da fila
+  const R9CAntiga: Regras = { ...R9C, chefesDaFila: false };
   const ladder = [A, B, C, D, id('wei-long')].map((x) => ({ id: x, chefe: false })).concat([{ id: CHEFE_FALSO, chefe: true }]);
+  // REGRA NOVA (chefões da fila): o chefão da vez é o 1º guardião bloqueado, e SÓ ele é liberado
+  const escadaDe = (chefe: IdLutador | null, rivais: IdLutador[]) => [...rivais.map((x) => ({ id: x, chefe: false })), ...(chefe ? [{ id: chefe, chefe: true }] : [])];
 
-  it('1ª zerada derrotando o chefão: libera o 1º da fila E o chefão, nessa ordem; grava e conta a zerada', () => {
-    const { e, ui, persist, salvou, ir } = final(R9C, ladder);
+  it('regra antiga: 1ª zerada derrotando o chefão libera o 1º da fila E o chefão, nessa ordem; grava e conta a zerada', () => {
+    const { e, ui, persist, salvou, ir } = final(R9CAntiga, ladder);
     expect(e.novos).toEqual([A, CHEFE_FALSO]);
     expect(persist.prog).toMatchObject({ desbloqueados: [A, CHEFE_FALSO], zeradas: 1, chefeDerrotado: true });
     expect(salvou.n).toBeGreaterThanOrEqual(1);
@@ -295,22 +328,72 @@ describe('desbloqueio ao zerar o ARCADE', () => {
     expect(ir).toEqual([['desbloqueio', { novos: [A, CHEFE_FALSO] }]]);
   });
 
-  it('jogando com o chefão (sem etapa de chefe): só a fila avança', () => {
-    const { e, persist } = final(R9C, ladder.slice(0, 5));
+  it('regra antiga: jogando com o chefão (sem etapa de chefe) só a fila avança', () => {
+    const { e, persist } = final(R9CAntiga, ladder.slice(0, 5));
     expect(e.novos).toEqual([A]);
     expect(persist.prog.chefeDerrotado).toBe(false);
   });
 
-  it('2ª zerada: o próximo da fila; fila esgotada: nada novo e vai direto ao título', () => {
-    const p1 = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, R9C).prog;
-    const seg = final(R9C, ladder, p1);
+  it('regra antiga: 2ª zerada, o próximo da fila; fila esgotada, nada novo e vai direto ao título', () => {
+    const p1 = aplicarVitoriaArcade(progressoVazio(), { derrotouChefe: true }, R9CAntiga).prog;
+    const seg = final(R9CAntiga, ladder, p1);
     expect(seg.e.novos).toEqual([B]);
     const cheio = { ...progressoVazio(), desbloqueados: [A, B, C, D, CHEFE_FALSO], zeradas: 5, chefeDerrotado: true };
-    const fim = final(R9C, ladder, cheio);
+    const fim = final(R9CAntiga, ladder, cheio);
     expect(fim.e.novos).toEqual([]);
     fim.ui.t = 61;
     fim.e.key('Enter');
     expect(fim.ir).toEqual([['title', undefined]]);
+  });
+
+  it('chefões da fila: a 1ª zerada libera SÓ o guardião que caiu (o id da ETAPA), grava e conta a zerada', () => {
+    const { e, ui, persist, salvou, ir } = final(R9C, escadaDe(A, [B, C, D, id('wei-long'), id('caio')]));
+    expect(e.novos).toEqual([A]);
+    expect(persist.prog).toMatchObject({ desbloqueados: [A], zeradas: 1, chefeDerrotado: true, chefesDerrotados: [A] });
+    expect(salvou.n).toBeGreaterThanOrEqual(1);
+    ui.t = 61;
+    e.key('Enter');
+    expect(ir).toEqual([['desbloqueio', { novos: [A] }]]);
+  });
+
+  it('chefões da fila: o id vem da etapa gravada no começo do ARCADE, não do que está liberado no fim (outra aba liberou o guardião no meio)', () => {
+    const outraAba = { ...progressoVazio(), desbloqueados: [A] };
+    const { e, persist } = final(R9C, escadaDe(A, [B, C, D, id('wei-long'), id('caio')]), outraAba);
+    expect(e.novos).toEqual([]); // sem cartão repetido
+    expect(persist.prog.desbloqueados).toEqual([A]);
+    expect(persist.prog.zeradas).toBe(1);
+  });
+
+  it('chefões da fila: jogando de chefão final com tudo liberado (escada de 5, sem etapa de chefe, { chefe: null }) só conta a zerada e não mostra cartão', () => {
+    const tudo = { ...progressoVazio(), desbloqueados: [A, B, C, D, CHEFE_FALSO], zeradas: 5, chefesDerrotados: [A, B, C, D, CHEFE_FALSO] };
+    const { e, ui, persist, ir } = final(R9C, escadaDe(null, [A, B, C, D, id('wei-long')]), tudo);
+    expect(e.novos).toEqual([]);
+    expect(persist.prog.zeradas).toBe(6);
+    ui.t = 61;
+    e.key('Enter');
+    expect(ir).toEqual([['title', undefined]]);
+  });
+
+  it('chefões da fila: a revanche do chefão final (tudo liberado) só conta a zerada: sem cartão de desbloqueio, sem repetir a derrota', () => {
+    const tudo = { ...progressoVazio(), desbloqueados: [A, B, C, D, CHEFE_FALSO], zeradas: 5, chefesDerrotados: [A, B, C, D, CHEFE_FALSO] };
+    const { e, persist, ir, ui } = final(R9C, escadaDe(CHEFE_FALSO, [A, B, C, D, id('wei-long')]), tudo);
+    expect(e.novos).toEqual([]);
+    expect(persist.prog.chefesDerrotados).toEqual([A, B, C, D, CHEFE_FALSO]);
+    ui.t = 61;
+    e.key('Enter');
+    expect(ir).toEqual([['title', undefined]]);
+  });
+
+  it('chefões da fila: 5 zeradas vencendo o chefão da vez liberam a fila na ordem; a 6ª, com o final na escada, libera o final (e só ele)', () => {
+    let prog = progressoVazio();
+    const visto: IdLutador[] = [];
+    for (const chefe of [A, B, C, D, CHEFE_FALSO]) {
+      const r = final(R9C, escadaDe(chefe, [id("wei-long")]), prog);
+      visto.push(...r.e.novos);
+      prog = r.persist.prog;
+    }
+    expect(visto).toEqual([A, B, C, D, CHEFE_FALSO]);
+    expect(prog.zeradas).toBe(5);
   });
 
   it('produção hoje (sem chefão): zerar o Arcade de 5 etapas libera só o 1º da fila (AMINU); quem já liberou o BAATAR como chefe segue a fila sem perder nada', () => {

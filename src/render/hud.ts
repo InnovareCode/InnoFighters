@@ -4,6 +4,7 @@ import type { ExtensaoChefeLeitura, LeituraLuta, LutadorLeitura } from '../core/
 import { clamp } from '../core/math';
 import { ESQUIVA_PADRAO } from '../data/esquiva';
 import { zoomIn } from './animacao';
+import { APRESENTACAO } from './apresentacao-lutadores';
 import { chDaFicha } from './lutador';
 import { ETIQUETA_POSTURA, desenharPostura, posturaDe, type Postura } from './postura';
 import { desenharRetratoMoldurado } from './retrato';
@@ -197,8 +198,9 @@ export function desenharHUD(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, opcoes:
   const [a, b] = luta.fighters;
   const ra = elenco[a.id];
   const rb = elenco[b.id];
-  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1, posturaDe(ra.ch, a.ficha), opcoes.esquiva === true, ra.ch.title);
-  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2, posturaDe(rb.ch, b.ficha), opcoes.esquiva === true, rb.ch.title);
+  // o título do chefão no HUD vem dos dados quando há um curto (CAMILLE, BAATAR e CENTELLA passam de 16 letras e cairiam em "CHEFÃO": D-A5)
+  desenharLado(ctx, luta, a, ra.ch.name, chDaFicha(ra.ch, a.ficha).proj.cost, 1, posturaDe(ra.ch, a.ficha), opcoes.esquiva === true, APRESENTACAO[a.id]?.tituloHud ?? ra.ch.title);
+  desenharLado(ctx, luta, b, rb.ch.name, chDaFicha(rb.ch, b.ficha).proj.cost, 2, posturaDe(rb.ch, b.ficha), opcoes.esquiva === true, APRESENTACAO[b.id]?.tituloHud ?? rb.ch.title);
   desenharRetratoMoldurado(ctx, ra.arte.retrato(ra.ch.head), 8, 8, 88, false);
   desenharRetratoMoldurado(ctx, rb.arte.retrato(rb.ch.head), LARGURA - 96, 8, 88, true);
 

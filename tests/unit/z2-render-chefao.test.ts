@@ -5,6 +5,7 @@ import { CONFIGURACOES_PADRAO, type IdLutador, type LeituraLuta, type LutadorLei
 import { criarRng } from '../../src/core/rng';
 import { Game } from '../../src/fight/game';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
+import { APRESENTACAO } from '../../src/render/apresentacao-lutadores';
 import { BRASEIROS_GR, ORDEM_DE_ACENDER, VIDA_DO_RAIO, raiosVivos, retanguloDaArte, sobreposicaoDaArenaGr } from '../../src/render/arena-gr';
 import { DURACAO_PADRAO_DA_CENA, chefeDaLeitura, desenharAuraChefe, rampaDaFase2 } from '../../src/render/aura-chefe';
 import { SOBREPOSICOES_DE_CENARIO, desenharCenarioLuta } from '../../src/render/cenario';
@@ -514,9 +515,18 @@ describe('HUD do chefão: nome, título "O ARCONTE", barras e ×2/×1', () => {
 
   it('título longo (acima de 16 letras) não entra: o rótulo fica só "CHEFÃO" (a linha tem 332 px junto do placar)', () => {
     expect('O ARCONTE'.length).toBeLessThanOrEqual(TITULO_MAX_NO_HUD);
-    const g = leitura({ c2: 'baatar' }); // BAATAR: "O Avarga das Estepes" (20 letras); a luta de chefe só liga com o def de chefão, então só o rótulo importa
+    const g = leitura({ c2: 'min-ji' }); // MIN-JI: "A Tempestade de Seul" (20 letras) e sem título curto nos dados; a luta de chefe só liga com o def de chefão, então só o rótulo importa
     g.p2.chefe = true;
     expect(textosDo(g)).toContain('000000  CHEFÃO');
+  });
+
+  it('o título do HUD vem de `tituloHud` (D-A5): BAATAR (20 letras) lê "O AVARGA", CENTELLA "A FAÍSCA", CAMILLE "A RIPOSTE"; nenhum passa de 16', () => {
+    for (const [id, titulo] of [['baatar', 'O AVARGA'], ['centella', 'A FAÍSCA'], ['camille', 'A RIPOSTE'], ['nila', 'A LUA DE KERALA'], ['aminu', 'A LANÇA DE KANO']] as const) {
+      expect((APRESENTACAO[id]?.tituloHud ?? '').length, id).toBeLessThanOrEqual(TITULO_MAX_NO_HUD);
+      const g = leitura({ c2: id });
+      g.p2.chefe = true;
+      expect(textosDo(g), id).toContain(`000000  CHEFÃO · ${titulo}`);
+    }
   });
 
   it('lutador comum: rótulos de sempre (1P / CPU), sem ×N e sem título', () => {

@@ -538,8 +538,8 @@ describe('P1 (4): com chefesDaFila:false tudo e identico ao HEAD ac57a80 (rollba
     }
   });
 
-  it('REGRAS_PADRAO nesta fase: a chave ainda desligada (a L1 liga junto com o fim.ts); temasMusicais ligado', () => {
-    expect(REGRAS_PADRAO.chefesDaFila).toBe(false);
+  it('REGRAS_PADRAO depois da L1: a chave ligada (o fim.ts informa o id do chefão); temasMusicais ligado', () => {
+    expect(REGRAS_PADRAO.chefesDaFila).toBe(true);
     expect(REGRAS_PADRAO.temasMusicais).toBe(true);
   });
 });

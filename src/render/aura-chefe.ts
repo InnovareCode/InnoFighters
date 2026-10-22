@@ -11,6 +11,7 @@ import type { Ctx } from './tela';
  * `rampaDaFase2` vale 0 enquanto o chefe tem todas as barras; sobe de 0 a 1 durante a cena (`phase === 'cena-chefe'`, `t / duração`); e segura 1
  * quando a ficha da fase 2 está ativa (depois da retomada, até o fim da luta). Entre a troca de barra e o começo da cena ele ainda está
  * caído/levantando: a aura espera a cena (0). Como só olha a leitura, pausa, cinemática e um evento perdido não a deixam presa nem apagada.
+ * Os GUARDIÕES (sem ficha da fase 2) não têm esse marcador: para eles a fase 2 é a barra (`barras < barrasMax`) e a rampa vale 1 desde a troca (ver `rampaDaFase2`).
  */
 
 /** Duração da cena quando o def não diz (o ZENON usa 90 ticks). */
@@ -26,6 +27,9 @@ export function chefeDaLeitura(luta: LeituraLuta): LutadorLeitura | null {
 export function rampaDaFase2(luta: LeituraLuta, f: LutadorLeitura, ch: LutadorMontado | undefined): number {
   if (!f.chefe || f.barras >= f.barrasMax) return 0;
   const cfg = ch?.chefe;
+  // GUARDIÕES (chefões progressivos, spec §2.3): sem ficha da fase 2 (a NILA troca de ficha sozinha, os outros nem têm uma), a fase 2 é a BARRA: `barras < barrasMax` (guarda acima).
+  // Vale 1 desde a troca de barra, inclusive na cena: a rampa t/duração recomeçaria do 0 no início da cena e a aura acenderia, apagaria e acenderia de novo.
+  if (cfg && cfg.fichaFase2 === undefined) return 1;
   if (luta.phase === 'cena-chefe') return Math.min(1, Math.max(0, luta.t / (cfg?.cena.duracao ?? DURACAO_PADRAO_DA_CENA)));
   return cfg && f.ficha === cfg.fichaFase2 ? 1 : 0;
 }

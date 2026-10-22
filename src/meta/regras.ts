@@ -30,9 +30,8 @@ export const REGRAS_PADRAO: Regras = {
   travadosNaEscada: true, // ED5: vitrine, da vontade de liberar
   esquiva: true,
   cinematica: true,
-  // P1: o mecanismo (`chefeDoArcade`, `aplicarVitoriaArcade({ chefe })`, `montarEscada`) esta pronto, mas o padrao so vira `true`
-  // junto com a L1 (fim.ts passando o id do chefao): antes disso a UI ainda informa `{ derrotouChefe }` e a escada e o
-  // desbloqueio tem de concordar. Virar o padrao muda a assercao de escada de e5-elenco/progresso.test (ZENON no fim).
-  chefesDaFila: false,
+  // L1: o chefao do ARCADE e o proximo guardiao da fila (`chefeDoArcade`) e derrota-lo o libera (`aplicarVitoriaArcade({ chefe })`,
+  // chamado pelo fim.ts com o id da ETAPA). O ZENON so e o chefao com os 5 guardioes liberados. Chave de rollback: `false`.
+  chefesDaFila: true,
   temasMusicais: true,
 };

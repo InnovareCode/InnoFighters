@@ -182,8 +182,8 @@ test.describe('seleção de 10 (3x3 + casa de honra) com estados', () => {
 
 });
 
-test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (teclado real)', () => {
-  test('5 rivais sorteados + chefão: aviso, VS do chefão, final, e os dois avisos de desbloqueio', async ({ page }, info) => {
+test.describe('ARCADE de PRODUÇÃO com o chefão da vez (AMINU, save vazio), de ponta a ponta (teclado real)', () => {
+  test('5 rivais sorteados + o guardião AMINU: aviso, VS do guardião, final, e o aviso de desbloqueio com o epílogo', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
     test.setTimeout(300_000);
     const erros = coletarErros(page);
@@ -196,8 +196,9 @@ test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (tecla
 
     const etapas = await hook(page, '(h) => h.ui.run.etapas');
     expect(etapas).toHaveLength(6);
-    expect(etapas[5]).toEqual({ id: CHEFE.id, chefe: true });
-    expect(etapas.slice(0, 5).every((e: any) => !e.chefe && e.id !== 'min-ji' && e.id !== CHEFE.id)).toBe(true);
+    // chefões progressivos: com o save vazio o chefão é o PRIMEIRO guardião da fila (o ZENON só vem com os cinco liberados)
+    expect(etapas[5]).toEqual({ id: CHEFE.fila1, chefe: true });
+    expect(etapas.slice(0, 5).every((e: any) => !e.chefe && e.id !== 'min-ji' && e.id !== CHEFE.id && e.id !== CHEFE.fila1)).toBe(true);
     expect(await hook(page, '(h) => h.ui.scene.a.cfg.chefe')).toBeUndefined();
 
     for (let luta = 0; luta < 6; luta++) {
@@ -210,7 +211,7 @@ test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (tecla
       }
       await esperarCena(page, 'vs', 30_000);
       if (luta === 5) {
-        expect(await hook(page, '(h) => h.ui.scene.a.cfg')).toMatchObject({ mode: 'arcade', c2: CHEFE.id, chefe: true });
+        expect(await hook(page, '(h) => h.ui.scene.a.cfg')).toMatchObject({ mode: 'arcade', c2: CHEFE.fila1, chefe: true });
         await page.waitForTimeout(700);
         await foto(page, 'vs-do-chefao');
       }
@@ -230,7 +231,7 @@ test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (tecla
           const quando = fase === 'cena-chefe' ? 'cena' : barras === 1 ? 'fase-2' : 'fase-1';
           if (!fotografado.has(quando)) {
             fotografado.add(quando);
-            await foto(page, `arcade-${CHEFE.id}-${quando}`);
+            await foto(page, `arcade-${CHEFE.fila1}-${quando}`);
           }
         }
         if (fase === 'fight') {
@@ -243,10 +244,10 @@ test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (tecla
       if (luta === 4) await page.waitForTimeout(0);
     }
 
-    // zerou: o final grava o progresso (fila primeiro, chefão depois) e mostra um aviso por lutador novo
+    // zerou: o final grava o progresso (SÓ o guardião que caiu, o AMINU) e mostra UM aviso, com o epílogo; o ZENON segue bloqueado
     const prog = await hook(page, '(h) => h.persist.prog');
-    expect(prog).toMatchObject({ desbloqueados: [CHEFE.fila1, CHEFE.id], zeradas: 1, chefeDerrotado: true, chefesDerrotados: [CHEFE.id] });
-    expect(await hook(page, '(h) => h.ui.scene.novos')).toEqual([CHEFE.fila1, CHEFE.id]);
+    expect(prog).toMatchObject({ desbloqueados: [CHEFE.fila1], zeradas: 1, chefeDerrotado: true, chefesDerrotados: [CHEFE.fila1] });
+    expect(await hook(page, '(h) => h.ui.scene.novos')).toEqual([CHEFE.fila1]);
     await page.waitForTimeout(1200);
     await page.keyboard.press('Enter');
     await esperarCena(page, 'desbloqueio');
@@ -254,18 +255,13 @@ test.describe('ARCADE de PRODUÇÃO com o chefão ZENON, de ponta a ponta (tecla
     await page.waitForTimeout(900);
     await foto(page, 'desbloqueio-1');
     await page.keyboard.press('Enter');
-    await esperarCena(page, 'desbloqueio');
-    expect(await hook(page, '(h) => h.ui.scene.indice')).toBe(1);
-    await page.waitForTimeout(900);
-    await foto(page, 'desbloqueio-2');
-    await page.keyboard.press('Enter');
     await esperarCena(page, 'title');
 
-    // gravado em disco (v2) e a próxima seleção mostra os dois com o selo NOVO!
+    // gravado em disco (v2) e a próxima seleção mostra o AMINU com o selo NOVO!
     const salvo = JSON.parse(await page.evaluate(() => window.localStorage.getItem('inno-fighters-v2')!));
-    expect(salvo.prog).toMatchObject({ desbloqueados: [CHEFE.fila1, CHEFE.id], zeradas: 1, chefeDerrotado: true, chefesDerrotados: [CHEFE.id] });
+    expect(salvo.prog).toMatchObject({ desbloqueados: [CHEFE.fila1], zeradas: 1, chefeDerrotado: true, chefesDerrotados: [CHEFE.fila1] });
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); }");
-    expect(await hook(page, '(h) => [...h.ui.scene.novos].sort()')).toEqual([CHEFE.fila1, CHEFE.id].sort());
+    expect(await hook(page, '(h) => [...h.ui.scene.novos].sort()')).toEqual([CHEFE.fila1]);
     expect(erros).toEqual([]);
   });
 });

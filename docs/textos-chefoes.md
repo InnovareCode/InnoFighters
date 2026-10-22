@@ -7,6 +7,9 @@ Este documento é a fonte do texto **até a transcrição** para `src/render/apr
 Depois dela, a fonte passa a ser o código, e este topo ganha a nota "transcrito em <data>; editar o .ts". **Transcreva do JSON
 (§9)**: as tabelas e o JSON saem do mesmo dado, pelo mesmo script.
 
+> **Transcrito em 2026-10-21 (Lyra, L1/E1) para `src/render/textos-dos-chefoes.ts` (a partir do JSON do §9, por script). A partir daqui a fonte é o .ts: editar LÁ.**
+> Este documento fica como a justificativa do texto (enredo, voz, revisão de nativo); os limites são conferidos por `tests/unit/l1e1-chefoes.test.ts` e a medida em pixels por `tests/e2e/chefoes-l1e1.spec.ts`.
+
 ## 1. O enredo em uma página
 
 **O anel do Arconte.** O ZENON, o Anfitrião, fundou o torneio há trinta anos, e o cinturão nunca ficou longe da casa dele. O

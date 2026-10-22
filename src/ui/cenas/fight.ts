@@ -1,13 +1,13 @@
 import { reagirAosEventos } from '../../audio/eventos';
 import { tocarReceita, type SintetizadorLike } from '../../audio/receitas';
-import { ALTURA, LARGURA, SH } from '../../core/constantes';
+import { ALTURA, GROUND, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
 import { CINEMATICA_PADRAO, type EventoLuta } from '../../core/contratos';
 import { ESQUIVA_PADRAO } from '../../data/esquiva';
 import { criarMemoriaDeFalas, provocacoesLigadas } from '../../data/provocacoes';
 import type { DummyTreino, FonteEntradas } from '../../fight/game';
 import { chefeDaLeitura } from '../../render/aura-chefe';
-import { APRESENTACAO, falaDoChefe } from '../../render/apresentacao-lutadores';
+import { APRESENTACAO, falaDoChefe, roteiroDe } from '../../render/apresentacao-lutadores';
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
 import { desenharLegenda } from '../../render/legenda';
@@ -19,6 +19,7 @@ import {
   falasDaAbertura,
   modoDaProvocacao,
   montarRoteiro,
+  paraATela,
   Provocacao,
   provocacaoLigada,
   SOM_DA_VITORIA,
@@ -103,7 +104,8 @@ export class CenaFight implements Cena {
       aoSom: (momento, id) => void tocarReceita(sintetizador(), momento === 'abertura' ? id.abertura : id.batida),
     });
     this.entrada = new EntradaDoChefe({
-      aoSom: (som) => tocarReceita(sintetizador(), som === 'faixas' ? SOM_DAS_FAIXAS : som === 'cartao' ? SOM_DO_CARTAO : somDoBraseiro(som.braseiro)),
+      aoSom: (som) =>
+        tocarReceita(sintetizador(), som === 'faixas' ? SOM_DAS_FAIXAS : som === 'cartao' ? SOM_DO_CARTAO : som === 'assinatura' ? this.entrada.assinatura : somDoBraseiro(som.braseiro)),
     });
     this.provocacao = new Provocacao({
       aoSom: (som) => {
@@ -141,12 +143,12 @@ export class CenaFight implements Cena {
   }
 
   /**
-   * A entrada dramática desta luta, ou null (sem entrada): só o chefão cujo lutador tem `entradaDramatica` em `APRESENTACAO`. COMPLETA na primeira luta contra
+   * A entrada dramática desta luta, ou null (sem entrada): só o chefão cujo lutador tem `roteiro` em `APRESENTACAO` (o ZENON e os 5 guardiões). COMPLETA na primeira luta contra
    * o chefão de cada ARCADE; CURTA depois de um continue (ou reinício) na mesma campanha, com `prefers-reduced-motion` ou com a cinemática CURTA/DESLIGADA.
    * Regras sem cinemática (`?expansao=4`) = sem entrada. O nome do chefão aparece sempre: a entrada não some, só encolhe.
    */
   private modoDaEntrada(a: ArgsFight): ModoEntrada | null {
-    if (!a.cfg.chefe || !APRESENTACAO[a.cfg.c2]?.entradaDramatica || !this.ui.c.regras.cinematica) return null;
+    if (!a.cfg.chefe || !roteiroDe(a.cfg.c2) || !this.ui.c.regras.cinematica) return null;
     const pref = this.ui.c.persist.settings.cinematica ?? (this.reduzMovimento() ? 'curta' : CINEMATICA_PADRAO);
     return pref === 'completa' && !a.run?.entradaDoChefeVista ? 'completa' : 'curta';
   }
@@ -156,10 +158,11 @@ export class CenaFight implements Cena {
     this.entradaPendente = false;
     const a = this.a;
     const modo = a ? this.modoDaEntrada(a) : null;
-    const ap = a ? APRESENTACAO[a.cfg.c2] : undefined;
-    if (!a || !modo || !ap?.entradaDramatica) return;
+    const roteiro = a ? roteiroDe(a.cfg.c2) : undefined;
+    if (!a || !modo || !roteiro) return;
     if (a.run) a.run.entradaDoChefeVista = true;
-    this.entrada.iniciar(modo, ap.entradaDramatica, ap.falas?.entrada ?? '');
+    const cor = roteiro.naCorDoLutador ? this.ui.m.elenco[a.cfg.c2].ch.accent : undefined;
+    this.entrada.iniciar(modo, roteiro.cartao, APRESENTACAO[a.cfg.c2]?.falas?.entrada ?? '', roteiro, cor);
   }
 
   /** Esta luta pode ter provocação neste momento? (regras, opção PROVOCAÇÕES, tipo de luta e o gancho de teste.) */
@@ -622,16 +625,24 @@ export class CenaFight implements Cena {
     const q = this.entrada.ativa ? this.entrada.quadro() : null;
     const pv = this.provocacao.ativa ? this.provocacao.vista(game, m.elenco) : null;
     const chefe = q ? chefeDaLeitura(game) : null;
-    const poseDaEntrada = q && chefe ? APRESENTACAO[chefe.id]?.entrada?.poses[q.pose] : undefined;
+    const poseDaEntrada = q && chefe ? this.entrada.batidas[q.pose]?.pose : undefined;
+    // zoom e deslocamento da entrada do guardião (roteiro): o zoom é ancorado no chão perto do chefão, mas nunca fora do miolo da tela (o plano aberto < 1 não mostra borda)
+    const zoomDaEntrada = q && chefe && q.zoom !== 1 ? { fator: q.zoom, x: clamp(paraATela(chefe.x + q.dx, GROUND, game.cam).x, 390, 570) } : undefined;
     desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, {
       tremor: persist.settings.shake,
       alvoTreino: game.dummy,
       esquiva: this.ui.c.regras.esquiva,
       ...(q ? { hud: false, acesos: q.acesos } : {}),
+      ...(zoomDaEntrada ? { zoom: zoomDaEntrada } : {}),
+      ...(q && chefe && q.dx !== 0 ? { deslocamento: { [chefe.indice]: q.dx } } : {}),
       ...(pv ? { hud: pv.quadro.hud, overlay: pv.quadro.overlay, poses: pv.poses, deslocamento: pv.deslocamento, ...(pv.zoom ? { zoom: pv.zoom } : {}) } : {}),
       ...(chefe && poseDaEntrada ? { poses: { [chefe.indice]: poseDaEntrada } } : {}),
     });
-    if (q) this.entrada.desenhar(ctx);
+    if (q) {
+      // onde o chefão está NA TELA (câmera, deslocamento e zoom da entrada): os efeitos de cena o seguem
+      const onde = chefe ? paraATela(chefe.x + q.dx, chefe.y, game.cam, zoomDaEntrada) : null;
+      this.entrada.desenhar(ctx, onde ? { x: onde.x, chao: onde.y } : undefined);
+    }
     else if (!pv) this.moedas.desenhar(ctx, game);
     if (!this.espera.pronta) {
       f.T(this.espera.falhou ? 'Não foi possível carregar os lutadores.' : `Carregando lutadores... ${this.espera.percentual}%`, W / 2, H / 2, 20, '#fff', 'center');

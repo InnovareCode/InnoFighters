@@ -1,11 +1,12 @@
 import { ALTURA, LARGURA } from '../../core/constantes';
+import { derrotouOChefe } from '../../meta';
 import { zoomIn } from '../../render/animacao';
 import { APRESENTACAO } from '../../render/apresentacao-lutadores';
 import { desenharRetrato } from '../../render/retrato';
 import type { Navegador } from '../navegador';
 import { NAV, type ArgsAvisoChefe, type Cena } from '../tipos';
 
-/** Aviso antes do chefão: "UM DESAFIANTE SE APROXIMA" (plano 4.2) ou o texto do chefão em `APRESENTACAO.aviso` (ZENON: "O ANFITRIÃO ESTÁ À SUA ESPERA"). Segue sozinho para o VS do chefão. */
+/** Aviso antes do chefão: "UM DESAFIANTE SE APROXIMA" (plano 4.2) ou o texto do chefão em `APRESENTACAO.aviso` (guardiões: "O PRIMEIRO SELO / NÃO TEM PRESSA"; ZENON: "O ANFITRIÃO ESTÁ À SUA ESPERA"). Segue sozinho para o VS do chefão. */
 export class CenaChefe implements Cena {
   private a: ArgsAvisoChefe | null = null;
   private indo = false;
@@ -35,6 +36,20 @@ export class CenaChefe implements Cena {
 
   click(): void {
     if (this.ui.t > 40) this.seguir();
+  }
+
+  /**
+   * As duas linhas do aviso e o rodapé do chefão desta luta, dos dados (`APRESENTACAO`): o aviso do guardião não revela quem é (nem o gênero: o sujeito é o selo). O ZENON já
+   * derrotado (D-A3) leva o aviso de REVANCHE. Sem dados, o aviso de sempre.
+   */
+  textoDoAviso(): { aviso: readonly [string, string]; rodape: string } {
+    const a = this.a;
+    const ap = a ? APRESENTACAO[a.cfg.c2] : undefined;
+    const revanche = a !== null && derrotouOChefe(this.ui.c.persist.prog, a.cfg.c2);
+    return {
+      aviso: (revanche ? ap?.avisoRevanche : undefined) ?? ap?.aviso ?? ['UM DESAFIANTE', 'SE APROXIMA'],
+      rodape: (revanche ? ap?.avisoRodapeRevanche : undefined) ?? ap?.avisoRodape ?? 'A última luta do torneio: 1 round, 2 barras de vida.',
+    };
   }
 
   draw(): void {
@@ -70,10 +85,10 @@ export class CenaChefe implements Cena {
     ctx.strokeRect(W / 2 - 110, 190, 220, 220);
     ctx.restore();
     f.A('???', W / 2, 300, 70, '#7a2a3a', '#0a0208', 'center', 1, k);
-    const [linha1, linha2] = APRESENTACAO[a.cfg.c2]?.aviso ?? (['UM DESAFIANTE', 'SE APROXIMA'] as const);
+    const [linha1, linha2] = this.textoDoAviso().aviso;
     f.A(linha1, W / 2, 70, 58, ['#ffffff', '#ff6a5a'], '#2a0000', 'center', zoomIn(t));
     f.A(linha2, W / 2, 132, 58, ['#ffffff', '#ff6a5a'], '#2a0000', 'center', zoomIn(t - 6));
-    f.T('A última luta do torneio: 1 round, 2 barras de vida.', W / 2, 450, 17, '#ffd9a6', 'center');
+    f.T(this.textoDoAviso().rodape, W / 2, 450, 17, '#ffd9a6', 'center');
     if (t > 40 && Math.floor(t / 25) % 2 === 0) f.T('ENTER para seguir', W / 2, 510, 13, '#cfd6f5', 'center');
   }
 }

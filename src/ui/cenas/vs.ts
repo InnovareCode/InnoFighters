@@ -1,6 +1,8 @@
 import { ALTURA, LARGURA } from '../../core/constantes';
 import { easeOut } from '../../core/math';
 import { AI_LEVELS } from '../../fight/cpu';
+import { ehChefeFinal } from '../../meta';
+import { APRESENTACAO } from '../../render/apresentacao-lutadores';
 import { desenharPose } from '../../render/pose';
 import { EsperaDeArte } from '../espera-de-arte';
 import type { Navegador } from '../navegador';
@@ -49,7 +51,7 @@ export class CenaVs implements Cena {
   draw(): void {
     const a = this.a;
     if (!a) return;
-    const { ctx, f, persist } = this.ui.c;
+    const { ctx, f, persist, regras } = this.ui.c;
     const m = this.ui.m;
     const W = LARGURA;
     const H = ALTURA;
@@ -111,10 +113,12 @@ export class CenaVs implements Cena {
     }
     const mode = a.cfg.mode;
     const run = a.run;
+    // luta de chefe: o rótulo vem dos dados do chefão ("ARCADE — A GUARDIÃ" para CENTELLA/CAMILLE/NILA); sem dados, "O ANFITRIÃO" (o final) ou "O GUARDIÃO"
+    const rotuloDoChefe = APRESENTACAO[a.cfg.c2]?.vs ?? (ehChefeFinal(a.cfg.c2, regras) ? 'ARCADE — O ANFITRIÃO' : 'ARCADE — O GUARDIÃO');
     const lab =
       mode === 'arcade' && run
         ? a.cfg.chefe
-          ? 'ARCADE — O CHEFÃO'
+          ? rotuloDoChefe
           : `ARCADE — LUTA ${run.idx + 1} DE ${run.etapas.length}`
         : mode === 'cpu'
           ? `LUTA vs CPU — ${AI_LEVELS[a.cfg.cpu ?? 0]?.name ?? ''}`
@@ -122,7 +126,8 @@ export class CenaVs implements Cena {
     const rounds = persist.settings.rounds;
     f.A(lab, W / 2, 420, 26, '#fff', '#000');
     f.T(`CENÁRIO: ${c2.stageName || ''}`, W / 2, 448, 14, '#ffd23f', 'center');
-    f.T(`Vença ${rounds}${rounds === 1 ? ' round' : ' rounds'} para ganhar a luta`, W / 2, 474, 15, '#ffd9a6', 'center');
+    // a luta de chefe tem 1 round só (e 2 barras de vida): "Vença N rounds" mentiria
+    if (!a.cfg.chefe) f.T(`Vença ${rounds}${rounds === 1 ? ' round' : ' rounds'} para ganhar a luta`, W / 2, 474, 15, '#ffd9a6', 'center');
     if (this.espera.falhou) f.T(`Não foi possível carregar os lutadores. ESC volta ao menu.`, W / 2, 510, 13, '#ff9a9a', 'center');
     else if (!this.espera.pronta) f.T(`Carregando lutadores... ${this.espera.percentual}%`, W / 2, 510, 13, '#cfd6f5', 'center');
     else if (t > 40 && Math.floor(t / 25) % 2 === 0) f.T('ENTER para pular', W / 2, 510, 13, '#cfd6f5', 'center');

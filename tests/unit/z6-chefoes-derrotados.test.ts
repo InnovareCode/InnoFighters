@@ -162,13 +162,32 @@ describe('Z6 §11.2: o BAATAR virou o 5o da fila e o Zenon e o chefao', () => {
     expect(r2.prog.chefesDerrotados).toEqual(['zenon']); // sem repetir
   });
 
-  it('caso 5: jogando COM o Zenon nao ha luta de chefe (ED7): a zerada so avanca a fila e nao marca derrota', () => {
-    const e = montarEscada({ c1: ZENON, prog: prog({ desbloqueados: [ZENON] }), rng: criarRng(3), regras: R10 });
+  it('caso 5 (regra antiga, chave desligada): jogando COM o Zenon nao ha luta de chefe (ED7): a zerada so avanca a fila e nao marca derrota', () => {
+    const antiga: Regras = { ...R10, chefesDaFila: false };
+    const e = montarEscada({ c1: ZENON, prog: prog({ desbloqueados: [ZENON] }), rng: criarRng(3), regras: antiga });
     expect(e.some((x) => x.chefe || x.id === ZENON)).toBe(false);
-    const r = aplicarVitoriaArcade(prog({ desbloqueados: [ZENON] }), { derrotouChefe: false }, R10);
+    const r = aplicarVitoriaArcade(prog({ desbloqueados: [ZENON] }), { derrotouChefe: false }, antiga);
     expect(r.novos).toEqual([AMINU]);
     expect(r.prog.chefeDerrotado).toBe(false);
     expect(r.prog.chefesDerrotados).toBeUndefined();
+  });
+
+  it('caso 5 (chefes da fila, o padrao): jogando COM o Zenon e com a fila toda liberada nao ha luta de chefe e a zerada nao libera nem marca nada; com a fila aberta o guardiao da vez e o chefao', () => {
+    const tudo = prog({ desbloqueados: [AMINU, CENTELLA, CAMILLE, NILA, BAATAR, ZENON], chefesDerrotados: [ZENON] });
+    const e = montarEscada({ c1: ZENON, prog: tudo, rng: criarRng(3), regras: R10 });
+    expect(e).toHaveLength(5);
+    expect(e.some((x) => x.chefe || x.id === ZENON)).toBe(false);
+    const r = aplicarVitoriaArcade(tudo, { chefe: null }, R10);
+    expect(r.novos).toEqual([]);
+    expect(r.prog.zeradas).toBe(tudo.zeradas + 1);
+    expect(r.prog.chefesDerrotados).toEqual([ZENON]);
+    // save antigo (so o Zenon liberado, fila vazia): jogando com ele o chefao e o AMINU e vencer libera o AMINU (S5)
+    const velho = prog({ desbloqueados: [ZENON], chefesDerrotados: [ZENON] });
+    const eVelho = montarEscada({ c1: ZENON, prog: velho, rng: criarRng(3), regras: R10 });
+    expect(eVelho.at(-1)).toEqual({ id: AMINU, chefe: true });
+    const rVelho = aplicarVitoriaArcade(velho, { chefe: AMINU }, R10);
+    expect(rVelho.novos).toEqual([AMINU]);
+    expect(rVelho.prog.chefesDerrotados).toEqual([ZENON, AMINU]);
   });
 
   it('sem chefao nas regras (injetado null: o estado entre o BAATAR normal e o Zenon) derrotouChefe nao inventa derrota nem desbloqueio', () => {

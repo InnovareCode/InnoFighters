@@ -268,9 +268,9 @@ describe('HUD: legibilidade no celular deitado (E7a)', () => {
   }
 
   it('etiqueta GAJA/SARPA e rótulo CHEFÃO passam de 12 px CSS na menor tela deitada; a etiqueta cabe antes das bolinhas', () => {
-    const f = fontes(lutador('nila', 0, {}), lutador('baatar', 1, { chefe: true, barras: 2, barrasMax: 2 }));
+    const f = fontes(lutador('nila', 0, {}), lutador('baatar', 1, { chefe: true, barras: 2, barrasMax: 2 })); // o título do HUD do BAATAR vem dos dados: "CHEFÃO · O AVARGA"
     expect((f.get('GAJA') ?? 0) * ESCALA_MIN).toBeGreaterThanOrEqual(12);
-    expect((f.get('000000  CHEFÃO') ?? 0) * ESCALA_MIN).toBeGreaterThanOrEqual(12);
+    expect((f.get('000000  CHEFÃO · O AVARGA') ?? 0) * ESCALA_MIN).toBeGreaterThanOrEqual(12);
     expect((f.get('×2') ?? 0) * ESCALA_MIN).toBeGreaterThanOrEqual(12);
     // lado 1: etiqueta de 236 a 236+w; a bolinha mais à esquerda de 3 rounds começa em 424-2*20-7 = 377
     expect(236 + ETIQUETA_POSTURA.w).toBeLessThan(377);

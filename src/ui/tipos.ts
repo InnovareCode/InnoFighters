@@ -16,7 +16,7 @@ export const NAV: Readonly<Record<string, AcaoNav>> = {
 };
 
 export type NomeCena =
-  | 'boot' | 'intro' | 'title' | 'menu' | 'select' | 'diff' | 'vs' | 'fight'
+  | 'boot' | 'intro' | 'trailer' | 'title' | 'menu' | 'select' | 'diff' | 'vs' | 'fight'
   | 'how' | 'options' | 'result' | 'continue' | 'ending' | 'chefe' | 'desbloqueio';
 
 export type ModoMenu = 'arcade' | 'versus' | 'cpu' | 'training';
@@ -54,12 +54,16 @@ export type ArgsContinue = { run: CampanhaArcade; a: ArgsFight };
 export type ArgsEnding = { run: CampanhaArcade };
 export type ArgsAvisoChefe = { cfg: ConfigPartidaUI; run: CampanhaArcade };
 export type ArgsDesbloqueio = { novos: readonly IdLutador[]; indice?: number };
-export type ArgsTitle = { fromIntro?: boolean } | undefined;
+export type ArgsTitle = { fromIntro?: boolean; fromTrailer?: boolean } | undefined;
+/** O trailer de abertura: `boot` = depois do gesto do boot; `atrair` = o título parado por 30 s. */
+export type ArgsTrailer = { origem: 'boot' | 'atrair' };
 export type ArgsComo = { from: string };
 
 /** Uma cena do jogo: o que o protótipo punha em SCENES[nome]. */
 export interface Cena {
   enter?(args: never): void;
+  /** Chamado por `Navegador.set` quando a cena é trocada por outra (soltar o que a cena segurou: arte, música, classes do `body`). */
+  exit?(): void;
   update?(): void;
   draw(): void;
   /** Devolve true se tratou a tecla (então o `nav` genérico não roda). */

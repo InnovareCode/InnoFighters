@@ -56,7 +56,7 @@ test.describe('retratos e carga de arte', () => {
       window.localStorage.setItem('inno-fighters-v1', JSON.stringify({ v: 1, s: { music: 0.45, sfx: 0.8, rounds: 1, time: 99, diff: 0, shake: true }, hi: 0 }));
     });
     const urls = espiarAssets(page);
-    await page.goto('/?seed=7&precarga=minima');
+    await page.goto('/?seed=7&precarga=minima&trailer=0'); // ?trailer=0: espera boot -> intro
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 
     // boot: manifestos, retratos e o cenário padrão; NENHUM atlas e nenhum outro cenário

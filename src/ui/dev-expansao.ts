@@ -32,6 +32,7 @@ export function regrasExpansao(): Regras {
     chefesDaFila: false,
     // o jogo com tudo liberado soa como o de produção (temas por lutador); só `?expansao=4` (fidelidade com o protótipo) fica com a música de antes
     temasMusicais: REGRAS_PADRAO.temasMusicais,
+    trailer: REGRAS_PADRAO.trailer,
   };
 }
 
@@ -50,5 +51,7 @@ export function regrasDeQuatro(): Regras {
     cinematica: false,
     chefesDaFila: false,
     temasMusicais: false,
+    // a abertura de hoje (CenaIntro) é o oráculo de pixel da fidelidade com o protótipo: sem trailer nem modo atrair
+    trailer: false,
   };
 }

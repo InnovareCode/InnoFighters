@@ -67,6 +67,11 @@ export type Regras = {
   readonly chefesDaFila: boolean;
   /** Tema musical por lutador (spec 3). `false` = so `fight`/`menu`/`chefe` de antes (`?expansao=4`). Separado de `cinematica`. */
   readonly temasMusicais: boolean;
+  /**
+   * Trailer de abertura (docs/spec-trailer-abertura.md). `true` = depois do boot toca o trailer (e, parado 30 s no título, o modo atrair); `false` = só a abertura de hoje
+   * (`CenaIntro`, oráculo de pixel da fidelidade com o protótipo): o `?expansao=4`.
+   */
+  readonly trailer: boolean;
 };
 
 /**

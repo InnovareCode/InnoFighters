@@ -48,6 +48,8 @@ export class Navegador {
   pronto(mundo: Mundo): void {
     this.mundo = mundo;
     this.ready = true;
+    // o pedaço do trailer (diretor, roteiro, render, música) baixa agora, enquanto o boot espera o gesto; se o gesto vier antes, o boot vai para a abertura de hoje
+    (this.cenas.trailer as { precarregar?: () => void }).precarregar?.();
   }
 
   /** Troca de cena com fade (ignorado se já há uma troca em curso). */
@@ -60,6 +62,7 @@ export class Navegador {
 
   /** Troca imediata. */
   set(name: NomeCena, args?: unknown): void {
+    if (this.scene && this.name !== name) this.scene.exit?.();
     this.name = name;
     this.scene = this.cenas[name];
     if (CENAS_COM_MUSICA_DE_MENU.includes(name) && this.c.audio.ctx) this.c.audio.startMusic('menu');

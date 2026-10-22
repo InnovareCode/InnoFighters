@@ -2,20 +2,23 @@ import type { IdLutador } from '../../core/contratos';
 import type { ChaveDeTexto, PlacaDeTexto } from './tipos';
 
 /*
- * Textos do trailer (pt-BR). RASCUNHO do Vega: o Apolo revisa depois (docs/textos-trailer.md). Regras que a validação confere: título de cartão com no
- * máximo 18 caracteres e em caixa alta; placa com nome e país em caixa alta. O epíteto vem do `title` do lutador (src/data/lutadores).
+ * Textos do trailer (pt-BR), revisados pela direção de arte (docs/direcao-arte-trailer.md §2). Regras que a validação confere: título de cartão com no
+ * máximo 18 caracteres e em caixa alta; placa com nome e país em caixa alta. O epíteto é igual ao `title` do lutador (src/data/lutadores).
+ * Glifos: só Latin-1 mais — … “ ” ‘ ’; o "…" é UM caractere (U+2026), por isso "QUEM SOBE AO TOPO…" cabe nos 18. Conferido no cmap das 3 fontes do jogo.
+ * As chaves são do Vega (tipos.ts): 'cinco-guardioes' e 'quem-chega-ao-topo' ficaram com o nome antigo e o texto novo.
+ * A frase lida em sequência: DEZ MESTRES. / DEZ NAÇÕES. / UM SÓ CINTURÃO. / CINCO SELOS. / QUEM SOBE AO TOPO… (corte para o Arconte).
  */
 export const TEXTOS: Readonly<Record<ChaveDeTexto, string>> = {
   'dez-mestres': 'DEZ MESTRES.',
   'dez-nacoes': 'DEZ NAÇÕES.',
-  'um-torneio': 'UM SÓ TORNEIO.',
-  'cinco-guardioes': 'CINCO GUARDIÕES.',
-  'quem-chega-ao-topo': 'QUEM CHEGA AO TOPO',
+  'um-torneio': 'UM SÓ CINTURÃO.',
+  'cinco-guardioes': 'CINCO SELOS.',
+  'quem-chega-ao-topo': 'QUEM SOBE AO TOPO…',
   'pressione-enter': 'PRESSIONE ENTER',
   'toque-para-jogar': 'TOQUE PARA JOGAR',
 };
 
-/** Placa do lutador (terço inferior, até 1,5 s): "NOME · PAÍS" e, se couber, o epíteto. */
+/** Placa do lutador (terço inferior, até 1,5 s): "NOME · PAÍS" e, se couber, o epíteto (desenho em docs/direcao-arte-trailer.md §4.3). */
 export const PLACAS: Readonly<Record<IdLutador, PlacaDeTexto>> = {
   hayato: { nome: 'HAYATO', pais: 'JAPÃO', epiteto: 'O Punho do Trovão' },
   'wei-long': { nome: 'WEI LONG', pais: 'CHINA', epiteto: 'O Dragão de Ferro' },

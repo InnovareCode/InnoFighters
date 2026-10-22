@@ -2,6 +2,7 @@ import { ALTURA, LARGURA } from '../../core/constantes';
 import type { Navegador } from '../navegador';
 import { marca } from '../logo';
 import type { Cena } from '../tipos';
+import type { CenaTrailer } from './trailer';
 
 /** Abertura / carregamento: barra de progresso, depois "clique ou pressione uma tecla" (libera o áudio). */
 export class CenaBoot implements Cena {
@@ -43,8 +44,12 @@ export class CenaBoot implements Cena {
 
   private ir(): void {
     if (!this.ui.ready) return;
+    // marca do gesto: o tempo até o 1º quadro do trailer (spec §8, critério 13) sai de `trailer:gesto` -> `trailer:quadro1`
+    if (typeof performance !== 'undefined' && typeof performance.mark === 'function') performance.mark('trailer:gesto');
     this.ui.iniciarAudio();
     this.ui.c.audio.stopMusic();
-    this.ui.set('intro');
+    // o trailer só abre com o pedaço lazy já carregado (e as regras ligadas): senão a abertura de hoje, sem esperar nada
+    if ((this.ui.cenas.trailer as CenaTrailer).disponivel()) this.ui.set('trailer', { origem: 'boot' });
+    else this.ui.set('intro');
   }
 }

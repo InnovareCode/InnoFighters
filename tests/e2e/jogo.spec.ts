@@ -35,7 +35,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     test.setTimeout(150_000);
     const erros = coletarErros(page);
     await salvarConfig(page);
-    await page.goto('/?seed=7');
+    await page.goto('/?seed=7&trailer=0'); // ?trailer=0: este fluxo espera boot -> intro (o trailer de abertura tem os próprios testes)
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await esperarCena(page, 'boot');
 
@@ -251,7 +251,7 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
     const erros = coletarErros(page);
     await salvarConfig(page);
     await page.setViewportSize({ width: 915, height: 412 });
-    await page.goto('/?seed=9');
+    await page.goto('/?seed=9&trailer=0'); // idem: boot -> intro
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     const cdp = await page.context().newCDPSession(page);
     const tocar = async (x: number, y: number): Promise<void> => {

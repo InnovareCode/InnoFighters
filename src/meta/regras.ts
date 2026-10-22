@@ -34,4 +34,6 @@ export const REGRAS_PADRAO: Regras = {
   // chamado pelo fim.ts com o id da ETAPA). O ZENON so e o chefao com os 5 guardioes liberados. Chave de rollback: `false`.
   chefesDaFila: true,
   temasMusicais: true,
+  // o trailer de abertura (montagem no motor do jogo); a CenaIntro de hoje segue como queda e como oráculo de pixel do ?expansao=4
+  trailer: true,
 };

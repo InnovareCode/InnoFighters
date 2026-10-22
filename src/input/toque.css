@@ -120,3 +120,7 @@ body.sem-esquiva #touch #esq { visibility: hidden; pointer-events: none; }
 #rot::before { content: ""; width: min(86vw, 420px); aspect-ratio: 1600 / 1127; background: url(/assets/ui/logo/logo-v1-720.webp) center / contain no-repeat; }
 /* DESVIO DO PROTOTIPO: la esta regra vinha ANTES do #rot { display: none }, que a anulava, e o aviso nunca aparecia. Aqui vem depois, como era a intencao. */
 @media (orientation: portrait) { #rot { display: flex; } }
+
+/* Durante o trailer de abertura (body.em-trailer, ligado por src/ui/trailer) os controles somem: é um filme, e QUALQUER toque na tela pula. `visibility` (e não
+   `display`) mantém a medida da camada; sem pointer-events o toque cai no canvas, que é quem pula. */
+body.em-trailer #touch { visibility: hidden; pointer-events: none; }

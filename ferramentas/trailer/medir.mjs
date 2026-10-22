@@ -10,7 +10,9 @@
  *   --taxas 1,4            estrangulamentos de CPU (padrão 1,4)
  *   --quadros N            quadros medidos por rodada (padrão 450) depois de 120 de aquecimento
  *   --rodadas N            rodadas; reporta a MEDIANA dos p95 (padrão 3)
- *   --modo custo|intervalo|ambos
+ *   --modo custo|intervalo|ambos|ao-vivo
+ *                          ao-vivo (só para o trailer, de preferência com --canvas cpu): o trailer inteiro num laço contínuo, esperando a arte de cada plano; reporta p95 geral e por plano
+ *                          por-plano (só para o trailer): cada plano numa página própria (`?trailer=Px`), custo update+draw de todos os ticks do plano; reporta p95 geral e por plano
  *                          custo = update+draw+flush de um quadro (laço manual, `?manual=1`); intervalo = tempo entre quadros do requestAnimationFrame
  *                          do jogo de verdade (padrão ambos)
  *   --lutas a:b,c:d        as lutas CPU x CPU de referência (padrão hayato:min-ji,caio:wei-long: a "normal" e a dos atlas originais, a mais pesada)
@@ -19,6 +21,7 @@
  *   --decode               também mede o 1º drawImage de um atlas 2048x1920 do ZENON, com e sem `decode()` (decisão da spec §5.2)
  *   --url <base>           servidor já no ar (padrão http://127.0.0.1:5173; se não responder, sobe o Vite)
  *   --gravar-base          grava ferramentas/trailer/base-desempenho.json (a referência que os testes do trailer leem)
+ *   --planos P8,P10        (só por-plano) mede só estes planos
  *   --saida <arquivo>      grava o resultado completo em JSON
  *
  * Limites: Chromium headless sem GPU (SwiftShader) NÃO é o iPhone. O que sai daqui é uma RAZÃO (trailer / luta), não um valor absoluto de aparelho.
@@ -55,13 +58,15 @@ function lerArgumentos(argv) {
     else if (t === '--gravar-base') a.gravarBase = true;
     else if (t === '--saida') a.saida = resolve(valor());
     else if (t === '--prep') a.prep = valor();
+    else if (t === '--planos') a.planos = valor().split(',').map((x) => x.trim()).filter(Boolean);
     else if (t === '--ajuda' || t === '-h' || t === '--help') a.ajuda = true;
     else throw new Error(`opção desconhecida: ${t}`);
   }
   if (!['fight', 'trailer'].includes(a.cena)) throw new Error('--cena: fight ou trailer');
   if (!['acelerado', 'cpu'].includes(a.canvas)) throw new Error('--canvas: acelerado ou cpu');
   if (!a.lutas.every((l) => /^[a-z-]+:[a-z-]+$/.test(l))) throw new Error('--lutas: pares id:id separados por vírgula');
-  if (!['custo', 'intervalo', 'ambos'].includes(a.modo)) throw new Error('--modo: custo, intervalo ou ambos');
+  if (!['custo', 'intervalo', 'ambos', 'por-plano', 'ao-vivo'].includes(a.modo)) throw new Error('--modo: custo, intervalo, ambos, por-plano ou ao-vivo');
+  if (['por-plano', 'ao-vivo'].includes(a.modo) && a.cena !== 'trailer') throw new Error('--modo por-plano e ao-vivo só valem com --cena trailer');
   if (!a.taxas.every((n) => Number.isFinite(n) && n >= 1 && n <= 20)) throw new Error('--taxas: números de 1 a 20');
   if (!Number.isInteger(a.quadros) || a.quadros < 60 || a.quadros > 5000) throw new Error('--quadros: inteiro de 60 a 5000');
   if (!Number.isInteger(a.rodadas) || a.rodadas < 1 || a.rodadas > 15) throw new Error('--rodadas: inteiro de 1 a 15');
@@ -119,6 +124,45 @@ const MEDIR_CUSTO = (n, aquecer) => `(() => {
   return t;
 })()`;
 
+/**
+ * Custo de cada quadro do trailer inteiro, do tick 0 ao fim, no laço MANUAL (`?manual=1`): um tick e um desenho por quadro, medindo o custo na thread principal (update +
+ * draw, como o `custo` da luta). Os quadros correm em lotes de 12 e, a cada limite de plano, espera a arte do plano seguinte chegar (`diagnostico().proximoPlano`), como a rede
+ * faria: nenhum plano vira reserva por pressa do teste. Com `--canvas cpu` (rasterização inline) o laço termina; com o canvas SwiftShader acelerado o rasterizador segura a
+ * thread e a medida não termina em tempo útil (use `por-plano` nesse caso). A cena abre aqui dentro (`origem: 'atrair'`, sem música).
+ */
+const MEDIR_AO_VIVO = (n) => `(async () => {
+  const h = window.__inno; const ui = h.ui; const amostras = [];
+  const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+  ui.fade = 0; ui.fadeDir = 0; ui.set('trailer', { origem: 'atrair' });
+  for (let i = 0; i < 400 && !ui.cenas.trailer.pronta; i++) await dormir(50);
+  while (amostras.length < ${n} && ui.name === 'trailer') {
+    for (let k = 0; k < 12 && amostras.length < ${n} && ui.name === 'trailer'; k++) {
+      const d0 = ui.cenas.trailer.diagnostico();
+      if (d0 && d0.proximoPlano && d0.proximoPlano.emTicks <= 1 && !d0.proximoPlano.artePronta) { for (let e = 0; e < 600 && !ui.cenas.trailer.diagnostico().proximoPlano.artePronta; e++) await dormir(50); }
+      const t0 = performance.now(); h.avancar(1); h.desenhar(); const c = performance.now() - t0;
+      const d = ui.cenas.trailer.diagnostico();
+      amostras.push({ c, p: d ? d.plano : ui.name, tick: d ? d.tick : -1, mb: d ? d.memoriaDecodificadaMB : 0, r: d ? d.planosEmReserva.length : 0 });
+    }
+    await dormir(0);
+  }
+  return amostras;
+})()`;
+
+/** Resumo por plano do modo ao-vivo (os 60 primeiros quadros, o preto e a pré-rolagem, ficam fora): p95, máximo, quadros acima de 24,15 e de 50 ms. */
+function porPlano(amostras) {
+  const por = {};
+  amostras.forEach((x, i) => {
+    if (i < 60) return;
+    const k = x.p ?? '?';
+    (por[k] ??= { custos: [], mb: 0, reserva: 0 }).custos.push(x.c);
+    por[k].mb = Math.max(por[k].mb, x.mb);
+    por[k].reserva = Math.max(por[k].reserva, x.r);
+  });
+  const r = {};
+  for (const [k, v] of Object.entries(por)) r[k] = { quadros: v.custos.length, p95: +percentil(v.custos, 0.95).toFixed(2), max: +Math.max(0, ...v.custos).toFixed(2), acima24: v.custos.filter((c) => c > 24.15).length, acima50: v.custos.filter((c) => c > 50).length, mbMax: +v.mb.toFixed(0), reservas: v.reserva };
+  return r;
+}
+
 /** Tempo entre quadros do laço de verdade (requestAnimationFrame), com o jogo rodando sozinho. */
 const MEDIR_INTERVALO = (n, aquecer) =>
   `new Promise((resolve) => { const t = []; let ultimo = 0; let k = 0; const passo = (ts) => { if (ultimo) { if (k >= ${aquecer}) t.push(ts - ultimo); k++; } else k = 0; ultimo = ts; if (t.length >= ${n}) resolve(t); else requestAnimationFrame(passo); }; requestAnimationFrame(passo); })`;
@@ -135,6 +179,42 @@ const MEDIR_DECODE = (url, reps, sal) => `(async () => {
   for (let i = 0; i < ${reps}; i++) { const a = await um(false, i); sem.push(a.primeiroDraw); dim = a; const b = await um(true, i); com.push(b.primeiroDraw); }
   return { sem, com, dim };
 })()`;
+
+/** Os planos do trailer e quantos ticks cada um tem (2 compassos = 192; os cartões, 1 compasso = 96). */
+const PLANOS_DO_TRAILER = [['P0', 192], ['P1', 192], ['C1', 96], ['P2', 192], ['C2', 96], ['P3', 192], ['P4', 192], ['C3', 96], ['P5', 192], ['P6', 192], ['P7', 192], ['P8', 192], ['P9', 192], ['P10', 192]];
+
+/**
+ * Modo por-plano (só para o trailer): para CADA plano abre uma página nova na prévia de desenvolvimento (`?trailer=Px`, que espera a arte do plano chegar antes de andar) e mede
+ * o custo na thread principal (update + draw, o mesmo do `custo` da luta) dos ticks do plano inteiro, com a CPU estrangulada. Um laço contínuo do trailer inteiro não serve: num
+ * canvas SwiftShader o rasterizador segura o laço e a medida nunca termina. Antes de medir espera 3 s com a arte já presente (o aquecimento do 1º desenho acontece nesse tempo ocioso, como no jogo, onde a arte chega segundos antes do plano).
+ */
+async function medirPorPlano(navegador, a, taxa) {
+  const por = {};
+  const todas = [];
+  for (const [id, ticks] of PLANOS_DO_TRAILER) {
+    if (a.planos && !a.planos.includes(id)) continue;
+    const ctx = await navegador.newContext({ viewport: { width: 960, height: 540 } });
+    const page = await ctx.newPage();
+    await page.goto(`${a.url}/?seed=7&expansao=1&manual=1&trailer=${id}`);
+    await page.waitForSelector('html[data-pronto="true"]', { timeout: 90_000 });
+    await comPrazo(page.evaluate(`(async () => { const h = window.__inno; h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('trailer', { origem: 'atrair' });
+      for (let i = 0; i < 600 && !h.ui.cenas.trailer.pronta; i++) await new Promise((r) => setTimeout(r, 50));
+      for (let i = 0; i < 1200; i++) { const t0 = h.ui.cenas.trailer.diagnostico().tick; h.avancar(1); if (h.ui.cenas.trailer.diagnostico().tick > t0) return true; await new Promise((r) => setTimeout(r, 50)); }
+      return false; })()`), 120_000, `preparo do ${id}`);
+    // a arte do plano chegou: no jogo ela chega segundos ANTES do plano e o 1º desenho dela (decodificação e GPU) sai num tempo ocioso; aqui se dá esse tempo
+    await page.waitForTimeout(3000);
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: taxa });
+    const amostras = await comPrazo(page.evaluate(MEDIR_CUSTO(ticks - 1, 0)), 240_000, `medida do ${id} a ${taxa}x`);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const d = await page.evaluate('window.__inno.ui.cenas.trailer.diagnostico()');
+    por[id] = { quadros: amostras.length, p95: +percentil(amostras, 0.95).toFixed(2), max: +Math.max(...amostras).toFixed(2), acima24: amostras.filter((x) => x > 24.15).length, acima50: amostras.filter((x) => x > 50).length, reservas: d.planosEmReserva.length, mb: +d.memoriaDecodificadaMB.toFixed(0) };
+    todas.push(...amostras);
+    console.log(`  ${id} (${taxa}x): p95 ${por[id].p95} ms, max ${por[id].max} ms, > 24,15 ms: ${por[id].acima24}, > 50 ms: ${por[id].acima50}, reserva: ${por[id].reservas}`);
+    await ctx.close();
+  }
+  return { por, todas: { quadros: todas.length, mediana: +mediana(todas).toFixed(2), p95: +percentil(todas, 0.95).toFixed(2), p99: +percentil(todas, 0.99).toFixed(2), max: +Math.max(...todas).toFixed(2), acima24: todas.filter((x) => x > 24.15).length, acima50: todas.filter((x) => x > 50).length } };
+}
 
 /** Uma avaliação na página com prazo: se a página travar, a ferramenta diz onde em vez de ficar parada para sempre. */
 function comPrazo(promessa, ms, rotulo) {
@@ -176,6 +256,12 @@ async function principal() {
       const [c1, c2] = alvo.split(':');
       saida.lutas[alvo] = {};
       for (const taxa of a.taxas) {
+        if (a.modo === 'por-plano') {
+          const r = await medirPorPlano(navegador, a, taxa);
+          saida.lutas[alvo][taxa] = { 'por-plano': r };
+          console.log(`${alvo} (canvas ${a.canvas}) CPU ${taxa}x por-plano: p95 ${r.todas.p95} ms, mediana ${r.todas.mediana} ms, p99 ${r.todas.p99} ms, max ${r.todas.max} ms, quadros > 24,15 ms: ${r.todas.acima24}, > 50 ms: ${r.todas.acima50} (${r.todas.quadros} quadros)`);
+          continue;
+        }
         const porModo = {};
         for (const modo of a.modo === 'ambos' ? ['custo', 'intervalo'] : [a.modo]) {
           const rodadas = [];
@@ -185,13 +271,22 @@ async function principal() {
             const erros = [];
             page.on('pageerror', (e) => erros.push(e.message));
             // o modo `custo` precisa do laço manual (?manual=1); o `intervalo` deixa o laço do jogo rodar sozinho
-            await page.goto(`${a.url}/?seed=7&expansao=1${modo === 'custo' ? '&manual=1' : ''}`);
+            await page.goto(`${a.url}/?seed=7&expansao=1${modo === 'custo' || modo === 'ao-vivo' ? '&manual=1' : ''}`);
             await page.waitForSelector('html[data-pronto="true"]', { timeout: 90_000 });
             const cdp = await ctx.newCDPSession(page);
             const preparo = a.prep ?? (a.cena === 'fight' ? PREPARO_FIGHT(c1, c2) : PREPARO_TRAILER);
-            const fase = await comPrazo(page.evaluate(preparo), 90_000, `preparo da ${alvo}`);
+            const aoVivo = modo === 'ao-vivo';
+            const fase = aoVivo ? 'trailer' : await comPrazo(page.evaluate(preparo), 90_000, `preparo da ${alvo}`);
             await cdp.send('Emulation.setCPUThrottlingRate', { rate: taxa });
-            const amostras = await comPrazo(page.evaluate(modo === 'custo' ? MEDIR_CUSTO(a.quadros, 120) : MEDIR_INTERVALO(a.quadros, 120)), 240_000, `medida ${modo} ${alvo} ${taxa}x`);
+            const bruto = await comPrazo(page.evaluate(aoVivo ? MEDIR_AO_VIVO(a.quadros) : modo === 'custo' ? MEDIR_CUSTO(a.quadros, 120) : MEDIR_INTERVALO(a.quadros, 120)), aoVivo ? 590_000 : 240_000, `medida ${modo} ${alvo} ${taxa}x`);
+            // ao-vivo: o 1º segundo (60 quadros) fica fora da cauda e o resumo por plano sai à parte
+            const amostras = aoVivo ? bruto.slice(60).map((x) => x.c) : bruto;
+            if (aoVivo) {
+              saida.porPlano = porPlano(bruto);
+              saida.primeiroSegundo = { maxMs: +Math.max(...bruto.slice(0, 60).map((x) => x.c)).toFixed(2) };
+              console.log('  por plano:', JSON.stringify(saida.porPlano));
+              console.log('  1º segundo:', JSON.stringify(saida.primeiroSegundo), `, quadros: ${bruto.length}`);
+            }
             console.log(`  rodada ${r + 1}/${a.rodadas} (${alvo}, ${taxa}x, ${modo}): fase ${fase}, ${amostras.length} quadros`);
             await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
             rodadas.push({ fase, ...resumo(amostras), erros: erros.length });

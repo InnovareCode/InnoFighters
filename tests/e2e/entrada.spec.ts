@@ -10,7 +10,9 @@ async function abrir(page: Page, viewport?: { width: number; height: number }): 
   const erros: string[] = [];
   page.on('pageerror', (e) => erros.push(e.message));
   if (viewport) await page.setViewportSize(viewport);
-  await page.goto('/?manual=1'); // sem laço em tempo real: o teste controla os ticks
+  // sem laço em tempo real: o teste controla os ticks. `trailer=0`: o 1º toque/tecla é o gesto do boot e abriria o trailer,
+  // cujo `body.em-trailer` esconde o `#touch` (pointer-events:none) e quebraria os toques nos botões
+  await page.goto('/?manual=1&trailer=0');
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   return erros;
 }

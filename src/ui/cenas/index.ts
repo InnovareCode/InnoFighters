@@ -12,6 +12,7 @@ import { CenaMenu } from './menu';
 import { CenaOptions } from './options';
 import { CenaSelect } from './select';
 import { CenaTitle } from './title';
+import { CenaTrailer } from './trailer';
 import { CenaVs } from './vs';
 
 /** Instancia todas as cenas do jogo (SCENES do protótipo). */
@@ -19,6 +20,7 @@ export function criarCenas(ui: Navegador): Record<NomeCena, Cena> {
   return {
     boot: new CenaBoot(ui),
     intro: new CenaIntro(ui),
+    trailer: new CenaTrailer(ui),
     title: new CenaTitle(ui),
     menu: new CenaMenu(ui),
     select: new CenaSelect(ui),

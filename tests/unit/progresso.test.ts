@@ -31,6 +31,7 @@ const REGRAS: Regras = {
   cinematica: true,
   chefesDaFila: false, // mundo falso da regra de antes (a regra nova tem o proprio teste: p1-chefes-progressivos.test.ts)
   temasMusicais: false,
+  trailer: false, // o trailer de abertura não entra nas regras de desbloqueio
 };
 
 const prog = (p: Partial<Progresso> = {}): Progresso => ({ ...progressoVazio(), ...p });

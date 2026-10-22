@@ -9,15 +9,23 @@ import { TICKS_POR_COMPASSO, type BatidaPedida, type IdPlano, type Plano, type Q
 
 const C = TICKS_POR_COMPASSO;
 
-/** Aproximação até `pico` no tick `emT` (o acerto): fica parada em 1,0, empurra, segura e relaxa. */
-function empurrar(pico: number, emT: number, foco: QuadroChave['foco'] = 'meio'): readonly QuadroChave[] {
-  return [
-    { t: 0, zoom: 1, foco, curva: 'entrada' },
-    { t: Math.max(1, emT - 36), zoom: 1, foco, curva: 'saida' },
-    { t: emT + 6, zoom: pico, foco },
-    { t: emT + 56, zoom: pico, foco, curva: 'entrada' },
-    { t: 2 * C - 1, zoom: 1.04, foco },
+/**
+ * Aproximação até `pico` no tick `emT` (o ACERTO gravado na tomada): parada em 1,0, empurra em 34 ticks, segura `segura` ticks e SOLTA até 1,0
+ * em `solta` ticks. Direção de arte (docs/direcao-arte-trailer.md §5): depois do acerto o rival voa e quem acertou salta; segurar o zoom ali
+ * corta cabeças sob a faixa do letterbox (medido no jogo: AMINU, BAATAR e ZENON passavam de y 69). O pico mora no acerto, nunca depois dele.
+ * `emT` = tick do acerto NA TOMADA (tomadas.ts), não o `alvo` pedido: se a escalação mudar a tomada, a câmera precisa acompanhar.
+ */
+function empurrar(pico: number, emT: number, segura = 18, solta = 30, foco: QuadroChave['foco'] = 'meio'): readonly QuadroChave[] {
+  const fim = 2 * C - 1;
+  const q: QuadroChave[] = [
+    { t: 0, zoom: 1, foco },
+    { t: Math.max(1, emT - 30), zoom: 1, foco, curva: 'saida' },
+    { t: Math.min(fim - 2, emT + 4), zoom: pico, foco },
+    { t: Math.min(fim - 1, emT + 4 + segura), zoom: pico, foco, curva: 'saida' },
   ];
+  if (emT + 4 + segura + solta < fim) q.push({ t: emT + 4 + segura + solta, zoom: 1, foco });
+  q.push({ t: fim, zoom: q.length === 5 ? 1 : pico, foco });
+  return q;
 }
 
 const placa = (lutador: IdLutador): Titulo => ({ estilo: 'placa', lutador, de: 12, ate: 96 });
@@ -50,12 +58,13 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c2: 'wei-long',
       stage: 'cn',
       pede: [batida({ tipo: 'especial', lutador: 0, cine: 'curta', lenta: { fator: 3, ticks: 18 }, alvo: 96, folga: 48 })],
+      // o pico (1,25) chega no acerto (tick 96 da tomada, depois da tarja), não 14 ticks depois
       camera: [
         { t: 0, zoom: 1, foco: 'meio' },
-        { t: 60, zoom: 1, foco: 'meio', curva: 'saida' },
-        { t: 110, zoom: 1.25, foco: 'meio' },
-        { t: 160, zoom: 1.25, foco: 'meio', curva: 'entrada' },
-        { t: 2 * C - 1, zoom: 1.05, foco: 'meio' },
+        { t: 56, zoom: 1, foco: 'meio', curva: 'saida' },
+        { t: 98, zoom: 1.25, foco: 'meio' },
+        { t: 140, zoom: 1.25, foco: 'meio', curva: 'saida' },
+        { t: 2 * C - 1, zoom: 1.04, foco: 'meio' },
       ],
     },
     { id: 'C1', tipo: 'cartao', compassos: 1, fundo: 'kr', titulos: [cartao('dez-nacoes', 0, 80)] },
@@ -70,12 +79,17 @@ export const ROTEIRO: RoteiroDoTrailer = {
         batida({ tipo: 'especial', lutador: 0, lenta: { fator: 2, ticks: 12 }, alvo: 60, folga: 36 }),
         batida({ tipo: 'especial', lutador: 1, lenta: { fator: 2, ticks: 12 }, alvo: 140, folga: 36 }),
       ],
-      // corte seco no c7.1 (tick 96): a câmera troca o foco do P1 para o P2
+      // corte seco no c7.1 (tick 96): fechado na MIN-JI -> aberto no CAIO. Só trocar o foco com o mesmo zoom não se vê (os dois estão perto:
+      // medido, o quadro 95 e o 96 saíam iguais); o corte precisa mudar o enquadramento (1,22 -> 1,0) para existir.
       camera: [
-        { t: 0, zoom: 1.05, foco: 'p1' },
-        { t: 95, zoom: 1.18, foco: 'p1' },
-        { t: 96, zoom: 1.18, foco: 'p2' },
-        { t: 2 * C - 1, zoom: 1.05, foco: 'p2' },
+        { t: 0, zoom: 1.04, foco: 'p1' },
+        { t: 30, zoom: 1.04, foco: 'p1', curva: 'saida' },
+        { t: 64, zoom: 1.22, foco: 'p1' },
+        { t: 95, zoom: 1.22, foco: 'p1' },
+        { t: 96, zoom: 1, foco: 'p2', curva: 'saida' },
+        { t: 140, zoom: 1.18, foco: 'p2' },
+        { t: 160, zoom: 1.18, foco: 'p2', curva: 'saida' },
+        { t: 2 * C - 1, zoom: 1.02, foco: 'p2' },
       ],
     },
     { id: 'C2', tipo: 'cartao', compassos: 1, fundo: 'cn', titulos: [cartao('um-torneio', 0, 80)] },
@@ -87,7 +101,7 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c2: 'hayato',
       stage: 'ng',
       pede: [batida({ tipo: 'carga', lutador: 0, nivel: 3, lenta: { fator: 2, ticks: 12 }, alvo: 96, folga: 60 })],
-      camera: empurrar(1.22, 96),
+      camera: empurrar(1.2, 50), // MASHI nível 3 acerta no tick 50 da tomada
       titulos: [placa('aminu')],
     },
     {
@@ -98,9 +112,10 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c2: 'caio',
       stage: 'mx',
       pede: [batida({ tipo: 'especial', lutador: 0, golpe: 'sFwd', alvo: 110, folga: 60 })],
-      // a câmera acompanha o percurso do RESORTE: o foco fica na CENTELLA
+      // a câmera acompanha o percurso do RESORTE: o foco fica na CENTELLA desde o 1º quadro (a troca meio -> p1 no tick 72 era um corte
+      // que não se via: medido, o quadro 71 e o 72 saíam iguais)
       camera: [
-        { t: 0, zoom: 1, foco: 'meio', curva: 'saida' },
+        { t: 0, zoom: 1, foco: 'p1', curva: 'saida' },
         { t: 72, zoom: 1.1, foco: 'p1' },
         { t: 140, zoom: 1.2, foco: 'p1', curva: 'entrada' },
         { t: 2 * C - 1, zoom: 1.04, foco: 'p1' },
@@ -116,7 +131,7 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c2: 'min-ji',
       stage: 'fr',
       pede: [batida({ tipo: 'contra', lutador: 0, golpe: 'sDown', lenta: { fator: 2, ticks: 16 }, alvo: 96, folga: 60 })],
-      camera: empurrar(1.2, 96),
+      camera: empurrar(1.2, 141), // COUP D'ARRÊT no tick 141 da tomada
       titulos: [placa('camille')],
     },
     {
@@ -127,7 +142,7 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c2: 'wei-long',
       stage: 'in',
       pede: [batida({ tipo: 'especial', lutador: 0, alvo: 96, folga: 60 })],
-      camera: empurrar(1.15, 96),
+      camera: empurrar(1.15, 91), // especial da NILA no tick 91 da tomada
       titulos: [placa('nila')],
     },
     {
@@ -138,14 +153,19 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c2: 'hayato',
       stage: 'mn',
       pede: [batida({ tipo: 'especial', lutador: 0, golpe: 'sFwd', alvo: 100, folga: 60 })],
-      camera: empurrar(1.25, 100),
+      // pico 1,15 (era 1,25) e solta logo: o MERGULHO acerta no tick 129 da tomada e o BAATAR salta de novo ~20 ticks depois. O ápice
+      // desse salto (tick ~152) passa sob a faixa de cima MESMO a 1,0 (medido: topo em y 38); aceito, é saída de quadro em movimento. O
+      // quadro do acerto fica inteiro na tela.
+      camera: empurrar(1.15, 129, 4, 20),
       titulos: [placa('baatar')],
     },
     {
       id: 'P8',
       tipo: 'retratos',
       compassos: 2,
-      ordem: ['hayato', 'wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar'],
+      // 8 retratos, 1 por tempo (2,5 cortes/s, o teto): o HAYATO fica de fora de propósito. Ele é quem "sobe ao topo" e reaparece no corte
+      // seguinte, diante do Arconte (P9). Grade 4x2: 1ª fileira no c20, 2ª no c21, o BAATAR (o último selo) no último tempo antes do silêncio.
+      ordem: ['wei-long', 'min-ji', 'caio', 'aminu', 'centella', 'camille', 'nila', 'baatar'],
       titulos: [cartao('quem-chega-ao-topo', C, 2 * C - 12)],
     },
     {
@@ -156,10 +176,13 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c2: 'zenon',
       stage: 'gr',
       pede: [batida({ tipo: 'especial', lutador: 1, lenta: { fator: 3, ticks: 18 }, alvo: 172, folga: 16 })],
+      // teto 1,10 (era 1,30): o ZENON é o mais alto do elenco; acima de ~1,12 a cabeça entra na faixa de cima do letterbox (medido: topo
+      // em y 45 a 1,21, com a faixa em 69). A grandeza vem da contraluz, dos braseiros e da câmera baixa, não do zoom.
       camera: [
         { t: 0, zoom: 1, foco: 'p2', curva: 'saida' },
-        { t: 156, zoom: 1.2, foco: 'p2' },
-        { t: 2 * C - 1, zoom: 1.3, foco: 'p2' },
+        { t: 150, zoom: 1.06, foco: 'p2' },
+        { t: 172, zoom: 1.1, foco: 'p2', curva: 'saida' },
+        { t: 2 * C - 1, zoom: 1.1, foco: 'p2' },
       ],
     },
     { id: 'P10', tipo: 'logo', compassos: 2 },
@@ -169,8 +192,9 @@ export const ROTEIRO: RoteiroDoTrailer = {
       { lutadores: ['hayato'], stage: 'jp', titulo: 'dez-mestres' },
       { lutadores: ['hayato', 'wei-long'], stage: 'cn' },
       { lutadores: ['min-ji', 'caio'], stage: 'br', titulo: 'um-torneio' },
-      { lutadores: [], retratos: ['aminu', 'centella', 'camille'], stage: 'mx', titulo: 'cinco-guardioes' },
-      { lutadores: [], retratos: ['nila', 'baatar', 'zenon'], stage: 'gr', titulo: 'quem-chega-ao-topo' },
+      // só cenários RESIDENTES (padrão, jp, cn, kr, br): 'mx' e 'gr' não ficam na memória e a estática não carrega nada (spec §6.3)
+      { lutadores: [], retratos: ['aminu', 'centella', 'camille'], stage: 'kr', titulo: 'cinco-guardioes' },
+      { lutadores: [], retratos: ['nila', 'baatar', 'zenon'], stage: 'cn', titulo: 'quem-chega-ao-topo' },
       { lutadores: [], stage: 'jp', logo: true },
     ],
     ticksPorQuadro: C,

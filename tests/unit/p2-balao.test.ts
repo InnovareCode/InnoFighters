@@ -139,6 +139,71 @@ describe('o lugar do balão (funções puras: colocarBalao e escolherPlano)', ()
     expect(sem.y).toBe(86); // sem balão em cima, cai para o topo permitido
   });
 
+  it('balão EM CIMA que passa por cima da cabeça de quem escuta desliza o mínimo para sair dela (CAIO x AMINU na fala curta), sem soltar o rabicho do falante', () => {
+    const larga = { w: 400, h: 84 };
+    const falante = cabeca(600, 150, 290);
+    const ouvinte = cabeca(420, 100, 330); // a cabeça alta do outro lado, roçando a borda esquerda do balão centrado
+    const centrado = colocarBalao(larga, SEM, falante, [], [], LIMITES_COM_HUD);
+    expect(centrado.x, 'sem ouvinte nada muda: o balão fica centrado no falante').toBeCloseTo(600 - 200, 6);
+    const rouca = retanguloDaCabeca(ouvinte);
+    expect(areaDeEncontro(retanguloDaColocacao(centrado), rouca), 'guarda: o caso precisa de encontro').toBeGreaterThan(0);
+    const c = colocarBalao(larga, SEM, falante, [rouca], [], LIMITES_COM_HUD);
+    expect(c.cobreOutros).toBe(0);
+    expect(c.x).toBeCloseTo(rouca.x1, 6); // o mínimo que desencosta
+    expect(c.y, 'só na horizontal').toBe(centrado.y);
+    expect(c.x, 'o falante segue entre os cantos cortados da base').toBeLessThanOrEqual(600 - BALAO.chanfro - 14);
+    expect(c.ponta.x).toBeGreaterThanOrEqual(c.base.x - BALAO.rabichoMeio * 2);
+    // contínuo: andar o ouvinte 1 px por vez nunca faz o balão pular mais que 1 px
+    let antes = colocarBalao(larga, SEM, falante, [retanguloDaCabeca(cabeca(340, 100, 330))], [], LIMITES_COM_HUD).x;
+    for (let ox = 341; ox <= 560; ox++) {
+      const x = colocarBalao(larga, SEM, falante, [retanguloDaCabeca(cabeca(ox, 100, 330))], [], LIMITES_COM_HUD).x;
+      expect(Math.abs(x - antes), `ouvinte em ${ox}`).toBeLessThanOrEqual(1.0001);
+      antes = x;
+    }
+    // sem espaço para sair (ouvinte colado ao falante), não cobre MAIS do que antes e o falante continua preso à base
+    const colado = retanguloDaCabeca(cabeca(610, 100, 330));
+    const apertado = colocarBalao(larga, SEM, falante, [colado], [], LIMITES_COM_HUD);
+    expect(apertado.cobreOutros).toBeLessThanOrEqual(areaDeEncontro(retanguloDaColocacao(centrado), colado));
+  });
+
+  it('balão AO LADO que roça 1 px na cabeça de quem escuta (CAIO x AMINU, 83 px²) encurta o rabicho e sai; a PONTA fica onde estava (4 px da cabeça de quem fala)', () => {
+    const caixa2 = { w: 299, h: 90 };
+    const aminu = cabeca(690, 124, 290);
+    const rb = retanguloDaCabeca(aminu);
+    const T = BALAO.rabicho;
+    const sem = colocarBalao(caixa2, { lado: 'esquerda', nivel: 'abaixo' }, aminu, [], [{ x0: 0, y0: 0, x1: 1, y1: 1 }], LIMITES_COM_HUD);
+    expect(sem.ponta.x, 'a ponta para a 4 px da cabeça').toBeCloseTo(rb.x0 - 4, 6);
+    // o ouvinte (à esquerda) invade 1 px o canto da caixa
+    const ouvinte = { x0: 200, y0: sem.y - 20, x1: sem.x + 0.96, y1: sem.y + 120 };
+    const c = colocarBalao(caixa2, { lado: 'esquerda', nivel: 'abaixo' }, aminu, [ouvinte], [{ x0: 0, y0: 0, x1: 1, y1: 1 }], LIMITES_COM_HUD);
+    expect(areaDeEncontro(retanguloDaColocacao(sem), ouvinte), 'guarda: o caso tem encontro').toBeGreaterThan(50);
+    expect(c.cobreOutros).toBe(0);
+    expect(c.x).toBeCloseTo(ouvinte.x1, 6);
+    expect(c.ponta.x, 'a ponta não se mexe').toBeCloseTo(sem.ponta.x, 6);
+    expect(c.ponta.x - c.base.x, 'o rabicho encurtou, mas não some').toBeGreaterThanOrEqual(6 - 1e-9);
+    expect(c.ponta.x - c.base.x).toBeLessThan(T);
+    // sem espaço para encurtar tudo o que precisa: o intervalo manda (nunca passa do rabicho mínimo) e não cobre mais do que antes
+    const fundo = { ...ouvinte, x1: sem.x + 40 };
+    const apertado = colocarBalao(caixa2, { lado: 'esquerda', nivel: 'abaixo' }, aminu, [fundo], [{ x0: 0, y0: 0, x1: 1, y1: 1 }], LIMITES_COM_HUD);
+    expect(apertado.ponta.x - apertado.base.x).toBeGreaterThanOrEqual(6 - 1e-9);
+    expect(apertado.cobreOutros).toBeLessThanOrEqual(areaDeEncontro(retanguloDaColocacao(sem), fundo));
+  });
+
+  it('o deslize NÃO muda qual plano ganha (só se aplica ao vencedor): um plano que ainda cobriria um pedaço depois de deslizar não passa na frente de um que não cobre nada', () => {
+    // medidas reais do CAIO (esquerda) x AMINU (direita) na fala curta; o balão do CAIO já está no alto, o do AMINU se empilha no vão
+    const aminu: CabecaNaTela = { x: 690, topo: 124.5, meiaLargura: 58.7, altura: 124.4 };
+    const caio = { x0: 222.8, y0: 192.2, x1: 317.2, y1: 292.2 };
+    const balaoDoCaio = { x0: 226.5, y0: 118.2, x1: 330, y1: 180.2 };
+    const variantes = [{ w: 299, h: 90 }, { w: 299, h: 90 }];
+    const r = escolherPlano(variantes, aminu, [caio], [balaoDoCaio], LIMITES_COM_HUD);
+    expect(r.colocacao.cobreOutros, 'o escolhido sai da cabeça do CAIO').toBe(0);
+    expect(r.colocacao.cobreFalante).toBe(0);
+    expect(r.colocacao.cobreBaloes).toBe(0);
+    // sem deslizar, o mesmo plano cobriria o canto da cabeça (é o caso que a varredura achou: 83 px²)
+    const cru = colocarBalao(variantes[r.plano.variante]!, r.plano, aminu, [caio], [balaoDoCaio], LIMITES_COM_HUD, false);
+    expect(cru.cobreOutros, `plano ${JSON.stringify(r.plano)}`).toBeGreaterThan(0);
+  });
+
   it('área de encontro: zero sem sobreposição, positiva com', () => {
     expect(areaDeEncontro({ x0: 0, y0: 0, x1: 10, y1: 10 }, { x0: 10, y0: 0, x1: 20, y1: 10 })).toBe(0);
     expect(areaDeEncontro({ x0: 0, y0: 0, x1: 10, y1: 10 }, { x0: 5, y0: 5, x1: 20, y1: 20 })).toBe(25);

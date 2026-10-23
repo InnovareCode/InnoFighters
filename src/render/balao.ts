@@ -259,11 +259,36 @@ export interface ColocacaoDoBalao {
 }
 
 const prender = (v: number, a: number, b: number): number => Math.max(a, Math.min(b, v));
+
+/** Comprimento mínimo do rabicho quando o balão se aproxima de quem fala para sair de cima da cabeça de quem escuta (o normal é `BALAO.rabicho`). */
+const RABICHO_MINIMO = 6;
+
+/**
+ * Desliza o balão na horizontal, dentro de [`minX`, `maxX`], o MÍNIMO para sair de cima da cabeça de quem ESCUTA (CAIO x AMINU na fala curta: o balão de 299 px ao lado do
+ * AMINU roçava 1 px na cabeça do CAIO, 83 px²; em cima da cabeça, o de 400 px passa por cima dela). Só mexe quando há encontro e só se isso diminuir a área coberta; a distância é
+ * a mínima que desencosta (ou o que o intervalo permite), então é contínua na geometria: o zoom da cena não faz o balão pular. Pura.
+ */
+function afastarDaCabecaDeQuemEscuta(x: number, y: number, w: number, h: number, outros: readonly Retangulo[], minX: number, maxX: number): number {
+  if (maxX < minX) return x;
+  let atual = x;
+  for (const o of outros) {
+    const antes = areaDeEncontro({ x0: atual, y0: y, x1: atual + w, y1: y + h }, o);
+    if (antes === 0) continue;
+    const paraDireita = atual + w / 2 >= (o.x0 + o.x1) / 2;
+    const alvo = prender(paraDireita ? o.x1 : o.x0 - w, minX, maxX);
+    const depois = areaDeEncontro({ x0: alvo, y0: y, x1: alvo + w, y1: y + h }, o);
+    if (depois < antes) atual = alvo;
+  }
+  return atual;
+}
+
 export const retanguloDaColocacao = (c: Pick<ColocacaoDoBalao, 'x' | 'y' | 'w' | 'h'>): Retangulo => ({ x0: c.x, y0: c.y, x1: c.x + c.w, y1: c.y + c.h });
 
 /**
  * Onde fica `caixa` segundo o `plano` (função pura da geometria de AGORA). `falante` = a cabeça de quem fala; `outros` = as cabeças de quem escuta (só para contar o
  * quanto cobre); `ocupados` = os balões já postos neste quadro (o nível `abaixo` se apoia neles). Sempre dentro de `limites`.
+ * `deslizar` (padrão: sim) liga o pequeno deslize que tira o balão de cima da cabeça de quem escuta; `escolherPlano` o desliga só para NOTAR os planos (senão um plano que
+ * ainda cobre um pedaço, depois do deslize, passaria na frente de um que não cobre nada) e o aplica ao plano escolhido.
  */
 export function colocarBalao(
   caixa: Pick<CaixaDoBalao, 'w' | 'h'>,
@@ -272,6 +297,7 @@ export function colocarBalao(
   outros: readonly Retangulo[],
   ocupados: readonly Retangulo[],
   limites: LimitesDoBalao,
+  deslizar = true,
 ): ColocacaoDoBalao {
   const { w, h } = caixa;
   const T = BALAO.rabicho;
@@ -279,17 +305,26 @@ export function colocarBalao(
   const lado = plano.lado;
   // ao lado, a ponta do rabicho para 4 px antes da cabeça (a cabeça é um modelo: a ponta não pode entrar no rosto)
   const x0 = lado === 'cima' ? falante.x - w / 2 : lado === 'direita' ? cabeca.x1 + T + 4 : cabeca.x0 - T - 4 - w;
-  const x = prender(x0, limites.esquerda, limites.direita - w);
+  const xBase = prender(x0, limites.esquerda, limites.direita - w);
   let y0: number;
   if (lado === 'cima') y0 = falante.topo - T - h;
   else if (plano.nivel === 'topo') y0 = limites.topoMin;
   else if (plano.nivel === 'cabeca') y0 = falante.topo - 6;
   else {
     // logo abaixo do balão mais baixo que ocupa as mesmas colunas
-    const baixo = ocupados.filter((o) => Math.min(o.x1, x + w) - Math.max(o.x0, x) > 0).reduce((m, o) => Math.max(m, o.y1), limites.topoMin - 8);
+    const baixo = ocupados.filter((o) => Math.min(o.x1, xBase + w) - Math.max(o.x0, xBase) > 0).reduce((m, o) => Math.max(m, o.y1), limites.topoMin - 8);
     y0 = baixo + 8;
   }
   const y = prender(y0, limites.topoMin, Math.max(limites.topoMin, limites.base - h));
+  // o balão pode roçar na cabeça de quem ESCUTA: desliza o mínimo para sair. Em cima, mantendo o falante entre os cantos cortados da base; ao lado, encurtando o rabicho (mínimo
+  // `RABICHO_MINIMO`) — a PONTA continua onde estava, a 4 px da cabeça de quem fala
+  const folga = BALAO.chanfro + 14;
+  const encurta = T - RABICHO_MINIMO;
+  const x = !deslizar
+    ? xBase
+    : lado === 'cima'
+      ? afastarDaCabecaDeQuemEscuta(xBase, y, w, h, outros, Math.max(limites.esquerda, falante.x - w + folga), Math.min(limites.direita - w, falante.x - folga))
+      : afastarDaCabecaDeQuemEscuta(xBase, y, w, h, outros, lado === 'direita' ? xBase - encurta : xBase, lado === 'direita' ? xBase : xBase + encurta);
   const rect: Retangulo = { x0: x, y0: y, x1: x + w, y1: y + h };
   let base: { x: number; y: number };
   let ponta: { x: number; y: number };
@@ -303,7 +338,8 @@ export function colocarBalao(
     // nos rabichos laterais a base fica presa em [topo do painel + chanfro + 8, base do painel − chanfro − 12]: nunca cai no canto cortado
     const by = prender(falante.topo + falante.altura * 0.35, y + BALAO.placaSobra + BALAO.chanfro + 8, y + h - BALAO.sombra - BALAO.chanfro - 12);
     base = { x: lado === 'direita' ? x : x + w, y: by };
-    ponta = { x: base.x + (lado === 'direita' ? -T : T), y: by };
+    // a ponta fica onde a caixa sem o deslize a poria (4 px da cabeça); a base acompanha a caixa
+    ponta = { x: lado === 'direita' ? xBase - T : xBase + w + T, y: by };
   }
   return {
     x,
@@ -343,7 +379,7 @@ export function escolherPlano(
     for (const [lado, niveis] of lados) {
       for (const nivel of niveis) {
         const plano: PlanoDoBalao = { variante: v, lado, nivel };
-        const colocacao = colocarBalao(variantes[v] as Pick<CaixaDoBalao, 'w' | 'h'>, plano, falante, outros, ocupados, limites);
+        const colocacao = colocarBalao(variantes[v] as Pick<CaixaDoBalao, 'w' | 'h'>, plano, falante, outros, ocupados, limites, false);
         // o de sempre, sem nada coberto: não há o que melhorar
         if (v === 0 && lado === 'cima' && colocacao.cobreFalante === 0 && colocacao.cobreOutros === 0 && colocacao.cobreBaloes === 0) return { plano, colocacao };
         const n = nota(colocacao, plano);
@@ -352,7 +388,8 @@ export function escolherPlano(
     }
   }
   const m = melhor as { plano: PlanoDoBalao; colocacao: ColocacaoDoBalao };
-  return { plano: m.plano, colocacao: m.colocacao };
+  // o deslize só vale para o plano que ganhou: nunca muda QUAL plano ganha
+  return { plano: m.plano, colocacao: colocarBalao(variantes[m.plano.variante] as Pick<CaixaDoBalao, 'w' | 'h'>, m.plano, falante, outros, ocupados, limites) };
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------

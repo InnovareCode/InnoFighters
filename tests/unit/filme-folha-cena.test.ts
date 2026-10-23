@@ -52,7 +52,7 @@ function atlasDoHayato(c: Cenario) {
   return { atlas, leitor, pedidos };
 }
 
-async function montar(c: Cenario, opcoes: { carregarNaEntrada?: boolean } = {}) {
+async function montar(c: Cenario, opcoes: { carregarNaEntrada?: boolean; semFlag?: boolean } = {}) {
   const { atlas, leitor, pedidos } = atlasDoHayato(c);
   await atlas.carregarImagens(leitor); // o corpo está na memória (a vitrine); a folha FILME só vem pela cena
   const hayato: LutadorMontado = montarLutador(LUTADORES.hayato, atlas.poses());
@@ -88,7 +88,7 @@ async function montar(c: Cenario, opcoes: { carregarNaEntrada?: boolean } = {}) 
     efeitos: new Efeitos(criarRng(1)),
     petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),
   } as unknown as Mundo);
-  n.ui.set('fight', { cfg: { mode: 'versus', c1: 'hayato', c2: 'caio', cpu: null, esquiva: false, motorV2: { filmes: true } } });
+  n.ui.set('fight', { cfg: { mode: 'versus', c1: 'hayato', c2: 'caio', cpu: null, esquiva: false, ...(opcoes.semFlag ? {} : { motorV2: { filmes: true } }) } });
   const cena = n.ui.scene as unknown as CenaFight;
   const update = (k = 1): void => {
     for (let i = 0; i < k; i++) cena.update();
@@ -125,6 +125,13 @@ async function montar(c: Cenario, opcoes: { carregarNaEntrada?: boolean } = {}) 
 afterEach(() => vi.restoreAllMocks());
 
 describe('o gerenciador é chamado no momento certo', () => {
+  it('SEM a flag motorV2.filmes (o padrão): nenhuma folha é pedida à rede nem fica na memória, e o resto da luta segue', async () => {
+    const t = await montar({ filme: 'ok' }, { semFlag: true });
+    expect(t.chamadas.filter((c) => c.startsWith('carregarFilme'))).toEqual([]);
+    expect(t.pedidos.filter((u) => /filme.webp$/.test(u))).toEqual([]);
+    expect(t.atlas.filmePronto).toBe(false);
+  });
+
   it('a luta começa -> carregarFilme([c1, c2]) uma vez; nunca pedir/prebuscar com a folha; sair da luta -> soltarFilme', async () => {
     const t = await montar({ filme: 'ok' });
     expect(t.chamadas.filter((c) => c.startsWith('carregarFilme'))).toEqual(['carregarFilme:hayato,caio']);

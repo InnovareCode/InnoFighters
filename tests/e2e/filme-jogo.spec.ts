@@ -467,6 +467,25 @@ test.describe('ciclo da folha FILME na rede e na memória', () => {
     expect(erros).toEqual([]);
   });
 
+  test('SEM a flag motorV2.filmes (o padrão): a luta inteira não faz nenhum pedido de filme.webp nem deixa folha na memória; com ela, a mesma luta pede', async ({ page }) => {
+    const pedidos: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('filme.webp')) pedidos.push(r.url());
+    });
+    const erros = await abrir(page);
+    await abrirLuta(page, { c1: 'hayato', c2: 'caio', motorV2: undefined }); // JSON.stringify descarta o undefined: a cfg nasce SEM motorV2, como a do jogo com as regras padrão
+    expect(await hook(page, '(h) => h.mundo().game.filmesLigados'), 'guarda: o motor está sem filmes').toBe(false);
+    await hook(page, '(h) => h.avancar(120)');
+    await page.waitForTimeout(2000);
+    expect(pedidos, 'nenhuma folha FILME pedida à rede').toEqual([]);
+    expect(await hook(page, '(h) => h.mundo().arte.filmesResidentes()'), 'nenhuma folha na memória').toEqual([]);
+    // controle positivo: a MESMA luta com a flag baixa as duas folhas
+    await abrirLuta(page, { c1: 'hayato', c2: 'caio' });
+    await page.waitForFunction(() => (window as any).__inno.mundo().arte.filmesResidentes().length === 2, undefined, { timeout: 30_000 });
+    expect(pedidos.length, 'com a flag, uma folha por lutador').toBe(2);
+    expect(erros).toEqual([]);
+  });
+
   test('404 do filme.webp: o filme toca na pose de reserva (Alt), sem erro de página e sem folha residente', async ({ page }) => {
     await page.route('**/assets/lutadores/hayato/filme.webp', (r) => r.fulfill({ status: 404, body: 'nao tem' }));
     const avisos: string[] = [];
@@ -474,21 +493,27 @@ test.describe('ciclo da folha FILME na rede e na memória', () => {
     const erros = await abrir(page);
     await abrirLuta(page, { c1: 'hayato', c2: 'caio' });
     await page.waitForTimeout(800);
-    expect(await hook(page, '(h) => h.mundo().arte.filmesResidentes()')).toEqual([]);
+    // o CAIO tem folha FILME própria desde 6fadc65 (as 10 páginas): ela carrega normalmente; só a do HAYATO (404) não pode ficar
+    expect(await hook(page, '(h) => h.mundo().arte.filmesResidentes()'), 'só a folha do HAYATO falhou').toEqual(['caio']);
     await hook(page, ESPIAR_PAINEL);
     expect(await soltar(page, 0, 'sFwd', 140), 'o filme abre mesmo sem a folha').toBe(true);
     const dur: number = await hook(page, '(h) => h.ui.scene.filme.duracao');
     let celulas = 0;
+    let celulasDoRival = 0;
     for (let t = 0; t < dur - 1; t++) {
       await hook(page, '(h) => h.avancar(1)');
       if (t % 4 === 0) {
         await hook(page, '(h) => { window.__novoQuadro(false); h.desenhar(1); }');
-        celulas += await hook(page, '(h) => window.__quadro.cels.length');
+        // o painel também mostra o close do RIVAL, da folha DELE (o CAIO tem folha própria desde 6fadc65): conta-se por dono da folha
+        const donos: (string | undefined)[] = await hook(page, `(h) => window.__quadro.cels.map((c) => [...h.mundo().arte.atlas.entries()].find(([, a]) => a.filmeImg === c.img)?.[0])`);
+        celulas += donos.filter((d) => d !== 'caio').length;
+        celulasDoRival += donos.filter((d) => d === 'caio').length;
       }
     }
     await hook(page, '(h) => h.avancar(1)');
     expect(await hook(page, '(h) => h.ui.scene.filme.ativo')).toBe(false);
-    expect(celulas, 'nenhuma célula da folha foi desenhada (caiu na Alt)').toBe(0);
+    expect(celulas, 'nenhuma célula da folha do HAYATO (404) foi desenhada (caiu na Alt)').toBe(0);
+    expect(celulasDoRival, 'a folha do rival (CAIO, que carregou) continua desenhando o close dele').toBeGreaterThan(0);
     expect(avisos.some((a) => a.includes('[filme]')), `aviso "[filme] folha ... indisponivel": ${avisos.join(' / ')}`).toBe(true);
     expect(erros).toEqual([]);
   });

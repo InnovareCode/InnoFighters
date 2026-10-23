@@ -36,7 +36,7 @@ function coletarErros(page: Page): string[] {
 }
 
 test.describe('Tipografia do jogo (Barlow Condensed + Barlow, auto-hospedadas)', () => {
-  test('as três fontes carregam ANTES do 1º quadro, vêm só do próprio site (woff2) e o canvas e o CSS as usam de verdade', async ({ page }, info) => {
+  test('as três fontes carregam ANTES do 1º quadro, vêm só do próprio site (woff2) e o canvas e o CSS as usam de verdade', async ({ page, baseURL }, info) => {
     test.skip(info.project.name !== 'desktop', 'igual em qualquer aparelho');
     const erros = coletarErros(page);
     const pedidos: string[] = [];
@@ -44,8 +44,9 @@ test.describe('Tipografia do jogo (Barlow Condensed + Barlow, auto-hospedadas)',
     await page.goto('/?seed=3&manual=1');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await expect(page.locator('html')).toHaveAttribute('data-fontes', 'ok');
-    // nada fora do site (CDN, Google Fonts...)
-    const fora = pedidos.filter((u) => !u.startsWith('http://127.0.0.1:5173/') && !u.startsWith('data:') && !u.startsWith('blob:'));
+    // nada fora do site (CDN, Google Fonts...): a origem é a do baseURL do projeto, não uma porta fixa
+    const origem = `${new URL(baseURL as string).origin}/`;
+    const fora = pedidos.filter((u) => !u.startsWith(origem) && !u.startsWith('data:') && !u.startsWith('blob:'));
     expect(fora, 'pedidos para fora do próprio site').toEqual([]);
     const fontes = pedidos.filter((u) => u.endsWith('.woff2')).map((u) => new URL(u).pathname).sort();
     expect(fontes).toEqual(['/assets/fontes/bangers-latin-400-normal.woff2', '/assets/fontes/barlow-600-latin.woff2', '/assets/fontes/barlow-condensed-800-italic-latin.woff2']);

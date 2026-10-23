@@ -43,7 +43,7 @@ const DESENHAR = `(h) => { window.__di.length = 0; window.__grava = true; h.dese
 type Desenho = { canvas: boolean; w: number; h: number; a: number[]; t: number[]; alfa: number };
 const mesmoDestino = (x: Desenho, y: Desenho): boolean => x.a.length === 8 && y.a.length === 8 && x.a.slice(4).every((v, i) => Math.abs(v - y.a[4 + i]!) < 1e-6) && x.t.every((v, i) => Math.abs(v - y.t[i]!) < 1e-6);
 
-test('FLASH de dano: a silhueta (quadro + 1 px de margem) cai em cima do corpo do rival, com o alfa do flash, e acende a imagem', async ({ page }) => {
+test('FLASH de dano: a silhueta (recorte do quadro alinhado em 8 px, com margem de 8) cai em cima do corpo do rival, com o alfa do flash, e acende a imagem', async ({ page }) => {
   const erros = await abrirLuta(page, { c1: 'hayato', c2: 'wei-long' });
   await hook(page, `(h) => { const g = h.mundo().game; g.p1.x = 450; g.p2.x = 510; g.p1.facing = 1; g.p2.facing = -1; g.p2.hp = g.p2.maxHp; g.p1.startMove('hp', g); }`);
   let flash = 0;
@@ -54,12 +54,19 @@ test('FLASH de dano: a silhueta (quadro + 1 px de margem) cai em cima do corpo d
   const pares = quadro.map((d, i) => [d, quadro[i + 1]] as const).filter(([corpo, sil]) => sil && !corpo.canvas && sil.canvas && mesmoDestino(corpo, sil) && corpo.a.length === 8);
   expect(pares.length, 'há um par corpo + silhueta com o mesmo destino').toBeGreaterThanOrEqual(1);
   const [corpo, sil] = pares[0]!;
-  expect(sil!.a[0], 'a silhueta lê a partir da margem de 1 px').toBe(1);
-  expect(sil!.a[1]).toBe(1);
+  // desde 69db418 (src/assets/canvas.ts): o recorte começa num múltiplo de 8 da página e leva 8 px de vizinhança; a fonte do desenho é (origem dentro do recorte, w, h do quadro)
+  expect((corpo.a[0]! - sil!.a[0]!) % 8, 'o recorte começa num múltiplo de 8 da página (x)').toBe(0);
+  expect((corpo.a[1]! - sil!.a[1]!) % 8, 'o recorte começa num múltiplo de 8 da página (y)').toBe(0);
+  expect(sil!.a[0], 'margem à esquerda: 8 px (ou menos só na borda da página)').toBeGreaterThanOrEqual(Math.min(8, corpo.a[0]!));
+  expect(sil!.a[1], 'margem em cima: 8 px (ou menos só na borda da página)').toBeGreaterThanOrEqual(Math.min(8, corpo.a[1]!));
+  expect(sil!.a[0]).toBeLessThan(16);
+  expect(sil!.a[1]).toBeLessThan(16);
   expect(sil!.a[2], 'a largura do quadro').toBe(corpo.a[2]);
   expect(sil!.a[3], 'a altura do quadro').toBe(corpo.a[3]);
-  expect(sil!.w, 'o canvas da silhueta é o quadro + 2 px').toBe(corpo.a[2]! + 2);
-  expect(sil!.h).toBe(corpo.a[3]! + 2);
+  expect(sil!.w % 8, 'o canvas da silhueta tem largura múltipla de 8').toBe(0);
+  expect(sil!.h % 8).toBe(0);
+  expect(sil!.w - sil!.a[0]! - sil!.a[2]!, 'margem à direita: 8 px (ou menos só na borda da página)').toBeGreaterThanOrEqual(Math.min(8, corpo.w - corpo.a[0]! - corpo.a[2]!));
+  expect(sil!.h - sil!.a[1]! - sil!.a[3]!, 'margem embaixo: 8 px (ou menos só na borda da página)').toBeGreaterThanOrEqual(Math.min(8, corpo.h - corpo.a[1]! - corpo.a[3]!));
   expect(sil!.alfa, 'alfa do flash = flash/8 x 0,5').toBeGreaterThan(0);
   expect(sil!.alfa).toBeLessThanOrEqual(0.5 + 1e-9);
   // o pixel acende: a soma de RGB sob o corpo com o flash > sem o flash (mesmo quadro, flash = 0)
@@ -73,7 +80,7 @@ test('FLASH de dano: a silhueta (quadro + 1 px de margem) cai em cima do corpo d
   expect(erros).toEqual([]);
 });
 
-test('RASTRO da corrida: uma silhueta por imagem fantasma, esmaecendo (alfa <= 0,28) e lida a partir da margem de 1 px', async ({ page }) => {
+test('RASTRO da corrida: uma silhueta por imagem fantasma, esmaecendo (alfa <= 0,28) e lida a partir do recorte alinhado em 8 px', async ({ page }) => {
   const erros = await abrirLuta(page, { c1: 'hayato', c2: 'wei-long' });
   await hook(page, `(h) => { const g = h.mundo().game; g.p1.x = 200; g.p2.x = 800; }`);
   // duplo toque para a frente (ArrowRight) = corrida
@@ -92,10 +99,13 @@ test('RASTRO da corrida: uma silhueta por imagem fantasma, esmaecendo (alfa <= 0
   test.info().annotations.push({ type: 'rastro da corrida', description: `trail ${n}, silhuetas desenhadas ${fantasmas.length}` });
   expect(fantasmas.length, 'uma silhueta por entrada do rastro (o do rival, se houver, soma)').toBeGreaterThanOrEqual(n);
   for (const s of fantasmas) {
-    expect(s.a[0], 'lê a partir da margem').toBe(1);
-    expect(s.a[1]).toBe(1);
-    expect(s.w).toBe(s.a[2]! + 2);
-    expect(s.h).toBe(s.a[3]! + 2);
+    // recorte alinhado em 8 (69db418): origem < 16 dentro do canvas, que cobre o quadro inteiro e tem lados múltiplos de 8
+    expect(s.a[0], 'origem x dentro do recorte').toBeLessThan(16);
+    expect(s.a[1], 'origem y dentro do recorte').toBeLessThan(16);
+    expect(s.w, 'o recorte cobre o quadro').toBeGreaterThanOrEqual(s.a[0]! + s.a[2]!);
+    expect(s.h).toBeGreaterThanOrEqual(s.a[1]! + s.a[3]!);
+    expect(s.w % 8).toBe(0);
+    expect(s.h % 8).toBe(0);
   }
   expect(erros).toEqual([]);
 });

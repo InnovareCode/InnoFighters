@@ -303,6 +303,7 @@ export class CenaFight implements Cena {
     this.ended = false;
     this.espera.iniciar(this.ui.m, a.cfg);
     this.prebuscarProximoRival(a);
+    this.filmeDev = import.meta.env.DEV && typeof window !== 'undefined' ? lerFilmeDev(window.location.search) : null;
     this.carregarFolhasDoFilme(a);
     game.setup(a.cfg, persist.settings);
     if (a.cfg.keepScore && a.run) game.p1.score = a.run.score;
@@ -325,7 +326,6 @@ export class CenaFight implements Cena {
     this.adiadosNaQueda = [];
     this.adiadosNoFim = [];
     this.antesDoTick = null;
-    this.filmeDev = import.meta.env.DEV && typeof window !== 'undefined' ? lerFilmeDev(window.location.search) : null;
     this.semProvocacao = false;
     this.vitoriaDisparada = false;
     this.vencedorDoRound = null;
@@ -346,8 +346,11 @@ export class CenaFight implements Cena {
    * A folha FILME (os closes do painel do especial) dos dois lutadores, baixada DEPOIS que a luta começou e sem esperar: nunca na seleção,
    * na VS nem em `pedir`/`prebuscar` (docs/orcamentos-2026-10-23.md). Enquanto não chega (ou se der 404), `imagemDe` devolve null para f0..f5 e o
    * filme toca a pose `Alt` do mundo, sem lançar. O `?.` é dos dublês de teste do gerenciador, que não têm a folha.
+   * SÓ com o filme ligado (`cfg.motorV2.filmes`, a mesma flag que faz o motor emitir o evento) ou com o gancho DEV `?filme=`: sem flag (o padrão)
+   * não há rede nem memória para uma folha que nenhum especial vai usar.
    */
   private carregarFolhasDoFilme(a: ArgsFight): void {
+    if (a.cfg.motorV2?.filmes !== true && this.filmeDev === null) return;
     void this.ui.m.arte.carregarFilme?.([a.cfg.c1, a.cfg.c2]);
   }
 

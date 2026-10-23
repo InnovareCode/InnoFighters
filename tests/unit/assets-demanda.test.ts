@@ -125,7 +125,7 @@ describe('AtlasLutador com várias páginas', () => {
     const s0 = a.silhuetaDe(g);
     const s1 = a.silhuetaDe(punch);
     expect(s0).not.toBe(s1);
-    expect(a.silhuetaDe(punch)).toBe(s1); // cache por página
+    expect(a.silhuetaDe(punch)).toBe(s1); // cache por quadro
     expect(a.paginaDe('punch')).toBe(1);
   });
 

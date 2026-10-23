@@ -1,5 +1,8 @@
 import { urlCenario, type AtlasLutador, type CenarioParaCarregar, type ImagemCarregada, type LeitorDeRecursos } from './carregador';
 
+/** Folhas FILME na memória ao mesmo tempo: as dos 2 lutadores da luta (no espelho é uma só). Docs/orcamentos-2026-10-23.md, §2 e §3. */
+export const MAX_FOLHAS_FILME = 2;
+
 export interface PedidoDeArte {
   readonly lutadores?: readonly string[];
   readonly cenarios?: readonly string[];
@@ -39,7 +42,7 @@ export class GerenciadorDeArte {
   private readonly cenariosFixos: ReadonlySet<string>;
   private readonly limite: number;
   /** Para teste e métricas: quantas vezes cada recurso foi realmente baixado/decodificado. */
-  readonly cargas = { lutadores: new Map<string, number>(), cenarios: new Map<string, number>() };
+  readonly cargas = { lutadores: new Map<string, number>(), cenarios: new Map<string, number>(), filmes: new Map<string, number>() };
 
   constructor(private readonly op: OpcoesGerenciador) {
     this.atlas = new Map(op.atlas);
@@ -162,6 +165,36 @@ export class GerenciadorDeArte {
       const def = this.op.cenarios.get(id);
       if (def && !this.cenarios.has(id)) void leitor.prebuscar?.(urlCenario(baseUrl, def.arquivo)).catch(() => undefined);
     }
+  }
+
+  /**
+   * Carrega a folha FILME dos lutadores da luta (no máximo `MAX_FOLHAS_FILME`; solta antes qualquer outra que esteja residente).
+   * É a única porta de entrada da FILME: `garantir`, `pedir` e `prebuscar` nunca a tocam, então a tela de seleção e a VS não pagam
+   * nada por ela. A cena da luta chama DEPOIS que a luta começou, sem esperar (a página que não chegou toca a pose `Alt`), e chama
+   * `soltarFilme()` ao sair. Nunca rejeita: falha de rede, imagem de outro tamanho ou lutador sem filme só deixam a folha ausente.
+   */
+  async carregarFilme(ids: readonly string[]): Promise<void> {
+    const alvo = [...new Set(ids)].filter((id) => this.atlas.get(id)?.temFilme === true).slice(0, MAX_FOLHAS_FILME);
+    const alvoAtlas = new Set(alvo.map((id) => this.atlas.get(id)));
+    for (const [id, a] of this.atlas) if (!alvoAtlas.has(a) && (a.filmePronto || a.filmeEmCarregamento)) this.soltarFilme([id]);
+    await Promise.all(
+      alvo.map(async (id) => {
+        const a = this.atlas.get(id);
+        if (!a || a.filmePronto) return;
+        if (await a.carregarFilme(this.op.leitor)) this.cargas.filmes.set(id, (this.cargas.filmes.get(id) ?? 0) + 1);
+      }),
+    );
+  }
+
+  /** Solta a folha FILME dos lutadores dados (sem argumento, de todos). Idempotente; os atlas e os quadros f0..f5 ficam. */
+  soltarFilme(ids?: readonly string[]): void {
+    if (ids) for (const id of ids) this.atlas.get(id)?.liberarFilme();
+    else for (const a of this.atlas.values()) a.liberarFilme();
+  }
+
+  /** Quem está com a folha FILME na memória agora (teste e métricas). */
+  filmesResidentes(): string[] {
+    return [...new Set([...this.atlas.values()].filter((a) => a.filmePronto).map((a) => a.id))];
   }
 
   liberarLutador(id: string): void {

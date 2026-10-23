@@ -1,10 +1,11 @@
+import { MARGEM_DA_SILHUETA } from '../assets/canvas';
 import type { ArteLutador } from '../assets/elenco';
 import { GROUND, SH, SH_IDLE } from '../core/constantes';
 import type { LutadorLeitura } from '../core/contratos';
 import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
 import { desenharAuraChefe } from './aura-chefe';
-import { ALFA_FANTASMA, desenharFaixaDeEsquiva, ehPoseDeEsquiva, esquivaNaJanela, silhuetaTingida } from './esquiva';
+import { ALFA_FANTASMA, desenharFaixaDeEsquiva, ehPoseDeEsquiva, esquivaNaJanela, silhuetaTingidaDe } from './esquiva';
 import { desenharRastroGolpe } from './rastro-golpe';
 import type { Ctx } from './tela';
 
@@ -36,9 +37,10 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
   const air = GROUND - f.y;
   const deitado = P.name === 'koFloor';
   const fl = f.facing * P.flip;
-  const quadro = (im: CanvasImageSource, alfa: number): void => {
+  // `daPagina`: a imagem é a página do atlas (fonte em x,y do quadro); a silhueta é só do quadro (fonte em MARGEM,MARGEM)
+  const quadro = (im: CanvasImageSource, alfa: number, daPagina = true): void => {
     ctx.globalAlpha = alfa;
-    ctx.drawImage(im, pd.x, pd.y, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
+    ctx.drawImage(im, daPagina ? pd.x : MARGEM_DA_SILHUETA, daPagina ? pd.y : MARGEM_DA_SILHUETA, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
     ctx.globalAlpha = 1;
   };
 
@@ -88,15 +90,15 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
   for (const tr of f.trail) {
     if (!janelaEsq && ehPoseDeEsquiva(tr.name)) continue; // resto de esquiva fora da janela invulnerável
     const tp = getPD(ch, tr.name);
-    const silTr = arte.silhuetaDe(tp);
-    if (!silTr) continue;
-    const fonte = janelaEsq ? (silhuetaTingida(silTr, tp, ch.fire[0]) ?? silTr) : silTr;
-    const origem = fonte === silTr ? tp : { ...tp, x: 0, y: 0 };
+    const tinta = janelaEsq ? silhuetaTingidaDe(arte, tp, ch.fire[0]) : null; // recorte tingido: do tamanho do quadro, SEM margem
+    const fonte = tinta ?? arte.silhuetaDe(tp);
+    const m = tinta ? 0 : MARGEM_DA_SILHUETA;
+    if (!fonte) continue; // sem silhueta (atlas fora da memória ou sem canvas): sem rastro, a luta segue
     ctx.save();
     ctx.translate(tr.x, tr.y);
     ctx.scale(tr.f, 1);
     ctx.globalAlpha = (tr.life / 10) * (janelaEsq ? 0.45 : 0.28);
-    ctx.drawImage(fonte, origem.x, origem.y, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
+    ctx.drawImage(fonte, m, m, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
     ctx.restore();
     ctx.globalAlpha = 1;
   }
@@ -115,7 +117,7 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
   if (img) {
     quadro(img, janelaEsq ? ALFA_FANTASMA : 1);
     const silFlash = f.flash > 0 ? arte.silhuetaDe(pd) : null;
-    if (silFlash) quadro(silFlash, (f.flash / 8) * 0.5);
+    if (silFlash) quadro(silFlash, (f.flash / 8) * 0.5, false);
   }
   ctx.restore();
 

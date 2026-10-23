@@ -1,5 +1,5 @@
 import type { ManifestoAtlas } from '../data/atlas';
-import { ErroDeAsset, type ManifestoC1, type Par, type QuadroC1, type Quatro, type RetratoDef } from './tipos';
+import { ErroDeAsset, type FilmeDef, type ManifestoC1, type Par, type QuadroC1, type Quatro, type RetratoDef } from './tipos';
 
 const ehObjeto = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const ehNumero = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -59,6 +59,39 @@ export function validarRetrato(v: unknown, recurso: string): RetratoDef {
   return { arquivo, recorte: r as unknown as Quatro };
 }
 
+/** Nomes que a folha FILME pode ter: os 6 quadros do roteiro (data/roteiros-filme.ts cita f0..f5). */
+export const NOMES_DO_FILME: readonly string[] = ['f0', 'f1', 'f2', 'f3', 'f4', 'f5'];
+
+/**
+ * Bloco `filme` do atlas.json: `{ imagem, tamanho, quadros }`. A página tem tamanho PRÓPRIO (não é o do atlas), e só pode ter
+ * quadros f0..f5, todos `painel: true` e dentro da página. `imagens` são as páginas do atlas: o nome da FILME não pode estar entre
+ * elas (senão voltaria a carregar junto com o lutador, o que o orçamento proíbe).
+ */
+export function validarFilme(v: unknown, recurso: string, paginasDoAtlas: readonly string[], quadrosDoAtlas: Readonly<Record<string, unknown>>): FilmeDef {
+  if (!ehObjeto(v)) throw new ErroDeAsset(`${recurso}: "filme" deve ser um objeto { imagem, tamanho, quadros }`, recurso);
+  const imagem = v['imagem'];
+  if (!nomeDeArquivo(imagem)) throw new ErroDeAsset(`${recurso}: "filme.imagem" deve ser um nome de arquivo simples`, recurso);
+  if (paginasDoAtlas.includes(imagem)) throw new ErroDeAsset(`${recurso}: "filme.imagem" nao pode ser uma pagina do atlas ("${imagem}")`, recurso);
+  const tamanho = par(v['tamanho'], 'filme.tamanho', recurso);
+  if (!Number.isInteger(tamanho[0]) || !Number.isInteger(tamanho[1]) || tamanho[0] <= 0 || tamanho[1] <= 0) {
+    throw new ErroDeAsset(`${recurso}: "filme.tamanho" deve ser [largura, altura] inteiros positivos`, recurso);
+  }
+  const bruto = v['quadros'];
+  if (!ehObjeto(bruto) || Object.keys(bruto).length === 0) throw new ErroDeAsset(`${recurso}: "filme.quadros" vazio`, recurso);
+  const quadros: Record<string, QuadroC1> = {};
+  for (const [nome, qv] of Object.entries(bruto)) {
+    if (!NOMES_DO_FILME.includes(nome)) throw new ErroDeAsset(`${recurso}: "filme.quadros" so aceita ${NOMES_DO_FILME.join(', ')} (veio "${nome}")`, recurso);
+    if (nome in quadrosDoAtlas) throw new ErroDeAsset(`${recurso}: quadro "${nome}" do filme repete um quadro do atlas`, recurso);
+    const q = quadro(qv, `filme.${nome}`, recurso, 1);
+    if (q.painel !== true) throw new ErroDeAsset(`${recurso}: quadro "filme.${nome}" precisa de "painel": true`, recurso);
+    if (q.x < 0 || q.y < 0 || q.x + q.w > tamanho[0] || q.y + q.h > tamanho[1]) {
+      throw new ErroDeAsset(`${recurso}: quadro "filme.${nome}" sai da pagina ${tamanho[0]}x${tamanho[1]}`, recurso);
+    }
+    quadros[nome] = q;
+  }
+  return { imagem, tamanho, quadros };
+}
+
 /**
  * Valida o JSON de um atlas (C1 v1 ou v2) com checagem estrita (campos numéricos, nomes de arquivo sem pasta).
  * Lança ErroDeAsset dizendo o que está errado e onde. v1 = uma imagem (`imagem`); v2 = várias páginas
@@ -100,9 +133,10 @@ export function validarManifesto(dados: unknown, recurso: string): ManifestoC1 {
     }
     quadros[nome] = quadro(v, nome, recurso, imagens.length);
   }
-  const saida: ManifestoC1 = { versao, lutador, imagens, tamanho, alturaRef, quadros };
-  if (dados['retrato'] === undefined) return saida;
-  return { ...saida, retrato: validarRetrato(dados['retrato'], recurso) };
+  let saida: ManifestoC1 = { versao, lutador, imagens, tamanho, alturaRef, quadros };
+  if (dados['retrato'] !== undefined) saida = { ...saida, retrato: validarRetrato(dados['retrato'], recurso) };
+  if (dados['filme'] !== undefined) saida = { ...saida, filme: validarFilme(dados['filme'], recurso, imagens, quadros) };
+  return saida;
 }
 
 /** O manifesto no formato v1 que `manifestoParaPoses` (data/atlas.ts) entende; `p` fica de fora (as páginas ficam no AtlasLutador). */

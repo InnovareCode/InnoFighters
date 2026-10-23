@@ -694,6 +694,24 @@ export function geometriaDoPainel(esquerda: boolean, deslize: number): { topo: n
   return { topo, base: BASE_DO_PAINEL, pontos: [[LARGURA + 10 + dx, topo], [LARGURA - w + inc + dx, topo], [LARGURA - w + dx, BASE_DO_PAINEL], [LARGURA + 10 + dx, BASE_DO_PAINEL]] };
 }
 
+/** Fundo do painel (curadoria do Apolo, docs/curadoria-filme-hayato-v1.md 6.2.2): a 0,85 o lutador do mundo (na pose `Alt`, atrás do painel) e os números de dano apareciam como fantasma. */
+export const ALFA_DO_FUNDO_DO_PAINEL = 0.94;
+/** A célula ocupa 96% da altura do painel (6.2.4): a 100% o cabelo encostava no topo. */
+export const FRACAO_DA_ALTURA_DA_CELULA = 0.96;
+
+/**
+ * Onde a célula `pd` (esquerda ou direita) se assenta no painel: escala, tamanho e o x do centro. A largura útil desconta a inclinação de 12° da borda de
+ * dentro (6.2.3): sem isso o punho de um close largo (o gancho do HAYATO, 802 px) ficava a ~6 px da borda quando o atacante está à direita da tela.
+ * A célula se centra na faixa entre a borda de fora e a borda de dentro NA BASE (onde o painel é mais estreito), então cabe inteira em qualquer altura.
+ */
+export function encaixeDaCelula(pd: Pick<PoseDados, 'w' | 'h'>, esquerda: boolean): { k: number; w: number; h: number; cx: number } {
+  const inc = Math.tan(INCLINACAO_DO_PAINEL) * ALTURA_DO_PAINEL;
+  const util = LARGURA_DO_PAINEL - inc;
+  const k = Math.min(util / pd.w, (ALTURA_DO_PAINEL * FRACAO_DA_ALTURA_DA_CELULA) / pd.h);
+  const centro = (util - 10) / 2; // a borda de fora está em x = -10
+  return { k, w: pd.w * k, h: pd.h * k, cx: esquerda ? centro : LARGURA - centro };
+}
+
 export interface ArgsDoPainel {
   /** Close do atacante (a célula olha para a direita) ou do rival (a reação olha para a esquerda: a cabeça vai para longe do atacante). */
   readonly atacando: boolean;
@@ -712,7 +730,7 @@ export function desenharPainelDeClose(ctx: Ctx, img: CanvasImageSource, pd: Pose
   g.pontos.forEach(([x, y], i) => (i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)));
   ctx.closePath();
   ctx.clip();
-  ctx.globalAlpha = 0.85;
+  ctx.globalAlpha = ALFA_DO_FUNDO_DO_PAINEL;
   ctx.fillStyle = id.paleta.sombra;
   ctx.fillRect(0, g.topo, LARGURA, ALTURA_DO_PAINEL);
   // linhas de velocidade
@@ -720,11 +738,8 @@ export function desenharPainelDeClose(ctx: Ctx, img: CanvasImageSource, pd: Pose
   ctx.fillStyle = id.paleta.brilho;
   for (let i = 0; i < 9; i++) ctx.fillRect(0, g.topo + 20 + i * 34, LARGURA, 3);
   ctx.globalAlpha = 1;
-  // a célula: encostada na borda de baixo, cabendo no painel
-  const k = Math.min(LARGURA_DO_PAINEL / pd.w, ALTURA_DO_PAINEL / pd.h);
-  const w = pd.w * k;
-  const h = pd.h * k;
-  const cx = a.deQuemEstaEsquerda ? (LARGURA_DO_PAINEL - 60) / 2 : LARGURA - (LARGURA_DO_PAINEL - 60) / 2;
+  // a célula: encostada na borda de baixo, cabendo no painel (altura a 96%, largura descontando a inclinação)
+  const { w, h, cx } = encaixeDaCelula(pd, a.deQuemEstaEsquerda);
   // a célula do atacante olha para a direita (espelha se ele olha para a esquerda); a reação olha para a esquerda (espelha se o rival olha para a esquerda)
   const espelhar = a.facing === -1;
   ctx.translate(cx, g.base);

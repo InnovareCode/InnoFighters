@@ -42,6 +42,7 @@ import { cfgDaEtapa } from '../campanha';
 import { EsperaDeArte } from '../espera-de-arte';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
+import { alturaDosCombos, combosDoLutador, desenharCombos, DICA_DOS_COMBOS } from '../combos-tela';
 import { desenharLinhasDeGolpes, P_COL } from '../personagens';
 import { NAV, type ArgsFight, type Cena } from '../tipos';
 
@@ -302,6 +303,7 @@ export class CenaFight implements Cena {
     this.ended = false;
     this.espera.iniciar(this.ui.m, a.cfg);
     this.prebuscarProximoRival(a);
+    this.carregarFolhasDoFilme(a);
     game.setup(a.cfg, persist.settings);
     if (a.cfg.keepScore && a.run) game.p1.score = a.run.score;
     efeitos.limpar();
@@ -338,6 +340,20 @@ export class CenaFight implements Cena {
     // sem temas: 'chefe' (a valsa) no chefão que tem `trilha`, 'fight' no resto. Com `?temas=1`: o tema do ADVERSÁRIO (c2) em todos os modos, a fase 2 do chefão via musicaDaFase(2)
     audio.startMusic(trilhaDoJogo(a.cfg, this.ui.c.regras, this.ui.m.elenco[a.cfg.c2].ch.chefe?.trilha));
     this.montarMenus();
+  }
+
+  /**
+   * A folha FILME (os closes do painel do especial) dos dois lutadores, baixada DEPOIS que a luta começou e sem esperar: nunca na seleção,
+   * na VS nem em `pedir`/`prebuscar` (docs/orcamentos-2026-10-23.md). Enquanto não chega (ou se der 404), `imagemDe` devolve null para f0..f5 e o
+   * filme toca a pose `Alt` do mundo, sem lançar. O `?.` é dos dublês de teste do gerenciador, que não têm a folha.
+   */
+  private carregarFolhasDoFilme(a: ArgsFight): void {
+    void this.ui.m.arte.carregarFilme?.([a.cfg.c1, a.cfg.c2]);
+  }
+
+  /** Saiu da luta (para a VS, o resultado, o menu...): a folha FILME sai da memória. Obrigatório: o HAYATO é fixo da vitrine, `liberarLutador` não o solta. */
+  exit(): void {
+    this.ui.m.arte.soltarFilme?.();
   }
 
   /** ARCADE: baixa (sem decodificar) a arte do próximo rival enquanto esta luta acontece. */
@@ -953,7 +969,15 @@ export class CenaFight implements Cena {
       }
     } else {
       f.A(game.p1.ch.name, W / 2, 80, 24, P_COL[0], '#000');
-      desenharLinhasDeGolpes(f, m, game.p1.ch.id, 60, 100, W - 120, 1, 50);
+      // V2-4 (§6.2): no TREINO com a regra dos combos próprios ligada, a lista dos combos do lutador ocupa o lugar da dica genérica
+      const combos = game.training && game.combosLigados ? combosDoLutador(m.elenco[game.p1.ch.id].ch) : [];
+      const rowH = combos.length > 0 ? Math.min(50, Math.floor((500 - alturaDosCombos(combos.length) - 6 - 100 + 5) / 7)) : 50;
+      desenharLinhasDeGolpes(f, m, game.p1.ch.id, 60, 100, W - 120, 1, rowH);
+      if (combos.length > 0) {
+        desenharCombos(f, combos, game.p1.ch.accent, 60, 100 + 7 * rowH - 5 + 6, W - 120, 1);
+        f.hint(DICA_DOS_COMBOS + '     ESC voltar');
+        return;
+      }
     }
     f.hint('COMBO: soco fraco → chute fraco → soco forte → chute forte → especial (aperte o próximo botão ao acertar)     ESC voltar');
   }

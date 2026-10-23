@@ -1,7 +1,8 @@
 import { manifestoParaPoses } from '../data/atlas';
 import type { PoseDados, Poses } from '../data/tipos';
-import { criarCanvasPadrao, criarSilhuetaBranca, type CriarCanvas } from './canvas';
+import { criarCanvasPadrao, type CriarCanvas } from './canvas';
 import { paraManifestoV1, validarManifesto, validarRetrato } from './manifesto';
+import { CacheDeSilhuetas } from './silhuetas';
 import { ErroDeAsset, type ManifestoC1, type Quatro, type RetratoDef } from './tipos';
 
 /** Imagem pronta para drawImage (HTMLImageElement, ImageBitmap, canvas...). */
@@ -63,6 +64,8 @@ const comBarra = (base: string): string => (base.endsWith('/') ? base : `${base}
 
 export const urlManifesto = (baseUrl: string, lutador: string): string => `${comBarra(baseUrl)}assets/lutadores/${lutador}/atlas.json`;
 export const urlAtlas = (baseUrl: string, lutador: string, arquivo: string): string => `${comBarra(baseUrl)}assets/lutadores/${lutador}/${arquivo}`;
+/** Página da folha FILME do lutador (bloco `filme` do atlas.json); mesma pasta do atlas. */
+export const urlFilme = (baseUrl: string, lutador: string, arquivo: string): string => urlAtlas(baseUrl, lutador, arquivo);
 export const urlCenario = (baseUrl: string, arquivo: string): string => `${comBarra(baseUrl)}${arquivo.replace(/^\/+/, '')}`;
 /** Sidecar do retrato (para atlas v1 antigos que não têm o campo `retrato` no atlas.json). */
 export const urlRetratoJson = (baseUrl: string, lutador: string): string => `${comBarra(baseUrl)}assets/lutadores/${lutador}/retrato.json`;
@@ -76,17 +79,26 @@ export interface RetratoPronto {
 /**
  * Atlas de um lutador. Os metadados (manifesto C1, poses) existem desde o boot; as IMAGENS (uma ou mais páginas)
  * só existem depois de `carregarImagens()` e somem em `liberar()` (carga sob demanda, docs/plano-expansao.md 1.5).
- * O retrato (imagem pequena para seleção e HUD) é independente do atlas. A silhueta branca (flash de dano) é criada
- * só quando alguém pede.
+ * O retrato (imagem pequena para seleção e HUD) é independente do atlas. A silhueta branca (flash de dano) é por QUADRO e é
+ * criada só quando alguém pede, num cache com teto de memória (`CacheDeSilhuetas`, compartilhado entre os atlas).
+ *
+ * A folha FILME (bloco `filme` do manifesto) é uma página À PARTE: seus quadros f0..f5 entram em `poses()` desde o boot, mas a imagem
+ * só existe entre `carregarFilme()` e `liberarFilme()` (o ciclo da luta). Nada do ciclo normal (`carregarImagens`, `prebuscarImagens`,
+ * `pronta`, `paginasCarregadas`) a enxerga. Sem a imagem, `imagemDe(f0..f5)` é null e o mundo desenha a pose de reserva.
  */
 export class AtlasLutador {
   private paginas: ImagemCarregada[] | null = null;
   private emCarga: Promise<void> | null = null;
-  private silhuetas: Array<HTMLCanvasElement | undefined> = [];
   private posesCache: Poses | null = null;
   /** Página de cada objeto de pose devolvido por `poses()` (chave: a própria pose, que `getPD` devolve). */
   private readonly paginaDoQuadro = new WeakMap<object, number>();
   private retratoImg: ImagemCarregada | null = null;
+  private filmeImg: ImagemCarregada | null = null;
+  private filmeEmCarga: Promise<boolean> | null = null;
+  /** Muda a cada `liberarFilme`: uma carga que termina depois da liberação vê outro número e descarta a imagem. */
+  private filmeGeracao = 0;
+  /** Quadros f0..f5 (objetos de `poses()`): a imagem deles é a folha FILME, não uma página do atlas. */
+  private readonly quadrosDoFilme = new WeakSet<object>();
   private retratoDef: RetratoDef | null;
 
   constructor(
@@ -94,6 +106,7 @@ export class AtlasLutador {
     readonly manifesto: ManifestoC1,
     private readonly baseUrl: string,
     private readonly criarCanvas: CriarCanvas = criarCanvasPadrao,
+    private readonly silhuetas: CacheDeSilhuetas = new CacheDeSilhuetas(),
   ) {
     this.retratoDef = manifesto.retrato ?? null;
   }
@@ -116,25 +129,21 @@ export class AtlasLutador {
 
   /** Imagem da página em que o quadro `pd` (objeto devolvido por `poses()`/`getPD`) está; null se não carregada. */
   imagemDe(pd: PoseDados): ImagemCarregada | null {
+    if (this.quadrosDoFilme.has(pd)) return this.filmeImg;
     return this.paginas?.[this.paginaDoQuadro.get(pd) ?? 0] ?? null;
   }
 
-  /** Silhueta branca da página 0 sob demanda (cria na primeira chamada). */
-  silhueta(): HTMLCanvasElement {
-    return this.silhuetaDaPagina(0);
-  }
-
-  /** Silhueta branca da página do quadro `pd`; null se o atlas não está carregado. */
+  /**
+   * Silhueta branca do QUADRO `pd` (canvas do quadro com 1 px de margem: a fonte do `drawImage` é (MARGEM_DA_SILHUETA, MARGEM_DA_SILHUETA, w, h)), criada sob demanda e
+   * guardada num cache com teto de memória. null se o atlas não está carregado OU se o navegador não deu canvas/contexto (iPhone no teto):
+   * nunca lança, o flash é que não aparece.
+   */
   silhuetaDe(pd: PoseDados): HTMLCanvasElement | null {
-    if (!this.paginas) return null;
-    return this.silhuetaDaPagina(this.paginaDoQuadro.get(pd) ?? 0);
-  }
-
-  private silhuetaDaPagina(p: number): HTMLCanvasElement {
+    if (this.quadrosDoFilme.has(pd)) return null; // o painel do filme não pisca de dano; e silhueta de página FILME seria 10 MiB à toa
+    const p = this.paginaDoQuadro.get(pd) ?? 0;
     const img = this.paginas?.[p];
-    if (!img) throw new ErroDeAsset(`atlas de "${this.id}" ainda nao foi carregado`, this.id);
-    this.silhuetas[p] ??= criarSilhuetaBranca(img, this.criarCanvas);
-    return this.silhuetas[p] as HTMLCanvasElement;
+    if (!img) return null;
+    return this.silhuetas.obter(`${this.id}|${p}|${pd.x},${pd.y},${pd.w},${pd.h}`, img, pd, this.criarCanvas);
   }
 
   /** Poses no formato interno (POSEDATA), convertidas uma única vez por `manifestoParaPoses`. */
@@ -142,6 +151,14 @@ export class AtlasLutador {
     if (this.posesCache) return this.posesCache;
     const poses = manifestoParaPoses(paraManifestoV1(this.manifesto));
     for (const [nome, pd] of Object.entries(poses)) this.paginaDoQuadro.set(pd, this.manifesto.quadros[nome]?.p ?? 0);
+    const filme = this.manifesto.filme;
+    if (filme) {
+      const doFilme = manifestoParaPoses(paraManifestoV1({ ...this.manifesto, imagens: [filme.imagem], tamanho: filme.tamanho, quadros: filme.quadros }));
+      for (const [nome, pd] of Object.entries(doFilme)) {
+        poses[nome] = pd;
+        this.quadrosDoFilme.add(pd);
+      }
+    }
     this.posesCache = poses;
     return poses;
   }
@@ -192,7 +209,62 @@ export class AtlasLutador {
     return this.emCarga;
   }
 
-  /** Só baixa as páginas (cache HTTP), sem decodificar. */
+  /** O manifesto declara uma folha FILME? (os quadros f0..f5 existem mesmo sem a imagem) */
+  get temFilme(): boolean {
+    return this.manifesto.filme !== undefined;
+  }
+
+  /** Há uma carga da folha FILME em andamento? */
+  get filmeEmCarregamento(): boolean {
+    return this.filmeEmCarga !== null;
+  }
+
+  /** A imagem da folha FILME está na memória? */
+  get filmePronto(): boolean {
+    return this.filmeImg !== null;
+  }
+
+  /**
+   * Carrega a folha FILME (idempotente; chamadas simultâneas dividem a mesma carga). NUNCA lança: devolve false se o lutador não
+   * tem filme, se a imagem falhou ou veio de outro tamanho, ou se `liberarFilme()` foi chamado no meio. Quem chama não precisa de
+   * try/catch, e o jogo segue com a pose de reserva (`Alt`). Só a cena da luta chama isto, depois que a luta começou.
+   */
+  carregarFilme(leitor: LeitorDeRecursos): Promise<boolean> {
+    const f = this.manifesto.filme;
+    if (!f) return Promise.resolve(false);
+    if (this.filmeImg) return Promise.resolve(true);
+    if (this.filmeEmCarga) return this.filmeEmCarga;
+    const geracao = this.filmeGeracao;
+    const url = urlFilme(this.baseUrl, this.id, f.imagem);
+    const carga = (async (): Promise<boolean> => {
+      try {
+        const imagem = await leitor.imagem(url);
+        if (imagem.width !== f.tamanho[0] || imagem.height !== f.tamanho[1]) {
+          throw new ErroDeAsset(`${url}: tem ${imagem.width}x${imagem.height}, o manifesto diz ${f.tamanho[0]}x${f.tamanho[1]}`, url);
+        }
+        if (geracao !== this.filmeGeracao) return false; // soltaram a folha enquanto baixava: não ressuscita
+        this.filmeImg = imagem;
+        return true;
+      } catch (e) {
+        console.warn(`[filme] folha de "${this.id}" indisponivel, o especial usa a pose de reserva: ${e instanceof Error ? e.message : String(e)}`);
+        return false;
+      }
+    })();
+    this.filmeEmCarga = carga;
+    void carga.finally(() => {
+      if (this.filmeEmCarga === carga) this.filmeEmCarga = null;
+    });
+    return carga;
+  }
+
+  /** Solta a folha FILME (e cancela uma carga em andamento). Os quadros f0..f5 continuam existindo. */
+  liberarFilme(): void {
+    this.filmeGeracao++;
+    this.filmeImg = null;
+    this.filmeEmCarga = null;
+  }
+
+  /** Só baixa as páginas (cache HTTP), sem decodificar. A folha FILME NUNCA entra aqui. */
   async prebuscarImagens(leitor: LeitorDeRecursos): Promise<void> {
     if (this.paginas || !leitor.prebuscar) return;
     await Promise.all(this.manifesto.imagens.map((a) => leitor.prebuscar?.(urlAtlas(this.baseUrl, this.id, a))));
@@ -201,7 +273,8 @@ export class AtlasLutador {
   /** Solta as imagens do atlas (os metadados e o retrato ficam). */
   liberar(): void {
     this.paginas = null;
-    this.silhuetas = [];
+    this.liberarFilme();
+    this.silhuetas.soltarPrefixo(`${this.id}|`);
   }
 
   /**
@@ -253,11 +326,12 @@ export async function carregarManifestos(
   aoManifesto?: () => void,
 ): Promise<Map<string, AtlasLutador>> {
   const mapa = new Map<string, AtlasLutador>();
+  const silhuetas = new CacheDeSilhuetas(); // UM teto de memória para as silhuetas do jogo todo
   await Promise.all(
     ids.map(async (id) => {
       const url = urlManifesto(baseUrl, id);
       const m = validarManifesto(await leitor.json(url), url);
-      mapa.set(id, new AtlasLutador(id, m, baseUrl, criarCanvas));
+      mapa.set(id, new AtlasLutador(id, m, baseUrl, criarCanvas, silhuetas));
       aoManifesto?.();
     }),
   );

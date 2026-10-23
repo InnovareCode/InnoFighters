@@ -6,6 +6,7 @@ import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
 import { FH } from '../../render/texto';
 import type { Navegador } from '../navegador';
+import { alturaDosCombos, combosDoLutador, combosLigados, desenharCombos } from '../combos-tela';
 import { barrasDeStatus, desenharLinhasDeGolpes, P_COL, SCHEME } from '../personagens';
 import { NAV, type ArgsComo, type Cena } from '../tipos';
 
@@ -160,8 +161,17 @@ export class CenaHow implements Cena {
       const ch = m.elenco[id].ch;
       f.A(ch.name, 480, y0 + 8, 24, ch.accent, '#000');
       f.T('↑ ↓ trocar de lutador', 920, y0 + 8, 13, '#cfd6f5', 'right');
-      desenharLinhasDeGolpes(f, m, id, 40, y0 + 26, 880, 1, 49);
-      f.T('Teclas do Jogador 1 (Jogador 2: W A S D + J K U I L)', 40, y0 + 376, 12, '#9fa6c9', 'left');
+      // V2-4 (§6.2): com a regra dos combos próprios ligada, a lista dos combos do lutador entra embaixo dos golpes (a legenda das teclas sobe)
+      const combos = combosLigados(this.ui.c.regras) ? combosDoLutador(m.elenco[id].ch) : [];
+      if (combos.length > 0) {
+        const rowH = Math.min(49, Math.floor((500 - alturaDosCombos(combos.length) - 6 - (y0 + 26) + 5) / 7));
+        desenharLinhasDeGolpes(f, m, id, 40, y0 + 26, 880, 1, rowH);
+        desenharCombos(f, combos, ch.accent, 40, y0 + 26 + 7 * rowH - 5 + 6, 880, 1);
+        f.T('Teclas do Jogador 1 (J2: W A S D + J K U I L)', 40, y0 + 8, 12, '#9fa6c9', 'left');
+      } else {
+        desenharLinhasDeGolpes(f, m, id, 40, y0 + 26, 880, 1, 49);
+        f.T('Teclas do Jogador 1 (Jogador 2: W A S D + J K U I L)', 40, y0 + 376, 12, '#9fa6c9', 'left');
+      }
     } else if (this.tab === 3) {
       f.panel(40, y0, 880, 372);
       this.bullet(64, y0 + 28, 400, 'DEFESA', 'Segure a direção CONTRA o oponente para bloquear (andar para trás também protege). Golpes baixos só são bloqueados AGACHADO (↓ + trás); golpes aéreos só EM PÉ. Bloquear causa pouquíssimo dano.');

@@ -5,7 +5,7 @@ import { criarRng, type Rng } from '../core/rng';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { getPD } from '../data/poses';
 import { aplicarCamera } from './camera';
-import { silhuetaTingida } from './esquiva';
+import { silhuetaTingidaDe } from './esquiva';
 import { desenharEstilo, estampaDaTarja, mistura, type EstiloId, type Paleta } from './estilos-especiais';
 import { identidadeDe, identidadePadrao, type Identidade, type Ritmo } from './identidade-especiais';
 import { chDaFicha, desenharLutador } from './lutador';
@@ -341,14 +341,13 @@ export class Cinematica {
           this.tarja(chave, id);
           return true;
         }
-        // a silhueta da página do quadro (criada sob demanda, cara: a página inteira) e o recorte tingido do halo
+        // o recorte tingido do halo (a silhueta do quadro nasce sob demanda e só é pedida se o recorte ainda não existe)
         if (elenco && !this.aquecidas.has(chave)) {
           this.aquecidas.add(chave);
           const r = elenco[f.id];
           const ch = chDaFicha(r.ch, ficha);
           const pd = getPD(ch, apresentacaoDoEspecial(f.id, ficha, golpe)?.quadro ?? ch.moves[golpe as 'sFire'].pose);
-          const sil = r.arte.silhuetaDe(pd);
-          if (sil) silhuetaTingida(sil, pd, id.paleta.brilho, (w, h) => this.fabrica(w, h) as HTMLCanvasElement | null);
+          silhuetaTingidaDe(r.arte, pd, id.paleta.brilho, (w, h) => this.fabrica(w, h) as HTMLCanvasElement | null);
           return true;
         }
       }
@@ -630,8 +629,7 @@ export class Cinematica {
       ctx.arc(240, H / 2, 80, 0, Math.PI * 2);
       ctx.clip();
     }
-    const sil = arte.silhuetaDe(pd);
-    const tinta = sil ? silhuetaTingida(sil, pd, id.paleta.brilho, (w, h) => this.fabrica(w, h) as HTMLCanvasElement | null) : null;
+    const tinta = silhuetaTingidaDe(arte, pd, id.paleta.brilho, (w, h) => this.fabrica(w, h) as HTMLCanvasElement | null);
     if (tinta) {
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = 0.55;

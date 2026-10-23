@@ -20,6 +20,19 @@ export interface RetratoDef {
 }
 
 /**
+ * Folha FILME (painel do especial): UMA página própria, de tamanho próprio, FORA de `imagens`. Os quadros existem desde o boot
+ * (todos de painel), mas a imagem só carrega no início da luta (`AtlasLutador.carregarFilme`); sem ela o mundo desenha a pose `Alt`.
+ */
+export interface FilmeDef {
+  /** Arquivo da página, na pasta do manifesto (nome simples; nunca igual a uma página de `imagens`). */
+  readonly imagem: string;
+  /** Tamanho da página FILME (px), independente do `tamanho` do atlas. */
+  readonly tamanho: Par;
+  /** Só `f0..f5`, todos `painel: true`, `p` sempre 0. */
+  readonly quadros: Readonly<Record<string, QuadroC1>>;
+}
+
+/**
  * Manifesto C1 já validado e normalizado: v1 e v2 chegam no mesmo formato (v1 vira `imagens` de 1 página,
  * todo quadro com p = 0).
  */
@@ -33,6 +46,8 @@ export interface ManifestoC1 {
   readonly alturaRef: number;
   readonly quadros: Readonly<Record<string, QuadroC1>>;
   readonly retrato?: RetratoDef;
+  /** Folha FILME opcional (só os lutadores com filme de especial). */
+  readonly filme?: FilmeDef;
 }
 
 /** Falha de carga ou de validação de um recurso; a mensagem diz qual. */

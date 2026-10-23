@@ -236,7 +236,7 @@ const manifestoDeTeste = {
   imagem: 'atlas.png',
   tamanho: [64, 32],
   alturaRef: 32,
-  quadros: { idle0: { x: 0, y: 0, w: 32, h: 32, ax: 16, rosto: [16, 5] }, hp1: { x: 0, y: 0, w: 32, h: 32, ax: 16, ponta: [30, 10] } },
+  quadros: { idle0: { x: 0, y: 0, w: 32, h: 32, ax: 16, rosto: [16, 5] }, hp1: { x: 0, y: 0, w: 32, h: 32, ax: 16, ponta: [30, 10] }, dir: { x: 32, y: 0, w: 32, h: 32, ax: 16 } },
 };
 
 test.describe('loader de assets', () => {
@@ -251,7 +251,9 @@ test.describe('loader de assets', () => {
       const marcos: number[] = [];
       const rec = await carregarRecursos({ baseUrl: '/', lutadores: ['teste'], cenarios: [{ id: 'palco', arquivo: 'assets/cenarios/palco.png' }] }, { aoProgredir: (f: number) => marcos.push(f) });
       const atlas = rec.lutadores.get('teste')!;
-      const sil = atlas.silhueta();
+      // a silhueta é do QUADRO (origem em 0,0): idle0 cobre a metade esquerda da página; `dir`, a direita (página x 32..63)
+      const sil = atlas.silhuetaDe(atlas.poses()['idle0']);
+      const silDir = atlas.silhuetaDe(atlas.poses()['dir']);
       const px = (x: number, y: number) => Array.from(sil.getContext('2d')!.getImageData(x, y, 1, 1).data);
       const original = document.createElement('canvas');
       original.width = 64;
@@ -262,10 +264,11 @@ test.describe('loader de assets', () => {
         marcos,
         tamanhoAtlas: [atlas.imagem.width, atlas.imagem.height],
         cenario: [rec.cenarios.get('palco')!.width, rec.cenarios.get('palco')!.height],
-        silhuetaOpaca: px(10, 10),
-        silhuetaTransparente: px(50, 10),
+        silhuetaOpaca: px(11, 11), // quadro (10, 10) + 1 px de margem
+        silhuetaTransparente: Array.from(silDir.getContext('2d')!.getImageData(19, 11, 1, 1).data), // página (50, 10) = quadro (18, 10) + 1 px de margem
+        tamanhoSilhueta: [sil.width, sil.height],
         originalOpaco: Array.from(og.getImageData(10, 10, 1, 1).data),
-        mesma: atlas.silhueta() === sil,
+        mesma: atlas.silhuetaDe(atlas.poses()['idle0']) === sil,
         poseHp1: atlas.poses()['hp1'],
       };
     });
@@ -277,6 +280,7 @@ test.describe('loader de assets', () => {
     expect(r.silhuetaOpaca).toEqual([255, 255, 255, 255]); // pixel opaco vira branco
     expect(r.silhuetaTransparente[3]).toBe(0); // transparente continua transparente
     expect(r.mesma).toBe(true);
+    expect(r.tamanhoSilhueta).toEqual([34, 34]); // o quadro (32x32) + 1 px de margem, não a página de 64x32
     // K = 255 / 32; tipX = (30 - 16) * K; tipY = (32 - 10) * K (via manifestoParaPoses)
     expect(r.poseHp1?.tipX).toBeCloseTo((14 * 255) / 32, 6);
     expect(r.poseHp1?.tipY).toBeCloseTo((22 * 255) / 32, 6);

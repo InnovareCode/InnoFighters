@@ -132,11 +132,12 @@ function modeloAereo(e: Encaixes, fK: string, grito: Linha['grito']): readonly B
   ];
 }
 
+// Curadoria do Apolo (docs/curadoria-filme-hayato-v1.md 6.2.1): o grito vai de t0 a t12 numa batida só. Com a batida de t6 (sa1) ele durava 6 ticks e 4 eram o
+// painel deslizando para dentro: o close nem chegava a ser lido. Vale para os 6 projéteis (o modelo é um só).
 function modeloProjetil(e: Encaixes, fK: string, grito: Linha['grito']): readonly BatidaFilme[] {
   const g = grito ?? { pose: 'f3', alt: e.r[0] };
   return [
     { t: 0, atacante: g.pose, ...(g.alt ? { atacanteAlt: g.alt } : {}), rival: 'hitH', peso: 0, camera: CAM(1.25, 'atacante'), retrato: true },
-    { t: 6, atacante: e.r[1], rival: 'hitH', peso: 0, camera: CAM(1.25, 'atacante'), som: 'leve' },
     { t: 12, tc: 0, atacante: fK, atacanteAlt: e.r[2], rival: 'hitH', peso: 0, camera: CAM(1.3, 'atacante'), som: 'pesado' },
     { t: 22, tc: 6, atacante: e.r[2], rival: 'hitH', peso: 0.3, camera: CAM(1.3, 'rival'), som: 'pesado', projetil: true },
     { t: 28, tc: 11, atacante: e.r[2], rival: 'hitB', peso: 0.2, camera: CAM(1.3, 'rival'), som: 'leve' },
@@ -161,7 +162,7 @@ function modeloAgarrao(e: Encaixes, fK: string, grito: Linha['grito']): readonly
 const DURACOES: Readonly<Record<TipoDeFilme, { duracao: number; curta: number; marcos: MarcosDoFilme }>> = {
   chao: { duracao: 66, curta: 30, marcos: { impacto: 4, reacao: 5, lancamento: 6, queda: 7 } },
   aereo: { duracao: 66, curta: 30, marcos: { impacto: 4, reacao: 5, lancamento: 6, queda: 7, pouso: 6 } },
-  projetil: { duracao: 62, curta: 30, marcos: { impacto: 3, reacao: 5, lancamento: 6, queda: 7 } },
+  projetil: { duracao: 62, curta: 30, marcos: { impacto: 2, reacao: 4, lancamento: 5, queda: 6 } }, // 7 batidas: o grito de t0 a t12 (sem a de t6)
   agarrao: { duracao: 58, curta: 30, marcos: { impacto: 1, reacao: 3, lancamento: 3, queda: 4 } },
 };
 
@@ -213,14 +214,14 @@ const LINHAS: Readonly<Record<string, LinhaTabela>> = {
   'hayato/sFwd': L({ tipo: 'chao', estilo: 'E1', fK: 'f2', enc: { prep: 'sc0', impacto: 'sc1' } }),
   // WEI LONG (E2)
   'wei-long/sFire': L({ tipo: 'projetil', estilo: 'E2', fK: 'f0', enc: { r: SELO, prep: 'sa0', impacto: 'sa2' } }),
-  'wei-long/sDown': L({ tipo: 'projetil', estilo: 'E2', fK: 'f1', enc: { r: ['sb0', 'sb1', 'sb2'], prep: 'sb0', impacto: 'sb2' }, desvios: { 3: { rival: 'hitB' } } }),
+  'wei-long/sDown': L({ tipo: 'projetil', estilo: 'E2', fK: 'f1', enc: { r: ['sb0', 'sb1', 'sb2'], prep: 'sb0', impacto: 'sb2' }, desvios: { 2: { rival: 'hitB' } } }),
   'wei-long/sFwd': L({ tipo: 'chao', estilo: 'E2', fK: 'f2', enc: { prep: 'sc0', impacto: 'sc1' } }),
   // MIN-JI (E3)
-  'min-ji/sFire': L({ tipo: 'projetil', estilo: 'E3', fK: 'f0', enc: { r: SELO, prep: 'sa0', impacto: 'sa2' }, desvios: { 4: { projetil: true } } }),
+  'min-ji/sFire': L({ tipo: 'projetil', estilo: 'E3', fK: 'f0', enc: { r: SELO, prep: 'sa0', impacto: 'sa2' }, desvios: { 3: { projetil: true } } }),
   'min-ji/sDown': L({ tipo: 'aereo', estilo: 'E3', fK: 'f1', enc: { prep: 'sb0', subida: 'sb1', impacto: 'sb2', queda: 'sb3' }, desvios: { 3: { alternaFlip: true }, 4: { alternaFlip: true } } }),
   'min-ji/sFwd': L({ tipo: 'aereo', estilo: 'E3', fK: 'f2', enc: { prep: 'sc0', subida: 'jup', impacto: 'sc1', queda: 'land' } }),
   // CAIO (E4)
-  'caio/sFire': L({ tipo: 'projetil', estilo: 'E4', fK: 'f0', enc: { r: SELO, prep: 'sa0', impacto: 'sa2' }, desvios: { 5: { projetil: true } } }),
+  'caio/sFire': L({ tipo: 'projetil', estilo: 'E4', fK: 'f0', enc: { r: SELO, prep: 'sa0', impacto: 'sa2' }, desvios: { 4: { projetil: true } } }),
   'caio/sDown': L({ tipo: 'chao', estilo: 'E4', fK: 'f1', enc: { prep: 'sb0', impacto: 'sb1', imp2: 'sb2' } }),
   'caio/sFwd': L({ tipo: 'aereo', estilo: 'E4', fK: 'f2', enc: { prep: 'sc0', subida: 'jup', impacto: 'sc1', queda: 'land' } }),
   // AMINU (E5)

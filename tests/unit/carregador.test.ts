@@ -88,7 +88,7 @@ describe('carregarRecursos', () => {
     await expect(carregarRecursos(plano, { leitor })).rejects.toBeInstanceOf(ErroDeAsset);
   });
 
-  it('a silhueta branca só é criada na primeira vez que alguém pede', async () => {
+  it('a silhueta branca é do QUADRO e só é criada na primeira vez que alguém pede', async () => {
     let criados = 0;
     const criarCanvas: CriarCanvas = (largura, altura) => {
       criados++;
@@ -99,11 +99,14 @@ describe('carregarRecursos', () => {
     expect(criados).toBe(0);
     const caio = r.lutadores.get('caio');
     expect(caio).toBeDefined();
-    const s1 = caio?.silhueta();
-    const s2 = caio?.silhueta();
+    const quadro = caio?.poses()['idle0'];
+    expect(quadro).toBeDefined();
+    await caio?.carregarImagens(leitorFalso());
+    const s1 = caio?.silhuetaDe(quadro!);
+    const s2 = caio?.silhuetaDe(quadro!);
     expect(criados).toBe(1);
     expect(s1).toBe(s2);
-    expect(s1?.width).toBe(64);
+    expect([s1?.width, s1?.height]).toEqual([10, 12]); // o quadro idle0 (8x10) + 1 px de margem, não a página de 64x32
   });
 
   it('poses() converte pelo manifestoParaPoses e guarda', async () => {

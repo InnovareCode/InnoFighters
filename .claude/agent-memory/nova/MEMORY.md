@@ -7,6 +7,8 @@
 - [Sons por lutador](project_sons-por-lutador.md) — identidade depois de sonsDoEvento (lock-step), vozFormante, régua calibrada antes do som, D-S1..D-S9
 - [Chefões progressivos, temas e dificuldade](project_chefoes-progressivos.md) — chefão derivado do progresso (sem migração), danoRecebido fora da ficha (NILA), D-A1..D-D5
 - [Trailer de abertura](project_trailer-abertura.md) — Games próprios c/ semente constante, escalação M2, relógio do áudio, ≤2 atlas não fixos, D-T1..D-T8
-- [Revisão do motor de luta](project_revisao-motor-luta.md) — buffer 4 ticks, cancel estrito, scaling c/ proration e piso, especiais 25-35, frame data dos 10, DD-M1..6
+- [Revisão do motor de luta](project_revisao-motor-luta.md) — v2 escrita 23/10: filme nos 33 (opção A, todo filme derruba), piso 1,10×hk, teto 26/40%, flags motorV2, D-V1..D-V9
+- [Estado em 2026-10-23](project_estado-2026-10-23.md) — CAIO/WEI LONG e cn/kr/br ainda do protótipo, orçamentos estourados, PROGRESSO atrasado
+- [Orçamentos revisados (R-8)](project_orcamentos.md) — MiB, título/VS bloqueante, vitrine "preferida", residência por peso, canvas iOS, OR-1..OR-9
 - [NEVE MALUCA (jogo irmão)](project_neve-maluca.md) — snowboard; opção A lateral 2,5D, trig tabelado, hashEsperado de pista, D1–D10
 - [Armadilhas da arte e do protótipo](project_armadilhas-arte.md) — linha 320 de 9 MB, tipX já escalado, chave magenta, FX rosa MIN-JI

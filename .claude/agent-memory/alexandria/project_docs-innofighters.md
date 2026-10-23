@@ -1,28 +1,31 @@
 ---
 name: docs-innofighters
-description: Onde ficam as docs do InnoFighters, convenções de escrita, o que é gerado (não editar à mão) e como conferir referências arquivo:linha contra o HEAD. Use ao documentar qualquer parte do projeto.
+description: Onde ficam as docs do InnoFighters, convenções de escrita, o que é gerado (não editar à mão), o que é status de código vs. doc e como conferir referências arquivo:linha contra o HEAD. Use ao documentar qualquer parte do projeto.
 metadata:
   type: project
 ---
 
-Mapa das docs (atualizado em 2026-10-21, HEAD `73f0074`): `README.md` (raiz, para jogador e dev), `CHANGELOG.md` (raiz, marcos por commit; bloco novo no topo para o que não está commitado), `docs/arquitetura.md` (camadas, contratos C1 a C4, chefões, provocação, sons e temas, esquiva, CSP), `docs/como-adicionar-um-lutador.md` (guia dos lutadores: dados, chefão, guardião, falas, voz, tema). Estado e decisões: `PROGRESSO.md` (bloco mais novo primeiro; seção "Decisões em aberto" e "DECISÕES DO ATLAS (a confirmar pelo dono)"). Specs: `docs/spec-provocacao-prerround-e-vitoria.md` (a seção "Decisões do dono" no topo prevalece), `docs/spec-chefoes-progressivos-temas-e-dificuldade.md`, `docs/spec-sons-por-lutador.md`. Textos que viram código: `docs/textos-provocacao.md` (registro; o fonte é `src/data/provocacoes.pt-BR.ts`), `docs/textos-chefoes.md` (o fonte é `src/render/textos-dos-chefoes.ts`). Balanço gerado: `docs/balanco/` (`resultados.md`, `frame-data.md`, `.json`; a pasta de produção é a COM esquiva). Handoffs da squad: `docs/handoff-<agente>-<fase>.md`; alguns handoffs citados em pedidos não existem (ex.: `handoff-vega-provocacao-p1`): a fonte é a memória do agente em `.claude/agent-memory/<agente>/`.
+Mapa das docs (atualizado em 2026-10-23, HEAD `f5b5fab`): `README.md` (raiz, para jogador e dev), `CHANGELOG.md` (raiz, marcos por commit; bloco novo no topo), `docs/arquitetura.md` (camadas, contratos C1 a C4, chefões, provocação, sons e temas, amostras, trailer, logo, toque, tela cheia, versão, esquiva, CSP), `docs/como-adicionar-um-lutador.md` (guia dos lutadores). Estado e decisões: `PROGRESSO.md` (bloco mais novo primeiro; "Decisões em aberto" e "DECISÕES DO ATLAS"). Specs: `docs/spec-provocacao-prerround-e-vitoria.md`, `docs/spec-chefoes-progressivos-temas-e-dificuldade.md`, `docs/spec-sons-por-lutador.md`, `docs/plano-sons-realistas.md`, `docs/spec-trailer-abertura.md`, `docs/spec-revisao-motor-luta.md` (proposta da Nova, nada implementado). Textos que viram código: `docs/textos-provocacao.md` (registro; o fonte é `src/data/provocacoes.pt-BR.ts`), `docs/textos-chefoes.md`. Balanço gerado: `docs/balanco/` (a pasta de produção é a COM esquiva). Handoffs da squad: `docs/handoff-<agente>-<fase>.md`; alguns citados em pedidos não existem: a fonte é a memória do agente em `.claude/agent-memory/<agente>/`.
 
-**Why:** a doc precisa refletir o código. Em 2026-10-21 o HEAD e a árvore de trabalho divergiram: `REGRAS_PADRAO.chefesDaFila` era `false` no HEAD e `true` na árvore (UI da Lyra não commitada). Handoff antigo dizia o oposto do código. Doc escrita a partir do handoff teria afirmado o que não está no `main`.
+**Why:** a doc precisa refletir o código. Em 2026-10-21, handoff antigo dizia `chefesDaFila: false` enquanto a árvore tinha `true`. Em 2026-10-23 a situação inverteu: a doc dizia "não commitado" para chefões, sons e temas que já estavam no HEAD (commits `bb8dae2`, `1aa7cac`, `497cb33`), e a Opção CINEMÁTICA constava das Opções que o código já não mostrava. Doc escrita a partir de status antigo afirma coisa que não é mais verdade.
 
 **How to apply:**
-- Fonte de verdade: `git show HEAD:<arquivo>` e `git grep -n <padrão> HEAD -- <arquivo>` para `arquivo:linha`. Não confiar em linha de handoff nem de doc antiga: quase todas deslocaram.
-- Conferir refs em lote: para cada `arquivo:linha` do doc, imprimir a linha do HEAD e olhar. Se a linha é comentário, `}` ou vazia, a ref está errada (aconteceu em `tipos.ts:233`, `fighter.ts:92`, `montar.ts:198`, `personagens.ts:26`).
-- Ref de arquivo não commitado (ex.: `roteiros-de-entrada.ts`, `textos-dos-chefoes.ts`): escreva sem linha e marque **(não commitado)**. Não cite linha da árvore de trabalho sem avisar.
-- Símbolo novo estável: prefira nome do símbolo a número de linha quando não conferiu a linha.
-- `CHANGELOG.md`: marco commitado fica como está (histórico), inclusive o "(não commitado)" errado de um marco já commitado: corrigir só o título para o hash. Mudança não commitada entra num bloco novo no topo, com "(não commitado)" no título.
-- Mudança de estado do jogo (ex.: chefão do Arcade) vai para `README` e `arquitetura.md` com o estado do HEAD e a ressalva da árvore de trabalho, lado a lado.
+- Fonte de verdade: `git show HEAD:<arquivo>` e `git grep -n <padrão> HEAD -- <arquivo>` para `arquivo:linha`. Linha de handoff e de doc antiga quase sempre deslocou.
+- Status "não commitado" só vale se `git status -- <arquivo>` mostrar a alteração. Antes de escrever "não commitado" ou "desligado", confira o valor no HEAD (ex.: `git grep -n "IDENTIDADE_SONORA =" HEAD -- src`). Commit de código pode ter entrado antes do commit de doc: procure com `git log --oneline -S "<trecho>" -- <arquivo>`.
+- Preferência de usuário "aposentada" (ex.: CINEMÁTICA, PROVOCAÇÕES) não aparece no menu, mas pode ainda estar no código: leia `persistencia.ts` e `options.ts` antes de descrever o comportamento.
+- Ref de linha em lote: script em scratchpad que resolve nome curto por `grep -E "(^|/)<nome>$"` na lista `git ls-tree -r --name-only HEAD` e imprime `git show HEAD:<arq> | sed -n Np`. Armadilha: a saída do grep traz espaço no fim do nome e o `git show` falha com "fatal: path 'x ' exists on disk" (corrigir com `cand=$(echo $cand)`).
+- Linha que cai em comentário, `}`, linha vazia ou símbolo diferente é ref errada. Refaça com `git grep -n` do símbolo.
+- Ref de arquivo não commitado: escreva sem linha e marque **(não commitado)**. Hoje a árvore de `src/` está limpa, então quase tudo tem linha.
+- `CHANGELOG.md`: marco commitado fica como está (histórico), inclusive um "(não commitado)" errado: corrigir só o título para o hash do commit. Mudança não commitada entra num bloco novo no topo.
+- Valor de flag, número de linha e texto de doc mudam juntos: depois de mudar a flag (`chaves.ts`, `regras.ts`) atualize o trecho que a descreve em `README`, `arquitetura.md`, `PROGRESSO.md` e `CHANGELOG.md`.
 - `docs/prompts/` é gerado por `ferramentas/prompts/montar-prompts.mjs` a partir de `docs/prompts-arte.md`. Não edite à mão.
-- Repositório público: nada de ID de conta, créditos (inclusive "saldo Runway") ou e-mail em docs.
+- Repositório público: nada de ID de conta, valor de saldo (inclusive de geração de imagem), e-mail ou chave em docs. Texto de processo ("informe o saldo") sem valor é tolerado.
 - Português do Brasil, sem emoji nos arquivos de doc.
-- Decisão do dono que muda número: a spec e a proposta NÃO são reescritas. Ganham uma nota "Valor final" no topo e o novo entre parênteses. O que vale é sempre o código.
-- `docs/balanco/README.md` diz qual pasta é a produção (COM esquiva). Antes de citar balanço, leia o cabeçalho do `resultados.md`.
+- Decisão do dono que muda número: a spec e a proposta NÃO são reescritas. Ganham uma nota "Valor final" no topo. O que vale é sempre o código.
+- `docs/balanco/README.md` diz qual pasta é a produção (COM esquiva). Antes de citar balanço, leia o cabeçalho do `resultados.md` (versão de dados, hash das regulares).
 - Working copy com `core.autocrlf=true` e HEAD em LF: o aviso "LF will be replaced by CRLF" é esperado. Não converta à mão.
-- Commit só com autorização do dono (regra do projeto; a Alexandria não commita por conta própria).
-- `npm run balanco -- --completo` grava `docs/balanco/` SEM esquiva; `--completo --esquiva` grava a de produção. Rodadas parciais (`--chefes`, `--sem-regulares`) nunca gravam ali.
+- Commit só com autorização do dono (a Alexandria não commita por conta própria).
+- `npm run balanco -- --completo` grava `docs/balanco/` SEM esquiva; `--completo --esquiva` grava a de produção.
+- Sons e temas estão LIGADOS desde `1aa7cac` (chaves em `src/audio/chaves.ts`). Trailer LIGADO (`Regras.trailer`). `?trailer=0` e `?trailer=P5` só em DEV; `?escuta=1` vale em produção.
 
 Ver também [[feedback-alexandria-verificar]].

@@ -19,3 +19,8 @@
 - [Trailer T0-T3](project_trailer_t0_t3.md) — diretor puro, escalação M2, música com citação; régua dR, orçamento 15, testes de batida, CRLF
 - [Amostras reais (samples CC0)](project_amostras_reais.md) — plano anota/execucao decide, banco lazy, ataque do MP3 (vale), calibracao de ganho, armadilhas
 - [Neve Maluca core M0](project_neve_maluca_core_m0.md) — trig so com + - * / travado por hash, FNV64, varredura de camadas, prova V8 x WebKit, armadilhas
+- [CAIO arte nova](project_caio_arte_nova.md) — fixture do oráculo, ponta do sb2 cai na cabeça, só anim.a[0] vira caixa, trailer P2 muda
+- [V2-1 entrada no hitstop](project_v2_1_entrada_hitstop.md) — motorV2.entradaNoHitstop: guarda input humano no congelamento, prova CPUxCPU, CRLF, hash em dados vivos
+- [Cenários T1 WebP](project_cenarios_t1_webp.md) — cn/kr/br em WebP 1920x1080, q por cenário, fixtures do oráculo, JPG antigos pendentes
+
+- [V2-3c filme no motor](project_v2_3c_filme_motor.md) — motorV2.filmes: execução consumida, ko diferido, prova flag-off em árvore HEAD, armadilhas de teste

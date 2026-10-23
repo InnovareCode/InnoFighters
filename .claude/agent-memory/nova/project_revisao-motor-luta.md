@@ -1,17 +1,28 @@
 ---
 name: project-revisao-motor-luta
-description: Spec de revisão do motor de luta (docs/spec-revisao-motor-luta.md, 2026-10-22) — buffer 4 ticks, cancel estrito, scaling com proration e piso, especiais 25-35, frame data revisado dos 10
+description: Revisão do motor — v1 (2026-10-22) reprovada; v2 escrita em 2026-10-23 (docs/spec-revisao-motor-luta-v2.md) com as 6 decisões do dono, fórmula de dano com piso 1,10×hk e teto 26/40%, filme opção A, flags motorV2, D-V1..D-V9
 metadata:
   type: project
 ---
 
-Em 2026-10-22 entreguei `docs/spec-revisao-motor-luta.md`.
-- **Combos e buffer:** buffer de ataque reduzido de 9 para 4 ticks (sem decaimento durante hitstop e 5 ticks no knockdown). Cancelamento estrito (`cancelWindow: [S, S + A + 2]`), eliminando cancelamento na recuperação tardia. Rotas de cadeia personalizadas por arquétipo (`rotasCombo`).
-- **Scaling de dano e especiais:** especiais reajustados para dano base de 25 a 35 (eram 8 a 20). Novo scaling não-linear (100%, 80%, 65%, 50%, 40%, 30%), starter proration (80% inicial para jabs leves) e piso mínimo garantido de 30% para especiais (evita combo degenerado sem matar a recompensa da barra gasta).
-- **Cinemática e câmera:** super freeze dramático no frame inicial (48 ticks na 1ª vez / 16 ticks curta nas repetições); zoom dinâmico na apresentação (1.20x-1.25x ancorado no atacante em `ease.cubica` com chão fixo); hitstop de impacto estendido (12-14 ticks) no acerto final com tremor direcional.
-- **Frame data dos 10 lutadores:** tabela base revisada (`lp` 3/3/6, `lk` 4/3/8, `hp` 7/4/13, `clp` 3/3/6, `clk` 5/3/8) e mods individuais calibrados em `src/data/lutadores/*.ts`.
-- **Compatibilidade:** flag `revisaoMotor` em `ConfigPartida` (true em prod, false no teste legado) protege o lock-step do oráculo (`luta-fidelidade.test.ts`) e `?expansao=4`.
-- Decisões DD-M1..DD-M6 pendentes de validação pelo dono.
+v2 = `docs/spec-revisao-motor-luta-v2.md` (2026-10-23, HEAD f5b5fab). A v1 ganhou banner "SUBSTITUÍDA". Nada implementado ainda.
 
-**Why:** o motor antigo tinha buffer de 9 ticks e cancel tardio que tornavam a jogabilidade frouxa; os especiais davam menos dano que chutes fortes normais.
-**How to apply:** na implementação (Vega/Lyra), checar se `luta-fidelidade` passa com a flag desligada, atualizar tripwires de dano em `balanco-adversarial.test.ts` e rodar o harness de balanço. Relacionado: [[project-esquiva-cinematica]], [[project-mecanicas-e3]], [[project-chefoes-progressivos]].
+Decisões do dono (23/10) que a v2 segue, e que derrubaram recomendações minhas: filme em TODOS os 33 (eu queria 1 por lutador, R-2);
+tarja fica no INÍCIO (eu queria no acerto, R-3; risco A7 continua). 33 = 10×3 + SARPA 3; 31 acertam, os 2 VADIVU não (D-V1).
+
+Desenho fixado na v2:
+- Filme opção A: 1º contato limpo resolve tudo no tick (dano, energia de 1 acerto, KO/troca de barra), defensor direto em
+  `down/lie` (sem arco de knockdown), atacante em `_lag` com `recuperacao` (vantagem = 48 − recuperacao). Todo filme derruba →
+  combo acaba, "1 filme por combo" sai de graça. Bloqueado/esquivado/armadura = execução consumida (H3, confirmar D-V9).
+- Dados fora de `LutadorDef.especiais` (oráculo dos 4 originais): `src/data/filmes.ts` (motor) e `src/data/roteiros-filme.ts` (UI,
+  poses com `Alt` → encaixe arte atual x nova). 4 roteiros genéricos por tipo para UI e motor não esperarem o Apolo.
+- Dano: `max(hoje×1,25, 1,10×hk)` (projétil ×1,15), teto 26/golpe, TETO_COMBO 40% da vida total, ordem: escala → contra → teto →
+  danoRecebido → teto de combo. Mediana 1,27×. Forçados pelo piso: GARKUWA 2,9×, MARMA 2,75×, MASHI N1 1,8× (D-V2).
+- Flags `ConfigPartida/Regras.motorV2 { entradaNoHitstop, filmes, combos }`; trailer fixa `motorV2: undefined` até V2-6.
+
+**Why:** o dono pediu filme só no acerto, especial mais forte sem exagero, combos próprios, fluidez; a v1 dobrava dano e ignorava
+pow/contra/chefões. **How to apply:** próximas fatias seguem a ordem V2-1/V2-2/V2-3a/V2-3b em paralelo → V2-3c∥V2-3d → V2-4 →
+V2-6 regravação única. Não reabrir R-2/R-3 sem o dono. Achado que corrige a auditoria: golpe que derruba encerra o combo (caído é
+`untouchable`), então `hp → hk → especial` não existe; a cadeia real mais longa é `lp×3 → lk → hp → especial` (pior v2 = 35,1, 38% de 92).
+V2-1 (entrada no hitstop) lê só fontes humanas → não pode mudar f420ce928e06b304 nem os snapshots: isso é critério de aceite.
+Relacionado: [[project-esquiva-cinematica]], [[project-trailer-abertura]], [[project-chefoes-progressivos]], [[project-estado-2026-10-23]].

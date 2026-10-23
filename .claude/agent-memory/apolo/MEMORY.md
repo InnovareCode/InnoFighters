@@ -1,4 +1,4 @@
-- [Curadoria de sprites](project_curadoria_sprites.md) — WEI; novos; BAATAR; NILA f5; ZENON (mapa v2, ZR 3/6, eco da referência); bota como régua
+- [Curadoria de sprites](project_curadoria_sprites.md) — WEI v1 + WR 4/12 (joelho vira ponta na ombrada); NILA f5; ZENON eco; CAIO v1; bota/pé como régua
 - [Prompts no Runway](project_prompts_runway.md) — docs/prompts é gerado (mude fonte+script); 1 referência; SPACING; KO à esquerda; HAYATO A2
 - [Curadoria de cenários](project_curadoria_cenarios.md) — pés a 84,5%; contraste em escala; limpar canto; piso escuro (piso2.ps1)
 - [Logo oficial do dono (raster)](project_logo_oficial.md) — substitui a vetorial; recorte sem halo; WebP 250 KB = q54; RS=2 fixo
@@ -12,4 +12,6 @@
 - [Arte do trailer](project_trailer_arte.md) — frase dos cartões; pico no acerto DA TOMADA; ZENON ≤ 1,10; prévias via diretor real
 - [Sons realistas (samples IA -> CC0)](project_sons_realistas.md) — pacote v1 CC0 0,78 MB validado, não ouvido; 7z via x7z.py; régua; teto ±18 do ganho
 - [NEVE MALUCA (jogo irmão)](project_neve_maluca.md) — v2 LATERAL; CAPI F1 (8/4/0) e F2 (6/4/2) curadas; sem-texto no bloco A; teste do giro; "free hand"
+- [Plano das lacunas 23/10](project_plano_lacunas.md) — filme = rajada atlas + close FILME; cn/kr/br são os mesmos JPG; tarja 'special' cai no idle
+- [Roteiros do filme (V2-3b)](project_roteiros_filme.md) — 4 modelos; f0-f2 = sFire/sDown/sFwd; FILME 2048x1280 = 10 MiB; B sem guarda (eco)
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

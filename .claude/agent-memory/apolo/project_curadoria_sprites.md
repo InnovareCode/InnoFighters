@@ -69,4 +69,23 @@ já desenha os projéteis.
   **Eco da referência também no Runway:** pose parecida com a anexada (SELO = mão estendida, igual à guarda do idle) volta
   como a própria referência (6,1% de máscara, menos que idle x idle). Sempre rodar `difcruz.ps1` da célula contra a anexada;
   diferença menor que a da respiração = eco, reprova mesmo cumprindo o critério escrito.
+- CAIO v1 (2026-10-23, `docs/relatorio-curadoria-caio-v1.md`): nenhuma regeração; f2-v2/f4-v2 limpas por código, f1 por mapa
+  (idle ping-pong, walk6 = apelido do walk5). Scripts em `arte-fonte/ferramentas-curadoria/` (local: `arte-fonte/` é
+  gitignored). **`MODO_PONTA` padrão põe sb1/sb2/sc1 em `mao`**: se o especial é chute/rasteira, pedir exceção `direita`.
+  Rasteira que não "gira": espelhar o quadro do meio (`--espelhar f4:sb2`) vende a meia-volta, 0 crédito. Descalço: a régua
+  é o pé de perfil (faixa de 22 px da base), não a cabeça. Risco colado no pé: fora = regra de cor (B alto) + polígono;
+  véu sobre a pele = repintar por difusão; contorno encoberto = reta com antisserrilhado (desenhar 4x e reduzir).
 - Dragão FX do WEI aprovado (1bcee91a); falta o original em `arte-fonte/lutadores/wei-long/fx/wei-long-fx-v1.png`.
+- WEI LONG novo v1 (2026-10-23, `docs/relatorio-curadoria-wei-long-v1.md`): f1 v2 (C2 = C1 esticada x1,012 = quadro
+  intermediário da respiração; C1/C2/C4 eram o mesmo desenho), f2 v2 (respingos de saliva do hitH, fundidos pelo raioFusao 24),
+  f3 ok, f4: `sc1` saiu SOCO (punho = ponta) e `jkick` joelhada -> folha WR 4x3 (não 3x2: mantém a escala sem fatorFolha).
+  **Armadilha:** o pipeline pega o MAIOR vN da pasta; `wei-long-f4-especiais-v2..v4` antigas ganham da f4 nova. Antes de criar
+  "-v2", listar a pasta. Ferramentas Python (PIL+numpy, `python -P`, sem scipy) no scratchpad; o pipeline real
+  (`node ferramentas/sprites/cli.mjs <id> --folha fN=arq --saida <scratch> --sem-contato`) é a prova mais barata.
+  Andar step-and-drag se prova com pés relativos ao centro de massa (âncora `ax`): pé plantado recua, o outro avança.
+- WEI WR v1 (2026-10-23, §7 do mesmo relatório): 4 de 12 (sc0 L1C1, sc1 L1C3 back slam, jkick L2C3, jpunch L2C4); sb1/clp
+  falharam 2x (cavalo baixo do WEI sai a 88-95% ou com mãos nos joelhos) -> ficam os v1. **Ponta em pose de corpo inteiro:**
+  num golpe de ombro/costas o JOELHO da frente fica 1 px acima da faixa dos pés e vira a ponta `mao` (caixa na canela):
+  medir a ponta no atlas.json, não só "não é punho"; proposta `mao:F` (análogo ao `pe:F`) para a Vega. XOR contra a mestra
+  só vale com a mestra REESCALADA para a altura da célula (sem isso dá 98%). `acharFolha` não lê subpastas: `_arquivo/`
+  esconde versão velha, mas só depois de tirar o original da raiz (fiz só a cópia; tirar depende do dono).

@@ -1,3 +1,5 @@
 - [C1 cinematica/esquiva](project_c1-cinematica-esquiva.md) — Configuracoes.cinematica? ausente por padrao; UI resolve; Regras.esquiva/cinematica
 - [P1 chefoes progressivos](project_p1-chefes-progressivos.md) — chefeDoArcade derivado, chefesDaFila padrao false ate a L1, formatos de vitoria
 - [Progresso v2 / storage](project_progresso-v2.md) — E2: chave inno-fighters-v2, src/meta puro, rollback, v>2/corrompida, saneamento (Orion)
+- [Filmes / dano v2 (V2-3a)](project_filmes-dano-v2.md) — filmes.ts base=efetivo/pow, COUP D'ARRET 14,5, hoje do RESORTE, recuperacao
+- [NEVE MALUCA storage C4](project_neve-maluca-storage.md) — meta/storage.ts no projeto irmao; RegrasSave sem padrao, bug do extras, mutacao em copia

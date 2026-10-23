@@ -1,8 +1,45 @@
 {
-  "_doc": "Excecoes por lutador ao padrao do pipeline (executar.mjs#gerarLutador). layout: 'padrao' (f1..f4, 4x3) | 'chefe' (b1..b9+br, 3x2). celulas: { folha: [12 ou 6 celulas] } troca o mapa de poses da folha (celula = nome | [nome, apelido...] | null = descarta). alturaRef: altura do idle0 no atlas. acolchoar: { folha: {esquerda,direita,topo,base} } px de fundo antes de cortar a borda. fatorFolha: { folha: n } multiplica a escala da folha. folhasExtras: { folha: {grade, celulas} } acrescenta uma folha fora do layout (NILA f5, poses sarpa*). ponta: { pose: 'cima'|'direita'|'mao'|'pe'|'pe:0.75' } sobrescreve MODO_PONTA; pose fora de COM_PONTA tambem ganha ponta.",
+  "_doc": "Excecoes por lutador ao padrao do pipeline (executar.mjs#gerarLutador). layout: 'padrao' (f1..f4, 4x3) | 'chefe' (b1..b9+br, 3x2). celulas: { folha: [12 ou 6 celulas] } troca o mapa de poses da folha (celula = nome | [nome, apelido...] | null = descarta). alturaRef: altura do idle0 no atlas. acolchoar: { folha: {esquerda,direita,topo,base} } px de fundo antes de cortar a borda. fatorFolha: { folha: n } multiplica a escala da folha. folhasExtras: { folha: {grade, celulas} } acrescenta uma folha fora do layout (NILA f5, poses sarpa*). ponta: { pose: 'cima'|'direita'|'mao'|'pe'|'pe:0.75'|'mao:0.5'|'nenhuma' }. arquivos: { folha: 'nome.png' } fixa a versao de uma folha (dentro de folhas/) no lugar da maior -vN sobrescreve MODO_PONTA; pose fora de COM_PONTA tambem ganha ponta.",
   "hayato": {
     "ponta": {
       "sb2": "cima"
+    }
+  },
+  "caio": {
+    "_nota": "Arte nova (mestra + f1..f4, curadoria do Apolo: docs/relatorio-curadoria-caio-v1.md). f1: idle em ida e volta 0>1>2>1 (idle3 e apelido do idle1; L1C4 e descartada por ser duplicata) e walk6 apelido do walk5 (L3C3 reprovada). f2 v2 (sem os tracinhos do hitH) e f4 v2 (sem o risco do sb1): o acharFolha pega o maior -vN. acolchoar f2 topo 6: o cabelo do block encosta no topo. ponta direita: sb1 (rasteira) e sc1 (chute em salto) sao pe, o modo mao (padrao) mede a mao. Sem fatorFolha (pe rigido varia <=2% em f2/f3; f4 so em 2 poses). sb2 SEM ponta ('nenhuma': a perna aponta para tras e o ponto mais a direita seria a cabeca; so o rastro dependia dele, a caixa da rasteira sai do sb1); sem espelhar o sb2 (decisao do dono).",
+    "celulas": {
+      "f1": ["idle0", ["idle1", "idle3"], "idle2", null, "walk0", "walk1", "walk2", "walk3", "walk4", ["walk5", "walk6"], null, "walk7"]
+    },
+    "acolchoar": {
+      "f2": { "topo": 6 }
+    },
+    "ponta": {
+      "sb1": "direita",
+      "sb2": "nenhuma",
+      "sc1": "direita"
+    }
+  },
+  "wei-long": {
+    "_nota": "Arte nova (mestra + f1 v2, f2 v2, f3 v1, f4 v1 + folha de reposicao wr v1; curadoria do Apolo: docs/relatorio-curadoria-wei-long-v1.md). `arquivos` fixa a f4 v1 NOVA: as f4 -v2..-v4 antigas (traje velho, 20/10) ainda estao na raiz de folhas/ e ganhariam como maior -vN. f1: idle em ida e volta 0>1>2>1 (idle3 apelido do idle1, L1C4 descartada). f4: sc0, sc1 e jkick da f4 v1 saem (null) porque a wr traz os novos; sb1 do v1 e fraco (maos nos joelhos) e fica, com a caixa ajustada por dados. wr = folha de 12 celulas: sc0 (L1C1), sc1 (L1C3, back slam), jkick (L2C3) e jpunch (L2C4, palmada aerea). ponta sc1 = mao:0.5 (so a metade de cima do quadro: o joelho da frente ganhava do ombro).",
+    "arquivos": {
+      "f1": "wei-long-f1-base-v2.png",
+      "f2": "wei-long-f2-reacoes-v2.png",
+      "f3": "wei-long-f3-golpes-v1.png",
+      "f4": "wei-long-f4-especiais-v1.png",
+      "wr": "wei-long-wr-v1.png"
+    },
+    "celulas": {
+      "f1": ["idle0", ["idle1", "idle3"], "idle2", null, "walk0", "walk1", "walk2", "walk3", "walk4", "walk5", "walk6", "walk7"],
+      "f4": ["sa0", "sa1", "sa2", "sa3", "sb0", "sb1", "sb2", "sb3", null, null, null, "win"]
+    },
+    "folhasExtras": {
+      "wr": {
+        "grade": [4, 3],
+        "celulas": ["sc0", null, "sc1", null, null, null, "jkick", "jpunch", null, null, null, null]
+      }
+    },
+    "ponta": {
+      "sc1": "mao:0.5"
     }
   },
   "centella": {

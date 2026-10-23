@@ -391,16 +391,16 @@ describe('E5 · poses dos dados × atlas real', () => {
   });
 });
 
-describe('HAYATO e MIN-JI: arte nova (folhas do pipeline) em produção, atlas original só como oráculo', () => {
+describe('HAYATO, MIN-JI, CAIO e WEI LONG: arte nova (folhas do pipeline) em produção, atlas original só como oráculo', () => {
   const nova = montarTodos({ arteReal: true });
-  const DOIS = ['hayato', 'min-ji'] as const;
+  const DOIS = ['hayato', 'min-ji', 'caio', 'wei-long'] as const;
 
   it('atlas de produção: v2 de 2 páginas, 48 quadros canônicos, alturaRef 410 = idle0, K = scale × 255 / 410 (igual ao do protótipo)', () => {
     for (const id of DOIS) {
       const m = lerManifestoC1(id);
       expect(m.versao, id).toBe(2);
       expect(m.imagens, id).toEqual(['atlas-0.webp', 'atlas-1.webp']);
-      expect(Object.keys(m.quadros), id).toHaveLength(48);
+      expect(Object.keys(m.quadros), id).toHaveLength(id === 'wei-long' ? 49 : 48); // WEI LONG: + jpunch (folha de reposição wr)
       expect(m.alturaRef, id).toBe(410);
       expect(m.quadros['idle0']!.h, id).toBe(410);
       expect(nova[id].K, id).toBeCloseTo((LUTADORES[id].scale * 255) / 410, 9);
@@ -428,7 +428,8 @@ describe('HAYATO e MIN-JI: arte nova (folhas do pipeline) em produção, atlas o
           expect(p === ultimo && n !== 'idle0' && n !== 'guard', `${id} ${golpe}: pose "${n}" caiu no último recurso`).toBe(false);
         }
       }
-      expect(ch.alias['jpunch'], id).toBe('jkick');
+      // WEI LONG tem o jpunch no atlas (folha wr): o motor usa o dele, sem a ponte para o jkick
+      expect(ch.alias['jpunch'], id).toBe(id === 'wei-long' ? undefined : 'jkick');
       expect(ch.alias['crouchPunch'], id).toBe('clp');
       expect(ch.legacy, id).toBe(false);
     }
@@ -437,6 +438,7 @@ describe('HAYATO e MIN-JI: arte nova (folhas do pipeline) em produção, atlas o
   it('os golpes ativos têm ponta (tipX/tipY) e a caixa de cada golpe sai do desenho novo: alcance > 0 e dentro de 2x o do protótipo', () => {
     for (const id of DOIS) {
       for (const p of ['lp1', 'hp1', 'lk1', 'hk1', 'clp', 'clk', 'sweep', 'upper', 'sa1', 'sb1', 'sb2', 'sc1', 'jkick']) {
+        if (id === 'caio' && p === 'sb2') continue; // CAIO sb2: ponta 'nenhuma' (lutadores.json); só o rastro dependia dela
         expect(nova[id].pd[p]?.tipX, `${id} ${p}`).toBeTypeOf('number');
         expect(nova[id].pd[p]?.tipY, `${id} ${p}`).toBeTypeOf('number');
       }
@@ -485,9 +487,8 @@ describe('E5 · cenários', () => {
     }
   });
 
-  it('o nome do arquivo novo é cenario-<sigla>.webp; cn, kr e br seguem os .jpg do protótipo', () => {
-    for (const id of ['jp', 'ng', 'mx', 'fr', 'in', 'mn'] as const) expect(CENARIOS[id].arquivo).toBe(`assets/cenarios/cenario-${id}.webp`);
-    for (const id of ['cn', 'kr', 'br'] as const) expect(CENARIOS[id].arquivo).toBe(`assets/cenarios/${id}.jpg`);
+  it('o nome do arquivo é cenario-<sigla>.webp nos dez (cn, kr e br trocaram o .jpg do protótipo na T1)', () => {
+    for (const id of ['jp', 'ng', 'mx', 'fr', 'in', 'mn', 'gr', 'cn', 'kr', 'br'] as const) expect(CENARIOS[id].arquivo).toBe(`assets/cenarios/cenario-${id}.webp`);
   });
 
   it('os pés ficam a 84,5% da altura da imagem em todos (não os 87% da tela) e a constante bate com a render', () => {

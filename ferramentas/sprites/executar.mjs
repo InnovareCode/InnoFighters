@@ -62,6 +62,19 @@ export function acharFolha(raiz, id, folha) {
   return melhor ? join(dir, melhor) : null;
 }
 
+/**
+ * `arquivos` em lutadores.json: { folha: "nome.png" } fixa a versão de uma folha (dentro de folhas/), no lugar da maior -vN. Serve
+ * quando a maior é de OUTRA geração (WEI LONG: as f4 -v2..-v4 antigas, do traje velho, ganhariam da f4 -v1 nova). Arquivo que não
+ * existe é erro, não "pula a folha".
+ */
+function arquivoFixado(raiz, id, folha, excecoes) {
+  const nome = excecoes.arquivos?.[folha];
+  if (!nome) return null;
+  const caminho = join(raiz, 'arte-fonte', 'lutadores', id, 'folhas', nome);
+  if (!existsSync(caminho)) throw new Error(`lutadores.json: arquivos.${folha} = "${nome}" nao existe em arte-fonte/lutadores/${id}/folhas/`);
+  return caminho;
+}
+
 async function lerRgb(arquivo) {
   const { data, info } = await sharp(arquivo).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   return { largura: info.width, altura: info.height, dados: new Uint8Array(data.buffer, data.byteOffset, data.length) };
@@ -166,7 +179,7 @@ export async function reamostrar(q, escala) {
  *
  * Exceções por lutador (ferramentas/sprites/lutadores.json): `layout` ('padrao' 4x3 | 'chefe' 3x2), `celulas` (troca
  * as células de uma folha), `alturaRef`, `acolchoar` (por folha), `fatorFolha` (multiplicador de escala por folha, para
- * uma folha que o gerador desenhou em outro tamanho) e `ponta` (modo por pose; pose fora de COM_PONTA entra também).
+ * uma folha que o gerador desenhou em outro tamanho) e `ponta` (modo por pose; pose fora de COM_PONTA entra também; 'nenhuma' = quadro sem ponta).
  */
 export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, espelhar = {}, opcoes = {}, excecoes: excecoesDadas, log = () => {} }) {
   const excecoes = excecoesDadas ?? lerExcecoes(id); // `excecoes` explícito = teste; senão o lutadores.json
@@ -180,7 +193,7 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
   for (const f of usar) {
     const def = layout.folhas[f];
     if (!def) throw new Error(`folha desconhecida para ${id}: ${f} (as dele: ${layout.ids.join(', ')})`);
-    const arquivo = arquivos[f] ?? acharFolha(raiz, id, f);
+    const arquivo = arquivos[f] ?? arquivoFixado(raiz, id, f, excecoes) ?? acharFolha(raiz, id, f);
     if (!arquivo) {
       relatorio.avisos.push(`folha ${f}: nenhum arquivo ${id}-${f}-*-vN.png em arte-fonte/lutadores/${id}/folhas/ (pulada)`);
       continue;
@@ -236,8 +249,15 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
     if (comPonta.has(nome)) {
       const modo = excecoes.ponta?.[nome] ?? MODO_PONTA[nome] ?? 'direita';
       q.modoPonta = modo;
-      if (modo === 'cima') q.ponta = pontaCima(q.rgba, q.largura, q.altura);
+      if (modo === 'nenhuma') { /* sem ponta: o quadro nao ancora rastro (ver poses.mjs) e nao conta como "sem ponta" no aviso */ }
+      else if (modo === 'cima') q.ponta = pontaCima(q.rgba, q.largura, q.altura);
       else if (modo === 'mao') q.ponta = pontaDireita(q.rgba, q.largura, q.altura, { yMax: q.altura - Math.round(FAIXA_DOS_PES * alturaRef) });
+      else if (/^mao:\d*\.?\d+$/.test(modo)) {
+        // 'mao:0.5' = só as linhas ACIMA de 50% da altura do quadro (ombrada: o joelho da frente, abaixo disso, ganhava do ombro)
+        const fracao = Number(modo.split(':')[1]);
+        if (!(fracao > 0 && fracao <= 1)) throw new Error(`ponta ${nome}: "${modo}" precisa de uma fração entre 0 e 1`);
+        q.ponta = pontaDireita(q.rgba, q.largura, q.altura, { yMax: Math.max(1, Math.round(fracao * q.altura)) });
+      }
       else if (/^pe(:\d*\.?\d+)?$/.test(modo)) {
         // 'pe' = abaixo de FRACAO_PE da altura; 'pe:0.75' = abaixo de 75% (a bota quando a mao tambem fica na metade de baixo)
         const fracao = modo.includes(':') ? Number(modo.split(':')[1]) : FRACAO_PE;
@@ -311,7 +331,7 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
   // relatório e conferências de contrato
   const presentes = Object.keys(quadros);
   const faltandoMinimas = MINIMAS.filter((n) => !quadros[n]);
-  const faltandoPonta = [...comPonta].filter((n) => finais[n] && !finais[n].ponta);
+  const faltandoPonta = [...comPonta].filter((n) => finais[n] && !finais[n].ponta && finais[n].modoPonta !== 'nenhuma');
   const semFolhaCompleta = usar.length === layout.ids.length && Object.keys(relatorio.folhas).length === layout.ids.length;
   if (semFolhaCompleta && faltandoMinimas.length > 0) relatorio.avisos.push(`faltam poses minimas: ${faltandoMinimas.join(', ')}`);
   if (faltandoPonta.length > 0) relatorio.avisos.push(`sem ponta: ${faltandoPonta.join(', ')}`);

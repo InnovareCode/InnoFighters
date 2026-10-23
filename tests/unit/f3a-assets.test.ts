@@ -140,12 +140,12 @@ describe('BAATAR (chefão)', () => {
   });
 });
 
-describe('cenários novos (public/assets/cenarios)', () => {
-  it.each(['jp', 'ng', 'mx', 'fr', 'in', 'mn'] as const)('%s: WebP 1920x1080, leve para celular, no caminho que data/cenarios.ts registra', (id) => {
+describe('cenários (public/assets/cenarios)', () => {
+  it.each(['jp', 'ng', 'mx', 'fr', 'in', 'mn', 'gr', 'cn', 'kr', 'br'] as const)('%s: WebP 1920x1080, <= 250 KiB (meta 3 do orçamento), no caminho que data/cenarios.ts registra', (id) => {
     const arquivo = CENARIOS[id].arquivo;
     expect(arquivo).toBe(`assets/cenarios/cenario-${id}.webp`);
     const bytes = readFileSync(caminho(`public/${arquivo}`));
     expect(ferramenta.dimensoesWebp(bytes)).toEqual([1920, 1080]);
-    expect(bytes.length).toBeLessThan(400 * 1024);
+    expect(bytes.length).toBeLessThanOrEqual(250 * 1024);
   });
 });

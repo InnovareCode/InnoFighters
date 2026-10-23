@@ -42,7 +42,7 @@ test.describe('retratos e carga de arte', () => {
     expect(atlasV1De(urls)).toEqual(['caio', 'wei-long']); // só os dois originais que seguem em v1
     for (const id of ['hayato', 'min-ji']) expect(paginasDe(urls, id), id).toEqual(['atlas-0.webp', 'atlas-1.webp']); // arte nova: 2 páginas, uma vez cada
     for (const id of ['aminu', 'centella', 'camille', 'nila', 'baatar', 'zenon']) expect(paginasDe(urls, id), id).toEqual([]); // nenhuma página dos novos no boot (o ZENON só na luta contra ele)
-    expect(cenariosDe(urls)).toEqual(['br.jpg', 'cenario-jp.webp', 'cn.jpg', 'kr.jpg']); // os 4 da vitrine; os cenários novos só sob demanda
+    expect(cenariosDe(urls)).toEqual(['cenario-br.webp', 'cenario-cn.webp', 'cenario-jp.webp', 'cenario-kr.webp']); // os 4 da vitrine; os cenários novos só sob demanda
     const r = await hook(page, '(h) => { const m = h.mundo(); return Object.fromEntries(Object.entries(m.elenco).map(([id, e]) => [id, e.arte.temRetrato])); }');
     expect(r).toEqual({ hayato: true, 'wei-long': true, 'min-ji': true, caio: true, aminu: true, centella: true, camille: true, nila: true, baatar: true, zenon: true });
   });
@@ -86,7 +86,7 @@ test.describe('retratos e carga de arte', () => {
     await esperarCena(page, 'vs');
     await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 20_000 });
     // o VS pediu o cenário da casa do rival (WEI LONG = cn) e nada mais
-    expect(cenariosDe(urls)).toEqual(['cenario-jp.webp', 'cn.jpg']);
+    expect(cenariosDe(urls)).toEqual(['cenario-cn.webp', 'cenario-jp.webp']);
     expect(atlasDe(urls)).toEqual(['hayato', 'wei-long']);
     await page.waitForTimeout(700);
     await page.keyboard.press('Enter');

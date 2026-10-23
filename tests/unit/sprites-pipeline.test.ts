@@ -251,6 +251,21 @@ describe('pipeline sintético 3x2 (layout do chefão)', () => {
     expect(m.retrato).toMatchObject({ arquivo: 'retrato.png' });
   });
 
+  it('gerarLutador: `arquivos` em lutadores.json fixa a versão da folha (a maior -vN, de outra geração, não ganha); arquivo ausente é erro', async () => {
+    const arquivo = await folha3x2('baatar-t-b1-v1.png');
+    const raiz = join(tmp, 'raiz-arquivos');
+    const dir = join(raiz, 'arte-fonte', 'lutadores', 'fix-teste', 'folhas');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'fix-teste-b1-v1.png'), readFileSync(arquivo));
+    writeFileSync(join(dir, 'fix-teste-b1-v9.png'), 'isto nao e uma imagem'); // a maior versão: pegaria e quebraria
+    const saida = join(tmp, 'saida-fix');
+    await executar.gerarLutador({ raiz, id: 'fix-teste', folhas: ['b1'], saida, excecoes: { layout: 'chefe', arquivos: { b1: 'fix-teste-b1-v1.png' } } });
+    expect(existsSync(join(saida, 'atlas.json'))).toBe(true);
+    await expect(
+      executar.gerarLutador({ raiz, id: 'fix-teste', folhas: ['b1'], saida: join(tmp, 'saida-fix2'), excecoes: { layout: 'chefe', arquivos: { b1: 'nao-existe.png' } } }),
+    ).rejects.toThrow(/nao existe/);
+  });
+
   it('gerarLutador: pose em `ponta` fora de COM_PONTA ganha ponta; folha desconhecida é erro', async () => {
     const arquivo = await folha3x2('baatar-t-b1-v1.png');
     const saida = join(tmp, 'saida-chefe-ponta');
@@ -261,6 +276,28 @@ describe('pipeline sintético 3x2 (layout do chefão)', () => {
     const m = validarManifesto(JSON.parse(readFileSync(join(saida, 'atlas.json'), 'utf8')), 'x');
     expect(m.quadros['walk1']!.ponta).toBeDefined();
     expect(m.quadros['walk0']!.ponta).toBeUndefined();
+    // modo 'nenhuma': o quadro fica SEM ponta (CAIO sb2) e não vira aviso "sem ponta"; o vizinho com modo normal segue com ponta
+    const saidaN = join(tmp, 'saida-chefe-ponta-nenhuma');
+    const rn = await executar.gerarLutador({
+      raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida: saidaN, arquivos: { b1: arquivo },
+      excecoes: { layout: 'chefe', ponta: { walk0: 'nenhuma', walk1: 'direita' } },
+    });
+    const mn = validarManifesto(JSON.parse(readFileSync(join(saidaN, 'atlas.json'), 'utf8')), 'x');
+    expect(mn.quadros['walk0']!.ponta).toBeUndefined();
+    expect(mn.quadros['walk1']!.ponta).toBeDefined();
+    expect(rn.relatorio.avisos.some((x: string) => /sem ponta/.test(x))).toBe(false);
+    // modo 'mao:F': só olha as linhas acima da fração F do quadro; fração inválida é erro
+    const saidaM = join(tmp, 'saida-chefe-ponta-mao-f');
+    const rm = await executar.gerarLutador({
+      raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida: saidaM, arquivos: { b1: arquivo },
+      excecoes: { layout: 'chefe', ponta: { walk0: 'mao:0.5' } },
+    });
+    const mm = validarManifesto(JSON.parse(readFileSync(join(saidaM, 'atlas.json'), 'utf8')), 'x');
+    expect(mm.quadros['walk0']!.ponta![1]).toBeLessThanOrEqual(mm.quadros['walk0']!.h * 0.5);
+    expect(rm.relatorio.avisos.some((x: string) => /sem ponta/.test(x))).toBe(false);
+    await expect(
+      executar.gerarLutador({ raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida: saidaM, arquivos: { b1: arquivo }, excecoes: { layout: 'chefe', ponta: { walk0: 'mao:2' } } }),
+    ).rejects.toThrow(/fração entre 0 e 1/);
     await expect(
       executar.gerarLutador({ raiz: tmp, id: 'chefe-teste', folhas: ['zz'], saida, arquivos: {}, excecoes: { layout: 'chefe' } }),
     ).rejects.toThrow(/folha desconhecida/);

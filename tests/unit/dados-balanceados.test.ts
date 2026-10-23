@@ -48,13 +48,18 @@ describe('E6b: oráculo (protótipo) x produção (balanceada)', () => {
       const prod = LUTADORES[id];
       expect(orig, id).toBeDefined();
       if (!orig) continue;
-      expect(Object.keys(prod.mods).sort(), `${id}: mesmos golpes ajustados`).toEqual(Object.keys(orig.mods).sort());
+      // CAIO e WEI LONG: `rm` e `bh` foram recalibrados pela arte nova (alcance de antes com poses novas): provado em caio-arte-calibrada.test.ts e wei-arte-calibrada.test.ts.
+      const arte = id === 'caio' || id === 'wei-long' ? ['rm', 'bh'] : [];
+      const limpa = (m: Record<string, unknown>): Record<string, unknown> =>
+        Object.fromEntries(Object.entries(m).filter(([k]) => k !== 'dmg' && !arte.includes(k)));
+      const golpesDe = (mods: Record<string, Record<string, unknown>>): string[] =>
+        Object.entries(mods).filter(([, m]) => arte.length === 0 || Object.keys(limpa(m)).length > 0).map(([g]) => g).sort();
+      expect(golpesDe(prod.mods as Record<string, Record<string, unknown>>), `${id}: mesmos golpes ajustados`).toEqual(
+        golpesDe(orig.mods as Record<string, Record<string, unknown>>),
+      );
       for (const [golpe, origMod] of Object.entries(orig.mods)) {
-        const { dmg: _d1, ...origResto } = origMod as Record<string, unknown>;
-        const { dmg: _d2, ...prodResto } = (prod.mods as Record<string, Record<string, unknown>>)[golpe] ?? {};
-        void _d1;
-        void _d2;
-        expect(prodResto, `${id}.${golpe}`).toEqual(origResto);
+        const prodMod = (prod.mods as Record<string, Record<string, unknown>>)[golpe] ?? {};
+        expect(limpa(prodMod), `${id}.${golpe}`).toEqual(limpa(origMod as Record<string, unknown>));
       }
     }
   });
@@ -64,6 +69,5 @@ describe('E6b: oráculo (protótipo) x produção (balanceada)', () => {
     expect([mods.lp?.dmg, mods.lk?.dmg, mods.hp?.dmg, mods.hk?.dmg, mods.chp?.dmg, mods.chk?.dmg]).toEqual([4.5, 6, 10, 14, 10, 9]);
     expect([mods.clp?.dmg, mods.jhp?.dmg, mods.jhk?.dmg]).toEqual([5, 11, 13]);
     expect(LUTADORES['min-ji'].mods).toEqual(DADOS_ORIGINAIS['min-ji']?.mods);
-    expect(LUTADORES['caio'].mods).toEqual(DADOS_ORIGINAIS['caio']?.mods);
   });
 });

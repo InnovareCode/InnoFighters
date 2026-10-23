@@ -28,8 +28,8 @@ const T: Tabela = {
     sFwd: { quadro: 'sc1' },
   },
   'wei-long': {
-    sFire: { quadro: 'special' },
-    sDown: { quadro: 'sb1', entrada: 'cima' },
+    sFire: { quadro: 'sa2' },
+    sDown: { quadro: 'sb0', entrada: 'cima' },
     sFwd: { quadro: 'sc1' },
   },
   'min-ji': {
@@ -38,7 +38,7 @@ const T: Tabela = {
     sFwd: { quadro: 'sc1' },
   },
   caio: {
-    sFire: { quadro: 'special' },
+    sFire: { quadro: 'sa2' },
     sDown: { quadro: 'sb1' },
     sFwd: { quadro: 'sc1', entrada: 'cima' },
   },

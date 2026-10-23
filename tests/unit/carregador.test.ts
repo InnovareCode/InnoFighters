@@ -39,15 +39,15 @@ function leitorFalso(opcoes: { falharEm?: string; tamanhoImagem?: [number, numbe
   };
 }
 
-const plano = { baseUrl: '/', lutadores: ['caio', 'min-ji'], cenarios: [{ id: 'br', arquivo: 'assets/cenarios/br.jpg' }] };
+const plano = { baseUrl: '/', lutadores: ['caio', 'min-ji'], cenarios: [{ id: 'br', arquivo: 'assets/cenarios/cenario-br.webp' }] };
 
 describe('urls do plano (PLANO.md 4.2)', () => {
   it('monta caminhos com e sem barra final', () => {
     expect(urlManifesto('/', 'caio')).toBe('/assets/lutadores/caio/atlas.json');
     expect(urlManifesto('/jogo', 'caio')).toBe('/jogo/assets/lutadores/caio/atlas.json');
     expect(urlAtlas('/', 'caio', 'atlas.webp')).toBe('/assets/lutadores/caio/atlas.webp');
-    expect(urlCenario('/', 'assets/cenarios/br.jpg')).toBe('/assets/cenarios/br.jpg');
-    expect(urlCenario('/jogo/', '/assets/cenarios/br.jpg')).toBe('/jogo/assets/cenarios/br.jpg');
+    expect(urlCenario('/', 'assets/cenarios/cenario-br.webp')).toBe('/assets/cenarios/cenario-br.webp');
+    expect(urlCenario('/jogo/', '/assets/cenarios/cenario-br.webp')).toBe('/jogo/assets/cenarios/cenario-br.webp');
   });
   it('conta manifesto + imagem por lutador e uma imagem por cenário', () => {
     expect(totalDeArquivos(plano)).toBe(5);
@@ -74,8 +74,8 @@ describe('carregarRecursos', () => {
   });
 
   it('falha de um arquivo rejeita dizendo qual', async () => {
-    const leitor = leitorFalso({ falharEm: '/assets/cenarios/br.jpg' });
-    await expect(carregarRecursos(plano, { leitor })).rejects.toThrow('cenarios/br.jpg');
+    const leitor = leitorFalso({ falharEm: '/assets/cenarios/cenario-br.webp' });
+    await expect(carregarRecursos(plano, { leitor })).rejects.toThrow('cenarios/cenario-br.webp');
   });
 
   it('imagem de tamanho diferente do manifesto é rejeitada', async () => {

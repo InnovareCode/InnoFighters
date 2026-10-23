@@ -21,7 +21,7 @@ const ids = Object.entries(ferramenta.LUTADORES);
  * atlas v2 de 2 páginas); o atlas original deles ficou em tests/fixtures/atlas-prototipo/<id>/ e é ele que vale aqui.
  */
 const pastaDoAtlas = (id: string): string =>
-  ['hayato', 'min-ji'].includes(id) ? `tests/fixtures/atlas-prototipo/${id}` : `public/assets/lutadores/${id}`;
+  ['hayato', 'min-ji', 'caio', 'wei-long'].includes(id) ? `tests/fixtures/atlas-prototipo/${id}` : `public/assets/lutadores/${id}`;
 const manifesto = (id: string): ManifestoAtlas =>
   JSON.parse(readFileSync(caminho(`${pastaDoAtlas(id)}/atlas.json`), 'utf8')) as ManifestoAtlas;
 
@@ -42,9 +42,9 @@ describe('C1 — atlas.json extraído do protótipo', () => {
     expect(m.alturaRef).toBe(m.quadros['idle0']?.h);
   });
 
-  it('cenários do protótipo que seguem em uso existem e são JPEG (o jp virou arte nova: cenario-jp.webp, ver f3a-assets.test.ts)', () => {
-    for (const id of Object.values(ferramenta.CENARIOS).filter((c) => c !== 'jp')) {
-      const arq = caminho(`public/assets/cenarios/${id}.jpg`);
+  it('cenários do protótipo (oráculo da fidelidade) existem como fixture JPEG; em produção os quatro são WebP (ver f3a-assets.test.ts)', () => {
+    for (const id of Object.values(ferramenta.CENARIOS)) {
+      const arq = caminho(`tests/fixtures/${id}-prototipo.jpg`);
       expect(existsSync(arq), id).toBe(true);
       expect([...readFileSync(arq).subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
     }

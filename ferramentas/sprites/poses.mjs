@@ -31,6 +31,12 @@ export const IDS_FOLHA = Object.keys(FOLHAS);
  *  - 'direita' = ponto mais à direita da figura inteira (chutes, rasteira, chute em salto: o pé É a ponta).
  *  - 'pe'      = ponto mais à direita abaixo de FRACAO_PE da altura (a bota, quando a mão passa dela)
  *  - 'cima'    = ponto mais alto (golpe antiaéreo: o punho sobe e o mais à direita seria um pé).
+ *  - 'mao:F'   = como 'mao', mas só olha as linhas acima da fração F da altura do QUADRO (`mao:0.5` = metade de cima). Para
+ *                a ombrada (WEI LONG `sc1`): o joelho da frente, a 74% da altura, ganhava do ombro e a caixa nascia na canela.
+ *  - 'nenhuma' = o quadro fica SEM ponta (só por exceção em lutadores.json). Nenhum modo acerta a ponta e o desenho não tem
+ *                onde ancorar o rastro: sem `ponta`, o rastro não é desenhado nesse quadro (`rastro-golpe.ts`). Só serve a
+ *                quadro que não decide a caixa de acerto (a caixa sai do PRIMEIRO quadro ativo da animação, `montar.ts`):
+ *                CAIO `sb2` (a perna estendida aponta para trás, o ponto mais à direita seria a cabeça).
  * Por lutador, a exceção mora em ferramentas/sprites/lutadores.json (ex.: o sb2 do HAYATO é um uppercut = 'cima').
  */
 export const MODO_PONTA = {

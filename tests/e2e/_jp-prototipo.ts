@@ -3,14 +3,19 @@ import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { BrowserContext, Page } from '@playwright/test';
 
+const CENARIOS_DO_PROTOTIPO = ['jp', 'cn', 'kr', 'br'] as const;
+
 /**
  * Os testes de fidelidade comparam o jogo com o PROTÓTIPO, pixel a pixel. Desde a F3a o cenário do Japão do jogo é arte
- * nova (`cenario-jp.webp`); o protótipo continua desenhando o antigo (guardado em tests/fixtures/jp-prototipo.jpg).
- * Para o oráculo valer, estas páginas recebem o jp antigo no lugar do novo. Chamar ANTES do `goto`.
+ * nova (`cenario-jp.webp`) e, desde a T1 do orçamento (23/10/2026), os de cn, kr e br também (`cenario-<sigla>.webp`); o protótipo
+ * continua desenhando os antigos (guardados em tests/fixtures/<sigla>-prototipo.jpg, bytes idênticos aos do protótipo).
+ * Para o oráculo valer, estas páginas recebem o antigo no lugar do novo, nos quatro. Chamar ANTES do `goto`.
  */
 export async function usarJpDoPrototipo(alvo: Page | BrowserContext): Promise<void> {
-  const corpo = readFileSync(resolve('tests/fixtures/jp-prototipo.jpg'));
-  await alvo.route('**/assets/cenarios/cenario-jp.webp', (rota) => rota.fulfill({ body: corpo, contentType: 'image/jpeg' }));
+  for (const id of CENARIOS_DO_PROTOTIPO) {
+    const corpo = readFileSync(resolve(`tests/fixtures/${id}-prototipo.jpg`));
+    await alvo.route(`**/assets/cenarios/cenario-${id}.webp`, (rota) => rota.fulfill({ body: corpo, contentType: 'image/jpeg' }));
+  }
 }
 
 const ORIGINAIS = ['hayato', 'min-ji'] as const;
@@ -34,7 +39,7 @@ export async function usarOriginaisDoPrototipo(alvo: Page | BrowserContext): Pro
   }
 }
 
-/** Ambiente completo do oráculo: cenário antigo do Japão e atlas originais de HAYATO e MIN-JI. */
+/** Ambiente completo do oráculo: cenários antigos (jp, cn, kr, br) e atlas originais de HAYATO e MIN-JI. */
 export async function usarArteDoPrototipo(alvo: Page | BrowserContext): Promise<void> {
   await usarJpDoPrototipo(alvo);
   await usarOriginaisDoPrototipo(alvo);

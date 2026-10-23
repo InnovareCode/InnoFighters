@@ -34,7 +34,7 @@ export function lerManifesto(id: string): ManifestoAtlas {
  * o HAYATO e a MIN-JI sobre o atlas ORIGINAL, guardado em `tests/fixtures/atlas-prototipo/<id>/` (só o `atlas.json` entra aqui;
  * o `atlas.webp` é para os e2e de fidelidade, que a Lyra aponta para ele). `arteReal: true` monta pelo atlas de produção.
  */
-export const ORIGINAIS_COM_ATLAS_DE_PROTOTIPO: readonly IdLutador[] = ['hayato', 'min-ji'];
+export const ORIGINAIS_COM_ATLAS_DE_PROTOTIPO: readonly IdLutador[] = ['hayato', 'min-ji', 'caio', 'wei-long'];
 
 /**
  * Dados ORIGINAIS dos 4 do protótipo (hp, pow, mods): `tests/fixtures/dados-prototipo/originais.json`. Desde a E6b a produção
@@ -42,13 +42,14 @@ export const ORIGINAIS_COM_ATLAS_DE_PROTOTIPO: readonly IdLutador[] = ['hayato',
  * segue comparando o motor com o protótipo montando os 4 com ESTES números. Lutadores fora do arquivo (os 5 novos) não têm
  * oráculo: usam a definição de produção.
  */
-export type DadosOriginais = Record<string, { hp: number; pow: number; mods: ModsGolpes }>;
+export type DadosOriginais = Record<string, { hp: number; pow: number; mods: ModsGolpes; especiais?: LutadorDef['especiais'] }>;
 export const DADOS_ORIGINAIS: DadosOriginais = JSON.parse(readFileSync(caminho('tests/fixtures/dados-prototipo/originais.json'), 'utf8')) as DadosOriginais;
 
 /** A definição do lutador com os números do protótipo por cima (se ele tem oráculo); senão, a de produção. */
 export function defDoOraculo(id: IdLutador): LutadorDef {
   const o = DADOS_ORIGINAIS[id];
-  return o ? { ...LUTADORES[id], hp: o.hp, pow: o.pow, mods: o.mods } : LUTADORES[id];
+  // `especiais` só vem da fixture para quem teve o alcance recalibrado pela arte nova (CAIO: rm/bh de sDown e sFwd na produção).
+  return o ? { ...LUTADORES[id], hp: o.hp, pow: o.pow, mods: o.mods, ...(o.especiais ? { especiais: o.especiais } : {}) } : LUTADORES[id];
 }
 
 function manifestoParaMontar(id: IdLutador, arteReal: boolean): ManifestoAtlas {

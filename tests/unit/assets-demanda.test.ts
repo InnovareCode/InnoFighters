@@ -192,7 +192,7 @@ describe('GerenciadorDeArte (carga sob demanda)', () => {
   async function ger(opcoes: { fixos?: string[]; limite?: number } = {}) {
     const L = leitor({ manifestos: Object.fromEntries(ids.map((i) => [i, v1(i)])) });
     const atlas = await carregarManifestos('/', ids, L.l, criarCanvasFalso);
-    const cenarios = new Map([['jp', { id: 'jp', arquivo: 'assets/cenarios/jp.jpg' }], ['br', { id: 'br', arquivo: 'assets/cenarios/br.jpg' }]]);
+    const cenarios = new Map([['jp', { id: 'jp', arquivo: 'assets/cenarios/jp.jpg' }], ['br', { id: 'br', arquivo: 'assets/cenarios/cenario-br.webp' }]]);
     const g = new GerenciadorDeArte({ leitor: L.l, baseUrl: '/', atlas, cenarios, fixos: opcoes.fixos ?? [], cenariosFixos: ['jp'], limiteResidentes: opcoes.limite ?? 2 });
     return { g, L, atlas };
   }
@@ -248,7 +248,7 @@ describe('GerenciadorDeArte (carga sob demanda)', () => {
     const { g, L, atlas } = await ger();
     g.prebuscar({ lutadores: ['b'], cenarios: ['br'] });
     await new Promise((r) => setTimeout(r, 5));
-    expect(L.prebuscas).toEqual(['/assets/lutadores/b/atlas.webp', '/assets/cenarios/br.jpg']);
+    expect(L.prebuscas).toEqual(['/assets/lutadores/b/atlas.webp', '/assets/cenarios/cenario-br.webp']);
     expect(atlas.get('b')?.pronta).toBe(false);
     expect(g.cenarios.has('br')).toBe(false);
   });

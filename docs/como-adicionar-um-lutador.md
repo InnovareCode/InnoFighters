@@ -56,8 +56,9 @@ Pasta: `arte-fonte/lutadores/<id>/folhas/`. Fica fora do git (decisão D5).
 | `alturaRef` | altura do idle0 no atlas (padrão 410) | BAATAR: `525`; ZENON: `558` |
 | `fatorFolha` | multiplica a escala de uma folha | NILA: `{"f2": 1.2, "f3": 1.15, "f4": 1.1}` |
 | `folhasExtras` | folha fora do layout | NILA f5, grade 4x3, poses `sarpa*` |
-| `ponta` | modo da ponta do golpe por pose (`cima`, `direita`, `mao`, `pe`, `pe:0.75`) | ZENON: `"lk1": "mao", "upper": "mao", "sb1": "cima", "decreto1": "mao"` |
+| `ponta` | modo da ponta do golpe por pose (`cima`, `direita`, `mao`, `mao:0.5`, `pe`, `pe:0.75`, `nenhuma`). `mao:F` é o `mao` olhando só as linhas acima da fração F do quadro (WEI LONG `sc1` "mao:0.5": a ombrada tem o joelho da frente abaixo do ombro e ele ganhava). `nenhuma` deixa o quadro SEM ponta: não há rastro nele e não vira aviso "sem ponta". Só serve a quadro que não decide a caixa (a caixa sai do PRIMEIRO quadro ativo da animação) | ZENON: `"lk1": "mao", "upper": "mao", "sb1": "cima", "decreto1": "mao"`; CAIO: `"sb2": "nenhuma"` (a perna aponta para trás, o ponto mais à direita seria a cabeça) |
 | `acolchoar` | pixels de fundo por borda antes do corte | BAATAR b9: `{"esquerda": 16}`; ZENON s8: `{"s8": {"direita": 16}}` |
+| `arquivos` | `{ folha: "nome.png" }` fixa a versão de uma folha (dentro de `folhas/`) no lugar da maior `-vN`. Arquivo inexistente é erro. Serve quando a maior versão é de OUTRA geração | WEI LONG: `{"f4": "wei-long-f4-especiais-v1.png"}` (as f4 `-v2..-v4` antigas, do traje velho, ganhariam) |
 
 ## Passo 4: gerar o atlas (`npm run sprites`)
 

@@ -10,6 +10,7 @@ import { chefeDaLeitura } from '../../render/aura-chefe';
 import { APRESENTACAO, falaDoChefe, roteiroDe } from '../../render/apresentacao-lutadores';
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
+import { Fluidez } from '../../render/fluidez';
 import { desenharLegenda } from '../../render/legenda';
 import { MoedasDeDreno } from '../../render/moedas-dreno';
 import {
@@ -86,6 +87,8 @@ export class CenaFight implements Cena {
   semProvocacao = false;
   /** O DRENO do ZENON (TRIBUTO/DECRETO) visível: moedas do golpe até a barra SUPER de quem drenou. */
   readonly moedas = new MoedasDeDreno();
+  /** Interpolação entre ticks, mola e tremor do rival (V2-2): só no desenho; ligada por `Navegador.fluidez`. */
+  readonly fluidez = new Fluidez();
   /** A entrada ainda não começou nesta luta (espera a arte ficar pronta)? */
   private entradaPendente = false;
   /** A música está a 50% por causa da cinemática? */
@@ -261,6 +264,7 @@ export class CenaFight implements Cena {
     game.setup(a.cfg, persist.settings);
     if (a.cfg.keepScore && a.run) game.p1.score = a.run.score;
     efeitos.limpar();
+    this.fluidez.zerar();
     this.ultimoTick = game.tick;
     this.cine.zerarLuta();
     this.sessao.zerarLuta();
@@ -426,6 +430,8 @@ export class CenaFight implements Cena {
   }
 
   update(): void {
+    // o estado de ANTES do tick, para o desenho interpolar; em toda chamada (pausa, cinemática, provocação, entrada), então nada desliza quando nada anda
+    if (this.ui.fluidez && this.espera.pronta) this.fluidez.gravar(this.ui.m.game, this.ui.m.elenco, { tremor: this.ui.c.persist.settings.shake });
     if (this.paused || !this.espera.pronta) return;
     if (this.entradaPendente) this.comecarEntrada();
     if (this.entrada.ativa) {
@@ -670,10 +676,12 @@ export class CenaFight implements Cena {
     this.pause();
   }
 
-  draw(): void {
+  draw(alfa = 1): void {
     const { ctx, f, persist, rngVisual } = this.ui.c;
     const m = this.ui.m;
     const { game } = m;
+    // a leitura a desenhar: com a fluidez ligada, a posição entre o tick anterior e o atual + a mola; senão o próprio motor (o oráculo de pixel não vê diferença)
+    const luta = this.ui.fluidez ? this.fluidez.vista(game, alfa, m.elenco, { tremor: persist.settings.shake }) : game;
     const W = LARGURA;
     const H = ALTURA;
     // entrada dramática: o mundo sem HUD, o chefe na pose da vez e os braseiros acendendo; as faixas, o cartão e a fala vêm por cima
@@ -683,8 +691,10 @@ export class CenaFight implements Cena {
     const poseDaEntrada = q && chefe ? this.entrada.batidas[q.pose]?.pose : undefined;
     // zoom e deslocamento da entrada do guardião (roteiro): o zoom é ancorado no chão perto do chefão, mas nunca fora do miolo da tela (o plano aberto < 1 não mostra borda)
     const zoomDaEntrada = q && chefe && q.zoom !== 1 ? { fator: q.zoom, x: clamp(paraATela(chefe.x + q.dx, GROUND, game.cam).x, 390, 570) } : undefined;
-    desenharMundo(ctx, game, m.rec, m.efeitos, m.petalasLuta, rngVisual, {
+    desenharMundo(ctx, luta, m.rec, m.efeitos, m.petalasLuta, rngVisual, {
       tremor: persist.settings.shake,
+      // tecla H: as caixas de dano e de acerto, só no treino do servidor de desenvolvimento (conferência a olho; não existe no jogo publicado)
+      ...(import.meta.env.DEV && game.training && game.debug ? { caixas: game } : {}),
       alvoTreino: game.dummy,
       esquiva: this.ui.c.regras.esquiva,
       ...(q ? { hud: false, acesos: q.acesos } : {}),

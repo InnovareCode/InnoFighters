@@ -212,7 +212,8 @@ async function iniciar(): Promise<void> {
         entrada.fimDoTick();
         acc -= PASSO;
       }
-      ui.draw();
+      // alfa = a fração do próximo tick que já passou: a luta desenha entre o tick anterior e o atual (monitores de 90, 120, 144 Hz ficam lisos)
+      ui.draw(acc / PASSO);
     } catch (e) {
       acc = 0;
       if (!avisou) {
@@ -234,11 +235,13 @@ async function iniciar(): Promise<void> {
         semente,
         persist,
         avancar,
-        desenhar: () => ui.draw(),
+        desenhar: (alfa?: number) => ui.draw(alfa),
         mundo: () => ui.m,
       },
     });
   }
+  // fluidez do desenho da luta (interpolação, mola, tremor do rival, tecla H): ligada no tempo real; em `?manual=1` só com `&fluidez=1` (DEV)
+  ui.fluidez = !manual || (import.meta.env.DEV && new URLSearchParams(window.location.search).get('fluidez') === '1');
   if (!manual) requestAnimationFrame(quadro);
 }
 

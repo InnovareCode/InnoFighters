@@ -65,7 +65,8 @@ export interface Cena {
   /** Chamado por `Navegador.set` quando a cena é trocada por outra (soltar o que a cena segurou: arte, música, classes do `body`). */
   exit?(): void;
   update?(): void;
-  draw(): void;
+  /** `alfa` (0 a 1) = quanto do tick seguinte já passou, para a cena de luta interpolar o desenho (V2-2). Ausente = 1 (o estado atual, sem interpolar). */
+  draw(alfa?: number): void;
   /** Devolve true se tratou a tecla (então o `nav` genérico não roda). */
   key?(tecla: string): boolean;
   nav?(acao: AcaoNav): void;

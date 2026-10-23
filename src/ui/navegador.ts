@@ -28,6 +28,11 @@ export class Navegador {
   /** Mensagem se o carregamento falhou (a tela de abertura mostra). */
   erroCarga: string | null = null;
   run: CampanhaArcade | null = null;
+  /**
+   * Fluidez do desenho da luta (V2-2): interpolação entre ticks, a mola, o tremor do rival e a tecla H. Desligada por padrão: o laço de tempo real do
+   * `main.ts` liga; `?manual=1` (oráculo de pixel, e2e) deixa desligada, e `?manual=1&fluidez=1` (só DEV) liga para os testes da própria fluidez.
+   */
+  fluidez = false;
 
   readonly petalas: CampoDePetalas;
   readonly cenas: Record<NomeCena, Cena>;
@@ -92,10 +97,11 @@ export class Navegador {
     this.scene?.update?.();
   }
 
-  draw(): void {
+  /** `alfa` = acc / PASSO do laço (ver `main.ts`); sem ele (testes, `?manual=1`) a cena desenha o tick atual. */
+  draw(alfa = 1): void {
     const { ctx } = this.c;
     usarEspacoLogico(ctx);
-    this.scene?.draw();
+    this.scene?.draw(alfa);
     if (this.fade > 0) {
       usarEspacoLogico(ctx);
       ctx.fillStyle = `rgba(6,2,14,${clamp(this.fade, 0, 1)})`;

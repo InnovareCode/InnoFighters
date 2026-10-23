@@ -3,6 +3,7 @@ import { GROUND } from '../core/constantes';
 import type { LeituraLuta } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import { aplicarCamera } from './camera';
+import { desenharCaixas } from './caixas';
 import { rampaDaFase2, chefeDaLeitura } from './aura-chefe';
 import { SOBREPOSICOES_DE_CENARIO, desenharCenarioLuta, desenharVinheta } from './cenario';
 import { desenharPetalas, desenharProjetil, projetilParaVisual, type CampoDePetalas, type Efeitos } from './efeitos';
@@ -40,6 +41,11 @@ export interface OpcoesMundo extends OpcoesHud {
    * Ancorado no chão e com fator >= 1, nenhuma borda do cenário aparece. Ausente (ou fator 1) = o desenho de hoje.
    */
   readonly zoom?: { readonly fator: number; readonly x: number };
+  /**
+   * Conferência a olho (tecla H, V2-2): desenha as caixas de dano e de acerto a partir DESTA leitura (a real do motor, não a interpolada: é onde o motor
+   * testa o acerto). Ausente = nada (o oráculo de pixel e os testes não mudam).
+   */
+  readonly caixas?: LeituraLuta;
 }
 
 /**
@@ -95,6 +101,7 @@ export function desenharMundo(
     const dono = luta.fighters[p.dono];
     desenharProjetil(ctx, projetilParaVisual(p, chDaFicha(rec.elenco[dono.id].ch, dono.ficha).fire));
   }
+  if (opcoes.caixas) desenharCaixas(ctx, opcoes.caixas, rec.elenco);
   efeitos.desenharParticulas(ctx);
   efeitos.desenharImpactos(ctx);
   desenharPetalas(ctx, petalas.lista);

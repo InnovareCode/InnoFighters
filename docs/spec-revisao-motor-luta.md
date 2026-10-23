@@ -1,5 +1,8 @@
 # Spec Técnica: Revisão do Motor de Luta
 
+> **SUBSTITUÍDA (2026-10-23).** Não implementar. Reprovada em `docs/revisao-completa-2026-10-23.md` §5; a versão vigente é
+> `docs/spec-revisao-motor-luta-v2.md`.
+
 Autora: Nova (arquiteta de software), 2026-10-22. Status: **proposta técnica para implementação** (Vega no motor/dados, Lyra no render/cinemática/câmera, Cronos nas regras/storage, Íris no QA/balanço). Base técnica consultada: `src/core/contratos.ts`, `src/fight/{fighter,game,colisao,comandos,cpu}.ts`, `src/render/{cinematica,sessao-especial,mundo,camera}.ts`, `src/data/{base-moves,montar,tipos}.ts`, `src/data/lutadores/*.ts`, `docs/balanco/frame-data.md`, `docs/spec-esquiva-e-cinematica-especial.md` e `docs/mecanicas-e3.md`.
 
 ---

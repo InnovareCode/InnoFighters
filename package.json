@@ -12,6 +12,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "orcamento": "node ferramentas/orcamento/cli.mjs",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:build": "playwright test -c playwright.build.config.ts",

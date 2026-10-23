@@ -1,0 +1,65 @@
+# Suite e2e COMPLETA (tests/e2e, desktop + celular, ~19 min). Nao bloqueia push nem deploy: roda de madrugada
+# e sob demanda (Actions > e2e-completo > Run workflow). O recorte rapido (e2e:build, 14 testes) ja roda no ci.yml.
+# Resultado vermelho aqui = abrir investigacao, nao reverter commit as cegas.
+name: e2e-completo
+
+on:
+  schedule:
+    # 05:00 UTC = 02:00 em Brasilia. O cron so dispara a partir da branch padrao (main).
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: 'Opcional: so estes specs (ex. "jogo esquiva"). Vazio = suite inteira.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+# Duas rodadas pesadas ao mesmo tempo so brigam por CPU (ja houve teste de jogo estourando tempo por isso).
+concurrency:
+  group: e2e-completo
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - id: playwright
+        run: echo "versao=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: cache-navegador
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.versao }}
+      - if: steps.cache-navegador.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.cache-navegador.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      # CI=true (automatico no Actions) liga forbidOnly, retries=1 e o relatorio HTML do playwright.config.ts.
+      # A entrada passa por variavel de ambiente (nunca interpolada no script) para nao virar injecao de comando.
+      - name: playwright test
+        env:
+          SPECS: ${{ inputs.spec }}
+        run: npx playwright test $SPECS
+      # Relatorio + traces so quando algo falha. So estas duas pastas: nada de arte-fonte/ (os specs de
+      # esquiva/cinematica criam arte-fonte/capturas/ no checkout efemero do runner; ela nunca e lida nem enviada).
+      - if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-completo-relatorio
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

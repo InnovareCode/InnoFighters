@@ -7,9 +7,16 @@ on:
 permissions:
   contents: read
 
+# Em PR, um push novo cancela a rodada anterior (CI nao publica nada, cancelar e seguro). Em push de branch NAO
+# cancela: cada commit precisa do seu veredito (rastreabilidade: "o CI do commit X passou").
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-e-testes:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       # B12: actions pinadas por SHA de commit (a tag e movel). O Dependabot atualiza SHA + comentario.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -23,3 +30,47 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # T8: portao de orcamento (JS gzip, peso e px dos atlas, cenarios) sobre o dist recem-gerado. Modo AVISO por padrao:
+      # imprime a tabela e anota os estouros, mas sai 0 (hoje WEI LONG v1, br e kr estouram de verdade). Nao bloqueia o
+      # deploy do Pages (pages.yml e outro workflow). Para virar bloqueante por item: ferramentas/orcamento/README.md.
+      - run: npm run orcamento
+
+  # Testes de navegador contra o BUILD de producao (CSP, manifesto, versao do PWA, trailer sob CSP): 14 testes,
+  # ~3 min. Roda em paralelo ao job acima. O playwright.build.config.ts ja faz `npm run build` + `vite preview`
+  # (porta 4173) sozinho. O e2e completo (~19 min) NAO roda aqui: ver e2e-completo.yml (noturno/manual).
+  e2e-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # O cache do navegador e chaveado pela versao EXATA do Playwright instalada (vem do package-lock via npm ci):
+      # subir o Playwright invalida o cache e baixa o Chromium certo.
+      - id: playwright
+        run: echo "versao=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - id: cache-navegador
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.versao }}
+      # Cache miss: baixa o Chromium + bibliotecas do sistema.
+      - if: steps.cache-navegador.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+      # Cache hit: o binario ja esta no disco, mas as bibliotecas do sistema (apt) nao fazem parte do cache.
+      - if: steps.cache-navegador.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+      - run: npm run test:e2e:build
+      # Traces so existem quando um teste falha (trace: retain-on-failure). So test-results/: nada de arte-fonte/.
+      - if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-build-test-results
+          path: test-results/
+          retention-days: 7
+          if-no-files-found: ignore

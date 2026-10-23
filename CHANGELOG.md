@@ -3,7 +3,22 @@
 Marcos do InnoFighters, do mais recente para o mais antigo. Datas e hashes vêm do `git log` (fuso -03:00).
 Os nomes de fase (F0, E1a, E3 S2...) são os de `PLANO.md` e `docs/plano-expansao.md`.
 
-## 2026-10-21: chefões progressivos na UI, guardiões da fila e decisões do dono (não commitado)
+## 2026-10-22 e 2026-10-23: bloco do dono, trailer, sons reais e tarja (`64f2647`..`f5b5fab`)
+
+- **Sons reais, CC0** (`497cb33`): camada de amostras por cima da identidade sonora (impacto, voz e família de especial). Pacote em `public/assets/sons/` (`manifesto.json`, MP3 e `CREDITOS.txt`). Sem os arquivos ou com falha de rede, o jogo toca a síntese. Painel `?escuta=1` com A/B amostra x síntese.
+- **Sons e temas ligados** (`1aa7cac`, `497cb33`): `IDENTIDADE_SONORA`, `TEMAS_POR_LUTADOR` e `AMOSTRAS_REALISTAS` em `true` (`src/audio/chaves.ts`), por decisão do dono. A chave é só rollback por código.
+- **Trailer de abertura** (`f377da4`, `dcdfe0c`): montado no motor do jogo, com sprites reais, música e quadros estáticos. Toca no boot quando o pedaço chegou e no modo atrair (título parado por 30 s). Pulável a partir do tick 10. `?trailer=0` e `?trailer=P5` valem só em desenvolvimento.
+- **Logo oficial** (`1aa7cac`): imagem aprovada pelo dono no título, no menu, no splash e nos ícones (`docs/logo-oficial.md`).
+- **Balões premium** (`1aa7cac`): `src/render/balao.ts` reescrito (tinta opaca, plaquinha com o nome na cor do lutador, rabicho no mesmo traço).
+- **Botões de toque** (`1aa7cac`): arte e layout novos (`public/assets/ui/toque/`, `src/input/toque.css`); modo NORMAL com rótulos e opacidade fixa.
+- **Tela cheia** (`1aa7cac`): tecla F e linha nas Opções. No iPhone, a linha explica "Adicionar à Tela de Início". No Android, o pedido recusado é refeito no próximo toque.
+- **Versão no ar** (`1aa7cac`): `version.json` gerado no build; aviso "NOVA VERSÃO NO AR" nas Opções.
+- **Opções**: CINEMÁTICA e PROVOCAÇÕES saíram do menu (`1aa7cac`). A cinemática fica COMPLETA (CURTA com movimento reduzido) e as provocações ficam sempre ligadas. Preferências salvas antigas são descartadas ao carregar (`src/ui/persistencia.ts`).
+- **Tarja do especial estendida** (`f5b5fab`): permanência maior, tipografia do especial (Bangers) e molduras neon (`src/render/cinematica.ts`).
+- **Spec da revisão do motor** (`f5b5fab`): `docs/spec-revisao-motor-luta.md`. É proposta; nada foi implementado. A Nova reprova a v1 (`docs/revisao-completa-2026-10-23.md` §5, ainda não commitado).
+- **Não provado:** nenhum som foi ouvido pela equipe nem pelo dono; trailer e tela cheia não foram medidos em aparelho real; números de teste dos handoffs não foram reconferidos nesta passada.
+
+## 2026-10-21: chefões progressivos na UI, guardiões da fila e decisões do dono (`bb8dae2`)
 
 - **Chave `chefesDaFila = true`** (`src/meta/regras.ts`): o chefão do ARCADE é o próximo guardião da fila (AMINU primeiro). Derrotá-lo o libera. O ZENON só aparece com os cinco liberados. A fila e o chefão da vez são calculados por `chefeDoArcade` (`src/meta/chefes.ts`). O `fim.ts` grava o id da etapa de chefe no começo do ARCADE. Handoff: `docs/handoff-lyra-chefoes.md`.
 - **Correção de rampa da fase 2**: a aura dos guardiões acende na troca de barra (no HEAD nunca acendia, porque a regra antiga lia `fichaFase2`, que eles não têm).

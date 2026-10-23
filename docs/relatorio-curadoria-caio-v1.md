@@ -1,0 +1,332 @@
+# Curadoria técnica do CAIO, folhas v1 (23/10/2026)
+
+Autor: Apolo (direção de arte). Pedido do Atlas: o dono aprovou a olho a mestra e as folhas 1 a 4 (v1). Esta é a
+curadoria por medida, célula por célula, com a limpeza por código do que não pede nova geração.
+
+Legenda do grau de prova:
+- **[medido]**: script rodado sobre o pixel (o próprio `nucleo.mjs` do pipeline, ou script de medição no scratchpad);
+- **[visto]**: recorte ampliado conferido a olho;
+- **[proposta]**: decisão minha, a validar no harness ou pelo dono.
+
+Nada foi sobrescrito e nada foi commitado. A pasta `arte-fonte/` está no `.gitignore`, então os arquivos novos dela
+ficam só nesta máquina.
+
+---
+
+## 0. Resumo
+
+| Folha | Componentes | Veredito | O que fazer |
+|---|---|---|---|
+| mestra | 1 | aprovada | nada |
+| f1 base | 12 | 10 aprovadas, 1 no limite, **2 reprovadas** (`idle3`, `walk6`) | reparo **sem crédito**: mapa de células (seção 3.1) |
+| f2 reações | **18** na v1, 12 na v2 | v2: 11 aprovadas, 1 no limite (`block`) | usar a **v2** (tracinhos limpos) + acolchoar o topo |
+| f3 golpes | 12 | 11 aprovadas, 1 no limite (`sweep`) | nada obrigatório |
+| f4 especiais | 12 | v2: 9 aprovadas, 3 no limite (`sa1`, `sb0`, `sb2`) | usar a **f4 v2** (risco limpo) + espelhar `sb2` + ponta dos chutes |
+
+- **Nenhuma regeração é obrigatória.** As 2 reprovadas da f1 saem por mapa de células, e as 2 limpezas já estão feitas.
+- A folha de reposição CR (seção 5) é **opcional**: 6 créditos, para melhorar a leitura de 4 poses fracas.
+- **Achado fora da lista:** os quadros ativos `sb1`, `sb2` e `sc1` do CAIO são chute e rasteira, mas o pipeline mede
+  a ponta deles no modo `mao`. Sem a exceção da seção 3.3, o alcance da rasteira e do chute em salto sai errado.
+
+---
+
+## 1. Como foi medido
+
+- **Pipeline real** (`node ferramentas/sprites/cli.mjs caio --saida <scratchpad> --sem-contato`), rodado sobre a v1 e
+  sobre a v2. Isso dá os componentes, o halo antes e depois do despill e os avisos de borda. **[medido]**
+- **`arte-fonte/ferramentas-curadoria/curadoria-medir.mjs`**. A pasta não existia, então eu a criei com os meus
+  scripts. Ele usa as funções do `nucleo.mjs` (corte de 2 px, chave, alfa, rótulo, agrupamento) e mede:
+  - caixa de cada figura;
+  - margem até as 4 bordas;
+  - distância real, pixel a pixel, entre figuras vizinhas;
+  - componentes pequenos e a figura dona de cada um;
+  - magenta residual no miolo opaco;
+  - diferença de silhueta, em % de XOR sobre a união, alinhando pelos pés e pelo centro de massa. **[medido]**
+- **Borda bruta**: pixels de figura nas 2 linhas e colunas de fora da folha, antes do corte de 2 px. **[medido]**
+- **Escala entre folhas**: comprimento dos pés de perfil (objeto rígido, faixa de 22 px da base), cabeça topo→queixo
+  numa grade de 10 px e busca da escala que minimiza o XOR contra o `idle0`. Os scripts são `curadoria-escala.py` e o
+  inline no relatório. **[medido]**
+- Os critérios "figura ≤ ~70% da linha" e "vão entre linhas" usam a linha nominal de 597,3 px (1792 / 3).
+
+---
+
+## 2. Resultado por folha e por célula
+
+### 2.0 Achado geral: a meta de 70% da linha não foi cumprida em nenhuma folha [medido]
+
+As figuras ocupam de **93 a 102% da altura da linha** nas poses de pé (f3 `lp0`: 610 px numa linha de 597). É o
+padrão conhecido da Runway com o BLOCO A, que manda "~70%". Não reprovo por isso, porque o que o recorte por
+componente exige está cumprido nas 4 folhas:
+- 12 componentes (na f2, depois da limpeza);
+- nenhuma figura encostando em outra: a menor distância real é de **17 px** (f3, `hk1` x `upper`);
+- só uma figura encosta na borda (f2 `block`, seção 2.3).
+
+As caixas das linhas chegam a se sobrepor na vertical sem que os pixels se toquem:
+- f3, coluna 4: o punho do `upper` sobe 79 px para dentro da faixa da linha 2;
+- f4, coluna 3: a sobreposição é de 2 px.
+
+Consequência: recortar pela grade 600 x 597 corta figuras. O pipeline já recorta por componente; mantenha assim.
+
+### 2.1 Mestra (`caio-mestra-v1.png`, 1792 x 2400) — APROVADA
+
+- 1 componente, fundo 252,3,250, halo 78,7% → 0,0% depois do despill;
+- magenta residual no miolo: 5 px;
+- margens: E 272, D 268, topo 66, base 65 px. **[medido]**
+- Tatuagem no ombro do lado de quem olha, cordão verde e amarelo com 2 borlas, prendedor verde-limão, descalço. Sem
+  FX, sem sombra roxa no chão. **[visto]**
+
+### 2.2 f1 base (`caio-f1-base-v1.png`) — usar como está, com mapa de células
+
+Medidas gerais da folha [medido]:
+- 12 componentes, halo 68,4% → 0,0%;
+- magenta residual no miolo: 0 a 12 px por figura;
+- altura das figuras: 557 a 582 px, de 93 a 97% da linha;
+- vão entre linhas: 21 px de L1 para L2 e 15 px de L2 para L3, medidos entre caixas. A distância real mínima entre
+  figuras vai de 51 a 82 px;
+- **linha 1 (suspeita do Atlas): não toca.** O cabelo fica a 12–36 px do topo; o mais justo é o L1C3, a 12 px;
+- **linha 3: os pés ficam a 4–7 px da base.** Os contornos estão fechados e os pés inteiros [visto]. As 2 últimas
+  linhas brutas têm 11 px claros sob o L3C1: é o ruído de borda da Runway, que o corte de 2 px tira.
+- Pés idênticos nos 3 idles distintos (57 e 97 px). A ginga não escorrega os pés.
+
+| Célula | Pose | Veredito | Medida e motivo |
+|---|---|---|---|
+| L1C1 | idle0 | aprovada | referência |
+| L1C2 | idle1 | aprovada | 23,6% do idle0. Desce 16 px (balanço da ginga) |
+| L1C3 | idle2 | **no limite** | 18,6% do idle0. Fica 8 px mais alto e o tronco abre de frente, com os 2 punhos juntos. Pode "pular" no laço: conferir no harness |
+| L1C4 | idle3 | **reprovada** (duplicata) | **2,5% do idle0 = mesmo desenho** (abaixo de 3%). Reparo sem crédito na seção 3.1 |
+| L2C1–L3C2 | walk0–walk5 | aprovadas | vizinhos a 15–25% um do outro |
+| L3C3 | walk6 | **reprovada** | guarda baixa (os 2 braços caídos) e tronco de frente. Pula 38,7% do walk5 e 28% para o walk7, contra 15–25% entre os outros vizinhos. Só no terço de cima, é 25,6% contra 6% entre walk5 e walk7. Reparo sem crédito (3.1) ou regerar (5) |
+| L3C4 | walk7 | aprovada | — |
+
+### 2.3 f2 reações (`caio-f2-reacoes-v1.png` → **`caio-f2-reacoes-v2.png`**)
+
+Medidas gerais da folha [medido]:
+- **v1: 18 componentes.** São as 12 figuras mais 6 tracinhos de impacto (3 a 18 px cada) soltos à frente do rosto do
+  L3C1, em x 290–337, y 1235–1287. O pipeline os FUNDE à figura (raio de fusão de 24 px), então eles iriam para o
+  sprite. **v2: 12 componentes.**
+- **L1C2 (`block`): o cabelo encosta no topo.** São 7 px de contorno nas linhas brutas 0 e 1, em x 850–856. O
+  pipeline avisa "encosta na borda" e corta 2 px da ponta. O contorno da mecha está fechado [visto], então não é
+  caso de regerar: basta acolchoar (seção 3.2).
+- **L3C4 (`koFloor`), suspeita do Atlas: não toca.** A margem direita é de 13 px e a da base de 8 px. A caixa fica a
+  5 px do `kdAir`, mas a distância real entre os dois é de 96 px.
+
+| Célula | Pose | Veredito | Medida e motivo |
+|---|---|---|---|
+| L1C1 | crouch | aprovada | 450 px = 78% da altura do idle0: mais baixo que o idle, como pedido. O antebraço sobre a cabeça lê como proteção |
+| L1C2 | block | **no limite** | cabelo na borda (acolchoar). Lê como guarda alta, parecida com o idle (28,8% depois de igualar a escala). Aceitável |
+| L1C3 | cblock | aprovada | ajoelhado com guarda, 489 px |
+| L1C4 | jsquat | aprovada | — |
+| L2C1–L2C3 | jup, jtop, jfall | aprovadas | — |
+| L2C4 | land | aprovada | 28,6% do jsquat: são desenhos distintos |
+| L3C1 | hitH | reprovada na v1, **aprovada na v2** | tracinhos removidos: 128 px trocados por fundo, todos à direita do rosto |
+| L3C2 | hitB | aprovada | — |
+| L3C3 | kdAir | aprovada | cabeça à esquerda |
+| L3C4 | koFloor | aprovada | cabeça à **esquerda**: não precisa espelhar |
+
+### 2.4 f3 golpes (`caio-f3-golpes-v1.png`) — usar como está
+
+Medidas gerais da folha [medido]:
+- 12 componentes, halo 75,3% → 0,0%;
+- margens: topo no mínimo 18 px (L1C1) e base no mínimo 23 px;
+- distância real mínima entre figuras: 17 px (L2C4 x L3C4);
+- magenta residual no miolo: até 51 px por figura (L2C1). É contorno escuro arroxeado nas frestas do cordão e das
+  borlas, a mais de 3 px da borda, onde o despill não chega. Na escala do jogo (0,72) são riscos de menos de 1 px.
+  Não pede ação.
+
+| Célula | Pose | Veredito | Medida e motivo |
+|---|---|---|---|
+| L1C1 | lp0 | aprovada | 11,6% do idle0 na melhor escala: é o preparo do soco |
+| L1C2–L1C4 | lp1, hp0, hp1 | aprovadas | — |
+| L2C1–L2C4 | lk0, lk1, hk0, hk1 | aprovadas | — |
+| L3C1, L3C2 | clp, clk | aprovadas | 47% de diferença entre os dois |
+| L3C3 | sweep | **no limite** (fraco, não estava na lista) | a perna estendida é a de **trás**, apontando para a esquerda. O golpe lê como avanço baixo com a mão no chão. É o mesmo defeito da rasteira do ZENON. No jogo funciona, porque a ponta `direita` cai na mão rente ao chão. Regerar só na CR opcional |
+| L3C4 | upper | aprovada | o punho sobe para dentro da faixa da linha 2, mas a 17 px reais do hk1 |
+
+### 2.5 f4 especiais (`caio-f4-especiais-v1.png` → **`caio-f4-especiais-v2.png`**)
+
+Medidas gerais da folha [medido]:
+- 12 componentes, halo 76,7% → 0,0%;
+- margens da base: 8–11 px na linha 3;
+- distância real mínima entre figuras: 24 px.
+
+Checagens pedidas [medido]:
+- **L1C3 (`sa2`) x idle:** 49,6% do idle0 com a escala igualada. **Não é eco.** Para comparar, o `sa3` (volta à ginga)
+  dá 34,5%.
+- **`sc1` x `jkick`:** 58%. São desenhos distintos.
+
+| Célula | Pose | Veredito | Medida e motivo |
+|---|---|---|---|
+| L1C1 | sa0 | aprovada | — |
+| L1C2 | sa1 | **no limite** (fraco, conhecido) | soco reto, não meia-lua. Como disparo do projétil funciona, porque o jogo desenha a meia-lua. Regerar só na CR |
+| L1C3 | sa2 | aprovada | palmas abertas, 49,6% do idle |
+| L1C4 | sa3 | aprovada | volta à ginga |
+| L2C1 | sb0 | **no limite** | desce de frente para a direita, sem começar o giro |
+| L2C2 | sb1 | reprovada na v1, **aprovada na v2** | risco branco em arco junto ao pé removido. Detalhe na seção 4.2 |
+| L2C3 | sb2 | **no limite** | avanço baixo sem giro, com a perna estendida para trás. A rasteira só "gira" no L2C2. Reparo sem crédito: espelhar (3.4) |
+| L2C4 | sb3 | aprovada | — |
+| L3C1 | sc0 | aprovada | — |
+| L3C2 | sc1 | aprovada | 58% do jkick |
+| L3C3 | jkick | aprovada | — |
+| L3C4 | win | aprovada | sorriso, punho no alto |
+
+### 2.6 Escala entre folhas (fatorFolha) [medido]
+
+| Medida | f1 | f2 | f3 | f4 |
+|---|---|---|---|---|
+| Pé de trás, de perfil (px) | 57 | 59 | 58–59 | 57–59 |
+| Pé da frente, de perfil (px) | 97 | 99 | 97–98 | 98–103 |
+| Cabeça topo→queixo, a olho na grade (px) | ~104 | ~107 | ~108 | ~111 |
+
+- O pé, que é rígido, varia no máximo 2% em f2 e f3. Na f4 vai até 6%, mas só em 2 poses: no `sb3` dá 98.
+- A cabeça infla quando inclinada (lição do ZENON). Por isso eu confio no pé.
+- **Proposta:** não usar `fatorFolha` agora. Depois do atlas, conferir topo→queixo no `idle0`, `lp0`, `block` e `sa3`.
+  Só se a f4 sair mais de 5% maior, usar `fatorFolha.f4 = 0,96`. **[proposta]**
+
+---
+
+## 3. Reparos sem crédito (configuração do pipeline, para a Vega)
+
+Tudo abaixo vai em `ferramentas/sprites/lutadores.json`, entrada `caio`, que ainda não existe. A exceção é o
+espelhamento, que é flag de CLI.
+
+### 3.1 Mapa da f1: idle em ida e volta e walk6 por apelido [proposta]
+
+```json
+"celulas": { "f1": ["idle0", ["idle1", "idle3"], "idle2", null, "walk0", "walk1", "walk2", "walk3", "walk4", ["walk5", "walk6"], null, "walk7"] }
+```
+
+- **Idle:** o laço fica 0 → 1 → 2 → 1, com passos de 23,6%, 22,4%, 22,4% e 23,6%. Hoje é 0 → 1 → 2 → 0' → 0, com
+  um quadro repetido (2,5%) e um salto direto de 2 para 0. É o mesmo arranjo da CENTELLA.
+- **Walk:** o walk6 vira apelido do walk5. O L3C3 é descartado. Do walk5 para o walk7 dá 21,8%, dentro da faixa dos
+  outros passos, e o tronco muda só 6%. O custo é um quadro segurado em 8. Se a CR vier boa, o walk6 dela substitui o
+  apelido.
+
+### 3.2 Acolchoar o topo da f2 [proposta]
+
+```json
+"acolchoar": { "f2": { "topo": 6 } }
+```
+
+Com isso, o corte de 2 px da borda tira a margem acolchoada, não a ponta da mecha do `block`. É a mesma solução do
+BAATAR B9.
+
+### 3.3 Ponta dos quadros ativos (achado novo) [lido em `poses.mjs` + proposta]
+
+O `MODO_PONTA` padrão põe `sb1`, `sb2` e `sc1` em `mao`, que pega o ponto mais à direita **acima** da faixa dos pés.
+No CAIO esses quadros são rasteira (`sb1` e `sb2`) e chute em salto (`sc1`): o pé é a ponta.
+
+```json
+"ponta": { "sb1": "direita", "sb2": "direita", "sc1": "direita" }
+```
+
+Conferir o `reach` da RABO-DE-ARRAIA (`rm: 2.0`) no harness depois disso. É o R3 do plano.
+
+### 3.4 Espelhar o `sb2` para a rasteira ler o giro [proposta, para o dono julgar no harness]
+
+```
+npm run sprites -- caio --espelhar f4:sb2
+```
+
+- O `sb2` espelhado fica de frente para a esquerda, mãos no chão e perna estendida para a direita, rente ao chão.
+  Entre o `sb1` (de frente para a direita) e o `sb3`, lê como meia-volta do rabo-de-arraia. Montei a sequência e
+  conferi a olho [visto: `m-sb-espelho.jpg` no scratchpad].
+- **Efeito colateral:** no quadro espelhado, a tatuagem e o cordão trocam de lado. Num quadro de giro, na escala
+  0,72, é difícil de ver, mas é erro de continuidade. O dono decide.
+- A animação `melee` alterna `sb1` e `sb2` no ativo (`anim.ts`, `loop: 4`), e o motor já vira o sprite na entrada
+  (`spin: 1`). Com o espelho, a alternância ativa também gira.
+- O espelhamento é só flag de CLI: o `lutadores.json` não tem chave para ele. Se o dono aprovar, alguém precisa
+  lembrar do flag em toda geração. Outra saída é a Vega criar a chave.
+
+---
+
+## 4. Limpezas por código (feitas)
+
+Script: `arte-fonte/ferramentas-curadoria/caio-limpar-v2.py`. Ele lê a v1 e grava a v2 numa pasta dada, então é
+reprodutível. A v1 fica intacta.
+
+### 4.1 `caio-f2-reacoes-v2.png`: tracinhos do `hitH` [medido + visto]
+
+- Linha a linha, de y 1222 a 1296, acha a borda do rosto e do cabelo. Todo pixel que não é fundo, de 3 px depois
+  dessa borda até x 351, vira fundo (252,2,250).
+- Foram 128 px alterados, todos na caixa x 279–338, y 1232–1287. Nenhum pixel do rosto foi tocado: a diferença v1 x
+  v2 só existe nessa caixa.
+- Pipeline na v2: **12 componentes** (eram 18), e o L3C1 virou 1 componente só.
+
+### 4.2 `caio-f4-especiais-v2.png`: risco branco do `sb1` [medido + visto]
+
+O risco é um arco semitransparente que sai do calcanhar. Ele também deixou um véu claro sobre a sola e uma segunda
+linha escura por fora do contorno da sola. A limpeza teve quatro passos:
+1. **Arco por fora do pé e quina do calcanhar** (polígono abaixo da reta (1093,1082)–(1108,1092)): tudo o que não
+   é contorno preto vira fundo.
+2. **Contorno da quina**, que o risco encobria: reta escura de 3 px desenhada com antisserrilhado (4x maior e
+   reduzida) entre os trechos intactos.
+3. **Sola:** o contorno real é o primeiro pixel escuro a partir de x 1110, linha a linha. Entre y 1054 e 1070, o que
+   está por fora dele vira fundo (era a linha escura do risco). Por dentro, o véu (pele clareada por mistura com
+   branco, até 45%) é repintado por difusão a partir da pele vizinha. Um contorno de 2,5 px com antisserrilhado
+   reforça o trecho fino.
+4. Total de 3.808 px alterados, todos na caixa x 1005–1161, y 1042–1124. Pipeline na v2: 12 componentes, halo
+   76,5% → 0,0%.
+
+**Limite honesto:** a sola perdeu 1 a 2 px de largura no trecho do risco, e a pele repintada é lisa, sem a textura do
+traço original. A 0,72 isso não aparece [visto no recorte ampliado e no tamanho de folha]. Mesmo assim, recomendo o
+dono olhar o `sb1` no harness.
+
+### 4.3 O pipeline já pega as v2
+
+O `acharFolha` escolhe o maior `-vN`. Rodar `npm run sprites -- caio` agora já usa f2-v2 e f4-v2 [medido: o log da
+rodada lista os dois arquivos].
+
+---
+
+## 5. Folha de reposição CR (OPCIONAL, 6 créditos) — prompt pronto
+
+**Para quê:** melhorar a leitura de `sa1` (meia-lua), `sb0` e `sb2` (giro da rasteira), `sweep` (perna da frente) e
+`walk6`. Use o formato 4 x 3 da f1–f4 (não o 3 x 2), para sair na mesma escala das outras folhas. As 12 células dão
+2 ou 3 tentativas para cada pose difícil. Da memória do BAATAR: o modelo insiste em soco reto. Se o `sa1` falhar nas
+3 tentativas, aceite o v1.
+
+- **Anexar (UMA imagem):** `caio-mestra-v1.png`.
+- **Salvar em:** `arte-fonte/lutadores/caio/folhas/caio-cr-reposicao-v1.png`.
+- **Formato:** 4:3, 2K.
+- **Montagem:** BLOCO A geral (`docs/prompts-arte.md` §2), sem mudar nada. Depois o BLOCO B do CAIO (plano
+  `docs/plano-arte-lacunas-2026-10-23.md` §2.4), sem mudar nada. Depois este BLOCO C:
+
+```
+SHEET R — REPLACEMENT POSES. Exactly 12 poses in 4 columns and 3 rows, one per cell, as listed.
+Row 1, cells 1, 2 and 3 (wide crescent arm swing, three versions of the same moment, only the hand height varies a little): low wide stance, front knee bent, torso twisted toward the right; the arm nearest the viewer swings across the body in a wide horizontal curve at chest height with a FLAT OPEN HAND, fingers straight and together, palm facing down; the hand is at the far right end of the curve and the arm is slightly curved, never straight. NOT a punch, NOT a fist. The other hand is open near the rear hip.
+Row 1, cell 4: walking forward, mid-step: the back heel lifted with the toes still on the baseline, the front foot flat on the baseline, knees slightly bent. Guard UP: front fist at chin height, rear fist in front of the belly, torso in profile facing right.
+Row 2, cells 1 and 2 (start of a capoeira spinning low kick): dropping low and turning his back toward the viewer, head looking back over the shoulder to the right, both hands reaching down to the baseline, knees deeply bent.
+Row 2, cells 3 and 4 (middle of the spin; in these two cells only he FACES LEFT): both hands flat on the baseline, body low and facing left, one leg stretched far out to the RIGHT along the baseline at ankle height, heel leading, the other knee deeply bent.
+Row 3, cells 1, 2 and 3 (low sweep kick, three versions): crouching very low, the rear hand flat on the baseline; the FRONT leg, the one nearest the right edge of the cell, fully extended forward to the RIGHT along the baseline at ankle height, heel leading, sole facing right; the back knee deeply bent under the body. The kicking leg points to the right, never backward.
+Row 3, cell 4: the same walking step as row 1 cell 4, with the other leg in front.
+```
+
+**Checagem depois de gerar** (pelo `curadoria-medir.mjs`):
+- 12 componentes, sem risco nem poeira. Lembre: "spin" e "sweep" puxam rastro de movimento.
+- Células de andar **x mestra**: diferença acima de 15%. Abaixo disso é eco da referência, porque a guarda pedida é a
+  da mestra (lição do ZENON).
+- Na linha 2, células 3 e 4: de frente para a esquerda e com as **duas** mãos no chão.
+- Na linha 3: a perna estendida sai do lado **direito** da figura.
+- Escala: pé de trás com 57–59 px de perfil.
+
+**Integração:** a Vega decide entre duas saídas:
+- uma `folhasExtras.cr` com grade [4,3], `null` nas células recusadas e `null` nas células trocadas de f1, f3 e f4;
+- ou transplantar a célula por código para uma f1-v2, f3-v2 ou f4-v2 (máscara do componente + âncora no pé de
+  apoio, como na AMINU f3 v3).
+
+A primeira é mais limpa, mas precisa confirmar que `folhasExtras` aceita nome canônico.
+
+---
+
+## 6. Arquivos
+
+| Arquivo | O quê |
+|---|---|
+| `arte-fonte/lutadores/caio/folhas/caio-f2-reacoes-v2.png` | **novo**, f2 sem os tracinhos do hitH |
+| `arte-fonte/lutadores/caio/folhas/caio-f4-especiais-v2.png` | **novo**, f4 sem o risco do sb1 |
+| `arte-fonte/ferramentas-curadoria/curadoria-medir.mjs` | **novo**, medição reutilizável. Uso: `node curadoria-medir.mjs <pastaFolhas> <saida.json> [f2=arquivo.png ...]`. Os nomes padrão e os pares de diferença são do CAIO: troque para outro lutador |
+| `arte-fonte/ferramentas-curadoria/caio-limpar-v2.py` | **novo**, a limpeza das seções 4.1 e 4.2. Uso: `python -P caio-limpar-v2.py <pastaSaida>` |
+| `arte-fonte/ferramentas-curadoria/curadoria-escala.py` | **novo**, a busca de escala por XOR. Lê o `medidas-v1.json` da pasta atual |
+| `docs/relatorio-curadoria-caio-v1.md` | este relatório |
+
+Os arquivos v1 não foram alterados.

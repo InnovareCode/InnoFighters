@@ -1,4 +1,4 @@
-import { MARGEM_DA_SILHUETA } from '../assets/canvas';
+import { origemDaSilhueta } from '../assets/canvas';
 import type { ArteLutador } from '../assets/elenco';
 import { getPD, type ComPoses } from '../data/poses';
 import type { Ctx } from './tela';
@@ -35,7 +35,8 @@ export function desenharPose(
   const sil = branco > 0 ? arte.silhuetaDe(pd) : null;
   if (sil) {
     ctx.globalAlpha = branco;
-    ctx.drawImage(sil, MARGEM_DA_SILHUETA, MARGEM_DA_SILHUETA, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
+    const o = origemDaSilhueta(sil, pd);
+    ctx.drawImage(sil, o.x, o.y, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
   }
   ctx.restore();
 }

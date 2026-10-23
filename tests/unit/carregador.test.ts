@@ -106,7 +106,7 @@ describe('carregarRecursos', () => {
     const s2 = caio?.silhuetaDe(quadro!);
     expect(criados).toBe(1);
     expect(s1).toBe(s2);
-    expect([s1?.width, s1?.height]).toEqual([10, 12]); // o quadro idle0 (8x10) + 1 px de margem, não a página de 64x32
+    expect([s1?.width, s1?.height]).toEqual([16, 24]); // o recorte do quadro idle0 (8x10) alinhado a 8 px com 8 de margem, não a página de 64x32
   });
 
   it('poses() converte pelo manifestoParaPoses e guarda', async () => {

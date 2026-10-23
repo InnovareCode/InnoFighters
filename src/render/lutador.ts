@@ -1,4 +1,4 @@
-import { MARGEM_DA_SILHUETA } from '../assets/canvas';
+import { origemDaSilhueta } from '../assets/canvas';
 import type { ArteLutador } from '../assets/elenco';
 import { GROUND, SH, SH_IDLE } from '../core/constantes';
 import type { LutadorLeitura } from '../core/contratos';
@@ -37,10 +37,11 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
   const air = GROUND - f.y;
   const deitado = P.name === 'koFloor';
   const fl = f.facing * P.flip;
-  // `daPagina`: a imagem é a página do atlas (fonte em x,y do quadro); a silhueta é só do quadro (fonte em MARGEM,MARGEM)
+  // `daPagina`: a imagem é a página do atlas (fonte em x,y do quadro); a silhueta é só do quadro (fonte em origemDaSilhueta)
   const quadro = (im: CanvasImageSource, alfa: number, daPagina = true): void => {
     ctx.globalAlpha = alfa;
-    ctx.drawImage(im, daPagina ? pd.x : MARGEM_DA_SILHUETA, daPagina ? pd.y : MARGEM_DA_SILHUETA, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
+    const o = daPagina ? pd : origemDaSilhueta(im, pd);
+    ctx.drawImage(im, o.x, o.y, pd.w, pd.h, -pd.ax * K, -pd.h * K, pd.w * K, pd.h * K);
     ctx.globalAlpha = 1;
   };
 
@@ -92,13 +93,13 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
     const tp = getPD(ch, tr.name);
     const tinta = janelaEsq ? silhuetaTingidaDe(arte, tp, ch.fire[0]) : null; // recorte tingido: do tamanho do quadro, SEM margem
     const fonte = tinta ?? arte.silhuetaDe(tp);
-    const m = tinta ? 0 : MARGEM_DA_SILHUETA;
     if (!fonte) continue; // sem silhueta (atlas fora da memória ou sem canvas): sem rastro, a luta segue
+    const o = tinta ? { x: 0, y: 0 } : origemDaSilhueta(fonte, tp);
     ctx.save();
     ctx.translate(tr.x, tr.y);
     ctx.scale(tr.f, 1);
     ctx.globalAlpha = (tr.life / 10) * (janelaEsq ? 0.45 : 0.28);
-    ctx.drawImage(fonte, m, m, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
+    ctx.drawImage(fonte, o.x, o.y, tp.w, tp.h, -tp.ax * K, -tp.h * K, tp.w * K, tp.h * K);
     ctx.restore();
     ctx.globalAlpha = 1;
   }

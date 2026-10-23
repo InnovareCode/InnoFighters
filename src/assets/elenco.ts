@@ -18,7 +18,7 @@ export interface ArteLutador {
   readonly pronta: boolean;
   /** Imagem da página em que está o quadro `pd` (o objeto devolvido por `getPD`); null se não carregada. */
   imagemDe(pd: PoseDados): CanvasImageSource | null;
-  /** Silhueta branca (flash de dano) do QUADRO `pd` (canvas do quadro com 1 px de margem: fonte em (1,1,w,h)), criada sob demanda; null se não carregada ou sem canvas/contexto (nunca lança). */
+  /** Silhueta branca (flash de dano) do QUADRO `pd` (canvas do recorte do quadro; fonte em `origemDaSilhueta(canvas, pd)`), criada sob demanda; null se não carregada ou sem canvas/contexto (nunca lança). */
   silhuetaDe(pd: PoseDados): CanvasImageSource | null;
   /** Rosto para seleção e HUD (retrato próprio, ou o recorte do atlas); null se nada está carregado. */
   retrato(head: Quatro): RetratoPronto | null;

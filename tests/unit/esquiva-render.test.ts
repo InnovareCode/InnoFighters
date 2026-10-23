@@ -147,7 +147,7 @@ describe('silhuetaTingida', () => {
     const pd = { x: 5, y: 6, w: 20, h: 30, ax: 10 };
     const a = silhuetaTingida(SIL, pd, '#6fe0ff', criar);
     expect(a).not.toBeNull();
-    expect(chamadas.find(([n]) => n === 'drawImage')).toEqual(['drawImage', SIL, 1, 1, 20, 30, 0, 0, 20, 30]); // a silhueta é do quadro com 1 px de margem: a fonte começa em 1,1
+    expect(chamadas.find(([n]) => n === 'drawImage')).toEqual(['drawImage', SIL, 5, 6, 20, 30, 0, 0, 20, 30]); // a fonte é o quadro dentro do recorte da silhueta (aqui o recorte começa na página 0,0: origem 5,6)
     expect(chamadas.some(([n, v]) => n === '=globalCompositeOperation' && v === 'source-in')).toBe(true);
     expect(chamadas.some(([n, v]) => n === '=fillStyle' && v === '#6fe0ff')).toBe(true);
     expect(silhuetaTingida(SIL, pd, '#6fe0ff', criar)).toBe(a);

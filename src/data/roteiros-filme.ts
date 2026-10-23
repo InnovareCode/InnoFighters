@@ -189,7 +189,9 @@ const RAJADA: Readonly<Record<string, readonly [string, string, string]>> = {
   hayato: ['lp1', 'hp1', 'hk1'],
   'wei-long': ['hp1', 'lk1', 'hk1'],
   'min-ji': ['lk1', 'hp1', 'hk1'],
-  caio: ['lk1', 'hk1', 'sweep'],
+  // CAIO é capoeirista e o dono exige gingado (docs/curadoria-filme-grupo-b.md §5): o `hk1` é chute reto com punhos de boxe e lia como taekwondo; benção (lk1), rasteira (sweep)
+  // e a ginga descendo ao chão (sb0), que cai direto no sb1 (mão no chão) do close. Vale para RABO-DE-ARRAIA e MEIA-LUA.
+  caio: ['lk1', 'sweep', 'sb0'],
   aminu: ['lp1', 'lk1', 'upper'],
   centella: ['lp1', 'lk1', 'hk1'],
   camille: ['lp1', 'lk1', 'hp1'],
@@ -223,7 +225,8 @@ const LINHAS: Readonly<Record<string, LinhaTabela>> = {
   // CAIO (E4)
   'caio/sFire': L({ tipo: 'projetil', estilo: 'E4', fK: 'f0', enc: { r: SELO, prep: 'sa0', impacto: 'sa2' }, desvios: { 4: { projetil: true } } }),
   'caio/sDown': L({ tipo: 'chao', estilo: 'E4', fK: 'f1', enc: { prep: 'sb0', impacto: 'sb1', imp2: 'sb2' } }),
-  'caio/sFwd': L({ tipo: 'aereo', estilo: 'E4', fK: 'f2', enc: { prep: 'sc0', subida: 'jup', impacto: 'sc1', queda: 'land' } }),
+  // MEIA-LUA: `jup` e `land` são pulos genéricos com os punhos em guarda; `sc0` é o impulso da ginga (mãos soltas) e `sb2` a aterrissagem em negativa (docs/curadoria-filme-grupo-b.md §5)
+  'caio/sFwd': L({ tipo: 'aereo', estilo: 'E4', fK: 'f2', enc: { prep: 'sc0', subida: 'sc0', impacto: 'sc1', queda: 'sb2' } }),
   // AMINU (E5)
   'aminu/sFire': L({ tipo: 'chao', estilo: 'E5', fK: 'f0', enc: { prep: 'hp0', impacto: 'hp1' } }),
   'aminu/sDown': L({ tipo: 'chao', estilo: 'E5', fK: 'f1', enc: { prep: 'sb0', impacto: 'sb1', imp2: 'sb2' } }),

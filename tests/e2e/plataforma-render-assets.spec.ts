@@ -264,8 +264,8 @@ test.describe('loader de assets', () => {
         marcos,
         tamanhoAtlas: [atlas.imagem.width, atlas.imagem.height],
         cenario: [rec.cenarios.get('palco')!.width, rec.cenarios.get('palco')!.height],
-        silhuetaOpaca: px(11, 11), // quadro (10, 10) + 1 px de margem
-        silhuetaTransparente: Array.from(silDir.getContext('2d')!.getImageData(19, 11, 1, 1).data), // página (50, 10) = quadro (18, 10) + 1 px de margem
+        silhuetaOpaca: px(10, 10), // idle0 começa na página 0,0: origem do recorte (0, 0)
+        silhuetaTransparente: Array.from(silDir.getContext('2d')!.getImageData(26, 10, 1, 1).data), // página (50, 10): o recorte de `dir` (x 32) começa em 24, então fica em 26
         tamanhoSilhueta: [sil.width, sil.height],
         originalOpaco: Array.from(og.getImageData(10, 10, 1, 1).data),
         mesma: atlas.silhuetaDe(atlas.poses()['idle0']) === sil,
@@ -280,7 +280,7 @@ test.describe('loader de assets', () => {
     expect(r.silhuetaOpaca).toEqual([255, 255, 255, 255]); // pixel opaco vira branco
     expect(r.silhuetaTransparente[3]).toBe(0); // transparente continua transparente
     expect(r.mesma).toBe(true);
-    expect(r.tamanhoSilhueta).toEqual([34, 34]); // o quadro (32x32) + 1 px de margem, não a página de 64x32
+    expect(r.tamanhoSilhueta).toEqual([40, 32]); // o recorte do quadro (32x32) alinhado a 8 px com 8 de margem (até x 40), não a página de 64x32
     // K = 255 / 32; tipX = (30 - 16) * K; tipY = (32 - 10) * K (via manifestoParaPoses)
     expect(r.poseHp1?.tipX).toBeCloseTo((14 * 255) / 32, 6);
     expect(r.poseHp1?.tipY).toBeCloseTo((22 * 255) / 32, 6);

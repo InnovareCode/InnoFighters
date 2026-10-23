@@ -134,3 +134,31 @@ describe('3 e 4. a célula cabe no painel inclinado, com folga em cima', () => {
     expect(t[1]).toBeCloseTo(e.cx, 6);
   });
 });
+
+describe('5. CAIO capoeirista: gingado no roteiro (docs/curadoria-filme-grupo-b.md §5)', () => {
+  const poses = (chave: string): string[] => roteiroDaTabela(chave)!.batidas.flatMap((b) => [b.atacante, b.atacanteAlt ?? '']).filter(Boolean);
+
+  it('a rajada é benção -> rasteira -> ginga ao chão (lk1, sweep, sb0) no RABO-DE-ARRAIA; na MEIA-LUA a 3ª batida é a SUBIDA (sc0); nenhuma tem o chute reto hk1', () => {
+    expect(roteiroDaTabela('caio/sDown')!.batidas.slice(1, 4).map((x) => x.atacante)).toEqual(['lk1', 'sweep', 'sb0']);
+    expect(roteiroDaTabela('caio/sFwd')!.batidas.slice(1, 4).map((x) => x.atacante)).toEqual(['lk1', 'sweep', 'sc0']); // o modelo aéreo troca a 3ª pela subida
+    for (const chave of ['caio/sDown', 'caio/sFwd']) expect(poses(chave), chave).not.toContain('hk1');
+  });
+
+  it('MEIA-LUA: prep e subida em sc0 (o impulso da ginga), impacto sc1 e queda sb2 (aterrissagem em negativa); nada de jup/land genéricos', () => {
+    const p = poses('caio/sFwd');
+    for (const q of ['sc0', 'sc1', 'sb2']) expect(p, q).toContain(q);
+    expect(p).not.toContain('jup');
+    expect(p).not.toContain('land');
+    const b = roteiroDaTabela('caio/sFwd')!.batidas;
+    expect(b[4]?.atacante).toBe('f2'); // o close da meia-lua continua sendo o f2
+    expect(b[4]?.atacanteAlt).toBe('sc1');
+    expect(b[6]?.atacante).toBe('sb2');
+  });
+
+  it('RABO-DE-ARRAIA (prep sb0, impacto sb1, imp2 sb2) e ONDA VERDE (sFire) não mudaram', () => {
+    const p = poses('caio/sDown');
+    for (const q of ['sb0', 'sb1', 'sb2']) expect(p, q).toContain(q);
+    expect(roteiroDaTabela('caio/sDown')!.batidas.find((x) => x.tc === 0)?.atacante).toBe('f1');
+    expect(roteiroDaTabela('caio/sFire')!.batidas.find((x) => x.tc === 0)?.atacante).toBe('f0');
+  });
+});

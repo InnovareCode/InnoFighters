@@ -1,6 +1,6 @@
 import { SH } from '../core/constantes';
 import type { LutadorLeitura } from '../core/contratos';
-import { MARGEM_DA_SILHUETA } from '../assets/canvas';
+import { origemDaSilhueta } from '../assets/canvas';
 import type { ArteLutador } from '../assets/elenco';
 import type { PoseDados } from '../data/tipos';
 import type { Ctx } from './tela';
@@ -36,7 +36,7 @@ const criarDoDocumento: CriarCanvas = (w, h) => {
 const tingidas = new WeakMap<PoseDados, Map<string, HTMLCanvasElement>>();
 
 /**
- * A silhueta branca do quadro `pd` (canvas do quadro com margem de 1 px) pintada de `cor` (recorte do tamanho do quadro, uma vez por quadro e cor). Só as poses da esquiva passam
+ * A silhueta branca do quadro `pd` (canvas do recorte de `criarSilhuetaBranca`) pintada de `cor` (recorte do tamanho do quadro, uma vez por quadro e cor). Só as poses da esquiva passam
  * por aqui (crouch/land de cada ficha), então o cache é minúsculo. null sem DOM ou sem contexto 2D.
  */
 export function silhuetaTingida(silhueta: CanvasImageSource, pd: PoseDados, cor: string, criar: CriarCanvas = criarDoDocumento): HTMLCanvasElement | null {
@@ -46,7 +46,8 @@ export function silhuetaTingida(silhueta: CanvasImageSource, pd: PoseDados, cor:
   const c = criar(Math.max(1, Math.ceil(pd.w)), Math.max(1, Math.ceil(pd.h)));
   const g = c?.getContext('2d');
   if (!c || !g) return null;
-  g.drawImage(silhueta, MARGEM_DA_SILHUETA, MARGEM_DA_SILHUETA, pd.w, pd.h, 0, 0, pd.w, pd.h); // a silhueta é do QUADRO, com a margem de 1 px
+  const o = origemDaSilhueta(silhueta, pd);
+  g.drawImage(silhueta, o.x, o.y, pd.w, pd.h, 0, 0, pd.w, pd.h); // a silhueta é do QUADRO, com margem e alinhamento (ver canvas.ts)
   g.globalCompositeOperation = 'source-in';
   g.fillStyle = cor;
   g.fillRect(0, 0, c.width, c.height);

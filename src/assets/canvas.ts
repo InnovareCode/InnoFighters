@@ -8,17 +8,56 @@ export const criarCanvasPadrao: CriarCanvas = (largura, altura) => {
 };
 
 /** O retângulo de um quadro dentro da página do atlas (em pixels da imagem). */
-/** Pixels de vizinhança copiados em volta do quadro (ver `criarSilhuetaBranca`). */
-export const MARGEM_DA_SILHUETA = 1;
-
 export type RetanguloDoQuadro = { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
 
 /**
+ * Recorte da silhueta de um quadro: o retângulo do quadro com `MARGEM_DA_SILHUETA` px de vizinhança, com os cantos arredondados para MÚLTIPLOS de
+ * `ALINHAMENTO_DA_SILHUETA` na página. Existe por fidelidade com a silhueta da página inteira (o que o protótipo desenha), MEDIDO no Chromium
+ * (fidelidade-prototipo > desenharPose, flash a 0,6 de alfa, qualidade `high`, escala de tela < 1):
+ *  - ALINHAMENTO: ao REDUZIR a imagem o navegador amostra a cadeia de mipmaps do canvas de origem, e os blocos de 2x2, 4x4, 8x8... pixels são contados a
+ *    partir da ORIGEM do canvas. Um recorte que começa num x qualquer desloca os blocos em relação à página e muda a cor das bordas (5509 px, até 25 níveis,
+ *    nas 48 células do oráculo). Origem na página múltipla de 8 = blocos idênticos até a escala de tela 1/8.
+ *  - MARGEM: o filtro lê vizinhos além do quadro; com 8 px (e o alinhamento) a diferença para a página inteira é ZERO (máx. 1 nível, arredondamento) em escalas
+ *    de tela de 0,12 a 3,6. Só alinhamento ou só margem, de 1 a 32 px, deixou de 14 a 25 mil px diferentes.
+ *  - EIXO DE TAMANHO ÍMPAR: página cuja largura ou altura NÃO é múltipla de 8 (só os atlas originais do protótipo, ex. 3600x2251) tem a cadeia de mipmaps
+ *    com filtro de 3 amostras nos níveis ímpares, e nenhum recorte menor reproduz isso (1184 px diferentes, até 21 níveis, mesmo com a margem e o alinhamento,
+ *    e só zera com a ALTURA da página inteira). Nesse eixo o recorte é a página inteira. Os atlas de produção são todos múltiplos de 8 (orçamento: páginas
+ *    <= 2048), então lá o recorte é o justo.
+ * Custo: ~10% a mais de memória que o quadro justo. Escala de tela abaixo de 1/8 (nenhum flash é desenhado tão pequeno) volta a diferir de leve.
+ */
+export const ALINHAMENTO_DA_SILHUETA = 8;
+export const MARGEM_DA_SILHUETA = 8;
+
+type Eixo = { readonly inicio: number; readonly fim: number };
+
+/** O recorte de um eixo: o quadro `[v, v + tamanho)` numa página de `pagina` px (Infinity = não sei: trata como alinhável). */
+function recorteDoEixo(v: number, tamanho: number, pagina: number): Eixo {
+  if (Number.isFinite(pagina) && pagina % ALINHAMENTO_DA_SILHUETA !== 0) return { inicio: 0, fim: pagina };
+  return {
+    inicio: Math.max(0, Math.floor((v - MARGEM_DA_SILHUETA) / ALINHAMENTO_DA_SILHUETA) * ALINHAMENTO_DA_SILHUETA),
+    fim: Math.min(pagina, Math.ceil((v + tamanho + MARGEM_DA_SILHUETA) / ALINHAMENTO_DA_SILHUETA) * ALINHAMENTO_DA_SILHUETA),
+  };
+}
+
+const origens = new WeakMap<object, { readonly x: number; readonly y: number }>();
+
+/**
+ * Onde o quadro começa DENTRO do canvas da silhueta `silhueta`: a fonte do `drawImage` é (x, y, w, h) deste ponto, não da página. Vale o que
+ * `criarSilhuetaBranca` registrou; para qualquer outro objeto (um dublê de teste) vale o recorte padrão de uma página alinhável.
+ */
+export function origemDaSilhueta(silhueta: object, quadro: Pick<RetanguloDoQuadro, 'x' | 'y'>): { readonly x: number; readonly y: number } {
+  return (
+    origens.get(silhueta) ?? {
+      x: quadro.x - recorteDoEixo(quadro.x, 0, Infinity).inicio,
+      y: quadro.y - recorteDoEixo(quadro.y, 0, Infinity).inicio,
+    }
+  );
+}
+
+/**
  * Silhueta branca de UM quadro (os mesmos pixels opacos, tudo branco). Desenhada por cima do lutador com alfa variável, vira o flash de dano.
- * O canvas tem o tamanho do QUADRO mais `MARGEM_DA_SILHUETA` px de cada lado (cópia dos vizinhos da página): quem desenha usa o retângulo
- * (MARGEM, MARGEM, w, h) como fonte, não (x, y, w, h) da página. Antes era a página inteira (2 a 7 MP por página, cara no iPhone); o quadro tem ~0,1 MP.
- * A margem existe por fidelidade, MEDIDA no Chromium: ao ampliar/reduzir (K diferente de 1) o desenho amostra 1 px além do recorte, e sem a margem
- * as bordas do flash diferiam da silhueta da página inteira (15 a 247 px de 40 mil, a 255); com 1 px, 0 diferenças em K 0,7 e 1,32.
+ * O canvas cobre o recorte descrito acima (não a página inteira: 2 a 7 MP por página, cara no iPhone); quem desenha usa `origemDaSilhueta(canvas, quadro)`
+ * como origem da fonte.
  *
  * NUNCA lança: sem contexto 2D (o iPhone acima do teto de canvas devolve `getContext` nulo) ou com a fábrica falhando, devolve null e o
  * flash simplesmente não aparece (quem desenha já trata a silhueta ausente). A luta não cai por causa de um brilho.
@@ -29,23 +68,20 @@ export function criarSilhuetaBranca(
   criarCanvas: CriarCanvas = criarCanvasPadrao,
 ): HTMLCanvasElement | null {
   try {
-    const M = MARGEM_DA_SILHUETA;
-    const c = criarCanvas(Math.max(1, Math.ceil(quadro.w)) + 2 * M, Math.max(1, Math.ceil(quadro.h)) + 2 * M);
+    const { width: W, height: H } = imagem as { width?: number; height?: number };
+    const ex = recorteDoEixo(quadro.x, quadro.w, typeof W === 'number' ? W : Infinity);
+    const ey = recorteDoEixo(quadro.y, quadro.h, typeof H === 'number' ? H : Infinity);
+    const c = criarCanvas(Math.max(1, ex.fim - ex.inicio), Math.max(1, ey.fim - ey.inicio));
     const g = c.getContext('2d');
     if (!g) {
       liberarCanvas(c);
       return null;
     }
-    // a margem é recortada na borda da página (fonte fora da imagem faz o navegador esticar o desenho)
-    const { width: W, height: H } = imagem as { width?: number; height?: number };
-    const sx = Math.max(0, quadro.x - M);
-    const sy = Math.max(0, quadro.y - M);
-    const sx2 = Math.min(typeof W === 'number' ? W : Infinity, quadro.x + quadro.w + M);
-    const sy2 = Math.min(typeof H === 'number' ? H : Infinity, quadro.y + quadro.h + M);
-    g.drawImage(imagem, sx, sy, sx2 - sx, sy2 - sy, sx - (quadro.x - M), sy - (quadro.y - M), sx2 - sx, sy2 - sy);
+    g.drawImage(imagem, ex.inicio, ey.inicio, c.width, c.height, 0, 0, c.width, c.height);
     g.globalCompositeOperation = 'source-atop';
     g.fillStyle = '#fff';
     g.fillRect(0, 0, c.width, c.height);
+    origens.set(c, { x: quadro.x - ex.inicio, y: quadro.y - ey.inicio });
     return c;
   } catch {
     return null;

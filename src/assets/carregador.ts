@@ -134,7 +134,7 @@ export class AtlasLutador {
   }
 
   /**
-   * Silhueta branca do QUADRO `pd` (canvas do quadro com 1 px de margem: a fonte do `drawImage` é (MARGEM_DA_SILHUETA, MARGEM_DA_SILHUETA, w, h)), criada sob demanda e
+   * Silhueta branca do QUADRO `pd` (canvas do recorte do quadro, alinhado e com margem (ver canvas.ts): a fonte do `drawImage` começa em `origemDaSilhueta(canvas, pd)`), criada sob demanda e
    * guardada num cache com teto de memória. null se o atlas não está carregado OU se o navegador não deu canvas/contexto (iPhone no teto):
    * nunca lança, o flash é que não aparece.
    */

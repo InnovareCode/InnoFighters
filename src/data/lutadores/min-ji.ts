@@ -22,8 +22,8 @@ export const MIN_JI: LutadorDef = {
   bars: [2, 5, 2, 4],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'min-ji-rajada-de-seul', nome: 'RAJADA DE SEUL', sequencia: ['lk', 'lk', 'lk', 'lk'], final: 'lanca' },
-    { id: 'min-ji-tornado-de-seul', nome: 'TORNADO DE SEUL', sequencia: ['lk', 'hk', 'sDown'], semQueda: [1] },
+    { id: 'min-ji-rajada-de-seul', nome: 'HANA-DUL-SET-NET', sequencia: ['lk', 'lk', 'lk', 'lk'], final: 'lanca' },
+    { id: 'min-ji-tornado-de-seul', nome: 'NOTA MÁXIMA', sequencia: ['lk', 'hk', 'sDown'], semQueda: [1] },
   ],
   mods: {
     lp: { S: 2, A: 3, R: 5, dmg: 3.5 },

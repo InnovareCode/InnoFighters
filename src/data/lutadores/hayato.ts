@@ -23,8 +23,8 @@ export const HAYATO: LutadorDef = {
   bars: [3, 3, 3, 3],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'hayato-trovao-ascendente', nome: 'TROVÃO ASCENDENTE', sequencia: ['clp', 'hk', 'sDown'], semQueda: [1] },
-    { id: 'hayato-trovao-lancado', nome: 'TROVÃO LANÇADO', sequencia: ['lk', 'clp', 'hp'], final: 'lanca' },
+    { id: 'hayato-trovao-ascendente', nome: 'RAIO ÀS AVESSAS', sequencia: ['clp', 'hk', 'sDown'], semQueda: [1] },
+    { id: 'hayato-trovao-lancado', nome: 'ESTRONDO', sequencia: ['lk', 'clp', 'hp'], final: 'lanca' },
   ],
   mods: {},
   especiais: {

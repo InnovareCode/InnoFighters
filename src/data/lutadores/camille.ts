@@ -27,8 +27,8 @@ export const CAMILLE: LutadorDef = {
   bars: [3, 3, 4, 4],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'camille-estocada-cruzada', nome: 'ESTOCADA CRUZADA', sequencia: ['lp', 'lk', 'hp'], final: 'cruza' },
-    { id: 'camille-riposte', nome: 'RIPOSTE', sequencia: ['clk', 'hk', 'sDown'], semQueda: [1] },
+    { id: 'camille-estocada-cruzada', nome: 'FLECHA DE MARSELHA', sequencia: ['lp', 'lk', 'hp'], final: 'cruza' },
+    { id: 'camille-riposte', nome: 'TOUCHÉ', sequencia: ['clk', 'hk', 'sDown'], semQueda: [1] },
   ],
   reach: 1.1,
   mods: {},

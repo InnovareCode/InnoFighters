@@ -135,8 +135,8 @@ export const ZENON_DEF: Omit<LutadorDef, 'id'> = {
   bars: [4, 3, 5, 2],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'zenon-tributo-do-arconte', nome: 'TRIBUTO DO ARCONTE', sequencia: ['clp', 'hk', 'sFwd'], semQueda: [1] },
-    { id: 'zenon-decreto-cruzado', nome: 'DECRETO CRUZADO', sequencia: ['lk', 'lp', 'hp'], final: 'cruza' },
+    { id: 'zenon-tributo-do-arconte', nome: 'A CONTA, CONVIDADO', sequencia: ['clp', 'hk', 'sFwd'], semQueda: [1] },
+    { id: 'zenon-decreto-cruzado', nome: 'SEU LUGAR À MESA', sequencia: ['lk', 'lp', 'hp'], final: 'cruza' },
   ],
   reach: 1.12,
   // Hurtbox em pe: a caixa fixa (254 px) deixava ~93 px da cabeca e dos ombros de fora (spec §9.2). 0,92 x idle0 (336,6 px logicos = 1,32 x 255) / 254,4 = 1,22 (era 1,25 a 1,36).

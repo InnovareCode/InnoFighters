@@ -28,8 +28,8 @@ export const AMINU: LutadorDef = {
   bars: [4, 3, 3, 4],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'aminu-dambe-encadeado', nome: 'DAMBE ENCADEADO', sequencia: ['lk', 'hp', 'hp'], final: 'parede' },
-    { id: 'aminu-leao-no-canto', nome: 'LEÃO NO CANTO', sequencia: ['lp', 'hk', 'sFwd'], semQueda: [1] },
+    { id: 'aminu-dambe-encadeado', nome: 'NO COLO DA PLATEIA', sequencia: ['lk', 'hp', 'hp'], final: 'parede' },
+    { id: 'aminu-leao-no-canto', nome: 'RUGIDO DE KANO', sequencia: ['lp', 'hk', 'sFwd'], semQueda: [1] },
   ],
   reach: 1.08,
   mods: {},

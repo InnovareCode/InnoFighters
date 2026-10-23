@@ -77,8 +77,10 @@ test('sem a regra a aba GOLPES é a de antes (nenhum combo e a legenda das tecla
   await hook(page, `(h) => { h.ui.c.regras = { ...h.ui.c.regras, motorV2: undefined }; h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('how', { from: 'menu' }); h.ui.scene.tab = 2; }`);
   const textos = await desenhar(page);
   expect(textos.some((t) => t.t.startsWith('TOQUE: '))).toBe(false);
-  const legenda = textos.find((t) => t.t.startsWith('Teclas do Jogador 1'));
-  expect(legenda?.y).toBe(110 + 376);
+  // o texto de corpo tem sombra (src/render/texto.ts: fillText em y + 1,5 ANTES do texto em y): a linha é a de MENOR y
+  const legenda = textos.filter((t) => t.t.startsWith('Teclas do Jogador 1'));
+  expect(legenda.length).toBeGreaterThan(0);
+  expect(Math.min(...legenda.map((t) => t.y))).toBe(110 + 376);
 });
 
 test('TREINO: a pausa > lista de golpes mostra os combos no lugar da dica genérica', async ({ page }) => {

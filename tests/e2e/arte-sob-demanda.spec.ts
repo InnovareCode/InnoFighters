@@ -39,8 +39,8 @@ test.describe('retratos e carga de arte', () => {
     expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(10);
     expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(10);
     expect(atlasDe(urls)).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
-    expect(atlasV1De(urls)).toEqual(['caio', 'wei-long']); // só os dois originais que seguem em v1
-    for (const id of ['hayato', 'min-ji']) expect(paginasDe(urls, id), id).toEqual(['atlas-0.webp', 'atlas-1.webp']); // arte nova: 2 páginas, uma vez cada
+    expect(atlasV1De(urls)).toEqual([]); // desde 0e6cd26 CAIO e WEI LONG também têm arte nova: nenhum atlas v1 (atlas.webp) é baixado
+    for (const id of ['hayato', 'min-ji', 'caio', 'wei-long']) expect(paginasDe(urls, id), id).toEqual(['atlas-0.webp', 'atlas-1.webp']); // arte nova: 2 páginas, uma vez cada
     for (const id of ['aminu', 'centella', 'camille', 'nila', 'baatar', 'zenon']) expect(paginasDe(urls, id), id).toEqual([]); // nenhuma página dos novos no boot (o ZENON só na luta contra ele)
     expect(cenariosDe(urls)).toEqual(['cenario-br.webp', 'cenario-cn.webp', 'cenario-jp.webp', 'cenario-kr.webp']); // os 4 da vitrine; os cenários novos só sob demanda
     const r = await hook(page, '(h) => { const m = h.mundo(); return Object.fromEntries(Object.entries(m.elenco).map(([id, e]) => [id, e.arte.temRetrato])); }');
@@ -107,9 +107,10 @@ test.describe('retratos e carga de arte', () => {
     expect(residentes).toEqual(['hayato', 'wei-long']);
     const cargas = await hook(page, '(h) => Object.fromEntries(h.mundo().arte.cargas.lutadores)');
     expect(cargas).toEqual({ hayato: 1, 'wei-long': 1 });
-    // HAYATO em v2 (2 páginas, uma vez cada); só o WEI LONG segue em v1 (atlas.webp)
+    // HAYATO e WEI LONG em v2 (2 páginas, uma vez cada); nenhum atlas v1 (atlas.webp)
     expect(paginasDe(urls, 'hayato')).toEqual(['atlas-0.webp', 'atlas-1.webp']);
-    expect(atlasV1De(urls)).toEqual(['wei-long']);
+    expect(paginasDe(urls, 'wei-long')).toEqual(['atlas-0.webp', 'atlas-1.webp']);
+    expect(atlasV1De(urls)).toEqual([]);
     expect(erros).toEqual([]);
   });
 

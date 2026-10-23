@@ -127,6 +127,7 @@ test.describe('fluidez da luta (V2-2)', () => {
       `(h) => {
         const c = document.getElementById('jogo'); const g = c.getContext('2d');
         h.mundo().game.p1.startMove('hp', h.mundo().game); h.avancar(3);
+        h.desenhar(); // aquecimento: o 1º desenho depois da troca de estado difere do seguinte em 1 pixel, 1 nível (medido: (1267,955)); o que se compara é o estado estável
         h.desenhar(); const a = g.getImageData(0, 0, c.width, c.height).data.slice();
         h.desenhar(0.3); const b = g.getImageData(0, 0, c.width, c.height).data;
         for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;

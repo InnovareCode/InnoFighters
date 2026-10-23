@@ -11,7 +11,7 @@
 - [Controles de toque](project_controles_toque.md) — arcade de vidro; cor = função; fio claro + contorno; opacidade .9; injetar CSS no jogo real
 - [Arte do trailer](project_trailer_arte.md) — frase dos cartões; pico no acerto DA TOMADA; ZENON ≤ 1,10; prévias via diretor real
 - [Sons realistas (samples IA -> CC0)](project_sons_realistas.md) — pacote v1 CC0 0,78 MB validado, não ouvido; 7z via x7z.py; régua; teto ±18 do ganho
-- [NEVE MALUCA (jogo irmão)](project_neve_maluca.md) — v2 LATERAL; CAPI F1 (8/4/0) e F2 (6/4/2) curadas; sem-texto no bloco A; teste do giro; "free hand"
 - [Plano das lacunas 23/10](project_plano_lacunas.md) — filme = rajada atlas + close FILME; cn/kr/br são os mesmos JPG; tarja 'special' cai no idle
 - [Roteiros do filme (V2-3b)](project_roteiros_filme.md) — 4 modelos; f0-f2 = sFire/sDown/sFwd; FILME 2048x1280 = 10 MiB; B sem guarda (eco)
+- [Curadoria FILME](project_curadoria_filme.md) — HAYATO v1 ok; página 1920x1280 1,06x; corte da IA semitransparente; loader exige bloco filme
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

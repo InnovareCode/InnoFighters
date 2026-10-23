@@ -16,7 +16,7 @@ Doc completo: `docs/saude-da-suite-2026-10-23.md`. Veredito REPROVADO como port�
 **Armadilhas desta rodada (reaproveitar):**
 - `@vitest/coverage-v8` não está no package.json e não instala offline; `NODE_V8_COVERAGE` + vitest sai incompleto (workers não descarregam). Para "cobertura" use grafo de imports + busca de símbolo, e diga que não é numérica.
 - `ferramentas/trailer/medir.mjs` com `--modo intervalo` e `caio:wei-long` a 4x TRAVAM (>300 s) com a máquina dividida com outra sessão; sempre `timeout 300` e redirecionar para arquivo (um `| tail` perde tudo ao matar). O processo não sai sozinho no fim: o resultado já está no arquivo.
-- Máquina é dividida com a sessão do Neve Maluca (vitest paralelo): p95 de 4x oscila de 30 a 95 ms; a mediana (9,7-10,4 ms) é o número estável. Referência de 2026-10-22: p95 14,7 / mediana 6,7.
+- Máquina é dividida com a outra sessão (vitest paralelo): p95 de 4x oscila de 30 a 95 ms; a mediana (9,7-10,4 ms) é o número estável. Referência de 2026-10-22: p95 14,7 / mediana 6,7.
 - Heredoc/`node -e` no git-bash mangla `\` e `$`: criar `.mjs`/`.ps1` com a ferramenta Write; `import` de caminho absoluto no Windows exige `file://`, então colocar o script dentro do worktree e usar import "bare".
 - Em worktree com `npm ci` real (sem junção), `git worktree remove --force` basta. `vite preview` serve gzip (encodedDataLength = bytes na rede). Matar servidor por PID com `taskkill /T /F`.
 - Vitest no Windows deixa 2 snapshots "sujos" no git (EOL, `git diff` vazio) e isso faz o `vite build` gravar `sujo:true` em version.json.

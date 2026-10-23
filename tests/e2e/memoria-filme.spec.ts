@@ -40,6 +40,8 @@ async function amostrar(browser: Browser, baseURL: string, com: boolean, aposFil
     for (let i = 0; i < 300; i++) if ((await hook(page, '(h) => { h.avancar(2); return h.mundo().game.phase; }')) === 'fight') break;
     await hook(page, '(h) => h.avancar(5)');
     if (com) await page.waitForFunction(() => (window as any).__inno.mundo().arte.filmesResidentes().includes('hayato'), undefined, { timeout: 30_000 });
+    // força a decodificação da folha inteira (o Chromium só a decodifica no primeiro desenho; carregada e nunca desenhada, ela quase não aparece na memória dos processos): um desenho 1 x 1 de uma folha de 1920 x 1280 decodifica tudo
+    if (com) await hook(page, `(h) => { const i = h.mundo().arte.atlas.get('hayato').filmeImg; const c = document.createElement('canvas'); c.width = 1; c.height = 1; c.getContext('2d').drawImage(i, 0, 0, i.width ?? i.naturalWidth, i.height ?? i.naturalHeight, 0, 0, 1, 1); }`);
     if (aposFilme) {
       // toca um filme de verdade (desenha as células: força a decodificação/envio à GPU) e deixa a luta voltar
       await hook(page, `(h) => { const g = h.mundo().game; g.p1.x = 410; g.p2.x = 550; g.p1.facing = 1; g.p2.facing = -1; g.p1.en = 100; g.p1.startMove('sFwd', g); }`);
@@ -104,7 +106,9 @@ test('memória dos processos (renderer + GPU), perfil de celular, HAYATO x HAYAT
     description: `working set: sem ${semWS.toFixed(1)} | com ${comWS.toFixed(1)} (+${(comWS - semWS).toFixed(1)}) | após tocar um filme ${aposWS.toFixed(1)} (+${(aposWS - semWS).toFixed(1)}); controle (filme tocado SEM a folha) ${semAposWS.toFixed(1)}, logo a folha custa ${(aposWS - semAposWS).toFixed(1)}; privada: sem ${semPriv.toFixed(1)} | com ${comPriv.toFixed(1)} (+${(comPriv - semPriv).toFixed(1)}) | após filme ${aposPriv.toFixed(1)} (+${(aposPriv - semPriv).toFixed(1)}), controle ${semAposPriv.toFixed(1)}, logo a folha custa ${(aposPriv - semAposPriv).toFixed(1)}; CPU da máquina nas amostras: mediana ${cpuMed}%, máx ${cpuMax}%`,
   });
   info.annotations.push({ type: 'amostras', description: JSON.stringify(amostras.map((a) => [a.com ? 'com' : 'sem', a.fase, +a.ws.toFixed(0), +a.priv.toFixed(0), a.cpu])) });
-  // folgado de propósito: a folha decodificada é 9,4 MiB; entre 3 e 20 MiB de memória privada a mais que o controle (que também tocou um filme) é o que se espera
-  expect(aposPriv - semAposPriv).toBeGreaterThan(3);
-  expect(aposPriv - semAposPriv).toBeLessThan(20);
+  // A asserção vale no par "carregada" (mesma luta, com x sem a folha, nada tocado), com a folha decodificada à força (ver `amostrar`): a folha de 9,4 MiB aparece como ~+12 a +15 MiB de working set
+  // (renderer + GPU). A memória PRIVADA quase não se mexe (+2 a +5, dentro do ruído) e o par "após filme" subtrai dois valores que oscilam ~±8 MiB (+0,4, -2,7 e -3,4 com o código parado): nenhum dos dois serve de asserção.
+  // Sem a folha (404, ou a carga quebrada) a diferença fica perto de 0.
+  expect(comWS - semWS, 'a folha decodificada custa working set (7 a 30 MiB); perto de 0 = a folha não carregou').toBeGreaterThan(7);
+  expect(comWS - semWS).toBeLessThan(30);
 });

@@ -13,6 +13,7 @@ Marcação: **[medido]** = número do arquivo ou do navegador; **[calculado]** =
 | CAMILLE | **APROVADA**, com limpeza por código (a linha preta da R2) | 1616 x 1280 | 7,89 MiB | 241 KB | 1,019 a 1,021x |
 | AMINU | **APROVADA COM 1 CÉLULA FORA E 1 PALIATIVO**: `f2` ecoa a mestra e sai da página; `f4` com o braço cortado na vertical, esmaecido | 1712 x 1280 | 8,36 MiB | 274 KB | 1,021x |
 | NILA | **APROVADA**, sem limpeza | 1920 x 1216 | 8,91 MiB | 329 KB | 1,070 a 1,080x |
+| AMINU v2 (§8) | **APROVADA, 6 células**: `f2` nova (PASSO DO LEÃO) da folha v2 aprovada pelo dono; `f4` mantém o paliativo | 1824 x 1280 | 8,91 MiB | 330 KB | `f2` 1,019x [calculado] |
 
 Teto do piloto: 1,1x. Todos os closes foram medidos no `drawImage` real do jogo, com a página injetada como bloco `filme` do
 `atlas.json` (contrato do loader de hoje), sem gravar nada em `public/`. Zero erro de página.
@@ -254,4 +255,73 @@ Se a célula (1) vier de novo com a pose da mestra: ela fica no `Alt` (regra do 
 Usei as versões dele e não editei esses três arquivos.
 
 **Para o `public/` (Vega/Lyra):** `<id>-filme-pagina-v1.webp` → `public/assets/lutadores/<id>/filme.webp`, e o bloco `filme`
-no `atlas.json` com `tamanho` e os quadros do `.json` (sem `p`).
+no `atlas.json` com `tamanho` e os quadros do `.json` (sem `p`). **AMINU: instalar a `-pagina-v2` (§8), não a v1.**
+
+## 8. AMINU v2: a `f2` (PASSO DO LEÃO) volta à página
+
+Apolo, 23/10/2026. O dono aprovou `arte-fonte/lutadores/aminu/folhas/aminu-filme-v2.png` (2400 x 1792, verde), gerada com a v1
+como única referência e só a célula 3 nomeada como WRONG. Entra **só a `f2`** dessa folha; as outras 5 continuam as da
+`aminu-filme-limpa-v1.png` (com os riscos do cabelo da R2C2 já limpos). Nada em `src/` ou `public/`; nada instalado.
+
+### 8.1 Medidas da folha v2 [medido, `filme-medir.mjs`]
+
+- 6 componentes, 6 figuras separadas, verde interno 0 nas 6, halo 66,9% → 0% depois do despill.
+- **R1C3 (`f2`)**: caixa `[1521,76-2370,896]`, 850 x 821. Três-quartos cortado nas canelas (corte reto em y 896, 228 colunas na
+  base, em dois trechos: pé de trás e canela enfaixada da frente). Folgas: **direita 29 px** (a ponta dos dedos da palma), topo 76.
+  Nada encosta na borda nem em outra figura: a caixa invade a da R1C2 (que vai até x 1595), mas os pixels não se tocam.
+- As outras 5 células da v2 são praticamente as da v1 (mesmas caixas a ±1 px). A R2C2 da v2 traz de novo o braço esquerdo
+  cortado em linha reta vertical: **não entra** (fica a da limpa v1 com o paliativo `f4:e30`).
+
+### 8.2 Veredito da `f2` nova [a olho, salvo indicação]
+
+| Item | Resultado |
+|---|---|
+| Pose | Avanço fundo para a direita, joelho da frente dobrado, tronco sobre o joelho, braço da frente nu estendido com a palma aberta (dedos para cima), punho de corda puxado para o quadril, boca aberta no grito, sem sorriso. É o literal do prompt |
+| Mão de corda | Só na mão de trás (o punho no quadril); a canela enfaixada é a da frente |
+| Limpeza | Sem riscos, sem linha desenhada na base, sem efeito, sem verde interno [medido: 0 px] |
+| Eco da mestra | XOR **28,2%** [medido, `filme-eco.py`], contra 4,9% da `f2` reprovada e respiração até 15,6%: **não ecoa** |
+| Veredito | **ok** |
+
+### 8.3 Como foi montada
+
+1. `filme-trocar-celula.mjs <limpa-v1> <folha-v2> <saida> f2` (ferramenta nova, reproduz o arquivo byte a byte) →
+   `filme/aminu-filme-limpa-v2.png` (arquivo novo): cópia da `limpa-v1` com a R1C3 trocada **por máscara de componente** (não
+   por retângulo, por causa da caixa que invade a R1C2): apaga a figura antiga dilatada 4 px e cola a nova dilatada 4 px, nunca
+   tocando pixel a 2 px de outra figura [medido: 0 pixel em conflito]. Remedida: R1C3 idêntica à da v2, as outras 5 idênticas à
+   limpa v1.
+2. `filme-montar-pagina.mjs <limpa-v2> <dir> 630 f0,f1,f2,f3,f4,f5`: `f2` 654 x 631, escala 0,767, base opaca 169 px.
+3. `filme-celulas.mjs <dir> <dir2> "f4:e30" f0,f1,f2,f3,f4,f5` (sem `f2:-`; o esmaecimento da `f4` continua).
+4. `filme-empacotar.mjs`: linhas `f0,f4,f5 / f1,f2,f3` → **1824 x 1280**.
+5. Despill final: dispensado [medido: 0 pixel opaco com verde > 40 acima de R e B nas 6 células].
+
+### 8.4 Orçamento [medido]
+
+| | Valor | Teto |
+|---|---|---|
+| Página | 1824 x 1280 | 2048 x 1280 |
+| Memória decodificada | 8,91 MiB | ~10 MiB (2048 x 1280 x 4) |
+| WebP (q88, alfa 100) | 338.362 bytes = 0,32 MiB | 0,8 MiB |
+| `f2` no painel | w/h 1,036 < 1,209 → limitada pela altura: 643,2 / 631 = **1,019x** [calculado] | 1,1x |
+
+Mapa (`aminu-filme-pagina-v2.json`, `painel: true` em todos, `p: 0` a tirar no `atlas.json`):
+
+| Quadro | x,y,w,h |
+|---|---|
+| `f0` | 4,4,602,630 |
+| `f1` | 4,639,592,630 |
+| `f2` | 600,638,654,631 |
+| `f3` | 1258,639,561,630 |
+| `f4` | 610,4,524,630 |
+| `f5` | 1138,4,664,630 |
+
+**Falta** a prova no painel (`filme-prova-painel-lutador.mjs`, `sFwd`): não rodada aqui porque outra equipe está com o e2e no ar.
+O esperado é `f3 → f2 → f4 → f5` no `sFwd`, em vez do `Alt`.
+
+**Armadilha do maior `vN`:** agora existe `folhas/aminu-filme-v2.png`. Quem instalar deve partir da
+`filme/aminu-filme-pagina-v2.*`, nunca remontar da folha v2 (a R2C2 dela vem com o braço cortado e os riscos do cabelo).
+
+| Arquivo novo | O que é |
+|---|---|
+| `arte-fonte/lutadores/aminu/filme/aminu-filme-limpa-v2.png` | Folha limpa v1 + `f2` da folha v2 |
+| `arte-fonte/lutadores/aminu/filme/aminu-filme-pagina-v2.{png,webp,json}` | Página FILME com 6 células e mapa |
+| `arte-fonte/ferramentas-curadoria/filme-trocar-celula.mjs` | Troca 1 célula de uma folha 3x2 pela da folha regerada, por máscara |

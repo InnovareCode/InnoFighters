@@ -25,7 +25,7 @@ com o mapa dos quadros, e passaram na prova no jogo de verdade (página injetada
 | Ampliação do close no painel [medido] | 1,019 a 1,061x | 1,053 a 1,061x | 1,019 a 1,021x |
 | Ampliação do sprite do mundo no mesmo filme [medido] | 1,536x | 1,554x | 1,327x |
 | Mexido por código | f4 espelhada (regra do §7) | f4: riscos tirados e corte reto refeito | nada |
-| Ressalva aberta | – | f1: cordão nas mãos | f3: aba do casaco cortada pela borda |
+| Ressalva aberta | – | f1: cordão nas mãos (folha v2 a gerar, §11) | ~~f3: aba do casaco cortada pela borda~~ resolvida na v2 (§10) |
 
 O teto do critério do piloto (§6.3) é 1,1x. Todos os closes ficam abaixo e todos são melhores que o atlas ampliado: o
 mundo desenha o lutador a 1,33-1,55x, o close a 1,02-1,06x, e a cabeça no close fica perto de 2x a do mundo [a olho, nas
@@ -126,7 +126,7 @@ ou verde interno = 0 a 16 px por figura (todos dentro da figura, nenhum visível
 | `f0` SELO (e SELO MAIOR) | **ok** | Palmas juntas no peito, olhar frio. Nada da palma estendida da guarda (o risco de eco do §5 dos roteiros não aconteceu) |
 | `f1` COLUNA DE ÔNIX | **ok** | Joelho no peito, palma aberta no alto. Pedi `full` e veio cortado na canela pela linha y = 895: lê como três-quartos, corte de quadro |
 | `f2` TRIBUTO | **ok** | Avanço baixo, palma aberta à direita, casaco para trás |
-| `f3` DECRETO | **ok, com ressalva** | Costas da mão, sorriso de desprezo. A aba do casaco sai pela borda esquerda: no painel vira uma borda vertical reta de ~190 px de canvas, preto sobre o fundo escuro do painel (pouco contraste) [calculado: 256 px x 0,732 da montagem x 1,021 do painel]. Só aparece no DECRETO da fase 2. Opcional: **REGERAR só esta célula** (§7.2) |
+| `f3` DECRETO | **ok, com ressalva** | Costas da mão, sorriso de desprezo. A aba do casaco sai pela borda esquerda: no painel vira uma borda vertical reta de ~190 px de canvas, preto sobre o fundo escuro do painel (pouco contraste) [calculado: 256 px x 0,732 da montagem x 1,021 do painel]. Só aparece no DECRETO da fase 2. Opcional: **REGERAR só esta célula** (§7.2). **Resolvida: a `f3` da folha v2 entrou na `-pagina-v2` (§10)** |
 | `f4` rosto atingido | **ok** | A cabeça vai para trás (topo para a esquerda, queixo para cima), o rosto em três-quartos para a direita. No painel do P2, o rosto fica virado para o atacante, mas a cabeça é jogada para longe: lê como golpe no rosto [a olho, `com-sFwd-t43.png`]. Não espelhar |
 | `f5` lançado para trás | **ok** | É o pedido literal ("arching back toward the LEFT"): cabeça no alto à esquerda, pernas à direita, o contrário do `f5` do HAYATO. No painel, o corpo vai para longe do atacante. Não espelhar |
 
@@ -317,12 +317,12 @@ Para cada lutador, os dois passos abaixo. Nenhuma linha de `src/` muda (`project
 ```json
 "filme": {"imagem": "filme.webp", "tamanho": [2032, 1248], "quadros": {"f0": {"x": 4, "y": 4, "w": 657, "h": 610, "ax": 329, "painel": true}, "f1": {"x": 665, "y": 4, "w": 626, "h": 610, "ax": 313, "painel": true}, "f2": {"x": 1295, "y": 8, "w": 733, "h": 606, "ax": 367, "painel": true}, "f3": {"x": 4, "y": 620, "w": 666, "h": 609, "ax": 333, "painel": true}, "f4": {"x": 674, "y": 619, "w": 706, "h": 610, "ax": 353, "painel": true}, "f5": {"x": 1384, "y": 618, "w": 522, "h": 611, "ax": 261, "painel": true}}}
 ```
-(BAATAR)
+(BAATAR, v1: **superado**. Instalar a `baatar-filme-pagina-v2.*` com o bloco do §12.4)
 
 ```json
 "filme": {"imagem": "filme.webp", "tamanho": [1824, 1280], "quadros": {"f0": {"x": 4, "y": 5, "w": 540, "h": 630, "ax": 270, "painel": true}, "f1": {"x": 548, "y": 4, "w": 465, "h": 631, "ax": 233, "painel": true}, "f2": {"x": 1017, "y": 4, "w": 724, "h": 631, "ax": 362, "painel": true}, "f3": {"x": 4, "y": 639, "w": 638, "h": 630, "ax": 319, "painel": true}, "f4": {"x": 646, "y": 639, "w": 538, "h": 630, "ax": 269, "painel": true}, "f5": {"x": 1188, "y": 639, "w": 624, "h": 630, "ax": 312, "painel": true}}}
 ```
-(ZENON)
+(ZENON, v1: **superado**. Instalar a `zenon-filme-pagina-v2.*` com o bloco do §10.4)
 
 Memória por luta [calculado]: 2 páginas de 8,9 a 9,7 MiB (máximo 19,3 MiB, BAATAR x BAATAR). A largura do BAATAR é 2032,
 não 1920. Fica dentro do limite de 2048 de textura.
@@ -345,3 +345,164 @@ no JSON: toda célula com corte reto é limitada pela altura.
 | `filme-limpar-baatar.py` | Novo: §6.1 |
 | `filme-espelhar-celula.mjs` | Novo: espelha células na página montada, no lugar (`node … <dirPagina> f4[,f5]`) |
 | `filme-prova-lutador.mjs` | Novo: a prova do piloto generalizada. Usa o bloco `filme` real (sem o `p: 2` de antes), anda tick a tick, resume por célula e captura nos mesmos ticks com e sem página (`node … <id> <dirPagina> <dirSaida> com|sem`) |
+
+## 10. ZENON v2: a `f3` (DECRETO) com o casaco inteiro
+
+Apolo, 23/10/2026. O dono aprovou `arte-fonte/lutadores/zenon/folhas/zenon-filme-v2.png` (2400 x 1792, verde `2,250,3`),
+gerada com a v1 como única referência e só a R2C1 nomeada como WRONG (a aba do casaco cortada pela borda esquerda). Entra
+**só a `f3`**; as outras 5 continuam as da v1. Nada em `src/` ou `public/`; nada instalado.
+
+### 10.1 Medidas da folha v2 [medido, `filme-medir.mjs`]
+
+- 6 componentes, 6 figuras separadas, verde interno 0 nas 6, halo 69,2% → 0% depois do despill.
+- **R2C1 (`f3`)**: caixa `[78,930-869,1789]`, 792 x 860. **Folga esquerda 78 px** (era 2: as colunas 0 a 2 opacas por 256 px
+  na v1). Embaixo a borda da imagem continua sendo a linha de corte, como na v1 e na R2C2/R2C3 (264 colunas na base, em
+  dois trechos: as duas pernas). A caixa invade a da R2C2 (x 818), mas os pixels não se tocam.
+- As outras 5 células da v2 são as da v1 a ±2 px de caixa.
+
+### 10.2 Veredito da `f3` nova [a olho, salvo indicação]
+
+| Item | Resultado |
+|---|---|
+| Pose | Costas três-quartos para o observador, tronco torcido para a direita, braço da frente esticado na altura do ombro com o punho fechado e o anel de sinete à mostra, a outra mão atrás do quadril, queixo erguido, meio sorriso de desprezo. Lê mais como soco reto que como "costas da mão": aceito, o dono aprovou a folha |
+| Casaco | Inteiro dentro da imagem, a barra dourada fecha a aba embaixo à esquerda; nenhuma borda reta vertical [medido: 10 px opacos na 1ª coluna da célula da página, contra 256 px de borda reta na v1] |
+| Identidade | Mesmo rosto, cicatriz, barba, gola alta com forro púrpura, faixas de couro, anel na mão direita |
+| Limpeza | Sem efeito, sem risco, sem linha desenhada na base, verde interno 0 [medido] |
+| Eco da mestra | XOR **31,1%** [medido, `filme-eco.py`] contra respiração de 10,0%: **não ecoa** (o encaixe caiu na borda da busca, dx −60; o mínimo de fato pode ser menor, mas está 3x acima da régua) |
+| Veredito | **ok** |
+
+### 10.3 Como foi montada
+
+O ZENON não tinha folha limpa (a v1 foi montada direto da folha), então a base é a própria `folhas/zenon-filme-v1.png`.
+
+1. `filme-trocar-celula.mjs folhas/zenon-filme-v1.png folhas/zenon-filme-v2.png filme/zenon-filme-limpa-v1.png f3` (arquivo
+   novo): apagados 356.930 px da figura antiga, colados 322.894 da nova, **0 pixel em conflito** com outra figura [medido].
+   Remedida: R2C1 igual à da v2; as outras 5 com as mesmas caixas e áreas da v1.
+2. `filme-montar-pagina.mjs filme/zenon-filme-limpa-v1.png <dir> 630 f0,f1,f2,f3,f4,f5` (réplica nas 6, como na v1):
+   `f3` 581 x 631, escala 0,731, base opaca 185 px; as outras 5 saem com o mesmo tamanho da v1.
+3. `filme-empacotar.mjs`: linhas `f0,f1,f2 / f3,f4,f5` → **1760 x 1280** (era 1824: a `f3` nova é 57 px mais estreita).
+4. Despill final: dispensado [medido: 0 pixel com cor da chave, visível ou semitransparente, na página inteira].
+
+### 10.4 Orçamento e mapa [medido]
+
+| | Valor | Teto |
+|---|---|---|
+| Página | 1760 x 1280 | 2048 x 1280 |
+| Memória decodificada | 8,59 MiB | ~10 MiB |
+| WebP (q88, alfa 100) | 286.908 bytes = 0,27 MiB | 0,8 MiB |
+| `f3` no painel | w/h 0,921 < 1,209 → limitada pela altura: 643,2 / 631 = **1,019x** [calculado] | 1,1x |
+
+Mapa (`zenon-filme-pagina-v2.json`, `painel: true` em todos, `p: 0` a tirar no `atlas.json`). Só `f3`, `f4` e `f5` mudaram
+de x/y; `f0`, `f1` e `f2` são os da v1.
+
+| Quadro | x,y,w,h | ax |
+|---|---|---|
+| `f0` | 4,5,540,630 | 270 |
+| `f1` | 548,4,465,631 | 233 |
+| `f2` | 1017,4,724,631 | 362 |
+| `f3` | 4,639,581,631 | 291 |
+| `f4` | 589,640,538,630 | 269 |
+| `f5` | 1131,640,624,630 | 312 |
+
+```json
+"filme": {"imagem": "filme.webp", "tamanho": [1760, 1280], "quadros": {"f0": {"x": 4, "y": 5, "w": 540, "h": 630, "ax": 270, "painel": true}, "f1": {"x": 548, "y": 4, "w": 465, "h": 631, "ax": 233, "painel": true}, "f2": {"x": 1017, "y": 4, "w": 724, "h": 631, "ax": 362, "painel": true}, "f3": {"x": 4, "y": 639, "w": 581, "h": 631, "ax": 291, "painel": true}, "f4": {"x": 589, "y": 640, "w": 538, "h": 630, "ax": 269, "painel": true}, "f5": {"x": 1131, "y": 640, "w": 624, "h": 630, "ax": 312, "painel": true}}}
+```
+
+**Falta** a prova no painel: a `f3` só entra no `chefe2/sFwd` (fase 2), que o gancho `?filme=` não toca, e outra equipe está
+com o e2e no ar. As outras 5 células são as da v1 [medido, página v1 x v2 por célula: mesmo
+tamanho, 21 a 47 bytes diferentes em 1 a 1,4 milhão, franja de alfa pela estimativa do fundo]; só `f4` e `f5` mudaram de
+posição na página.
+
+**Armadilha do maior `vN`:** agora existe `folhas/zenon-filme-v2.png`. Quem instalar parte da `filme/zenon-filme-pagina-v2.*`;
+nunca remontar da folha v2 sozinha (as outras 5 dela não foram curadas).
+
+| Arquivo novo | O que é |
+|---|---|
+| `arte-fonte/lutadores/zenon/filme/zenon-filme-limpa-v1.png` | Folha v1 + `f3` da folha v2 |
+| `arte-fonte/lutadores/zenon/filme/zenon-filme-pagina-v2.{png,webp,json}` | Página FILME com 6 células e mapa |
+
+## 11. BAATAR `f1` sem o cordão: folha v2 a gerar
+
+Mesmo molde da AMINU v2 e da ZENON v2: regerar a FOLHA inteira com `baatar-filme-v1.png` como única referência e a R1C2
+nomeada WRONG (o cordão desamarrado nas mãos). O prompt substitui o de célula avulsa do §7.1. Salvar como
+`folhas/baatar-filme-v2.png`. Depois de aprovada: `filme-trocar-celula.mjs filme/baatar-filme-limpa-v1.png
+folhas/baatar-filme-v2.png filme/baatar-filme-limpa-v2.png f1` (a base é a LIMPA, que já tem a `f4` sem os riscos), montar
+com os argumentos da v1 (Hc 610, réplica `f0,f3,f4`, conferir o WC da `f2`) e gravar `baatar-filme-pagina-v2.*`.
+
+## 12. BAATAR v2: a `f1` (QUEBRA-BASE) com o cordão amarrado
+
+Apolo, 23/10/2026. O dono aprovou `arte-fonte/lutadores/baatar/folhas/baatar-filme-v2.png` (2400 x 1792, verde `3,251,4`),
+gerada pelo §11. Entra **só a `f1`**; as outras 5 continuam as da limpa v1 (com a `f4` sem os riscos do §6.1). Nada em
+`src/` ou `public/`; nada instalado.
+
+### 12.1 Medidas da folha v2 [medido, `filme-medir.mjs`]
+
+- 6 componentes, 6 figuras separadas, halo 74,1% → 0% depois do despill. A v2 não tem os 3 riscos soltos da v1 (9 → 6
+  componentes), mas só a `f1` é aproveitada.
+- **R1C2 (`f1`)**: caixa `[921,88-1665,854]`, 745 x 767, área 287.283, verde interno 0. Era `[883,92-1663,853]`, 781 x 762:
+  os 38 px a menos à esquerda são o cordão que pendia do punho. Corpo inteiro, base natural (botas), sem corte reto.
+
+### 12.2 Veredito da `f1` nova
+
+| Item | Resultado |
+|---|---|
+| Pose | Base baixa e larga, bota da direita enganchando na altura do tornozelo, um punho fechado à frente na altura do ombro e o outro puxado para baixo, dentes cerrados [a olho]. Mesma leitura de "puxar para desequilibrar" |
+| Cordão | Fino, dourado, amarrado de um lado a outro do peito, como na mestra [a olho, ampliado 2x]. Não toca as mãos |
+| Mãos | Os dois punhos vazios: nada de corda, fio ou toco saindo do punho [a olho, ampliado 2x] |
+| Identidade | Mesmo rosto, bigode, têmporas grisalhas, zodog vermelho com barra dourada, shuudag azul, gutal com ornamento |
+| Limpeza | 0 px com verde dominante (G − máx(R,B) > 40, alfa > 8) na célula, no PNG e no WebP [medido] |
+| Eco da mestra | XOR **49,8%** [medido, `filme-eco.py`] contra a respiração de 6,0%: **não ecoa** (a v1 dava 47,8%; o encaixe caiu na borda da busca, dx −60, então o mínimo de fato pode ser menor, mas está 8x acima da régua) |
+| Veredito | **ok** |
+
+### 12.3 Como foi montada
+
+1. `filme-trocar-celula.mjs filme/baatar-filme-limpa-v1.png folhas/baatar-filme-v2.png filme/baatar-filme-limpa-v2.png f1`
+   (arquivo novo): apagados 283.592 px da figura antiga, colados 308.424 da nova, **0 pixel em conflito** com outra figura
+   [medido]. Remedida: 6 componentes separados, R1C2 igual à da v2, as outras 5 com as mesmas caixas e áreas da limpa v1.
+2. **WC conferido:** a v1 foi montada com `610 f0,f3,f4 732`. Remontar a limpa v1 com esses argumentos reproduz o mapa da v1
+   inteiro; sem o WC, a `f2` sai com 737 x 611 e o mapa não bate [medido].
+3. `filme-montar-pagina.mjs filme/baatar-filme-limpa-v2.png <dir> 610 f0,f3,f4 732`: `f1` 593 x 610, escala 0,795, base
+   natural (0 réplicas). As outras 5 saem com o mesmo tamanho da v1.
+4. Ordem das linhas: a do montador (`f0,f1,f2 / f3,f4,f5`), **2000 x 1248**. O `filme-empacotar.mjs` acha 1984 x 1248
+   (`f0,f1,f4 / f2,f3,f5`), mas para ganhar 16 px ele mexeria em 5 quadros do mapa. Mantida a ordem da v1: no mapa, só
+   mudam o `w`/`ax` da `f1` e o `x` da `f2`.
+5. Despill final: dispensado (ver o item Limpeza acima).
+
+As 5 células que não foram trocadas estão **idênticas byte a byte** às da página v1 (0 byte diferente em cada uma) [medido].
+Neste caso dá para dizer "pixel a pixel", porque a base da troca foi a mesma limpa v1 que montou a página v1.
+
+### 12.4 Orçamento e mapa [medido]
+
+| | Valor | Teto |
+|---|---|---|
+| Página | 2000 x 1248 (era 2032) | 2048 x 1280 |
+| Memória decodificada | 9,52 MiB | ~10 MiB |
+| WebP (q88, alfa 100) | 393.844 bytes = 0,38 MiB | 0,8 MiB |
+| `f1` no painel | w/h 0,972 < 1,209 → limitada pela altura: 643,2 / 610 = **1,054x** [calculado] | 1,1x |
+| `f2` no painel | w/h 1,210 > 1,209 → limitada pela largura: 777,6 / 733 = **1,061x** [calculado, igual à v1] | 1,1x |
+
+Mapa (`baatar-filme-pagina-v2.json`, `painel: true` em todos, `p: 0` a tirar no `atlas.json`):
+
+| Quadro | x,y,w,h | ax |
+|---|---|---|
+| `f0` | 4,4,657,610 | 329 |
+| `f1` | 665,4,593,610 | 297 |
+| `f2` | 1262,8,733,606 | 367 |
+| `f3` | 4,620,666,609 | 333 |
+| `f4` | 674,619,706,610 | 353 |
+| `f5` | 1384,618,522,611 | 261 |
+
+```json
+"filme": {"imagem": "filme.webp", "tamanho": [2000, 1248], "quadros": {"f0": {"x": 4, "y": 4, "w": 657, "h": 610, "ax": 329, "painel": true}, "f1": {"x": 665, "y": 4, "w": 593, "h": 610, "ax": 297, "painel": true}, "f2": {"x": 1262, "y": 8, "w": 733, "h": 606, "ax": 367, "painel": true}, "f3": {"x": 4, "y": 620, "w": 666, "h": 609, "ax": 333, "painel": true}, "f4": {"x": 674, "y": 619, "w": 706, "h": 610, "ax": 353, "painel": true}, "f5": {"x": 1384, "y": 618, "w": 522, "h": 611, "ax": 261, "painel": true}}}
+```
+
+**Falta** a prova no painel (`filme-prova-lutador.mjs baatar`, golpe `sDown`, onde a `f1` entra no tick 27): outra equipe está
+com o e2e no ar, então nada foi servido.
+
+**Armadilha do maior `vN`:** agora existe `folhas/baatar-filme-v2.png`. Quem instalar parte da `filme/baatar-filme-pagina-v2.*`.
+Nunca remontar só da folha v2: a `f4` dela não tem o corte reto em y = 1570 do §6.1, e as outras 4 não foram curadas.
+
+| Arquivo novo | O que é |
+|---|---|
+| `arte-fonte/lutadores/baatar/filme/baatar-filme-limpa-v2.png` | Limpa v1 + a `f1` da folha v2 |
+| `arte-fonte/lutadores/baatar/filme/baatar-filme-pagina-v2.{png,webp,json}` | Página FILME com 6 células e mapa |

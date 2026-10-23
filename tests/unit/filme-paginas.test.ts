@@ -22,8 +22,8 @@ const MIB = 1024 * 1024;
 const KIB = 1024;
 const IDS = ['hayato', 'centella', 'baatar', 'zenon', 'wei-long', 'caio', 'min-ji', 'camille', 'aminu', 'nila'] as const;
 const F0_F5 = ['f0', 'f1', 'f2', 'f3', 'f4', 'f5'];
-/** A AMINU não tem o f2 (o PASSO DO LEÃO usa o Alt: docs/curadoria-filme-grupo-c.md §3). */
-const quadrosEsperados = (id: string) => (id === 'aminu' ? F0_F5.filter((n) => n !== 'f2') : F0_F5);
+/** Os 10 lutadores têm os 6 quadros (a AMINU ganhou o f2 do PASSO DO LEÃO na v2: docs/curadoria-filme-grupo-c.md §8). */
+const quadrosEsperados = (_id: string) => F0_F5;
 
 const dirDe = (id: string) => join(RAIZ, 'public', 'assets', 'lutadores', id);
 const atlasDe = (id: string) => JSON.parse(readFileSync(join(dirDe(id), 'atlas.json'), 'utf8'));
@@ -81,9 +81,9 @@ describe.each(IDS)('página FILME de %s no jogo', (id) => {
   });
 });
 
-describe('AMINU: sem o quadro f2', () => {
-  it('o bloco tem f0, f1, f3, f4 e f5, e nenhum f2', () => {
-    expect(Object.keys(atlasDe('aminu').filme.quadros)).toEqual(['f0', 'f1', 'f3', 'f4', 'f5']);
+describe('AMINU: com o quadro f2 (PASSO DO LEÃO)', () => {
+  it('o bloco tem f0..f5, inclusive o f2', () => {
+    expect(Object.keys(atlasDe('aminu').filme.quadros)).toEqual(F0_F5);
   });
 });
 

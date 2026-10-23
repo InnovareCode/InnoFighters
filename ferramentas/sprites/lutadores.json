@@ -81,7 +81,7 @@
       "dive1": "direita",
       "jkick": "pe"
     },
-    "filme": { "imagem": "filme.webp", "tamanho": [2032, 1248], "quadros": { "f0": { "x": 4, "y": 4, "w": 657, "h": 610, "ax": 329, "painel": true }, "f1": { "x": 665, "y": 4, "w": 626, "h": 610, "ax": 313, "painel": true }, "f2": { "x": 1295, "y": 8, "w": 733, "h": 606, "ax": 367, "painel": true }, "f3": { "x": 4, "y": 620, "w": 666, "h": 609, "ax": 333, "painel": true }, "f4": { "x": 674, "y": 619, "w": 706, "h": 610, "ax": 353, "painel": true }, "f5": { "x": 1384, "y": 618, "w": 522, "h": 611, "ax": 261, "painel": true } } }
+    "filme": { "imagem": "filme.webp", "tamanho": [2000, 1248], "quadros": { "f0": { "x": 4, "y": 4, "w": 657, "h": 610, "ax": 329, "painel": true }, "f1": { "x": 665, "y": 4, "w": 593, "h": 610, "ax": 297, "painel": true }, "f2": { "x": 1262, "y": 8, "w": 733, "h": 606, "ax": 367, "painel": true }, "f3": { "x": 4, "y": 620, "w": 666, "h": 609, "ax": 333, "painel": true }, "f4": { "x": 674, "y": 619, "w": 706, "h": 610, "ax": 353, "painel": true }, "f5": { "x": 1384, "y": 618, "w": 522, "h": 611, "ax": 261, "painel": true } } }
   },
   "zenon": {
     "_nota": "Chefao final. Layout 'zenon' (s1..s10 + zr, 3x2) com o mapa v2 do Apolo (docs/handoff-apolo-zenon-folhas.md); a S9 entra na v2 (sem a poeira de r2c3: apagar-pequenos -X0 2130 -Y0 960 -X1 2210 -Y1 1005, arquivo zenon-s9-v2.png). docs/handoff-vega-zenon.md",
@@ -96,7 +96,7 @@
       "sb1": "cima",
       "decreto1": "mao"
     },
-    "filme": { "imagem": "filme.webp", "tamanho": [1824, 1280], "quadros": { "f0": { "x": 4, "y": 5, "w": 540, "h": 630, "ax": 270, "painel": true }, "f1": { "x": 548, "y": 4, "w": 465, "h": 631, "ax": 233, "painel": true }, "f2": { "x": 1017, "y": 4, "w": 724, "h": 631, "ax": 362, "painel": true }, "f3": { "x": 4, "y": 639, "w": 638, "h": 630, "ax": 319, "painel": true }, "f4": { "x": 646, "y": 639, "w": 538, "h": 630, "ax": 269, "painel": true }, "f5": { "x": 1188, "y": 639, "w": 624, "h": 630, "ax": 312, "painel": true } } }
+    "filme": { "imagem": "filme.webp", "tamanho": [1760, 1280], "quadros": { "f0": { "x": 4, "y": 5, "w": 540, "h": 630, "ax": 270, "painel": true }, "f1": { "x": 548, "y": 4, "w": 465, "h": 631, "ax": 233, "painel": true }, "f2": { "x": 1017, "y": 4, "w": 724, "h": 631, "ax": 362, "painel": true }, "f3": { "x": 4, "y": 639, "w": 581, "h": 631, "ax": 291, "painel": true }, "f4": { "x": 589, "y": 640, "w": 538, "h": 630, "ax": 269, "painel": true }, "f5": { "x": 1131, "y": 640, "w": 624, "h": 630, "ax": 312, "painel": true } } }
   },
   "min-ji": {
     "filme": { "imagem": "filme.webp", "tamanho": [1920, 1216], "quadros": { "f0": { "x": 4, "y": 5, "w": 535, "h": 600, "ax": 268, "painel": true }, "f1": { "x": 4, "y": 610, "w": 675, "h": 600, "ax": 338, "painel": true }, "f2": { "x": 543, "y": 40, "w": 778, "h": 565, "ax": 389, "painel": true }, "f3": { "x": 683, "y": 610, "w": 601, "h": 600, "ax": 301, "painel": true }, "f4": { "x": 1288, "y": 609, "w": 623, "h": 601, "ax": 312, "painel": true }, "f5": { "x": 1325, "y": 4, "w": 568, "h": 601, "ax": 284, "painel": true } } }
@@ -105,6 +105,6 @@
     "filme": { "imagem": "filme.webp", "tamanho": [1616, 1280], "quadros": { "f0": { "x": 4, "y": 4, "w": 432, "h": 631, "ax": 216, "painel": true }, "f1": { "x": 4, "y": 639, "w": 483, "h": 631, "ax": 242, "painel": true }, "f2": { "x": 491, "y": 640, "w": 462, "h": 630, "ax": 231, "painel": true }, "f3": { "x": 440, "y": 4, "w": 550, "h": 631, "ax": 275, "painel": true }, "f4": { "x": 994, "y": 5, "w": 612, "h": 630, "ax": 306, "painel": true }, "f5": { "x": 957, "y": 639, "w": 621, "h": 631, "ax": 311, "painel": true } } }
   },
   "aminu": {
-    "filme": { "imagem": "filme.webp", "tamanho": [1712, 1280], "quadros": { "f0": { "x": 4, "y": 4, "w": 602, "h": 630, "ax": 301, "painel": true }, "f1": { "x": 4, "y": 638, "w": 592, "h": 630, "ax": 296, "painel": true }, "f3": { "x": 610, "y": 4, "w": 561, "h": 630, "ax": 281, "painel": true }, "f4": { "x": 1175, "y": 4, "w": 524, "h": 630, "ax": 262, "painel": true }, "f5": { "x": 600, "y": 638, "w": 664, "h": 630, "ax": 332, "painel": true } } }
+    "filme": { "imagem": "filme.webp", "tamanho": [1824, 1280], "quadros": { "f0": { "x": 4, "y": 4, "w": 602, "h": 630, "ax": 301, "painel": true }, "f1": { "x": 4, "y": 639, "w": 592, "h": 630, "ax": 296, "painel": true }, "f2": { "x": 600, "y": 638, "w": 654, "h": 631, "ax": 327, "painel": true }, "f3": { "x": 1258, "y": 639, "w": 561, "h": 630, "ax": 281, "painel": true }, "f4": { "x": 610, "y": 4, "w": 524, "h": 630, "ax": 262, "painel": true }, "f5": { "x": 1138, "y": 4, "w": 664, "h": 630, "ax": 332, "painel": true } } }
   }
 }

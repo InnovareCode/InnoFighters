@@ -75,6 +75,13 @@ já desenha os projéteis.
   Rasteira que não "gira": espelhar o quadro do meio (`--espelhar f4:sb2`) vende a meia-volta, 0 crédito. Descalço: a régua
   é o pé de perfil (faixa de 22 px da base), não a cabeça. Risco colado no pé: fora = regra de cor (B alto) + polígono;
   véu sobre a pele = repintar por difusão; contorno encoberto = reta com antisserrilhado (desenhar 4x e reduzir).
+- CAIO f1 v2 GINGA (2026-10-23, §7 do relatório do CAIO): 12 de 12 ok, sem regerar. **Linha de chão com contorno da
+  sola da MESMA cor:** regra de cor pura comeu a sola (51 componentes). O que funciona: a figura fica POR CIMA da linha;
+  varrer a faixa por coluna a partir do lado que é fundo e PARAR no 1º pixel que não bate com a mediana da linha;
+  depois fechar a base da sola (janela 9) devolvendo os pixels originais (`caio-f1-tirar-linha.py`). Andar de ginga:
+  quadros caem em 2 grupos (de costas x de frente); reordenar pelo mapa (minimax do laço) baixou o pior passo de 56 para
+  45%. **Idle agachado aumenta o lutador inteiro** (a escala vem da altura do idle0): a régua é `alturaRef`, não
+  `fatorFolha`. Corpo balançando sobre pés plantados + âncora no centro de massa = pés patinando (proposta `ancora: pes`).
 - Dragão FX do WEI aprovado (1bcee91a); falta o original em `arte-fonte/lutadores/wei-long/fx/wei-long-fx-v1.png`.
 - WEI LONG novo v1 (2026-10-23, `docs/relatorio-curadoria-wei-long-v1.md`): f1 v2 (C2 = C1 esticada x1,012 = quadro
   intermediário da respiração; C1/C2/C4 eram o mesmo desenho), f2 v2 (respingos de saliva do hitH, fundidos pelo raioFusao 24),

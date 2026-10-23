@@ -17,4 +17,8 @@ edição cria artefato, então o Atlas espelha por código.
 agora barra: duas imagens em "Anexar", folha nova sem IMPORTANT SPACING ou sem "at least one foot is flat on the
 baseline", nocaute sem "head on the LEFT side", "NÃO GERE AINDA", Gemini como gerador, HAYATO fora do traje A2.
 HAYATO = traje A2 (gi cinza-grafite, debrum e raio amarelo-elétrico, mecha de raio, faixa verde, mãos enfaixadas).
-Relacionado: [[project-curadoria-sprites]]
+**O Apolo subagente NÃO tem o conector Runway** (2026-10-23: nenhuma ferramenta Runway na sessão, nem chave no ambiente).
+Quando o briefing pedir "gere", entregar o prompt pronto em arquivo + o roteiro de conferência e devolver ao Atlas, que gera.
+Regerar UMA célula de folha FILME: anexar a própria folha vN (não a mestra) e nomear a célula errada como "WRONG, must NOT
+be repeated"; ainda não validado na prática.
+Relacionado: [[project-curadoria-sprites]], [[project-curadoria-filme]]

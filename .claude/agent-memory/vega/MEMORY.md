@@ -25,3 +25,5 @@
 - [V2-3c filme no motor](project_v2_3c_filme_motor.md) — motorV2.filmes: execução consumida, ko diferido, prova flag-off em árvore HEAD, armadilhas de teste
 - [V2-4 combos próprios](project_v2_4_combos_proprios.md) — motorV2.combos: histórico por prefixo, verificador, CPU 0,85, nova linha de base do harness (88464c17)
 - [Folha FILME no loader](project_folha_filme_loader.md) — bloco `filme` no atlas, carga so na luta, fixo nao solta sozinho, nunca lanca
+- [FILME dos 10 + pipeline](project_filme_10_lutadores.md) — bloco filme em lutadores.json repoe no atlas regerado, portao filme-peso/px, AMINU sem f2
+- [CAIO ginga f1 v2](project_caio_ginga_f1v2.md) — alturaRef 396 NAO mantem tamanho (K), chave ancora idle*=pes, retrato com alturaRef<410, hp e a alavanca, trailer P2

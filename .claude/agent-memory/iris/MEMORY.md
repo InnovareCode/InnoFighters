@@ -9,3 +9,7 @@
 - [Saúde da suíte 2026-10-23 (HEAD f5b5fab)](project_saude-da-suite-2026-10-23.md) — REPROVADO: fidelidade-prototipo 5/5 vermelho, 3 testes por tempo, orçamentos §6, e2e fora da CI
 - [Bloco do dono: QA 2026-10-22](project_bloco-dono-qa.md) — audio-sys misto via patch, teste que le arte-fonte/ (CI), numeros N3, armadilhas da harness
 - [Estabilização do portão 2026-10-23](project_estabilizacao-portao-2026-10-23.md) — causa raiz do fidelidade vermelho (aquecimento do trailer, ORIGINAIS), gate perf, timeouts
+- [QA completo bf429d2 (2026-10-23)](project_qa-completo-2026-10-23-bf429d2.md) — SERVIDOR VELHO NA 5173 (conferir StartTime), CAIO ok, memoria de luta 167-287 MiB x meta 115/150, balao 83 px2
+- [QA V2-3e: filme no jogo real](project_qa-v2-3e-filme.md) — achado desenharPose/flash, specs novos, memoria da folha FILME, armadilhas da cinematica
+- [Re-QA 76957be (gate do push)](project_reqa-76957be-gate-push.md) — APROVADO: e2e 317/0, folha so com flag (A/B), balao 83 para 0 px2; incidente node_modules/junction
+- [Paginas FILME v2 AMINU/ZENON/BAATAR](project_qa-paginas-filme-v2-aminu-zenon-baatar.md) — APROVADO; ampliacao 1,019/1,019/1,054 no drawImage; memoria-filme (processos) vermelho por ruido, ajuste proposto

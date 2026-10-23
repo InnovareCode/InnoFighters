@@ -70,6 +70,12 @@ export const urlCenario = (baseUrl: string, arquivo: string): string => `${comBa
 /** Sidecar do retrato (para atlas v1 antigos que não têm o campo `retrato` no atlas.json). */
 export const urlRetratoJson = (baseUrl: string, lutador: string): string => `${comBarra(baseUrl)}assets/lutadores/${lutador}/retrato.json`;
 
+/** Bytes decodificados (largura x altura x 4, RGBA) de uma imagem. */
+export const bytesDaImagem = (im: { readonly width: number; readonly height: number }): number => im.width * im.height * 4;
+
+/** Peso do atlas na memória, lido do MANIFESTO (sabido antes de baixar): tamanho de uma página x 4 x número de páginas. A folha FILME e o retrato não entram. */
+export const pesoDoManifesto = (m: Pick<ManifestoC1, 'tamanho' | 'imagens'>): number => m.tamanho[0] * m.tamanho[1] * 4 * m.imagens.length;
+
 /** Rosto pronto para desenhar: a imagem e a região dela a usar. */
 export interface RetratoPronto {
   readonly imagem: CanvasImageSource;
@@ -118,6 +124,31 @@ export class AtlasLutador {
 
   get paginasCarregadas(): number {
     return this.paginas?.length ?? 0;
+  }
+
+  /** Há uma carga das páginas em andamento? (conta como residente para o teto de memória: a decodificação já foi pedida) */
+  get carregando(): boolean {
+    return this.emCarga !== null;
+  }
+
+  /** O que o atlas ocupa quando está inteiro na memória (lido do manifesto, sem baixar nada). */
+  get peso(): number {
+    return pesoDoManifesto(this.manifesto);
+  }
+
+  /** Bytes decodificados das páginas que estão na memória agora (0 se solto). */
+  get bytesDasPaginas(): number {
+    return (this.paginas ?? []).reduce((n, im) => n + bytesDaImagem(im), 0);
+  }
+
+  /** Bytes decodificados da folha FILME, só quando ela está pronta (carga em andamento não conta). */
+  get bytesDoFilme(): number {
+    return this.filmeImg ? bytesDaImagem(this.filmeImg) : 0;
+  }
+
+  /** Bytes decodificados do retrato próprio (0 se não carregado). */
+  get bytesDoRetrato(): number {
+    return this.retratoImg ? bytesDaImagem(this.retratoImg) : 0;
   }
 
   /** Página 0 (atlas v1 = a única imagem). Falha clara se ainda não carregou. */
@@ -324,9 +355,10 @@ export async function carregarManifestos(
   leitor: LeitorDeRecursos,
   criarCanvas?: CriarCanvas,
   aoManifesto?: () => void,
+  /** O cache de silhuetas do jogo todo (UM teto de memória). Quem quiser medi-lo (o `GerenciadorDeArte`) cria e passa o mesmo aqui e lá. */
+  silhuetas: CacheDeSilhuetas = new CacheDeSilhuetas(),
 ): Promise<Map<string, AtlasLutador>> {
   const mapa = new Map<string, AtlasLutador>();
-  const silhuetas = new CacheDeSilhuetas(); // UM teto de memória para as silhuetas do jogo todo
   await Promise.all(
     ids.map(async (id) => {
       const url = urlManifesto(baseUrl, id);

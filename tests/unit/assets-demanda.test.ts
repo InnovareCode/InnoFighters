@@ -187,13 +187,15 @@ describe('AtlasLutador com várias páginas', () => {
   });
 });
 
-describe('GerenciadorDeArte (carga sob demanda)', () => {
-  const ids = ['a', 'b', 'c', 'd', 'e'];
-  async function ger(opcoes: { fixos?: string[]; limite?: number } = {}) {
+// Política 'fixa' = o comportamento de antes da residência por peso (preferido = fixo, no máximo LIMITE_RESIDENTES_FIXA atlas não fixos, poda DEPOIS de carregar).
+// A política nova ('por-peso') é coberta em residencia-gerenciador.test.ts.
+describe("GerenciadorDeArte (carga sob demanda, política 'fixa')", () => {
+  const ids = ['a', 'b', 'c', 'd', 'e', 'f'];
+  async function ger(opcoes: { preferidos?: string[] } = {}) {
     const L = leitor({ manifestos: Object.fromEntries(ids.map((i) => [i, v1(i)])) });
     const atlas = await carregarManifestos('/', ids, L.l, criarCanvasFalso);
     const cenarios = new Map([['jp', { id: 'jp', arquivo: 'assets/cenarios/jp.jpg' }], ['br', { id: 'br', arquivo: 'assets/cenarios/cenario-br.webp' }]]);
-    const g = new GerenciadorDeArte({ leitor: L.l, baseUrl: '/', atlas, cenarios, fixos: opcoes.fixos ?? [], cenariosFixos: ['jp'], limiteResidentes: opcoes.limite ?? 2 });
+    const g = new GerenciadorDeArte({ leitor: L.l, baseUrl: '/', atlas, cenarios, preferidos: opcoes.preferidos ?? [], cenariosPreferidos: ['jp'], politica: 'fixa' });
     return { g, L, atlas };
   }
 
@@ -217,24 +219,50 @@ describe('GerenciadorDeArte (carga sob demanda)', () => {
     expect(g.cargas.lutadores.get('a')).toBe(1);
   });
 
-  it('poda o menos recente que não está em uso nem é fixo, respeitando o limite', async () => {
-    const { g, atlas } = await ger({ fixos: ['a'], limite: 2 });
+  it('poda o menos recente que não está em uso nem é fixo, respeitando o limite de 3 não fixos', async () => {
+    const { g, atlas } = await ger({ preferidos: ['a'] });
     await g.garantir({ lutadores: ['a'] });
     await g.garantir({ lutadores: ['b'] });
     await g.garantir({ lutadores: ['c'] });
-    g.usar(['c']);
+    g.usar({ lutadores: ['c'] });
     await g.garantir({ lutadores: ['d'] });
-    // fixo a nunca sai; limite 2 entre os não fixos: ficam c (em uso) e d (mais recente); b (mais antigo) saiu
-    expect(g.lutadoresResidentes().sort()).toEqual(['a', 'c', 'd']);
+    expect(g.lutadoresResidentes().sort()).toEqual(['a', 'b', 'c', 'd']); // 3 não fixos (b, c, d): cabe
+    await g.garantir({ lutadores: ['e'] });
+    // fixo a nunca sai; 4 não fixos passam do limite de 3: sai o mais antigo que não está em uso (b); c está em uso
+    expect(g.lutadoresResidentes().sort()).toEqual(['a', 'c', 'd', 'e']);
     expect(atlas.get('b')?.pronta).toBe(false);
     // quem está em uso nunca é solto, mesmo passando do limite
-    g.usar(['c', 'd', 'e']);
-    await g.garantir({ lutadores: ['e'] });
-    expect(g.lutadoresResidentes().sort()).toEqual(['a', 'c', 'd', 'e']);
+    g.usar({ lutadores: ['c', 'd', 'e', 'f'] });
+    await g.garantir({ lutadores: ['f'] });
+    expect(g.lutadoresResidentes().sort()).toEqual(['a', 'c', 'd', 'e', 'f']);
+  });
+
+  it("em 'fixa' o despejo é só a poda de DEPOIS de carregar: o excedente existe durante a carga e nada de peso é considerado", async () => {
+    const { g, L } = await ger();
+    const vistos: number[] = [];
+    const imagem = L.l.imagem.bind(L.l);
+    L.l.imagem = async (url) => {
+      vistos.push(g.lutadoresResidentes().length);
+      return imagem(url);
+    };
+    for (const id of ['a', 'b', 'c', 'd']) await g.garantir({ lutadores: [id] });
+    expect(vistos).toEqual([0, 1, 2, 3]); // no 4º pedido já há 3 residentes: o antigo só sai depois da chegada do novo
+    expect(g.lutadoresResidentes()).toHaveLength(3);
+  });
+
+  it("em 'fixa' entrarNaLuta é só usar(): solta nada e o resto (preferir, aliviar) não faz nada", async () => {
+    const { g } = await ger({ preferidos: ['a'] });
+    await g.garantir({ lutadores: ['a', 'b'], cenarios: ['jp', 'br'] });
+    g.entrarNaLuta({ lutadores: ['c'] });
+    g.preferir({ lutadores: ['d'] });
+    await g.fundoPronto();
+    g.aliviar();
+    expect(g.lutadoresResidentes().sort()).toEqual(['a', 'b']);
+    expect([...g.cenarios.keys()].sort()).toEqual(['br', 'jp']);
   });
 
   it('liberarLutador respeita os fixos; liberarCenario respeita os cenários fixos', async () => {
-    const { g } = await ger({ fixos: ['a'] });
+    const { g } = await ger({ preferidos: ['a'] });
     await g.garantir({ lutadores: ['a', 'b'], cenarios: ['jp', 'br'] });
     g.liberarLutador('a');
     g.liberarLutador('b');

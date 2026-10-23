@@ -5,7 +5,8 @@ import { montarLutador, type LutadorMontado } from '../data/montar';
 import type { PoseDados } from '../data/tipos';
 import { carregarManifestos, leitorDeRede, progressoMonotono, type AtlasLutador, type LeitorDeRecursos, type PlanoDeCarga, type Recursos, type RetratoPronto } from './carregador';
 import type { CriarCanvas } from './canvas';
-import { GerenciadorDeArte } from './gerenciador';
+import { GerenciadorDeArte, type PoliticaDeResidencia } from './gerenciador';
+import { CacheDeSilhuetas } from './silhuetas';
 import type { Quatro } from './tipos';
 
 /**
@@ -73,8 +74,14 @@ export interface OpcoesArteInicial {
   /** Lutadores cujo atlas já fica na memória (e nunca é solto). Padrão: a VITRINE. Vazio = tudo sob demanda. */
   readonly precarregar?: readonly IdLutador[];
   readonly criarCanvas?: CriarCanvas;
-  readonly limiteResidentes?: number;
+  /** Política de residência da arte (`?residencia=` no `main.ts`). Padrão: `POLITICA_PADRAO`. */
+  readonly politica?: PoliticaDeResidencia;
+  /** Teto de atlas + cenários em bytes (só vale em `'por-peso'`; padrão `TETO_FORA_DA_LUTA`). */
+  readonly teto?: number;
 }
+
+/** Até a fatia L6 da residência de memória o jogo roda na política de sempre; o desenho novo é `?residencia=peso`. */
+export const POLITICA_PADRAO: PoliticaDeResidencia = 'fixa';
 
 /**
  * Carga do boot (docs/plano-expansao.md 1.5): lê o manifesto de TODOS os lutadores (poucos KB cada) e monta os
@@ -88,21 +95,25 @@ export async function iniciarArte(op: OpcoesArteInicial): Promise<{ elenco: Elen
   let feitos = 0;
   const parcial = (): void => relatar((0.3 * ++feitos) / (2 * n));
 
-  const atlas = await carregarManifestos(op.baseUrl, IDS_LUTADORES, leitor, op.criarCanvas, parcial);
+  const silhuetas = new CacheDeSilhuetas(); // UM cache para os atlas e para o gerenciador medir/aliviar
+  const atlas = await carregarManifestos(op.baseUrl, IDS_LUTADORES, leitor, op.criarCanvas, parcial, silhuetas);
   const elenco = montarElencoDeAtlas(atlas);
-  const fixos = op.precarregar ?? VITRINE;
-  const cenariosFixos = [CENARIO_PADRAO, ...new Set(fixos.map((id) => LUTADORES[id].stage))];
+  const preferidos = op.precarregar ?? VITRINE;
+  // ordem = prioridade (o 1º é o último a sair): o fundo dos menus primeiro, depois os da vitrine na ordem dela
+  const cenariosPreferidos = [...new Set([CENARIO_PADRAO, ...preferidos.map((id) => LUTADORES[id].stage)])];
   const arte = new GerenciadorDeArte({
     leitor,
     baseUrl: op.baseUrl,
     atlas,
     cenarios: cenariosConhecidos(),
-    fixos,
-    cenariosFixos,
-    ...(op.limiteResidentes === undefined ? {} : { limiteResidentes: op.limiteResidentes }),
+    preferidos,
+    cenariosPreferidos,
+    politica: op.politica ?? POLITICA_PADRAO,
+    silhuetas,
+    ...(op.teto === undefined ? {} : { teto: op.teto }),
   });
   await arte.carregarRetratos(IDS_LUTADORES, parcial);
-  await arte.garantir({ lutadores: fixos, cenarios: cenariosFixos }, (f) => relatar(0.3 + 0.7 * f));
+  await arte.garantir({ lutadores: preferidos, cenarios: cenariosPreferidos }, (f) => relatar(0.3 + 0.7 * f));
   relatar(1);
   return { elenco, arte };
 }

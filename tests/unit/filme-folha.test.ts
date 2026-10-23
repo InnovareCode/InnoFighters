@@ -55,7 +55,7 @@ const atlasDe = (id: string, comFilme: boolean | Record<string, unknown> = true)
 function gerenciador(ids: string[], o: Opcoes = {}, fixos: string[] = []) {
   const r = leitor(o);
   const atlas = new Map(ids.map((id) => [id, atlasDe(id)]));
-  const g = new GerenciadorDeArte({ leitor: r.l, baseUrl: '/', atlas, cenarios: new Map(), fixos });
+  const g = new GerenciadorDeArte({ leitor: r.l, baseUrl: '/', atlas, cenarios: new Map(), preferidos: fixos, politica: 'fixa' });
   return { g, r, atlas };
 }
 

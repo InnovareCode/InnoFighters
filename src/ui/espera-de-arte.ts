@@ -19,7 +19,9 @@ export class EsperaDeArte {
     const pedido = { lutadores: [p.c1, p.c2], cenarios: [p.stage ?? m.elenco[p.c2].ch.stage] };
     const minha = ++this.geracao;
     this.falhou = null;
-    m.arte.usar(pedido.lutadores);
+    // 'fixa': só marca em uso (como sempre); 'por-peso': luta exclusiva, solta a vitrine e os outros cenários já. Provisório: a L3 move isto para o Navegador.
+    // O `?.` é dos dublês de teste do gerenciador (os mesmos de `carregarFilme?.` em fight.ts).
+    m.arte.entrarNaLuta?.(pedido);
     this.pronta = m.arte.estaPronto(pedido);
     this.progresso = this.pronta ? 1 : 0;
     if (this.pronta) return;

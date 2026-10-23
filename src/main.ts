@@ -166,7 +166,15 @@ async function iniciar(): Promise<void> {
   // ---- carregamento da arte (barra de progresso na abertura) ----
   // `?precarga=minima` (só em desenvolvimento) não carrega nenhum atlas no boot: tudo sob demanda, para testar essa via.
   const precarga = import.meta.env.DEV && new URLSearchParams(window.location.search).get('precarga') === 'minima' ? [] : undefined;
-  void iniciarArte({ baseUrl: import.meta.env.BASE_URL, aoProgredir: (p) => (ui.loadProg = p), ...(precarga ? { precarregar: precarga } : {}) })
+  // `?residencia=peso` liga a residência por peso (teto em bytes, luta exclusiva); `?residencia=fixa` força a de sempre. Vale também em produção: é a alavanca de A/B no aparelho e o rollback sem deploy.
+  const residencia = new URLSearchParams(window.location.search).get('residencia');
+  const politica = residencia === 'peso' ? 'por-peso' : residencia === 'fixa' ? 'fixa' : undefined;
+  void iniciarArte({
+    baseUrl: import.meta.env.BASE_URL,
+    aoProgredir: (p) => (ui.loadProg = p),
+    ...(precarga ? { precarregar: precarga } : {}),
+    ...(politica ? { politica } : {}),
+  })
     .then(({ elenco, arte }) => {
       const lutadores = {} as Record<IdLutador, (typeof elenco)[IdLutador]['ch']>;
       for (const id of Object.keys(elenco) as IdLutador[]) lutadores[id] = elenco[id].ch;

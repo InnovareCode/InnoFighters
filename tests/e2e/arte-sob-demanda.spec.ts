@@ -114,16 +114,17 @@ test.describe('retratos e carga de arte', () => {
     expect(erros).toEqual([]);
   });
 
-  test('a poda solta o lutador antigo e a luta seguinte baixa o novo (memória limitada)', async ({ page }, info) => {
+  test("política 'fixa': a poda por CONTAGEM solta o lutador antigo e a luta seguinte baixa o novo (memória limitada)", async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
-    await page.goto('/?seed=2&precarga=minima&manual=1');
+    await page.goto('/?seed=2&precarga=minima&manual=1&residencia=fixa');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     const r = await page.evaluate(async () => {
       const m = (window as any).__inno.mundo();
       const a = m.arte;
+      if (a.politica !== 'fixa') throw new Error('esperava a política fixa');
       const trilha: string[][] = [];
       const par = async (ids: string[]) => {
-        a.usar(ids);
+        a.usar({ lutadores: ids });
         await a.garantir({ lutadores: ids });
         trilha.push(a.lutadoresResidentes().sort());
       };
@@ -139,6 +140,44 @@ test.describe('retratos e carga de arte', () => {
     expect(r.trilha[2]).toEqual(expect.arrayContaining(['hayato', 'caio']));
     expect(r.trilha[2]!.length).toBeLessThanOrEqual(3);
     expect(r.cargas['hayato']).toBe(2); // foi solto e baixou de novo
+  });
+
+  test("política 'por-peso' (?residencia=peso): a poda é por BYTES e acontece ANTES de decodificar (o pico nunca passa do teto)", async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'só no desktop');
+    await page.goto('/?seed=2&precarga=minima&manual=1&residencia=peso');
+    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+    const r = await page.evaluate(async () => {
+      const m = (window as any).__inno.mundo();
+      const a = m.arte;
+      if (a.politica !== 'por-peso') throw new Error('esperava a política por-peso');
+      const MIB = 1024 * 1024;
+      // sonda: em cada imagem pedida à REDE (atlas e cenário), quanto o gerenciador já tem comprometido? (o despejo precisa ter vindo antes)
+      let pico = 0;
+      const leitor = a.op.leitor;
+      const original = leitor.imagem.bind(leitor);
+      leitor.imagem = (url: string) => {
+        pico = Math.max(pico, a.bytesComprometidos());
+        return original(url);
+      };
+      const trilha: string[][] = [];
+      const par = async (ids: string[]) => {
+        a.usar({ lutadores: ids });
+        await a.garantir({ lutadores: ids });
+        trilha.push(a.lutadoresResidentes().sort());
+      };
+      await par(['hayato', 'wei-long']); // 24 + 26 = 50 MiB (+ o jp, 7,9)
+      await par(['nila', 'zenon']); // 37,5 + 60 = 97,5: 50 + 97,5 + 7,9 = 155,4 passa de 136 em 19,4: sai só o mais antigo fora de uso (hayato, 24) ANTES de decodificar
+      await par(['hayato', 'caio']); // 24 + 28 = 52: 131,4 + 52 = 183,4 passa em 47,4: saem wei-long (26) e nila (37,5), os mais antigos fora de uso; zenon sobra
+      return { trilha, pico: pico / MIB, teto: a.teto / MIB, cargas: Object.fromEntries(a.cargas.lutadores), memoria: Object.keys(a.memoria().atlas).sort() };
+    });
+    expect(r.trilha[0]).toEqual(['hayato', 'wei-long']);
+    expect(r.trilha[1]).toEqual(['nila', 'wei-long', 'zenon']);
+    expect(r.trilha[2]).toEqual(['caio', 'hayato', 'zenon']);
+    expect(r.memoria).toEqual(['caio', 'hayato', 'zenon']);
+    expect(r.cargas['hayato']).toBe(2); // foi solto e baixou de novo
+    expect(r.teto).toBe(136);
+    expect(r.pico).toBeLessThanOrEqual(r.teto); // com a poda de DEPOIS de decodificar (política fixa) o pico daria 50 + 97,5 + 7,9 = 155
+    expect(r.pico).toBeGreaterThan(90); // e a sonda viu de fato a carga grande (nila + zenon)
   });
 });
 

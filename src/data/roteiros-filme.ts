@@ -88,7 +88,7 @@ export type Encaixes = {
   readonly slam?: string;
 };
 
-type Desvio = Partial<Pick<BatidaFilme, 'atacante' | 'atacanteAlt' | 'rival' | 'rivalAlt' | 'rivalPos' | 'projetil' | 'alternaFlip' | 'moedas'>>;
+type Desvio = Partial<Pick<BatidaFilme, 'atacante' | 'atacanteAlt' | 'rival' | 'rivalAlt' | 'rivalPos' | 'projetil' | 'alternaFlip' | 'moedas' | 'camera'>>;
 
 type Linha = {
   readonly tipo: TipoDeFilme;
@@ -240,8 +240,8 @@ const LINHAS: Readonly<Record<string, LinhaTabela>> = {
     estilo: 'E6',
     fK: 'f1',
     enc: { prep: 'sb0', pega: 'sb1', giro: 'sb2', slam: 'sb3', impacto: 'sb1' },
-    // b1 na ponta do pé dela; b2 30 px acima da cabeça, de cabeça para baixo; b3 no chão a 90 px à frente
-    desvios: { 1: { rivalPos: { dx: 55 } }, 2: { rivalPos: { dx: 0, dyAltura: 1, dy: 30, rot: Math.PI } }, 3: { rivalPos: { dx: 90 } } },
+    // b1 na ponta do pé dela; b2 de cabeça para baixo ao lado dela (o Apolo pediu a cabeça 30 px acima da dela, mas os dois empilhados dão ~560 px e a tela tem 540: o rival fica na altura do peito dela e a câmera abre para 1,05); b3 no chão a 90 px à frente
+    desvios: { 1: { rivalPos: { dx: 55 } }, 2: { rivalPos: { dx: 38, dyAltura: 0.5, dy: 26, rot: Math.PI }, camera: CAM(1.05, 'atacante') }, 3: { rivalPos: { dx: 90 } } },
   }),
   'centella/sFwd': L({ tipo: 'chao', estilo: 'E6', fK: 'f2', enc: { prep: 'sc0', impacto: 'sc1' } }),
   // CAMILLE (E7)
@@ -266,8 +266,8 @@ const LINHAS: Readonly<Record<string, LinhaTabela>> = {
     estilo: 'E10',
     fK: 'f0',
     enc: { prep: 'sa0', pega: 'sa1', giro: 'sa2', slam: 'sa3', impacto: 'sa1' },
-    // b1 nas mãos dele, na altura do peito; b2 acima do ombro, inclinado; b3 no chão a 70 px à frente
-    desvios: { 1: { rivalPos: { dx: 48, dyAltura: 0.6 } }, 2: { rivalPos: { dx: 8, dyAltura: 1, rot: -0.6 } }, 3: { rivalPos: { dx: 70 } } },
+    // b1 nas mãos dele, na altura do peito; b2 por cima do ombro (a pose `kdAir` já é quase deitada: de pé ele passaria da altura da tela); b3 no chão a 70 px à frente
+    desvios: { 1: { rivalPos: { dx: 44, dyAltura: 0.3, rot: -0.5 } }, 2: { rivalPos: { dx: 0, dyAltura: 0.55, rot: 0.25 }, camera: CAM(1.05, 'atacante') }, 3: { rivalPos: { dx: 70 } } },
   }),
   'baatar/sDown': L({ tipo: 'chao', estilo: 'E10', fK: 'f1', enc: { prep: 'sb0', impacto: 'sb2', imp2: 'sb1' } }),
   'baatar/sFwd': L({ tipo: 'aereo', estilo: 'E11', fK: 'f2', enc: { prep: 'jsquat', subida: 'dive0', impacto: 'dive1', queda: 'land' } }),

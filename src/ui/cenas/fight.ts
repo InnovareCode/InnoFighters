@@ -2,14 +2,17 @@ import { identidadeAtiva, reagirDoJogo, trilhaDoJogo } from '../../audio/camadas
 import { tocarReceita, type SintetizadorLike } from '../../audio/receitas';
 import { ALTURA, GROUND, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
-import { CINEMATICA_PADRAO, type EventoLuta } from '../../core/contratos';
+import { CINEMATICA_PADRAO, type EventoLuta, type IndiceLutador } from '../../core/contratos';
 import { ESQUIVA_PADRAO } from '../../data/esquiva';
+import { filmeDoGolpe } from '../../data/filmes';
 import { criarMemoriaDeFalas, provocacoesLigadas } from '../../data/provocacoes';
+import { roteiroDoFilme } from '../../data/roteiros-filme';
 import type { DummyTreino, FonteEntradas } from '../../fight/game';
 import { chefeDaLeitura } from '../../render/aura-chefe';
 import { APRESENTACAO, falaDoChefe, roteiroDe } from '../../render/apresentacao-lutadores';
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
+import { alturaDoLutador, FilmeDoEspecial, type EventoFilme, type HudDoRival, type ModoFilme } from '../../render/filme';
 import { Fluidez } from '../../render/fluidez';
 import { desenharLegenda } from '../../render/legenda';
 import { MoedasDeDreno } from '../../render/moedas-dreno';
@@ -30,7 +33,7 @@ import {
   type FalaDoRoteiro,
   type TipoProvocacao,
 } from '../../render/provocacao';
-import { somDoAcerto } from '../../render/identidade-especiais';
+import { identidadeDe, somDoAcerto } from '../../render/identidade-especiais';
 import { chDaFicha } from '../../render/lutador';
 import { SessaoEspecial } from '../../render/sessao-especial';
 import { desenharMundo } from '../../render/mundo';
@@ -89,6 +92,19 @@ export class CenaFight implements Cena {
   readonly moedas = new MoedasDeDreno();
   /** Interpolação entre ticks, mola e tremor do rival (V2-2): só no desenho; ligada por `Navegador.fluidez`. */
   readonly fluidez = new Fluidez();
+  /** FILME do especial (V2-3d): apresentação pura, como a cinemática; o motor já resolveu tudo no tick do contato. */
+  readonly filme: FilmeDoEspecial;
+  /** O rival (por índice) no tick ANTERIOR ao último `game.update`: a barra do filme parte daqui. */
+  private antesDoTick: [HudDoRival, HudDoRival] | null = null;
+  /** Filmes já vistos nesta luta (lutador|ficha|golpe): da 2ª vez em diante toca a versão CURTA (D-V4). */
+  private readonly filmesVistos = new Set<string>();
+  /** O acerto/agarrão que abriu o filme (as moedas do dreno do ZENON saem dele, na batida do roteiro). */
+  private acertoDoFilme: EventoLuta | null = null;
+  /** Eventos do tick do contato que esperam o filme: o pó da queda (na batida da queda) e o resto (KO, troca de barra, fim de round) para o fim. */
+  private adiadosNaQueda: EventoLuta[] = [];
+  private adiadosNoFim: EventoLuta[] = [];
+  /** GANCHO DE DESENVOLVIMENTO (`?filme=<lutador>:<golpe>`): injeta um evento `filme` falso no 1º tick da fase `fight`. Só no servidor de desenvolvimento. */
+  private filmeDev: { lutador: string; golpe: string } | null = null;
   /** A entrada ainda não começou nesta luta (espera a arte ficar pronta)? */
   private entradaPendente = false;
   /** A música está a 50% por causa da cinemática? */
@@ -123,6 +139,31 @@ export class CenaFight implements Cena {
       aoSom: (som) => {
         if (typeof som === 'object') tocarReceita(sintetizador(), blip(som.blip));
         else tocarReceita(sintetizador(), som === 'faixas' ? SOM_DAS_FAIXAS : som === 'balao' ? SOM_DO_BALAO : SOM_DA_VITORIA);
+      },
+    });
+    this.filme = new FilmeDoEspecial({
+      rng: ui.c.rngVisual,
+      aoSom: (som, atacante, nivel) => {
+        const f = ui.m.game.fighters[atacante];
+        const base = somDoAcerto(f.id, f.ficha ?? null);
+        if (som === 'leve') tocarReceita(sintetizador(), base.slice(0, 1), { vol: 0.7 });
+        else tocarReceita(sintetizador(), base);
+        if (som === 'final' || nivel >= 3) tocarReceita(sintetizador(), [{ k: 'T', tipo: 'sine', f0: 70, t: 0.4, vol: 0.7 }]);
+      },
+      aoImpacto: ({ x, y, cor, grande, contragolpe }) => {
+        const { efeitos } = ui.m;
+        efeitos.faiscas(x, y, cor, grande ? 24 : 14);
+        efeitos.estrela(x, y, cor, grande);
+        if (contragolpe) efeitos.textoFlutuante(x, y - 40, 'COUNTER!', '#ff9a3a', 24);
+      },
+      aoMoedas: () => {
+        const ev = this.acertoDoFilme;
+        if (ev) this.moedas.reagir(ev, ui.m.game);
+      },
+      aoQueda: () => {
+        const lista = this.adiadosNaQueda;
+        this.adiadosNaQueda = [];
+        this.reagirAosEventos(lista);
       },
     });
     this.sessao = new SessaoEspecial({
@@ -276,6 +317,13 @@ export class CenaFight implements Cena {
     this.atualizarBotaoEsquiva();
     this.entrada.zerar();
     this.provocacao.zerar();
+    this.filme.zerar();
+    this.filmesVistos.clear();
+    this.acertoDoFilme = null;
+    this.adiadosNaQueda = [];
+    this.adiadosNoFim = [];
+    this.antesDoTick = null;
+    this.filmeDev = import.meta.env.DEV && typeof window !== 'undefined' ? lerFilmeDev(window.location.search) : null;
     this.semProvocacao = false;
     this.vitoriaDisparada = false;
     this.vencedorDoRound = null;
@@ -448,29 +496,42 @@ export class CenaFight implements Cena {
       this.passoDaProvocacao();
       return;
     }
+    // FILME do especial: o motor não anda (como a cinemática); KO, troca de barra e fim de round esperam o último quadro
+    if (this.filme.ativo) {
+      this.passoDoFilme();
+      return;
+    }
     if (this.cine.ativa) {
       this.passoDaCinematica();
       return;
     }
     const { game, efeitos, petalasLuta } = this.ui.m;
-    const { audio } = this.ui.c;
     // abertura da luta: pinta as tarjas dos especiais (uma por tick), fora do caminho do primeiro especial
     if (this.aquecendo && this.modoDaCine() !== null) this.aquecendo = this.cine.aquecer(game, this.ui.m.elenco);
+    if (this.filmeDev && game.phase === 'fight') {
+      this.dispararFilmeDev();
+      return;
+    }
+    this.antesDoTick = [game.fighters[0], game.fighters[1]].map((f) => ({ hp: f.hp, hpShown: f.hpShown, barras: f.barras })) as [HudDoRival, HudDoRival];
     const t0 = game.t;
     game.update(this.fonte);
     petalasLuta.avancar(t0);
-    // eventos -> som e efeitos visuais; depois os efeitos andam um tick (só se a luta andou: hitstop congela)
-    reagirDoJogo(audio, game, game.events);
+    // eventos -> som e efeitos visuais; depois os efeitos andam um tick (só se a luta andou: hitstop congela).
+    // Tick com FILME: o acerto que o abriu e os sons/efeitos dele são do filme (por batida); KO, troca de barra, fim de round e o pó da queda esperam.
+    const filme = game.events.find((e): e is EventoFilme => e.tipo === 'filme');
+    const agora: EventoLuta[] = [];
+    this.adiadosNaQueda = [];
+    this.adiadosNoFim = [];
     for (const ev of game.events) {
-      if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
-      this.anotarRound(ev);
-      efeitos.reagir(ev, (i) => game.fighters[i], (i) => this.corDoLutador(i));
-      this.reagirAoEspecial(ev);
-      this.moedas.reagir(ev, game);
-      // O chefe sai em 3 etapas (troca, danca, retomada): o flash e o "FASE 2!" são só da troca de barra, senão disparam 3 vezes.
-      // danca/retomada ainda não têm efeito visual próprio (não há overlay de cena do chefe no HUD; por ora só o filtro).
-      if (ev.tipo === 'fase-chefe' && ev.etapa === 'troca') this.aoFaseDoChefe(ev.lutador);
+      if (!filme) agora.push(ev);
+      else if ((ev.tipo === 'hit' || ev.tipo === 'throw') && ev.filme === true) this.acertoDoFilme = ev;
+      else if (ev.tipo === 'filme') continue;
+      else if (ev.tipo === 'dust') this.adiadosNaQueda.push(ev);
+      else if (ev.tipo === 'ko' || ev.tipo === 'round' || ev.tipo === 'perfect' || ev.tipo === 'fase-chefe') this.adiadosNoFim.push(ev);
+      else agora.push(ev);
     }
+    this.reagirAosEventos(agora);
+    if (filme) this.comecarFilme(filme);
     if (game.tick !== this.ultimoTick) {
       this.ultimoTick = game.tick;
       efeitos.avancar();
@@ -486,6 +547,119 @@ export class CenaFight implements Cena {
       this.ended = true;
       this.finish();
     }
+  }
+
+  /** Os eventos de um tick (ou os que esperaram o filme): som, efeitos, sessão do especial, moedas do dreno, rodada e a fase 2 do chefão. */
+  private reagirAosEventos(eventos: readonly EventoLuta[]): void {
+    const { game, efeitos } = this.ui.m;
+    reagirDoJogo(this.ui.c.audio, game, eventos);
+    for (const ev of eventos) {
+      if (ev.tipo === 'round' && ev.fase === 'start') efeitos.limpar();
+      this.anotarRound(ev);
+      efeitos.reagir(ev, (i) => game.fighters[i], (i) => this.corDoLutador(i));
+      this.reagirAoEspecial(ev);
+      this.moedas.reagir(ev, game);
+      // O chefe sai em 3 etapas (troca, danca, retomada): o flash e o "FASE 2!" são só da troca de barra, senão disparam 3 vezes.
+      // danca/retomada ainda não têm efeito visual próprio (não há overlay de cena do chefe no HUD; por ora só o filtro).
+      if (ev.tipo === 'fase-chefe' && ev.etapa === 'troca') this.aoFaseDoChefe(ev.lutador);
+    }
+  }
+
+  /** O modo do filme: COMPLETA, ou CURTA na repetição do mesmo especial na luta (D-V4), no TREINO (D-V5) e com a cinemática CURTA, DESLIGADA ou movimento reduzido. */
+  private modoDoFilme(chave: string): ModoFilme {
+    const repetido = this.filmesVistos.has(chave);
+    this.filmesVistos.add(chave);
+    return this.modoDaCine() === 'completa' && !repetido && !this.ui.m.game.training ? 'completa' : 'curta';
+  }
+
+  /** Abre o filme de um evento `filme` do motor (ou do gancho de desenvolvimento). A luta já está no estado final; a cena só deixa de chamar `game.update`. */
+  private comecarFilme(ev: EventoFilme, antes?: HudDoRival): void {
+    const { game, elenco } = this.ui.m;
+    const fa = game.fighters[ev.atacante];
+    const ch = chDaFicha(elenco[fa.id].ch, ev.ficha);
+    const roteiro = roteiroDoFilme(fa.id, ev.ficha, ev.golpe, ev.projetil);
+    const rival = game.fighters[ev.defensor];
+    this.fluidez.zerar();
+    this.filme.iniciar({
+      ev,
+      roteiro,
+      modo: this.modoDoFilme(`${fa.id}|${ev.ficha ?? ''}|${ev.golpe}`),
+      rivalAntes: antes ?? this.antesDoTick?.[ev.defensor] ?? { hp: rival.hp, hpShown: rival.hpShown, barras: rival.barras },
+      cor: identidadeDe(fa.id, ev.ficha, ev.golpe)?.paleta.brilho ?? ch.fire[0],
+      alturaDoAtacante: alturaDoLutador(ch),
+      cameraInicial: { x: game.cam.x, z: game.cam.z },
+    });
+  }
+
+  /** Um tick do filme: a luta NÃO anda. Pular = ataque de um humano depois do tick 10. */
+  private passoDoFilme(): void {
+    const { efeitos } = this.ui.m;
+    if (this.alguemPulou()) this.filme.pular();
+    this.filme.avancar();
+    efeitos.avancar();
+    this.moedas.avancar();
+    if (this.filme.ativo) return;
+    // fechou: a interpolação parte do estado final (nada desliza) e o que esperou o filme acontece agora
+    this.fluidez.zerar();
+    this.acertoDoFilme = null;
+    const lista = [...this.adiadosNaQueda, ...this.adiadosNoFim];
+    this.adiadosNaQueda = [];
+    this.adiadosNoFim = [];
+    this.reagirAosEventos(lista);
+  }
+
+  /**
+   * GANCHO DE DESENVOLVIMENTO (`?filme=<lutador>:<golpe>`): faz o que o motor faria no contato (dados de `src/data/filmes.ts`) e abre o filme com um evento falso.
+   * O estado final é aplicado nos lutadores (posição, vida, queda) para o mundo que volta ser coerente com o último quadro.
+   */
+  private dispararFilmeDev(): void {
+    if (!import.meta.env.DEV) return; // o corpo inteiro sai do bundle de produção
+    const alvo = this.filmeDev;
+    this.filmeDev = null;
+    if (!alvo) return;
+    const { game } = this.ui.m;
+    const indice: IndiceLutador = game.p2.id === alvo.lutador && game.p1.id !== alvo.lutador ? 1 : 0;
+    const a = game.fighters[indice];
+    const d = game.fighters[indice === 0 ? 1 : 0];
+    const def = filmeDoGolpe(a.id, a.ficha ?? null, alvo.golpe);
+    if (!def) return;
+    const roteiro = roteiroDoFilme(a.id, a.ficha ?? null, alvo.golpe, false);
+    const projetil = roteiro.tipo === 'projetil';
+    const lado: 1 | -1 = indice === 0 ? 1 : -1;
+    a.x = projetil ? 240 : 380;
+    d.x = projetil ? 720 : 520;
+    if (indice === 1) [a.x, d.x] = [960 - a.x, 960 - d.x];
+    a.facing = lado;
+    d.facing = lado === 1 ? -1 : 1;
+    a.y = GROUND;
+    d.y = GROUND;
+    const pos = (f: typeof a) => ({ x: f.x, y: f.y, facing: f.facing });
+    const antes = { atacante: pos(a), defensor: pos(d) };
+    const hpAntes = { hp: d.hp, hpShown: d.hpShown, barras: d.barras };
+    const dano = Math.min(def.dano, Math.max(0, d.hp - 1));
+    d.hp -= dano;
+    d.setState('down');
+    d.phase = 'lie';
+    d.st = 0;
+    d.x = clamp(a.x + a.facing * (def.distancia ?? 150), 150, 810);
+    if (!projetil) a.x = clamp(d.x - a.facing * (def.distancia ?? 150), 60, 900);
+    const depois = { atacante: pos(a), defensor: pos(d) };
+    const ev: EventoFilme = {
+      tipo: 'filme',
+      atacante: a.indice,
+      defensor: d.indice,
+      golpe: alvo.golpe,
+      ficha: a.ficha ?? null,
+      projetil,
+      dano,
+      contragolpe: false,
+      ko: false,
+      trocaDeBarra: false,
+      final: def.final ?? 'derruba',
+      antes,
+      depois,
+    };
+    this.comecarFilme(ev, hpAntes);
   }
 
   /** Guarda o que a provocação precisa dos eventos: quem ganhou o round, se foi por tempo e a abertura do round 2+ (abre no mesmo tick, com o motor parado). */
@@ -618,6 +792,10 @@ export class CenaFight implements Cena {
       this.pause();
       return true;
     }
+    if (k === 'Enter' && this.filme.ativo) {
+      this.filme.pular();
+      return true;
+    }
     if (k === 'Enter' && this.entrada.ativa) {
       this.entrada.pular();
       return true;
@@ -681,7 +859,9 @@ export class CenaFight implements Cena {
     const m = this.ui.m;
     const { game } = m;
     // a leitura a desenhar: com a fluidez ligada, a posição entre o tick anterior e o atual + a mola; senão o próprio motor (o oráculo de pixel não vê diferença)
-    const luta = this.ui.fluidez ? this.fluidez.vista(game, alfa, m.elenco, { tremor: persist.settings.shake }) : game;
+    // FILME do especial: a leitura é a do roteiro (trajetória, poses, HUD descendo por batida e câmera); o mundo e o HUD são os de sempre
+    const vistaDoFilme = this.filme.ativo ? this.filme.vista(game, m.elenco) : null;
+    const luta = vistaDoFilme ?? (this.ui.fluidez ? this.fluidez.vista(game, alfa, m.elenco, { tremor: persist.settings.shake }) : game);
     const W = LARGURA;
     const H = ALTURA;
     // entrada dramática: o mundo sem HUD, o chefe na pose da vez e os braseiros acendendo; as faixas, o cartão e a fala vêm por cima
@@ -698,6 +878,7 @@ export class CenaFight implements Cena {
       alvoTreino: game.dummy,
       esquiva: this.ui.c.regras.esquiva,
       ...(q ? { hud: false, acesos: q.acesos } : {}),
+      ...(vistaDoFilme ? { overlay: false } : {}),
       ...(zoomDaEntrada ? { zoom: zoomDaEntrada } : {}),
       ...(q && chefe && q.dx !== 0 ? { deslocamento: { [chefe.indice]: q.dx } } : {}),
       ...(pv ? { hud: pv.quadro.hud, overlay: pv.quadro.overlay, poses: pv.poses, deslocamento: pv.deslocamento, ...(pv.zoom ? { zoom: pv.zoom } : {}) } : {}),
@@ -713,7 +894,8 @@ export class CenaFight implements Cena {
       f.T(this.espera.falhou ? 'Não foi possível carregar os lutadores.' : `Carregando lutadores... ${this.espera.percentual}%`, W / 2, H / 2, 20, '#fff', 'center');
     }
     // a cinemática por cima do mundo; fora dela, a sessão dos acertos (números, "N HITS" e a vinheta de 20%)
-    if (pv) this.provocacao.desenhar(ctx, game, m.elenco, pv, this.limiteDireitoDosBaloes());
+    if (vistaDoFilme) this.filme.desenhar(ctx, vistaDoFilme, m.elenco);
+    else if (pv) this.provocacao.desenhar(ctx, game, m.elenco, pv, this.limiteDireitoDosBaloes());
     else if (this.cine.ativa) this.cine.desenhar(ctx, game, m.elenco);
     else if (!q) {
       this.sessao.desenhar(ctx, game, m.elenco);
@@ -775,4 +957,12 @@ export class CenaFight implements Cena {
     }
     f.hint('COMBO: soco fraco → chute fraco → soco forte → chute forte → especial (aperte o próximo botão ao acertar)     ESC voltar');
   }
+}
+
+/** `?filme=<lutador>:<golpe>` (ex.: `?filme=hayato:sFire`) -> o alvo do gancho de desenvolvimento, ou null. */
+export function lerFilmeDev(busca: string): { lutador: string; golpe: string } | null {
+  const bruto = new URLSearchParams(busca).get('filme');
+  if (!bruto) return null;
+  const [lutador, golpe] = bruto.split(':');
+  return lutador && golpe ? { lutador, golpe } : null;
 }

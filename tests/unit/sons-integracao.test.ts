@@ -8,6 +8,7 @@ import { ASSINATURAS } from '../../src/data/sons';
 import { Contexto, comoAudioContext } from '../support/audio-offline';
 import { TAXA } from '../support/descritores';
 import { menorP99, p99DaFight, percentil, RUIDO_RELOGIO_MS } from '../support/orcamento-musica';
+import { itPerf } from '../support/perf';
 
 /* Sons por lutador: o jogo inteiro com os DADOS REAIS (10 vozes, 33 assinaturas) pelo caminho de produção, no AudioSys real sobre o motor offline. */
 const TXT = { x: 0, y: 0, s: '', col: '', size: 1 };
@@ -63,7 +64,7 @@ describe('integração com os dados reais', () => {
     expect(itens).toBeGreaterThan(500);
   });
 
-  it('o plano é barato, RELATIVO à trilha `fight`: o p99 de planejar um evento não passa do p99 de um tick do `scheduler()` da `fight` de hoje (Node; o celular é do N3)', () => {
+  itPerf('o plano é barato, RELATIVO à trilha `fight`: o p99 de planejar um evento não passa do p99 de um tick do `scheduler()` da `fight` de hoje (Node; o celular é do N3)', () => {
     // o absoluto `p99 < 1 ms` não vale nem para a `fight` no Chromium com CPU 4x (N3 da Íris: 9,5 ms), então a régua é a música que já está no jogo
     const p99Fight = p99DaFight();
     const ev = hit({ especial: true, golpe: 'sFire', projetil: true, snd: 'fireballHit' });
@@ -80,7 +81,7 @@ describe('integração com os dados reais', () => {
     expect(p99).toBeLessThanOrEqual(p99Fight + RUIDO_RELOGIO_MS);
   });
 
-  it('o evento inteiro (plano + montar o grafo no AudioSys real, o pior caso: especial + projétil + dano) custa, no p99, no máximo 10 x um tick da `fight` (relativo, Node)', () => {
+  itPerf('o evento inteiro (plano + montar o grafo no AudioSys real, o pior caso: especial + projétil + dano) custa, no p99, no máximo 10 x um tick da `fight` (relativo, Node)', () => {
     const p99Fight = p99DaFight();
     const ev = hit({ especial: true, golpe: 'sFire', projetil: true, snd: 'fireballHit' });
     const p99 = menorP99(() => {

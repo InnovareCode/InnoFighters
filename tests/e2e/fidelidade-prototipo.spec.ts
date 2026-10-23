@@ -2,7 +2,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { aguardarFontesNoPrototipo, urlDoPrototipoComFontesDoJogo, usarArteDoPrototipo } from './_jp-prototipo';
+import { aguardarFontesNoPrototipo, semAquecimentoOcioso, urlDoPrototipoComFontesDoJogo, usarArteDoPrototipo } from './_jp-prototipo';
 
 /*
  * Fidelidade visual: o MESMO quadro de luta é desenhado pelo protótipo (arquivo original, rodando
@@ -306,8 +306,10 @@ const MAPA_IDS: Record<string, string> = { f1: 'hayato', f2: 'wei-long', f3: 'mi
 test.describe('fidelidade visual: render/ novo x protótipo (pixel a pixel)', () => {
   test.setTimeout(240_000);
 
+  // Uma pagina do prototipo POR TESTE (nao uma por worker): o prototipo guarda estado entre cenas (cache de imagens/decodificacao dos cenarios) e, em serie (1 worker),
+  // a cena 'especial em onda' (5a) falhava no tick 105 por causa do que as anteriores desenharam; isolada ou em pagina nova ela passa. Custa ~3 s por teste.
   let proto: Page;
-  test.beforeAll(async ({ browser }, info) => {
+  test.beforeEach(async ({ browser }, info) => {
     if (info.project.name !== 'desktop') return;
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     proto = await ctx.newPage();
@@ -316,7 +318,7 @@ test.describe('fidelidade visual: render/ novo x protótipo (pixel a pixel)', ()
     await proto.waitForFunction(() => !!(window as any).SF && (window as any).SF.UI.ready, undefined, { timeout: 60_000 });
     await aguardarFontesNoPrototipo(proto);
   });
-  test.afterAll(async () => {
+  test.afterEach(async () => {
     await proto?.context().close();
   });
 
@@ -353,6 +355,7 @@ test.describe('fidelidade visual: render/ novo x protótipo (pixel a pixel)', ()
       info.annotations.push({ type: 'coberto', description: [...visto].join(',') });
       for (const e of cena.exige) expect(visto.has(e), `a cena nao mostrou '${e}' (viu: ${[...visto].join(',')})`).toBe(true);
       await usarArteDoPrototipo(page);
+      await semAquecimentoOcioso(page);
       await page.goto('/');
       await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
       const r = await compararNoApp(page, snaps);
@@ -383,6 +386,7 @@ test.describe('fidelidade visual: render/ novo x protótipo (pixel a pixel)', ()
       { poses: POSES, ids: MAPA_IDS },
     );
     await usarArteDoPrototipo(page); // HAYATO e MIN-JI com o atlas original: é o que o protótipo desenha
+    await semAquecimentoOcioso(page);
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true');
     const r = await page.evaluate(

@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
  * `ferramentas/`, o que o Vitest tolera e o Node recusa (declaração duplicada, sintaxe) só aparece rodando um `node` de verdade.
  */
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
-const node = (args: string[]) => spawnSync(process.execPath, args, { cwd: RAIZ, encoding: 'utf8', timeout: 60_000 });
+const node = (args: string[]) => spawnSync(process.execPath, args, { cwd: RAIZ, encoding: 'utf8', timeout: 120_000 });
 
 describe('ferramentas do trailer em Node puro', () => {
   it.each(['ferramentas/trailer/cli.mjs', 'ferramentas/trailer/medir.mjs'])('%s passa em `node --check`', (arquivo) => {
@@ -33,7 +33,7 @@ describe('ferramentas do trailer em Node puro', () => {
     const b = node(['ferramentas/trailer/cli.mjs', '--plano', 'C1', '--simular']);
     expect(b.status).toBe(1);
     expect(b.stderr).toContain('sem motor ou inexistente');
-  }, 60_000); // o segundo caso sobe o Vite (carregamento SSR) antes de recusar
+  }, 120_000); // o segundo caso sobe o Vite (carregamento SSR) antes de recusar; 60 s estourava com a maquina ocupada (3 suites ao lado)
 
   it('`npm run trailer:medir -- --ajuda` imprime o uso e sai com 0, sem abrir navegador', () => {
     const r = node(['ferramentas/trailer/medir.mjs', '--ajuda']);

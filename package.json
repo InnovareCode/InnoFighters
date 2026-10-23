@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "orcamento": "node ferramentas/orcamento/cli.mjs",
     "test": "vitest run",
+    "test:perf": "vitest run -c vitest.perf.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:build": "playwright test -c playwright.build.config.ts",
     "sprites": "node ferramentas/sprites/cli.mjs",

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { itPerf } from '../support/perf';
 import { BancoDeAmostras } from '../../src/audio/amostras';
 import { AudioSys, FONTES_SIMULTANEAS } from '../../src/audio/audio-sys';
 import { chavesSonoras } from '../../src/audio/chaves';
@@ -515,7 +516,7 @@ describe('orçamento: cada amostra conta 1 fonte e o teto de 32 vale', () => {
     expect(comTudo).toBeLessThanOrEqual(Math.max(sintese, FONTES_SIMULTANEAS) + 2);
   });
 
-  it('o custo por evento com o banco cheio não passa o da síntese (o plano com `amostras` é barato; Node, relativo)', async () => {
+  itPerf('o custo por evento com o banco cheio não passa o da síntese (o plano com `amostras` é barato; Node, relativo)', async () => {
     const ev = hit({ especial: true, golpe: 'sFire', projetil: true, snd: 'fireballHit' });
     const medir = (amostras: boolean): number => {
       const t: number[] = [];

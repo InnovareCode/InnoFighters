@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import type { BrowserContext, Page } from '@playwright/test';
@@ -18,7 +19,7 @@ export async function usarJpDoPrototipo(alvo: Page | BrowserContext): Promise<vo
   }
 }
 
-const ORIGINAIS = ['hayato', 'min-ji'] as const;
+const ORIGINAIS = ['hayato', 'min-ji', 'caio', 'wei-long'] as const;
 const TIPOS: Record<string, string> = { '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png' };
 
 /**
@@ -74,13 +75,20 @@ export function urlDoPrototipoComFontesDoJogo(): string {
     .join('');
   html = troca(html, '</head>', `<style>${faces}</style></head>`);
   const pasta = resolve('test-results/prototipo-fontes');
-  const destino = join(pasta, 'inno-fighters-artefato.html');
-  const tamanho = Buffer.byteLength(html);
-  if (!existsSync(destino) || statSync(destino).size !== tamanho || readFileSync(destino, 'utf8') !== html) {
+  // O NOME leva o hash do conteudo: o arquivo nunca e sobrescrito. Antes, 4 workers faziam rename por cima do mesmo arquivo e, no Windows, o rename falhava com EPERM
+  // quando outro worker ja o tinha aberto no Chromium (corrida, nao defeito). Mesmo conteudo = mesmo nome = quem chegou depois so reaproveita.
+  const destino = join(pasta, `inno-fighters-artefato-${createHash('sha1').update(html).digest('hex').slice(0, 12)}.html`);
+  if (!existsSync(destino)) {
     mkdirSync(pasta, { recursive: true });
     const tmp = join(pasta, `tmp-${process.pid}-${Date.now()}.html`);
     writeFileSync(tmp, html);
-    renameSync(tmp, destino);
+    try {
+      renameSync(tmp, destino);
+    } catch (e) {
+      if (!existsSync(destino)) throw e; // outro worker publicou o MESMO conteudo primeiro: serve
+    } finally {
+      rmSync(tmp, { force: true });
+    }
   }
   return pathToFileURL(destino).href;
 }
@@ -90,5 +98,17 @@ export async function aguardarFontesNoPrototipo(page: Page): Promise<void> {
   await page.evaluate(async () => {
     await Promise.all([document.fonts.load('italic 800 20px "Barlow Condensed"', 'ÃÕÇ'), document.fonts.load('600 20px Barlow', 'ÃÕÇ')]);
     if (!document.fonts.check('italic 800 20px "Barlow Condensed"') || !document.fonts.check('600 20px Barlow')) throw new Error('as fontes do jogo não carregaram no protótipo');
+  });
+}
+
+/**
+ * Isola a pagina do jogo do aquecimento ocioso do trailer. Desde o dcdfe0c o boot agenda (requestIdleCallback) um `drawImage` de cada cenario em 16x16 para
+ * "aquecer" a GPU; isso muda a amostragem do Chromium sobre a MESMA imagem quando o teste a desenha em tamanho real (colunas de 1 px com 3 a 9 niveis de diferenca em cenarios
+ * JPEG), e o resultado depende de o tempo ocioso ter chegado antes do teste (por isso o oraculo "as vezes passa"). O oraculo compara o desenho, nao o aquecimento; este
+ * trecho so tira o aquecimento da pagina. O aquecimento em si e coberto pelo trailer.spec. Chamar ANTES do `goto`.
+ */
+export async function semAquecimentoOcioso(alvo: Page | BrowserContext): Promise<void> {
+  await alvo.addInitScript(() => {
+    (window as unknown as { requestIdleCallback: () => number }).requestIdleCallback = () => 0;
   });
 }

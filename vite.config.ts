@@ -78,5 +78,9 @@ export default defineConfig({
   test: {
     include: ['tests/unit/**/*.test.ts'],
     environment: 'node',
+    // O padrao (5 s) estourava em sons-volume e sprites-pipeline (1,2 a 1,6 s sozinhos) quando a maquina estava ocupada, e o `npm test` e portao de deploy: folga de 6x.
+    // Nao esconde travamento (30 s ainda e um teste preso); medicao de relogio nao fica aqui, fica em `npm run test:perf`.
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
   },
 });

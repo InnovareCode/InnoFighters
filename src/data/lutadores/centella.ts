@@ -27,7 +27,7 @@ export const CENTELLA: LutadorDef = {
   bars: [3, 5, 2, 2],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'centella-plancha-na-corda', nome: 'DO ALTO DAS CORDAS', sequencia: ['lk', 'hk', 'sFire'], semQueda: [1] },
+    { id: 'centella-plancha-na-corda', nome: 'DO ALTO DAS CORDAS', sequencia: ['lk', 'hk', 'sFire'], semQueda: [1], efeito: 'segura em pé e fecha na PLANCHA' },
     { id: 'centella-chave-aerea', nome: '¡ARRIBA!', sequencia: ['clp', 'clk', 'hp'], final: 'lanca' },
   ],
   mods: {},

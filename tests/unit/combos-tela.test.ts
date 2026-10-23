@@ -107,6 +107,51 @@ describe('combosDoLutador (do dado do motor)', () => {
     expect(f(undefined)).toBeNull();
   });
 
+  it('efeito do dado vence o texto padrão; sem efeito, o padrão (final ou "fecha com o especial") segue; trocar o dado troca a tela', () => {
+    const um = (extra: Partial<ComboProprio>, sequencia: NomeGolpe[]) => combosDoLutador({ combosProprios: [{ id: 'x', nome: 'X', sequencia, ...extra }], fichas: {} })[0]!.efeito;
+    expect(um({ efeito: 'texto do dado' }, ['lp', 'hk', 'sFire'])).toBe('texto do dado');
+    expect(um({ efeito: 'outro texto' }, ['lp', 'hk', 'sFire'])).toBe('outro texto');
+    expect(um({}, ['lp', 'hk', 'sFire'])).toBe('fecha com o especial');
+    expect(um({ final: 'parede' }, ['lp', 'hk'])).toBe('empurra o rival para a parede');
+    expect(um({ final: 'parede', efeito: 'muralha' }, ['lp', 'hk'])).toBe('muralha');
+  });
+
+  it('os combos que fecham com especial mostram a linha do Apolo (do dado, nunca o "fecha com o especial" genérico); os de `final` seguem com o texto do final', () => {
+    let comEspecial = 0;
+    for (const id of IDS_LUTADORES) {
+      const listas = [prod[id].combosProprios ?? [], ...Object.values(prod[id].fichas).map((f) => f.combosProprios ?? [])];
+      const vistos = new Set<string>();
+      for (const c of listas.flat()) {
+        if (vistos.has(c.id)) continue;
+        vistos.add(c.id);
+        const ultimo = c.sequencia[c.sequencia.length - 1]!;
+        const tela = combosDoLutador(prod[id]).find((t) => t.id === c.id)!;
+        if (['sFire', 'sDown', 'sFwd'].includes(ultimo)) {
+          comEspecial++;
+          expect(c.efeito, c.id).toBeTruthy();
+          expect(tela.efeito, c.id).toBe(c.efeito);
+          expect(tela.efeito, c.id).not.toBe('fecha com o especial');
+        } else {
+          expect(c.efeito, c.id).toBeUndefined();
+          expect(tela.efeito, c.id).not.toBeNull();
+        }
+      }
+    }
+    expect(comEspecial).toBe(11); // 9 lutadores com 1 + NILA com 2 (uma por postura)
+  });
+
+  it('ZENON não cita o nome do especial (na fase 2 o →+ESP é o DECRETO); NILA não repete a postura que a tela já põe antes', () => {
+    for (const c of prod.zenon.combosProprios ?? []) {
+      if (c.efeito === undefined) continue;
+      expect(c.efeito).not.toMatch(/TRIBUTO|DECRETO/); // o nome do especial é em caixa alta; "cobra o tributo" (substantivo) vale para os dois
+    }
+    for (const c of [...(prod.nila.combosProprios ?? []), ...(prod.nila.fichas['sarpa']?.combosProprios ?? [])]) {
+      expect(c.efeito ?? '', c.id).not.toMatch(/GAJA|SARPA/i);
+    }
+    const sub = combosDoLutador(prod.nila).map((c) => [c.postura, c.efeito].filter(Boolean).join(' · '));
+    expect(sub).toEqual(expect.arrayContaining(['GAJA · do soco forte ao PASSO DO ELEFANTE', 'SARPA · três toques e o BOTE']));
+  });
+
   it('só vale com a regra motorV2.combos ligada', () => {
     expect(combosLigados(SEM_COMBOS)).toBe(false);
     expect(combosLigados({ motorV2: { filmes: true } })).toBe(false);

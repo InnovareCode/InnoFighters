@@ -8,7 +8,9 @@ import { SCHEME, type EsquemaTeclas } from './personagens';
 /*
  * Onde o jogador aprende os COMBOS PRÓPRIOS (docs/spec-revisao-motor-luta-v2.md §6.2): a lista do TREINO (pausa > lista de golpes) e a aba
  * GOLPES do "Como jogar". Tudo sai do MESMO dado do motor (`LutadorDef.combosProprios`, e `fichas[ficha].combosProprios` na NILA): trocar o
- * dado troca a tela. Os NOMES são provisórios (o Apolo troca em `src/data/lutadores/*.ts`): nada aqui os fixa. Só aparece com
+ * dado troca a tela. Os NOMES e as linhas de efeito são do Apolo (docs/combos-proprios.md) e moram em `src/data/lutadores/*.ts`: nada aqui os fixa.
+ * A linha de efeito é `ComboProprio.efeito` quando existe; senão a do `final` ("lança o rival"...) ou "fecha com o especial". Ela divide a
+ * altura da caixa com o nome (folga mínima medida: 20,6 px); `validarCombosProprios` limita o texto a EFEITO_MAX_CARACTERES. Só aparece com
  * `Regras.motorV2.combos` ligada (a mesma flag que liga os combos no motor). Este módulo é puro, menos `desenharCombos`.
  */
 
@@ -106,7 +108,7 @@ export function combosDoLutador(ch: Pick<LutadorMontado, 'combosProprios' | 'fic
         nome: c.nome,
         postura,
         passos: c.sequencia.map((golpe, i) => ({ golpe, teclas: teclasDoGolpe(golpe), especial: fechaComEspecial && i === c.sequencia.length - 1 })),
-        efeito: c.final ? EFEITO_DO_FINAL[c.final] : fechaComEspecial ? 'fecha com o especial' : null,
+        efeito: c.efeito ?? (c.final ? EFEITO_DO_FINAL[c.final] : fechaComEspecial ? 'fecha com o especial' : null),
       });
     }
   }

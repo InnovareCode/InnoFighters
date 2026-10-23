@@ -45,7 +45,7 @@ export const NILA: LutadorDef = {
   bars: [3, 4, 3, 3],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'nila-gaja-elefante-pesado', nome: 'SEM ANESTESIA', sequencia: ['hp', 'clp', 'sFwd'] },
+    { id: 'nila-gaja-elefante-pesado', nome: 'SEM ANESTESIA', sequencia: ['hp', 'clp', 'sFwd'], efeito: 'do soco forte ao PASSO DO ELEFANTE' },
   ],
   mods: {
     hp: { S: 8, dmg: 11, kb: 9 },
@@ -76,7 +76,7 @@ export const NILA: LutadorDef = {
       spd: 1.15,
       // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
       combosProprios: [
-        { id: 'nila-sarpa-bote-veloz', nome: 'DIAGNÓSTICO', sequencia: ['lk', 'clp', 'clk', 'sFire'] },
+        { id: 'nila-sarpa-bote-veloz', nome: 'DIAGNÓSTICO', sequencia: ['lk', 'clp', 'clk', 'sFire'], efeito: 'três toques e o BOTE' },
       ],
       // Hurtbox em pé a 79% (E6a): os quadros `sarpaIdle*`/`sarpaWalk*`/`sarpaBlock` medem 76-81% dos da GAJA (tests/unit/e6a-sarpa.test.ts mede de novo contra o atlas).
       alturaEmPe: 0.79,

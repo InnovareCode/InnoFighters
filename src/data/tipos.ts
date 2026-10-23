@@ -22,13 +22,18 @@ export type FinalDoCombo = 'derruba' | 'lanca' | 'parede' | 'cruza';
 export type ComboProprio = {
   /** Estável, para teste e para a lista na tela. Único no lutador. */
   readonly id: string;
-  /** Português, do Apolo (PROVISÓRIO até `docs/combos-proprios.md`). */
+  /** Português, do Apolo (nomes definitivos em `docs/combos-proprios.md`). */
   readonly nome: string;
   readonly sequencia: readonly NomeGolpe[];
   /** Passos que, DENTRO desta sequência, não derrubam (o `hs` do golpe vira atordoamento). Índices de 0 até `sequencia.length - 2`. */
   readonly semQueda?: readonly number[];
   /** Propriedade do último golpe comum: 'cruza' troca de lado; 'lanca' e 'parede' derrubam com altura/distância diferentes. Só sem especial no fim. */
   readonly final?: FinalDoCombo;
+  /**
+   * Linha de efeito que a tela mostra sob o nome (opcional). Sem ela a tela escreve a do `final` ("lança o rival"...) ou, para quem fecha com
+   * especial, "fecha com o especial". Texto curto, uma linha (validado no boot); a NILA não repete a postura: a tela a põe antes.
+   */
+  readonly efeito?: string;
 };
 
 /** mid: bloqueia em pé ou agachado · low: só agachado · over: só em pé · throw: não bloqueia. */

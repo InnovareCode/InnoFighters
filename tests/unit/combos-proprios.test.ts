@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { InputFrame } from '../../src/core/contratos';
 import { criarRng, type Rng } from '../../src/core/rng';
-import { comboAbreCancelamento, comboReconhecido, ehPrefixo, golpesQueContinuam, validarCombosProprios } from '../../src/data/combos-proprios';
+import { comboAbreCancelamento, comboReconhecido, EFEITO_MAX_CARACTERES, ehPrefixo, golpesQueContinuam, validarCombosProprios } from '../../src/data/combos-proprios';
 import { ROSTER } from '../../src/data/lutadores';
 import type { ComboProprio, FinalDoCombo, NomeGolpe } from '../../src/data/tipos';
 import { AI_LEVELS, cpuInput, moveInput, perfilChefe, type PerfilCpu } from '../../src/fight/cpu';
@@ -94,6 +94,18 @@ describe('validação no boot (falha alto)', () => {
     erro([combo(['lp', 'lk'], { id: 'x' }), combo(['hp', 'hk'], { id: 'x' })], /repetido/);
     erro([combo(['lp', 'lk'], { id: 'x' }), combo(['lp', 'lk'], { id: 'y' })], /repetida/);
     erro(combo(['lp', 'lk'], { nome: ' ' }), /nome vazio/);
+  });
+
+  it('efeito: opcional; vazio, com quebra de linha, espaço sobrando ou acima do teto falha alto', () => {
+    ok(combo(['lp', 'lk']));
+    ok(combo(['lp', 'lk'], { efeito: 'segura em pé' }));
+    ok(combo(['lp', 'lk'], { efeito: 'x'.repeat(EFEITO_MAX_CARACTERES) }));
+    erro(combo(['lp', 'lk'], { efeito: '' }), /efeito vazio/);
+    erro(combo(['lp', 'lk'], { efeito: '   ' }), /efeito vazio/);
+    erro(combo(['lp', 'lk'], { efeito: 'duas\nlinhas' }), /quebra de linha/);
+    erro(combo(['lp', 'lk'], { efeito: 'com\ttab' }), /quebra de linha/);
+    erro(combo(['lp', 'lk'], { efeito: ' espaço na ponta' }), /espaço sobrando/);
+    erro(combo(['lp', 'lk'], { efeito: 'x'.repeat(EFEITO_MAX_CARACTERES + 1) }), /máximo/);
   });
 
   it('semQueda: só nos passos que derrubam (kd), com atordoamento (hs), antes do último, sem repetir; final: sem especial no fim', () => {

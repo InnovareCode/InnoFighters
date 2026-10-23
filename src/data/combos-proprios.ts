@@ -12,6 +12,8 @@ export const ESPECIAIS_DE_COMBO: readonly NomeGolpe[] = ['sFire', 'sDown', 'sFwd
 
 export const COMBO_MIN_GOLPES = 2;
 export const COMBO_MAX_GOLPES = 4;
+/** Teto da linha de efeito (`ComboProprio.efeito`): a maior hoje tem 34 caracteres; a folga mínima medida com a fonte real foi 20,6 px. */
+export const EFEITO_MAX_CARACTERES = 40;
 export const FINAIS_DE_COMBO: readonly FinalDoCombo[] = ['derruba', 'lanca', 'parede', 'cruza'];
 
 /**
@@ -27,6 +29,11 @@ export function validarCombosProprios(id: string, combos: readonly ComboProprio[
     if (!c.id || ids.has(c.id)) throw new Error(`${onde}: id vazio ou repetido`);
     ids.add(c.id);
     if (!c.nome.trim()) throw new Error(`${onde}: nome vazio`);
+    if (c.efeito !== undefined) {
+      if (typeof c.efeito !== 'string' || !c.efeito.trim()) throw new Error(`${onde}: efeito vazio (omita o campo para a tela usar o texto padrão)`);
+      if (/[\r\n\t]/.test(c.efeito) || c.efeito !== c.efeito.trim()) throw new Error(`${onde}: efeito com quebra de linha, tabulação ou espaço sobrando`);
+      if (c.efeito.length > EFEITO_MAX_CARACTERES) throw new Error(`${onde}: efeito com ${c.efeito.length} caracteres (máximo ${EFEITO_MAX_CARACTERES}: a linha divide a altura com o nome)`);
+    }
     const n = c.sequencia.length;
     if (n < COMBO_MIN_GOLPES || n > COMBO_MAX_GOLPES) throw new Error(`${onde}: a sequência tem ${COMBO_MIN_GOLPES} a ${COMBO_MAX_GOLPES} golpes (veio ${n})`);
     const chave = c.sequencia.join('>');

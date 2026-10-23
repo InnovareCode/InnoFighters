@@ -7,7 +7,7 @@ import type { TomadasDoTrailer } from './tipos';
  */
 export const TOMADAS: TomadasDoTrailer = {
   P1: { semente: 471, cpu: [2, 1], inicio: 236, batidas: [{ pedida: 0, tickMotor: 313, tickInicio: 305 }], impressao: '093c3f19' },
-  P2: { semente: 53, cpu: [2, 1], inicio: 601, batidas: [{ pedida: 0, tickMotor: 663, tickInicio: 658 }, { pedida: 1, tickMotor: 736, tickInicio: 730 }], impressao: 'd1e45283' },
+  P2: { semente: 33, cpu: [2, 2], inicio: 374, batidas: [{ pedida: 0, tickMotor: 430, tickInicio: 425 }, { pedida: 1, tickMotor: 494, tickInicio: 488 }], impressao: '11a817d7' },
   P3: { semente: 263, cpu: [2, 2], inicio: 763, batidas: [{ pedida: 0, tickMotor: 814, tickInicio: 726 }], impressao: '2afd4018' },
   P4: { semente: 373, cpu: [2, 2], inicio: 420, batidas: [{ pedida: 0, tickMotor: 531, tickInicio: 474 }], impressao: 'aa46d868' },
   P5: { semente: 221, cpu: [2, 2], inicio: 240, batidas: [{ pedida: 0, tickMotor: 382, tickInicio: 376 }], impressao: 'fd04baf3' },

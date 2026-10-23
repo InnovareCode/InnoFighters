@@ -217,7 +217,7 @@ build a exporta para o SW pré-carregar. Assim boot e SW não divergem.
 | O3 | SW servindo versão velha (assets sem hash no nome) | Média | Alto | revisão por hash de conteúdo, network-first no HTML, troca fora da luta, teste e2e:build |
 | O4 | Vitrine solta na luta deixa o menu "vazio" por instantes na volta | Alta | Baixo | aceitar (OR-3) e o SW reduz a espera à decodificação |
 | O5 | O motor v2 passa de 135 kB no JS inicial | Média | Baixo | dividir menus e opções em pedaço próprio; T8 acusa |
-| O6 | Medição de quadro em máquina dividida (como em 23/10) | Alta | Médio | a meta 7a exige máquina livre e 3 rodadas; a Neve Maluca roda em outra hora |
+| O6 | Medição de quadro em máquina dividida (como em 23/10) | Alta | Médio | a meta 7a exige máquina livre e 3 rodadas; outros projetos da máquina rodam em outra hora |
 
 **Dívidas conscientes:** atlas guardados abaixo da resolução da tela (1,2x ampliados); total da 1ª visita acima de 4 MiB, aceito
 porque a espera bloqueante é o que conta; cota de armazenamento do iOS sem medição.

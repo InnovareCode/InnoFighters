@@ -217,7 +217,7 @@ espião no `drawImage` real. Sem erro de página, sem aviso de carga.
 - Os tetos de zoom do mundo (ZENON 1,10, BAATAR 1,25) não valem para o painel: o close sai igual ao dos outros. O sprite
   do mundo do ZENON vai a 1,33x e o close a 1,02x.
 - Capturas com e sem página, nos mesmos ticks:
-  `C:/Users/PERSON~1/AppData/Local/Temp/claude/C--Projetos-Web-InnoGames-InnoFighters/61f7b893-ce21-4943-9b98-4c03eaa90187/scratchpad/prova/<id>/{com,sem}-<golpe>-t<tick>.png`
+  `<scratchpad da sessão>/prova/<id>/{com,sem}-<golpe>-t<tick>.png`
   (pasta temporária da sessão).
 
 ## 6. O que foi mexido por código (a folha original nunca foi tocada)

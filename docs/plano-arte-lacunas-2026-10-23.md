@@ -371,7 +371,7 @@ Método da curadoria de cenários:
 - recorte 16:9 centrado, 1920 x 1080;
 - o `idle0` de WEI LONG, CAIO, ZENON (x1,10) e MIN-JI colado com os pés a 84,5% e altura de jogo de 675 px;
 - colagens em
-  `C:\Users\PERSON~1\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\apolo-lacunas\colagem-{cn,kr,br}.jpg`.
+  `<scratchpad da sessão>/apolo-lacunas/colagem-{cn,kr,br}.jpg`.
 
 | Cenário | Linha dos pés (84,5%) | Cantos de baixo | Contraste | Veredito |
 |---|---|---|---|---|

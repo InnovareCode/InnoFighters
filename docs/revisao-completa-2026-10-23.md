@@ -1,6 +1,6 @@
 # Revisão completa "planejado x entregue" — InnoFighters
 
-Autora: Nova (arquitetura), 2026-10-23. Base: HEAD `f5b5fab` (árvore limpa no código; só memórias do Neve Maluca não rastreadas).
+Autora: Nova (arquitetura), 2026-10-23. Base: HEAD `f5b5fab` (árvore limpa no código; só memórias de agentes não rastreadas).
 Somente leitura do código. Fontes do planejado: `PLANO.md` (F0-F7, §6, §7, §10), `docs/plano-expansao.md` (E0-E8, ED1-ED12),
 `PROGRESSO.md`, `CONTEXTO-SESSAO.md` e as 7 specs `docs/spec-*.md`.
 

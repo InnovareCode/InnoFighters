@@ -3,7 +3,7 @@
 Autora: Íris (QA), 2026-10-23. Sem corrigir código e sem commitar.
 **Onde rodou:** `git worktree` limpo e destacado em `f5b5fab`, **fora** do projeto, com `npm ci --prefer-offline` próprio (sem junção para o
 `node_modules` real; sem `arte-fonte/`, como a CI). Windows 10, Node 24.12.0, npm 11.6.2, Playwright 1.64.1, vitest 5.0.5, tsc 7.
-**Aviso de ambiente:** durante todas as medições a máquina estava **dividida com a sessão do Neve Maluca** (vitest rodando em paralelo em outra pasta).
+**Aviso de ambiente:** durante todas as medições a máquina estava **dividida com outra sessão do desenvolvedor** (vitest rodando em paralelo em outra pasta).
 Isso pesa nos números de tempo (seção 4) e nos testes frágeis por tempo (seção 2). Nível de prova: **[rodei]** = executei hoje; **[li]** = li no código;
 **[inferi]** = deduzi.
 

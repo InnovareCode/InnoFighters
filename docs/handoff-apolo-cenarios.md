@@ -57,7 +57,7 @@ combina.
 ## Receitas (testadas em cópia no scratchpad)
 
 Pasta dos testes (temporária, desta sessão):
-`C:\Users\PERSON~1\AppData\Local\Temp\claude\C--Users-Personal-Computer--claude-spares-spare-GQ8h1Y\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\apolo\cen\`
+`<scratchpad da sessão>/apolo/cen/`
 (abreviada como `scratchpad/apolo/cen/` neste documento). Script: `Espelho.cs` + `espelho2.ps1`. Para cada pixel do retângulo, ele copia de outro ponto da
 **mesma linha** e mistura na costura (rampa lateral F, rampa de cima Ft). Saídas de teste:
 `scratchpad/apolo/cen/ng-v2-teste.png` e `fr-v2-teste.png` (2752 x 1536).

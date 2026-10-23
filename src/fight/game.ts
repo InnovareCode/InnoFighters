@@ -18,9 +18,10 @@ import { clamp, lerp, overlap, type Retangulo } from '../core/math';
 import type { Rng } from '../core/rng';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { PROJ_BASE } from '../data/base-moves';
+import { comboReconhecido } from '../data/combos-proprios';
 import { filmeDoGolpe, type FilmeDoGolpe } from '../data/filmes';
 import type { LutadorMontado } from '../data/montar';
-import type { ContraDef, DrenaEnergiaDef, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
+import type { ContraDef, DrenaEnergiaDef, FinalDoCombo, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, NomeGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
 import { NO_INPUT, cpuInput, perfilChefe } from './cpu';
 import { dirNum } from './comandos';
@@ -65,6 +66,18 @@ export const TETO_GOLPE = 26;
 export const TETO_COMBO = 0.4;
 /** Piso do teto de combo: o teste CPU x CPU proíbe acerto de dano zero. */
 const PISO_ACERTO_NO_TETO = 0.5;
+/**
+ * V2-4 (spec §6.1): como o ÚLTIMO golpe comum de um combo próprio derruba. `lanca` sobe mais (a queda `down` do `Fighter` sai com vy -9);
+ * `parede` empurra com pelo menos este `kb` (o rival vai até a parede); `cruza` o joga PARA CIMA do atacante (sentido contrário) e ele
+ * pousa do outro lado (lutador caído não é empurrado pelo `separate`).
+ */
+const QUEDA_LANCA_VY = -15;
+const QUEDA_PAREDE_KB = 18;
+const QUEDA_CRUZA_KB = 11;
+
+/** O que o combo próprio reconhecido manda no acerto atual (V2-4): se este passo não derruba e como cai o último golpe comum. */
+type PassoDoCombo = { readonly semQueda: boolean; readonly final: FinalDoCombo | undefined };
+
 /** Distância final entre os dois depois do filme, quando o dado não diz (spec §3.4). */
 const DISTANCIA_PADRAO_DO_FILME = 150;
 /** Margem de parede de quem está caído (a mesma de `Fighter.physics`). */
@@ -201,6 +214,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private guardada: [EntradaGuardada, EntradaGuardada] = [entradaGuardadaVazia(), entradaGuardadaVazia()];
   /** V2-3c (`ConfigPartida.motorV2.filmes`): o 1º contato limpo de um especial vira FILME. Desligada, nada disto roda. */
   private filmesLigados = false;
+  /** V2-4 (`ConfigPartida.motorV2.combos`): o combo próprio abre cancelamentos e manda em `semQueda`/`final`. Lida pelo `Fighter` e pela CPU. */
+  combosLigados = false;
+  /** V2-4: combos próprios COMPLETOS (o último golpe da sequência acertou) por lutador, na partida toda (não zera por round). O harness lê. */
+  readonly combosPropriosFeitos: [number, number] = [0, 0];
+  /** Ferramenta de medição (verificador de combos, spec §6.2): desliga o teto de combo para medir o dano que o desenho do combo dá SEM a rede. */
+  semTetoDeCombo = false;
   /** Já houve um filme neste tick? O 2º contato de especial do mesmo tick resolve como acerto comum (spec §3.1). Zera em `update`. */
   private filmeNoTick = false;
   /** Execuções de especial que já tiveram o seu contato (filme, bloqueio, esquiva ou armadura): chave `atk * 2 + indice`. Zera por round. */
@@ -264,6 +283,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.esquivaLigada = cfg.esquiva === true;
     this.entradaNoHitstop = cfg.motorV2?.entradaNoHitstop === true;
     this.filmesLigados = cfg.motorV2?.filmes === true;
+    this.combosLigados = cfg.motorV2?.combos === true;
+    this.combosPropriosFeitos[0] = 0;
+    this.combosPropriosFeitos[1] = 0;
     this.winsNeeded = cfgChefe ? 1 : ajustes.rounds;
     this.timeMax = this.training ? 0 : ajustes.time;
     this.dummy = 'stand';
@@ -913,6 +935,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       return;
     }
     if (d.gotHits === 0) d.comboDmg = 0;
+    // V2-4: o acerto entra no histórico do atacante ANTES de `gotHits++` (o histórico recomeça quando o rival estava livre).
+    const passoDoCombo = this.combosLigados ? this.registrarAcertoDoCombo(a, d, mv) : null;
     // V2-3c: o 2º contato de especial do MESMO tick resolve como acerto comum (spec §3.1); o 1º leva o filme.
     const filme = this.filmeNoTick ? undefined : doFilme;
     const antes = filme ? this.posicoesDoFilme(a, d) : undefined;
@@ -955,8 +979,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         d.vy = Math.min(a.vy, -3);
         if (d.grounded) d.y -= 1;
       }
-    } else if (mv.kd || !d.grounded || d.state === 'down') {
-      d.knockdown(a.facing, mv.proj ? mv.kb : Math.max(mv.kb, 7));
+    } else if ((mv.kd && !passoDoCombo?.semQueda) || passoDoCombo?.final !== undefined || !d.grounded || d.state === 'down') {
+      this.derrubar(a, d, mv.proj ? mv.kb : Math.max(mv.kb, 7), passoDoCombo?.final);
     } else {
       d.setState('hit');
       d.stun = mv.hs + stunExtra;
@@ -1012,6 +1036,34 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
   }
 
+  // ----- V2-4: combos próprios (docs/spec-revisao-motor-luta-v2.md §6) -----
+
+  /**
+   * Registra o acerto `mv` no histórico do atacante (um por execução; recomeça se o rival estava livre) e devolve o passo do combo próprio
+   * que o histórico inteiro reconhece (o 1º da lista), ou null. Chegar ao último golpe da sequência conta um combo completo.
+   */
+  private registrarAcertoDoCombo(a: Fighter, d: Fighter, mv: AtaqueAcerto): PassoDoCombo | null {
+    if (d.gotHits === 0) a.historicoCombo.length = 0;
+    if (mv.golpe === undefined) return null;
+    const h = a.historicoCombo;
+    if (h[h.length - 1]?.atk !== mv.atk) h.push({ golpe: mv.golpe as NomeGolpe, atk: mv.atk });
+    const r = comboReconhecido(a.ch.combosProprios, h.map((x) => x.golpe));
+    if (!r) return null;
+    const ultimo = r.passo === r.combo.sequencia.length - 1;
+    if (ultimo) this.combosPropriosFeitos[a.indice]++;
+    return { semQueda: r.combo.semQueda?.includes(r.passo) === true, final: ultimo ? r.combo.final : undefined };
+  }
+
+  /** A queda de sempre (`final` ausente ou 'derruba') ou uma das três variações do último golpe de um combo próprio. */
+  private derrubar(a: Fighter, d: Fighter, kb: number, final: FinalDoCombo | undefined): void {
+    if (final === 'parede') d.knockdown(a.facing, Math.max(kb, QUEDA_PAREDE_KB));
+    else if (final === 'cruza') d.knockdown(-a.facing, Math.max(kb, QUEDA_CRUZA_KB));
+    else {
+      d.knockdown(a.facing, kb);
+      if (final === 'lanca') d.vy = QUEDA_LANCA_VY;
+    }
+  }
+
   // ----- V2-3c: filme do especial (docs/spec-revisao-motor-luta-v2.md §3 e §4) -----
 
   /** O filme do golpe `golpe` (chave de `ch.moves`) de `a` na ficha `ficha`, ou undefined (flag desligada, golpe comum, ou especial sem filme: PARADE, VADIVU). */
@@ -1048,6 +1100,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
    * `dmg` já é o que a vida sofre (depois do `danoRecebido`), e `comboDmg` acumula a mesma grandeza.
    */
   private limitarAoTetoDoCombo(d: Fighter, dmg: number): number {
+    if (this.semTetoDeCombo) return dmg;
     return Math.min(dmg, Math.max(PISO_ACERTO_NO_TETO, TETO_COMBO * d.maxHp * d.barrasMax - d.comboDmg));
   }
 

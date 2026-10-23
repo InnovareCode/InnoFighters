@@ -39,6 +39,8 @@ export type Tarefa = {
   entradaNoHitstop?: true;
   /** `motorV2.filmes` ligada nesta luta (`--filmes`, V2-3c). Muda o resultado de propósito (dano do especial, queda, teto de combo): referência própria. */
   filmes?: true;
+  /** `motorV2.combos` ligada nesta luta (`--motor-v2 combos`, V2-4). A semente não muda; a CPU DIFÍCIL passa a sortear os combos próprios (consome RNG): referência própria. */
+  combos?: true;
 };
 
 export type ParametrosSim = {
@@ -59,6 +61,8 @@ export type ParametrosSim = {
   entradaNoHitstop?: boolean;
   /** Liga `motorV2.filmes` (V2-3c) em todas as lutas. A semente não muda: a mesma luta com e sem filme é comparável. */
   filmes?: boolean;
+  /** Liga `motorV2.combos` (V2-4) em todas as lutas. A semente não muda: a mesma luta com e sem combos é comparável. */
+  combos?: boolean;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
   ajustes?: Record<string, unknown>;
 };
@@ -103,6 +107,8 @@ export type Registro = {
   esquivou: [number, number];
   /** Acertos do RESORTE por faixa de momento (fração de `maxDist`): <10%, 10-25%, 25-50%, >=50%. */
   reboteFaixas: [[number, number, number, number], [number, number, number, number]];
+  /** Combos próprios COMPLETOS por lutador (V2-4). Só existe com `--motor-v2 combos`: sem a flag a chave não aparece e o hash é o de sempre. */
+  combosProprios?: [number, number];
 };
 
 const ZERO_FRAME = (): InputFrame => ({ left: false, right: false, up: false, down: false, lp: false, hp: false, lk: false, hk: false, sp: false });
@@ -138,6 +144,7 @@ export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | nul
       ...(p.esquiva ? { esquiva: true as const } : {}),
       ...(p.entradaNoHitstop ? { entradaNoHitstop: true as const } : {}),
       ...(p.filmes ? { filmes: true as const } : {}),
+      ...(p.combos ? { combos: true as const } : {}),
     });
   };
   if (p.semRegulares !== true) {
@@ -198,9 +205,15 @@ function contagem(r: Record<string, ContagemGolpe>, chave: string): ContagemGolp
 }
 
 /** As flags do motor v2 desta tarefa (`{}` quando nenhuma: a cfg fica idêntica à de antes, nem a chave `motorV2` aparece). */
-function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; filmes?: true } } {
-  if (!t.entradaNoHitstop && !t.filmes) return {};
-  return { motorV2: { ...(t.entradaNoHitstop ? { entradaNoHitstop: true as const } : {}), ...(t.filmes ? { filmes: true as const } : {}) } };
+function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; filmes?: true; combos?: true } } {
+  if (!t.entradaNoHitstop && !t.filmes && !t.combos) return {};
+  return {
+    motorV2: {
+      ...(t.entradaNoHitstop ? { entradaNoHitstop: true as const } : {}),
+      ...(t.filmes ? { filmes: true as const } : {}),
+      ...(t.combos ? { combos: true as const } : {}),
+    },
+  };
 }
 
 /** Joga UMA luta CPU x CPU até o fim (ou o teto) e devolve tudo o que o relatório precisa. */
@@ -280,6 +293,7 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
   reg.ticks = g.tick;
   reg.rounds = g.round;
   reg.empates = reg.fim.length - (g.p1.wins + g.p2.wins);
+  if (t.combos) reg.combosProprios = [g.combosPropriosFeitos[0], g.combosPropriosFeitos[1]];
   if (!reg.travou) reg.venc = g.matchWinner;
   return reg;
 }

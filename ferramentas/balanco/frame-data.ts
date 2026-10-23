@@ -1,8 +1,9 @@
 import { GROUND, JUMP_FORCE } from '../../src/core/constantes';
 import type { EstadoLutador, EventoLuta, IdLutador, InputFrame, MotorV2 } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
-import type { NivelGolpe, NomeGolpe, TipoGolpe } from '../../src/data/tipos';
-import { Game, type DummyTreino, type FonteEntradas } from '../../src/fight/game';
+import type { ComboProprio, NivelGolpe, NomeGolpe, TipoGolpe } from '../../src/data/tipos';
+import { moveInput } from '../../src/fight/cpu';
+import { Game, TETO_COMBO, type DummyTreino, type FonteEntradas } from '../../src/fight/game';
 import type { Elenco } from './elenco';
 
 /*
@@ -459,6 +460,184 @@ export function medirLutador(elenco: Elenco, id: IdLutador, motorV2?: MotorV2): 
       if (mv.carga) {
         for (let n = 1; n <= mv.carga.niveis.length; n++) saida.push(medirGolpe(elenco, id, ficha, golpe, n, motorV2));
       } else saida.push(medirGolpe(elenco, id, ficha, golpe, null, motorV2));
+    }
+  }
+  return saida;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Verificador de COMBOS PRÓPRIOS (docs/spec-revisao-motor-luta-v2.md §6.2, fatia V2-4)
+// ---------------------------------------------------------------------------------------------------------------------
+
+/*
+ * Cada sequência de `combosProprios` roda numa `Game` real em modo treino, contra o boneco com a guarda em pé e agachada, com `motorV2.combos` E
+ * `motorV2.filmes` ligados (o estado de destino: o especial do fim leva o filme) e SEM o teto de combo (`semTetoDeCombo`): o dano medido é
+ * o que o DESENHO do combo dá, não o que a rede do teto deixa passar. O atacante é um jogador ideal: aperta o botão do passo seguinte
+ * assim que o anterior acerta (o cancelamento sai no 1º tick acionável). O boneco não bloqueia o 1º golpe (está parado em pé); depois dele passa a
+ * bloquear (em pé: `block`; agachado: `crouchblock`), então um elo que dá folga vira bloqueio e o verificador pega. Atenção: o `crouching`
+ * do `Fighter` só se atualiza em estado livre, então quem estava de guarda baixa quando apanhou continua com a caixa baixa durante o
+ * atordoamento e os golpes ALTOS (hp/hk de quase todos) passam por cima: o combo não é à prova de "agachar antes do 1º golpe".
+ *
+ * Falha se: algum golpe é bloqueado, erra, ou não encadeia; o boneco fica livre (ou cai) antes do último golpe; o dano passa de
+ * `TETO_COMBO` x vida do boneco; ou a sequência não tem nenhuma propriedade que a cadeia universal por rank não dê.
+ */
+
+/** Distância (centro a centro) em que o combo começa: a de referência das medidas de dano e vantagem. */
+export const DISTANCIA_DO_COMBO = 90;
+/** Ticks extras depois do último acerto, para o rival cair/pousar e a posição final valer. */
+const TICKS_DEPOIS_DO_COMBO = 70;
+const MAX_TICKS_COMBO = 600;
+
+export type PosturaDoCombo = 'em pé' | 'agachado';
+
+export type EnsaioCombo = {
+  postura: PosturaDoCombo;
+  /** Quantos passos acertaram (de `sequencia.length`). */
+  acertos: number;
+  /** A 1ª falha, em português; null = a sequência inteira acertou sem folga. */
+  falha: string | null;
+  /** Queda de vida do boneco no combo inteiro, SEM o teto. */
+  dano: number;
+  /** Como o rival ficou: caído?, distância final até o atacante, trocou de lado?, pico de altura (px acima do chão), x final dele. */
+  fim: { caiu: boolean; distancia: number; trocouDeLado: boolean; pico: number; x: number };
+};
+
+export type VerificacaoCombo = {
+  lutador: IdLutador;
+  ficha: string | null;
+  id: string;
+  nome: string;
+  sequencia: readonly NomeGolpe[];
+  emPe: EnsaioCombo;
+  agachado: EnsaioCombo;
+  /** O maior dano entre as duas posturas e o limite (TETO_COMBO x vida do boneco). */
+  dano: number;
+  limite: number;
+  /** O que a cadeia universal não dá a esta sequência (vazio = é só a cadeia universal). */
+  identidade: string[];
+  falhas: string[];
+  ok: boolean;
+};
+
+/**
+ * `TETO_COMBO` x a MENOR vida do elenco: o limite de dano de um combo próprio (0,4 x 92 = 36,8, a vida do BAATAR). É a vida de quem mais sofre
+ * o combo, não a do boneco (106): o limite vale para o combo inteiro contra qualquer rival.
+ */
+export function limiteDeDano(elenco: Elenco): number {
+  return TETO_COMBO * Math.min(...Object.values(elenco).map((l) => l.hp));
+}
+
+/** O que a sequência tem que a cadeia universal por rank (rank maior que o anterior; derrubada encerra) não dá. */
+export function identidadeDoCombo(elenco: Elenco, id: IdLutador, ficha: string | null, combo: ComboProprio): string[] {
+  const base = elenco[id];
+  const ch = ficha === null ? base : (base.fichas[ficha] as typeof base);
+  const saida: string[] = [];
+  for (let i = 1; i < combo.sequencia.length; i++) {
+    const antes = ch.moves[combo.sequencia[i - 1] as NomeGolpe];
+    const depois = ch.moves[combo.sequencia[i] as NomeGolpe];
+    const repete = !!antes.rep && antes.id === depois.id;
+    if (depois.rank <= antes.rank && !repete) saida.push(`${antes.id} (rank ${antes.rank}) cancela em ${depois.id} (rank ${depois.rank})`);
+  }
+  if ((combo.semQueda?.length ?? 0) > 0) saida.push(`${combo.semQueda?.map((i) => combo.sequencia[i]).join(', ')} sem queda`);
+  if (combo.final !== undefined && combo.final !== 'derruba') saida.push(`final '${combo.final}'`);
+  return saida;
+}
+
+function ensaiarCombo(elenco: Elenco, id: IdLutador, ficha: string | null, combo: ComboProprio, postura: PosturaDoCombo): EnsaioCombo {
+  const sequencia = combo.sequencia;
+  const g = new Game({ lutadores: elenco, rng: criarRng(1) });
+  g.setup({ mode: 'training', c1: id, c2: BONECO, motorV2: { combos: true, filmes: true } }, { rounds: 2, time: 99, shake: false });
+  g.phase = 'fight';
+  g.t = 0;
+  g.semTetoDeCombo = true;
+  g.trocarAlvoDoTreino('stand'); // o 1º golpe pega o boneco desprevenido (em pé); a guarda dele só começa depois dele
+  const p1 = g.p1;
+  const p2 = g.p2;
+  p1.trocarFicha(ficha);
+  const frame = quadroVazio();
+  const fonte: FonteEntradas = { p1: () => ({ ...frame }), p2: () => quadroVazio() };
+  p1.x = ARENA.centro - DISTANCIA_DO_COMBO / 2;
+  p2.x = ARENA.centro + DISTANCIA_DO_COMBO / 2;
+  p1.facing = 1;
+  p2.facing = -1;
+  p1.en = 100;
+  for (let i = 0; i < 3; i++) g.update(fonte);
+  p1.x = ARENA.centro - DISTANCIA_DO_COMBO / 2;
+  p2.x = ARENA.centro + DISTANCIA_DO_COMBO / 2;
+  p2.vx = 0;
+  const lado0 = Math.sign(p2.x - p1.x);
+
+  const r: EnsaioCombo = { postura, acertos: 0, falha: null, dano: 0, fim: { caiu: false, distancia: 0, trocouDeLado: false, pico: 0, x: 0 } };
+  const total = sequencia.length;
+  let atkAntes = p1.atkId; // `atkId` antes de o passo atual começar (`startMove` o incrementa)
+  let iniciado = false;
+  let ticksDepois = 0;
+  const hpInicial = p2.hp;
+  for (let i = 0; i < MAX_TICKS_COMBO && r.falha === null; i++) {
+    // O botão (e a direção) do passo atual fica apertado até o golpe começar; sem passo pendente, solta tudo.
+    Object.assign(frame, quadroVazio());
+    if (r.acertos < total && !iniciado) Object.assign(frame, moveInput(sequencia[r.acertos] as NomeGolpe, 1));
+    g.update(fonte);
+    if (!iniciado && r.acertos < total && p1.atkId > atkAntes) iniciado = true;
+    const passo = r.acertos;
+    for (const e of g.events as readonly EventoLuta[]) {
+      if (!('atacante' in e) || e.atacante !== 0) continue;
+      if (e.tipo === 'block' || e.tipo === 'quebra-guarda') r.falha ??= `passo ${passo + 1} (${sequencia[passo]}) foi bloqueado`;
+      else if (e.tipo === 'armor' || e.tipo === 'parry') r.falha ??= `passo ${passo + 1} (${sequencia[passo]}) foi absorvido (${e.tipo})`;
+      else if ((e.tipo === 'hit' || e.tipo === 'throw') && iniciado && r.acertos === passo && passo < total) {
+        r.acertos++;
+        if (passo === 0) g.trocarAlvoDoTreino(postura === 'em pé' ? 'block' : 'crouchblock');
+        atkAntes = p1.atkId;
+        iniciado = false;
+      }
+    }
+    if (r.falha !== null) break;
+    const n = r.acertos;
+    if (n < total) {
+      // Entre dois golpes o rival tem que seguir atordoado (nem livre, nem caído) e o atacante tem que continuar no golpe até o próximo começar.
+      if (n > 0 && LIVRES.has(p2.state)) r.falha = `o boneco ficou livre depois do passo ${n} (${sequencia[n - 1]}) e antes do ${n + 1}`;
+      else if (n > 0 && (p2.state === 'down' || p2.state === 'ko')) r.falha = `o boneco caiu no passo ${n} (${sequencia[n - 1]}): o passo ${n + 1} não tem em quem bater`;
+      else if (n > 0 && !iniciado && p1.state !== 'move') r.falha = `o passo ${n + 1} (${sequencia[n]}) não encadeou: o cancelamento não saiu antes de ${sequencia[n - 1]} acabar`;
+      else if (iniciado && p1.state !== 'move') r.falha = `o passo ${n + 1} (${sequencia[n]}) errou o boneco`;
+      else if (n === 0 && !iniciado && i > 120) r.falha = `o passo 1 (${sequencia[0]}) não saiu`;
+    }
+    r.fim.pico = Math.max(r.fim.pico, GROUND - p2.y);
+    if (r.acertos === total && ++ticksDepois > TICKS_DEPOIS_DO_COMBO) break;
+  }
+  if (r.falha === null && r.acertos < total) r.falha = `só ${r.acertos} de ${total} golpes acertaram`;
+  r.dano = hpInicial - p2.hp;
+  r.fim.caiu = p2.state === 'down' || p2.state === 'ko';
+  r.fim.distancia = Math.abs(p2.x - p1.x);
+  r.fim.trocouDeLado = Math.sign(p2.x - p1.x) !== lado0;
+  r.fim.x = p2.x;
+  return r;
+}
+
+/** Verifica UM combo próprio (spec §6.2): as duas posturas, o limite de dano e a identidade. */
+export function verificarCombo(elenco: Elenco, id: IdLutador, ficha: string | null, combo: ComboProprio): VerificacaoCombo {
+  const emPe = ensaiarCombo(elenco, id, ficha, combo, 'em pé');
+  const agachado = ensaiarCombo(elenco, id, ficha, combo, 'agachado');
+  const limite = limiteDeDano(elenco);
+  const dano = Math.max(emPe.dano, agachado.dano);
+  const identidade = identidadeDoCombo(elenco, id, ficha, combo);
+  const falhas: string[] = [];
+  if (emPe.falha) falhas.push(`em pé: ${emPe.falha}`);
+  if (agachado.falha) falhas.push(`agachado: ${agachado.falha}`);
+  if (dano > limite + 1e-9) falhas.push(`dano ${dano.toFixed(1)} passa de ${limite.toFixed(1)} (${Math.round(TETO_COMBO * 100)}% da menor vida do elenco) sem o teto`);
+  if (identidade.length === 0) falhas.push('sem propriedade nova: é só a cadeia universal por rank');
+  return { lutador: id, ficha, id: combo.id, nome: combo.nome, sequencia: combo.sequencia, emPe, agachado, dano, limite, identidade, falhas, ok: falhas.length === 0 };
+}
+
+/** Todos os combos próprios de todos os lutadores (a ficha base e cada ficha que traz a SUA lista). */
+export function verificarCombos(elenco: Elenco, ids: readonly IdLutador[]): VerificacaoCombo[] {
+  const saida: VerificacaoCombo[] = [];
+  for (const id of ids) {
+    const base = elenco[id];
+    const doBase = base.combosProprios;
+    for (const c of doBase ?? []) saida.push(verificarCombo(elenco, id, null, c));
+    for (const [nome, ficha] of Object.entries(base.fichas)) {
+      // Ficha sem lista própria herda a da base (já verificada acima); só as que trazem a sua entram.
+      if (ficha.combosProprios && ficha.combosProprios !== doBase) for (const c of ficha.combosProprios) saida.push(verificarCombo(elenco, id, nome, c));
     }
   }
   return saida;

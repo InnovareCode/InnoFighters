@@ -22,6 +22,11 @@ export const WEI_LONG: LutadorDef = {
   scale: 1.04,
   stride: 15,
   bars: [5, 2, 4, 3],
+  // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
+  combosProprios: [
+    { id: 'wei-long-ombrada-de-ferro', nome: 'OMBRADA DE FERRO', sequencia: ['clp', 'hk', 'sFwd'], semQueda: [1] },
+    { id: 'wei-long-palma-da-montanha', nome: 'PALMA DA MONTANHA', sequencia: ['hp', 'lk', 'hp'], final: 'parede' },
+  ],
   // ARTE NOVA (2026-10-23): o alcance de golpe nasce da ponta (tipX/tipY) do atlas, e as poses novas chegam menos longe (hp, hk, soco aéreo,
   // ombrada) ou mais (lk). O `rm` abaixo devolve a largura da caixa ao tamanho de antes, a -2,5% (medido em
   // tests/unit/wei-arte-calibrada.test.ts). Os -2,5% são de propósito: com a largura IGUAL o WEI subia 3 pontos de vitória no harness

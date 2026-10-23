@@ -8,9 +8,9 @@ import type { ProjetilLuta } from './projetil';
 
 /** Níveis da CPU (AI_LEVELS do protótipo, linhas 925-929). `diff` das configurações = índice aqui. */
 export const AI_LEVELS = [
-  { name: 'FÁCIL', desc: 'Reage devagar e erra muito. Para aprender os golpes.', think: 24, react: 0.35, block: 0.3, aggr: 0.5, fire: 0.1, anti: 0.1, combo: 0.15, esq: 0, punir: 0 },
-  { name: 'NORMAL', desc: 'Equilibrada. Bloqueia, usa especiais e encadeia golpes.', think: 14, react: 0.65, block: 0.6, aggr: 0.8, fire: 0.22, anti: 0.4, combo: 0.5, esq: 0.25, punir: 0.35 },
-  { name: 'DIFÍCIL', desc: 'Rápida, agressiva e punitiva. Só para veteranos.', think: 8, react: 0.92, block: 0.88, aggr: 1, fire: 0.3, anti: 0.75, combo: 0.85, esq: 0.5, punir: 0.7 },
+  { name: 'FÁCIL', desc: 'Reage devagar e erra muito. Para aprender os golpes.', think: 24, react: 0.35, block: 0.3, aggr: 0.5, fire: 0.1, anti: 0.1, combo: 0.15, esq: 0, punir: 0, proprio: 0 },
+  { name: 'NORMAL', desc: 'Equilibrada. Bloqueia, usa especiais e encadeia golpes.', think: 14, react: 0.65, block: 0.6, aggr: 0.8, fire: 0.22, anti: 0.4, combo: 0.5, esq: 0.25, punir: 0.35, proprio: 0 },
+  { name: 'DIFÍCIL', desc: 'Rápida, agressiva e punitiva. Só para veteranos.', think: 8, react: 0.92, block: 0.88, aggr: 1, fire: 0.3, anti: 0.75, combo: 0.85, esq: 0.5, punir: 0.7, proprio: 0.85 },
 ] as const;
 
 /** Os números que a CPU usa para decidir (o que `AI_LEVELS[n]` tem, sem nome nem descrição). */
@@ -25,6 +25,8 @@ export type PerfilCpu = {
   /** ESQUIVA (V2): chance de trocar a defesa por uma esquiva e de punir a recuperação da esquiva do rival. Só contam com `esquivaLigada`. */
   esq: number;
   punir: number;
+  /** COMBOS PRÓPRIOS (V2-4): chance de, depois de um acerto que continua algum combo próprio do lutador, apertar o próximo golpe dele. Só conta com `combosLigados`. */
+  proprio: number;
 };
 
 /**
@@ -52,6 +54,7 @@ export function perfilChefe(nivel: number, fase2: boolean): PerfilCpu {
     combo: base.combo,
     esq: Math.min(1, base.esq + IA_CHEFE.bonusReacao),
     punir: Math.min(1, base.punir + IA_CHEFE.bonusReacao),
+    proprio: base.proprio,
   };
   if (fase2) {
     p.aggr = IA_CHEFE.fase2.aggr;
@@ -67,6 +70,8 @@ export interface VistaParaCpu {
   readonly projectiles: readonly ProjetilLuta[];
   /** ESQUIVA ligada na partida. Desligada, a CPU não sorteia nada por causa dela (o RNG fica idêntico ao de antes). */
   readonly esquivaLigada?: boolean;
+  /** COMBOS PRÓPRIOS ligados na partida (V2-4). Desligada, a CPU não olha os combos nem sorteia nada por causa deles (o RNG fica idêntico ao de antes). */
+  readonly combosLigados?: boolean;
 }
 
 type TeclaIa = 'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp';
@@ -296,6 +301,21 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     ai.plan = null;
     ai.t = 0;
     return inp;
+  }
+  // 2a) COMBO PRÓPRIO (V2-4): depois de um acerto que continua uma sequência do lutador, um sorteio por golpe decide se a CPU a segue. O `rnd()`
+  // só existe com a flag ligada, com `proprio` > 0 e com ao menos um golpe pagável que continue a sequência (2 ou mais: mais um para escolher qual).
+  if (game.combosLigados === true && L.proprio > 0 && me.state === 'move' && me.connected && !me.buf && ai.proprioAtk !== me.atkId) {
+    const continuam = me.continuacoesDoComboProprio().filter((n) => me.canAfford(n) && serveParaCombo(me, n, dir));
+    if (continuam.length > 0) {
+      ai.proprioAtk = me.atkId;
+      if (rnd() < L.proprio) {
+        const nm = continuam.length === 1 ? continuam[0] : continuam[Math.floor(rnd() * continuam.length)];
+        if (nm) {
+          Object.assign(inp, moveInput(nm, dir));
+          return inp;
+        }
+      }
+    }
   }
   // 2) encadear combos: soco fraco → chute fraco → soco forte → chute forte → especial
   if (me.state === 'move' && me.connected && !me.buf) {

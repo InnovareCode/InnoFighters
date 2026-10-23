@@ -18,7 +18,7 @@
  *   --esquiva       liga a ESQUIVA em todas as lutas (V2); com --completo grava a referência de PRODUÇÃO em docs/balanco (a rodada sem a flag vai para docs/balanco/sem-esquiva); com --rapido, em relatorios/balanco-esquiva
  *   --entrada-hitstop liga `motorV2.entradaNoHitstop` (V2-1) em todas as lutas; PROVA de que a flag não muda o harness (o hash tem de ser o mesmo); sai em relatorios/balanco-entrada-hitstop, nunca em docs/
  *   --filmes        liga `motorV2.filmes` (V2-3c: o filme do especial no motor) em todas as lutas E na frame data (ganha a coluna "Filme"); muda o resultado de propósito, então sai em relatorios/balanco-filmes, nunca em docs/ (a referência nova é da V2-6)
- *   --motor-v2 a,b  atalho para as flags do motor v2: entrada (= --entrada-hitstop) e filmes (= --filmes), ex.: --motor-v2 entrada,filmes
+ *   --motor-v2 a,b  atalho para as flags do motor v2: entrada (= --entrada-hitstop), filmes (= --filmes) e combos (V2-4: os combos próprios; a CPU DIFÍCIL passa a usá-los e o verificador roda; sai em relatorios/balanco-combos, nunca em docs/), ex.: --motor-v2 entrada,filmes,combos
  *   --ajustes <json> "e se...": ajustes em memória, ex. '{"wei-long":{"hp":100,"pow":1.08}}' (não grava dados; saída em relatorios/)
  *   --verificar     antes de tudo, joga uma amostra duas vezes e exige resultado idêntico (determinismo)
  *
@@ -38,7 +38,7 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 function lerArgumentos(argv, env) {
   const a = {
     modo: 'rapido', sementes: null, niveis: null, pares: env.BALANCO_PARES ?? null, base: 1, chefe: true, so: null, jobs: null, saida: null,
-    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: false, filmes: false, chefes: null, semRegulares: false, varrerDano: null,
+    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: false, filmes: false, combos: false, chefes: null, semRegulares: false, varrerDano: null,
   };
   if (env.BALANCO_SEMENTES) a.sementes = Number(env.BALANCO_SEMENTES);
   if (env.BALANCO_NIVEIS) a.niveis = env.BALANCO_NIVEIS.split(',').map(Number);
@@ -67,7 +67,8 @@ function lerArgumentos(argv, env) {
       for (const f of valor().split(',').map((x) => x.trim()).filter(Boolean)) {
         if (f === 'entrada') a.entradaHitstop = true;
         else if (f === 'filmes') a.filmes = true;
-        else throw new Error(`--motor-v2: flag desconhecida '${f}' (use entrada e/ou filmes)`);
+        else if (f === 'combos') a.combos = true;
+        else throw new Error(`--motor-v2: flag desconhecida '${f}' (use entrada, filmes e/ou combos)`);
       }
     }
     else if (t === '--chefes') a.chefes = valor().split(',').map((x) => x.trim()).filter(Boolean);
@@ -95,7 +96,9 @@ function lerArgumentos(argv, env) {
   const parcial = a.semRegulares || a.chefes !== null;
   // `--entrada-hitstop` é uma PROVA (o hash tem de bater com o de referência), nunca a referência: sai sempre em relatorios/
   a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
+    : a.filmes && a.combos ? join(RAIZ, 'relatorios', 'balanco-filmes-combos')
     : a.filmes ? join(RAIZ, 'relatorios', 'balanco-filmes')
+    : a.combos ? join(RAIZ, 'relatorios', 'balanco-combos')
     : a.entradaHitstop ? join(RAIZ, 'relatorios', 'balanco-entrada-hitstop')
     : parcial ? join(RAIZ, 'relatorios', 'balanco-chefes')
     : a.modo === 'completo' ? join(RAIZ, 'docs', 'balanco', a.esquiva ? '' : 'sem-esquiva')
@@ -147,6 +150,7 @@ function paramsDe(a) {
     ...(a.ajustes ? { ajustes: a.ajustes } : {}), ...(a.esquiva ? { esquiva: true } : {}),
     ...(a.entradaHitstop ? { entradaNoHitstop: true } : {}),
     ...(a.filmes ? { filmes: true } : {}),
+    ...(a.combos ? { combos: true } : {}),
   };
 }
 
@@ -205,7 +209,7 @@ async function principal() {
   if (a.worker) {
     // os parâmetros chegam do processo principal, já validados (a linha de comando do worker só leva o --worker)
     const p = JSON.parse(process.env.BALANCO_PARAMS ?? '{}');
-    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
+    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
     return modoWorker(a);
   }
 
@@ -254,6 +258,16 @@ async function principal() {
             writeFileSync(join(a.saida, 'frame-data.md'), m.rel.frameDataMd(frame, ids, { geradoEm: hoje, versaoDados }));
             writeFileSync(join(a.saida, 'frame-data.json'), JSON.stringify({ versaoDados, linhas: frame }, null, 1));
             console.log(`frame data: ${frame.length} linhas em ${((Date.now() - t0) / 1000).toFixed(1)} s -> ${join(relDir, 'frame-data.md')}`);
+            if (a.combos) {
+              // V2-4 (spec §6.2): o verificador de combos próprios, com o elenco (e os ajustes "e se") desta rodada.
+              const vs = m.frame.verificarCombos(elenco, ids);
+              writeFileSync(join(a.saida, 'combos-proprios.md'), m.rel.combosMd(vs, { geradoEm: hoje, versaoDados }));
+              writeFileSync(join(a.saida, 'combos-proprios.json'), JSON.stringify({ versaoDados, combos: vs }, null, 1));
+              const ruins = vs.filter((v) => !v.ok);
+              console.log(`combos próprios: ${vs.length - ruins.length} de ${vs.length} passam no verificador -> ${join(relDir, 'combos-proprios.md')}`);
+              for (const v of ruins) console.log(`  FALHA ${v.id}: ${v.falhas.join(' | ')}`);
+              if (ruins.length) process.exitCode = 1;
+            }
           })();
 
     // 2) simulação
@@ -281,10 +295,11 @@ async function principal() {
         dif = null;
       }
     }
-    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
+    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
     writeFileSync(join(a.saida, 'resultados.md'), m.rel.resultadosMd(agr, ids, achados, dif, cab));
     writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, hashRegulares, hashChefes, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
     resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, { hashRegulares, hashChefes, semRegulares: a.semRegulares });
+    if (a.combos) imprimirCombosDaCpu(registros);
   } finally {
     await server.close();
   }
@@ -353,6 +368,24 @@ function imprimirChefoes(agr) {
     console.log(
       `${s.chefe.padEnd(10)} ${String(Number(f.toFixed(3))).padEnd(5)} ${s.nivel === 1 ? 'NORMAL ' : 'DIFÍCIL'} ${pc(s.jogador.taxa)} (${String(s.jogador.k).padStart(3)}/${String(s.jogador.n).padEnd(3)}) ${String(Math.round(s.meta[0] * 100)).padStart(2)}-${String(Math.round(s.meta[1] * 100)).padEnd(2)}% ${bandeira} ${pc(s.porKo)} ${pc(s.porTempo)} ${s.duracaoSeg.toFixed(0).padStart(4)} s  ${(s.pior.desafiante + ' ' + (s.pior.taxa * 100).toFixed(0) + '%').padEnd(15)} ${s.melhor.desafiante} ${(s.melhor.taxa * 100).toFixed(0)}%${crit}`,
     );
+  }
+}
+
+/**
+ * V2-4 (spec §9, aceite): quantos combos próprios COMPLETOS a CPU fez por luta. As duas CPUs têm o mesmo nível, então "por luta" soma os dois
+ * lados e "por lado" divide por dois. Só conta lutas jogadas com `--motor-v2 combos` (o `Registro` tem `combosProprios`).
+ */
+function imprimirCombosDaCpu(registros) {
+  const rotulo = (n) => (n === 1 ? 'NORMAL ' : n === 2 ? 'DIFÍCIL' : `nível ${n}`);
+  console.log('\ncombos próprios completos da CPU (V2-4)   lutas  por luta  por lado  lutas com >= 1');
+  for (const tipo of ['regular', 'chefe']) {
+    for (const nivel of [...new Set(registros.map((r) => r.nivel))].sort()) {
+      const rs = registros.filter((r) => r.tipo === tipo && r.nivel === nivel && r.combosProprios);
+      if (!rs.length) continue;
+      const total = rs.reduce((s, r) => s + r.combosProprios[0] + r.combosProprios[1], 0);
+      const com = rs.filter((r) => r.combosProprios[0] + r.combosProprios[1] >= 1).length;
+      console.log(`  ${tipo.padEnd(8)} ${rotulo(nivel)}                      ${String(rs.length).padStart(5)}  ${(total / rs.length).toFixed(2).padStart(8)}  ${(total / rs.length / 2).toFixed(2).padStart(9)}  ${((com / rs.length) * 100).toFixed(0).padStart(5)}%`);
+    }
   }
 }
 

@@ -34,6 +34,10 @@ function quadro(v: unknown, nome: string, recurso: string, paginas: number): Qua
   const q: QuadroC1 = { x, y, w, h, ax, p };
   if (v['rosto'] !== undefined) q.rosto = par(v['rosto'], `quadro "${nome}".rosto`, recurso);
   if (v['ponta'] !== undefined) q.ponta = par(v['ponta'], `quadro "${nome}".ponta`, recurso);
+  if (v['painel'] !== undefined) {
+    if (typeof v['painel'] !== 'boolean') throw new ErroDeAsset(`${recurso}: quadro "${nome}" com "painel" que nao e booleano`, recurso);
+    if (v['painel']) q.painel = true;
+  }
   return q;
 }
 

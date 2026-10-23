@@ -3,6 +3,7 @@ import { animFor } from './anim';
 import { LADO_RETRATO } from './atlas';
 import { BASE_MOVES, NOMES_GOLPES_BASE } from './base-moves';
 import { validarCena } from './cena';
+import { validarCombosProprios } from './combos-proprios';
 import { getPD } from './poses';
 import type { CaixaGolpe, DicaIa, GolpeMontado, LutadorDef, NomeEspecial, NomeGolpe, Poses, ProjetilDef } from './tipos';
 
@@ -172,6 +173,7 @@ export function montarLutador(def: LutadorDef, pd: Poses, fichasDoLutador?: read
   }
 
   for (const n of nomes) validarParametrosE3(def.id, n, moves[n], nomesDeFichas);
+  validarCombosProprios(def.id, def.combosProprios, moves);
   if (nomes.some((n) => moves[n].parry) && !moves.sResp) throw new Error(`${def.id}: golpe com parry exige extras.sResp (a resposta)`);
 
   const sFire = moves.sFire;

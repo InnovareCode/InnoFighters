@@ -20,6 +20,11 @@ export const CAIO: LutadorDef = {
   scale: 1.02,
   stride: 13,
   bars: [3, 4, 3, 5],
+  // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
+  combosProprios: [
+    { id: 'caio-ginga-rasteira', nome: 'GINGA RASTEIRA', sequencia: ['clk', 'clk', 'chk'], final: 'cruza' },
+    { id: 'caio-meia-lua-encadeada', nome: 'MEIA-LUA ENCADEADA', sequencia: ['lk', 'hk', 'sFwd'], semQueda: [1] },
+  ],
   reach: 1.12,
   // ARTE NOVA (2026-10-23): o alcance de golpe nasce da ponta (tipX/tipY) do atlas, e as poses novas chegam mais longe. O `rm`
   // (e o `bh` do hk e da MEIA-LUA) abaixo devolve a caixa do CAIO ao tamanho de antes: largura a +-10% da original, medida em

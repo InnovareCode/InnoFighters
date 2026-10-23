@@ -63,6 +63,11 @@ export const BAATAR: LutadorDef = {
   scale: 1.28,
   stride: 16,
   bars: [5, 1, 5, 3],
+  // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
+  combosProprios: [
+    { id: 'baatar-quebra-base-encadeado', nome: 'QUEBRA-BASE ENCADEADO', sequencia: ['clk', 'hk', 'sDown'], semQueda: [1] },
+    { id: 'baatar-esmagamento', nome: 'ESMAGAMENTO', sequencia: ['lk', 'hp', 'hp'], final: 'parede' },
+  ],
   // PESO DA MONTANHA: armadura nos golpes fortes e nos especiais; `armadura.rankMax` limita a quem ela absorve.
   armadura: { rankMax: 2 },
   mods: {

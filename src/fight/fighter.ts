@@ -13,6 +13,7 @@ import { INPUT_VAZIO } from '../core/contratos';
 import { clamp, lerp } from '../core/math';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { poseDaCena } from '../data/cena';
+import { comboAbreCancelamento, golpesQueContinuam } from '../data/combos-proprios';
 import { ESQUIVA_PADRAO, type TrechoEsquiva } from '../data/esquiva';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
@@ -45,6 +46,8 @@ export type EstadoIa = {
   reacao: { golpe: NomeGolpe; espera: number } | { esquiva: 1 | -1; espera: number } | null;
   /** (ESQUIVA) `esquivaId` do rival cuja recuperação a CPU já considerou punir (um sorteio por esquiva). */
   puniuEsquiva: number;
+  /** (V2-4, combos próprios) `atkId` do golpe cujo acerto a CPU já considerou continuar num combo próprio (um sorteio por golpe). */
+  proprioAtk: number;
 };
 export type PlanoIa = Partial<Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp', boolean>> & { dur?: number };
 
@@ -62,9 +65,11 @@ export interface PartidaParaLutador {
    * ignora `inp.esq` ANTES de qualquer conta (nenhum estado, energia, `deny` ou RNG).
    */
   readonly esquivaLigada?: boolean;
+  /** V2-4 (`motorV2.combos`): o combo próprio abre cancelamentos. Opcional: dublê de teste sem o campo = desligado (nenhuma conta nova). */
+  readonly combosLigados?: boolean;
 }
 
-const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0 });
+const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0, proprioAtk: -1 });
 
 /** Nível (1..3) de uma carga com `carga` ticks segurados: o maior i+1 tal que carga >= niveis[i]. */
 function nivelDaCarga(def: CargaDef, carga: number): 1 | 2 | 3 {
@@ -176,6 +181,12 @@ export class Fighter {
   invuln = 0;
   phase: 'air' | 'lie' | 'rise' = 'air';
   gotHits = 0;
+  /**
+   * V2-4 (`motorV2.combos`): golpes DESTE lutador que acertaram o rival desde que ele saiu de `gotHits === 0` (um por execução, na ordem).
+   * Só o `Game` escreve (em `applyHit`); com a flag desligada fica sempre vazio. `atk` = o `atkId` da execução, para o cancelamento
+   * saber que o último acerto é do golpe em curso (e não de um acerto velho, com o golpe atual só bloqueado).
+   */
+  historicoCombo: { golpe: NomeGolpe; atk: number }[] = [];
   lastDmg = 0;
   dmgTaken = 0;
   maxCombo = 0;
@@ -348,6 +359,7 @@ export class Fighter {
     this.invuln = 0;
     this.phase = 'air';
     this.gotHits = 0;
+    this.historicoCombo = [];
     this.lastDmg = 0;
     this.dmgTaken = 0;
     this.maxCombo = 0;
@@ -783,7 +795,12 @@ export class Fighter {
       // combo: cancela em golpe de rank maior
       const nm = this.resolveAttack(this.buf.k, inp);
       const nmv = nm ? this.ch.moves[nm] : null;
-      if (nm && nmv && this.canAfford(nm) && (nmv.rank > mv.rank || (mv.rep && nm === this.move && this.rep < 2))) {
+      if (
+        nm &&
+        nmv &&
+        this.canAfford(nm) &&
+        (nmv.rank > mv.rank || (mv.rep && nm === this.move && this.rep < 2) || (jogo.combosLigados === true && this.comboProprioAbre(nm)))
+      ) {
         const rep = nm === this.move ? this.rep + 1 : 0;
         this.buf = null;
         this.startMove(nm, jogo);
@@ -812,6 +829,24 @@ export class Fighter {
       return;
     }
     this.physics(jogo);
+  }
+
+  /** Os golpes do `historicoCombo` na ordem, só se o último é um acerto do golpe EM CURSO (um bloqueio do golpe atual não continua combo). */
+  private golpesDoComboEmCurso(): NomeGolpe[] {
+    const h = this.historicoCombo;
+    const ultimo = h[h.length - 1];
+    if (!ultimo || ultimo.atk !== this.atkId || ultimo.golpe !== this.move) return [];
+    return h.map((x) => x.golpe);
+  }
+
+  /** V2-4: `histórico + nm` é prefixo de um combo próprio da ficha ativa? Então o cancelamento vale mesmo fora da regra de rank. */
+  private comboProprioAbre(nm: NomeGolpe): boolean {
+    return comboAbreCancelamento(this.ch.combosProprios, this.golpesDoComboEmCurso(), nm);
+  }
+
+  /** V2-4: golpes que continuam algum combo próprio a partir do golpe que acabou de acertar (a CPU escolhe entre eles). Vazio = nada a continuar. */
+  continuacoesDoComboProprio(): NomeGolpe[] {
+    return golpesQueContinuam(this.ch.combosProprios, this.golpesDoComboEmCurso());
   }
 
   /**

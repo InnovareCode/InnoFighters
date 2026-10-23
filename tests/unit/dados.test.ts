@@ -80,7 +80,9 @@ describe.skipIf(!TEM_PROTOTIPO)('src/data == protótipo', () => {
           bars: ch['bars'],
         };
         if (ch['reach'] !== undefined) esperado['reach'] = ch['reach'];
-        const { mods, especiais, anim, idPrototipo, ...estatico } = def;
+        // `combosProprios` é dado da v2 (V2-4), não existe no protótipo: fica fora da comparação com ele.
+        const { mods, especiais, anim, idPrototipo, combosProprios: _combos, ...estatico } = def;
+        void _combos;
         expect(idPrototipo).toBe(f);
         expect(diferencas(estatico, esperado)).toEqual([]);
         expect(diferencas(mods, proto['CHAR_MODS'][f])).toEqual([]);

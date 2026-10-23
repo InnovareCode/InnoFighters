@@ -1,7 +1,7 @@
 import type { IdLutador } from '../../src/core/contratos';
 import type { Agregado, Diferenca } from './agregado';
 import { pct } from './estatistica';
-import type { MedidaGolpe } from './frame-data';
+import type { MedidaGolpe, VerificacaoCombo } from './frame-data';
 import type { Achado } from './outliers';
 
 /** Textos em Markdown dos dois relatórios. Funções puras: o CLI só decide onde gravar. */
@@ -200,5 +200,26 @@ export function resultadosMd(agr: Agregado, ids: readonly IdLutador[], achados: 
     if (!chaves.length) continue;
     o.push(`**${id}**: ${chaves.map((c) => { const [u, a, b] = g[c] as [number, number, number]; return `${c} ${u}/${a}/${b}`; }).join(' · ')}`, '');
   }
+  return o.join('\n');
+}
+
+/** O relatório do verificador de combos próprios (V2-4, spec §6.2): uma linha por combo, com o dano SEM o teto e a falha, se houver. */
+export function combosMd(vs: readonly VerificacaoCombo[], cab: CabecalhoFrame): string {
+  const o: string[] = ['# Combos próprios: verificador', '', AVISO, ''];
+  const ok = vs.filter((v) => v.ok).length;
+  o.push(`Gerado em ${cab.geradoEm} · versão dos dados/motor \`${cab.versaoDados}\` · \`motorV2.combos\` e \`motorV2.filmes\` ligados.`, '');
+  o.push(`**${ok} de ${vs.length} combos passam.**`, '');
+  o.push(
+    'Cada sequência roda numa `Game` real contra o boneco, que NÃO bloqueia o 1º golpe e passa a bloquear (em pé = `block`, agachado = `crouchblock`) depois dele. Passa se todos os golpes acertam em ambas as guardas (nenhum bloqueado, errado ou sem encadear; o boneco nunca fica livre nem cai antes do último), se o dano medido SEM o teto de combo não passa de 40% da menor vida do elenco, e se a sequência tem algo que a cadeia universal por rank não dá.',
+    '',
+  );
+  o.push('| Combo | Lutador | Sequência | Dano (sem teto) | Limite | Em pé | Agachado | Identidade | Resultado |', '|---|---|---|---|---|---|---|---|---|');
+  for (const v of vs) {
+    const ficha = v.ficha ? `${v.lutador}/${v.ficha}` : v.lutador;
+    const passos = (e: VerificacaoCombo['emPe']): string => `${e.acertos}/${v.sequencia.length}${e.falha ? ' ✗' : ' ✓'}`;
+    const colunas = [v.id, ficha, v.sequencia.join(' › '), num(v.dano, 1), num(v.limite, 1), passos(v.emPe), passos(v.agachado), v.identidade.join('; ') || '–', v.ok ? 'ok' : `**FALHA**: ${v.falhas.join(' | ')}`];
+    o.push(`| ${colunas.join(' | ')} |`);
+  }
+  o.push('');
   return o.join('\n');
 }

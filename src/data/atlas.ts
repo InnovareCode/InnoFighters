@@ -20,6 +20,8 @@ export type QuadroAtlas = {
   /** Ponta do golpe, px do atlas relativos ao canto superior esquerdo do quadro. */
   ponta?: readonly [number, number];
   rosto?: readonly [number, number];
+  /** Quadro de PAINEL (folha do filme do especial): a UI o trata à parte; o motor não lê. Ausente = quadro comum. */
+  painel?: boolean;
 };
 
 export type ManifestoAtlas = {
@@ -51,6 +53,7 @@ export function manifestoParaPoses(m: ManifestoAtlas): Poses {
       p.tipY = (q.h - q.ponta[1]) * k;
     }
     if (q.rosto) p.rosto = q.rosto;
+    if (q.painel) p.painel = true;
     poses[nome] = p;
   }
   return poses;

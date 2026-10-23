@@ -11,6 +11,26 @@ export type NomeGolpe =
 
 export type NomeEspecial = 'sFire' | 'sDown' | 'sFwd';
 
+/** Como o ÚLTIMO golpe comum de um combo próprio derruba (docs/spec-revisao-motor-luta-v2.md §6.1). 'derruba' é a queda de sempre. */
+export type FinalDoCombo = 'derruba' | 'lanca' | 'parede' | 'cruza';
+
+/**
+ * COMBO PRÓPRIO de um lutador (V2-4, atrás de `motorV2.combos`). Uma sequência de golpes que a cadeia universal por rank não deixa fazer
+ * (ou que ganha uma propriedade nova), reconhecida pelo PREFIXO do histórico de acertos do atacante. Regras (validadas no boot em
+ * `data/combos-proprios.ts`): 2 a 4 golpes; só normais de chão (lp lk hp hk clp clk chp chk) e, no ÚLTIMO lugar, um especial.
+ */
+export type ComboProprio = {
+  /** Estável, para teste e para a lista na tela. Único no lutador. */
+  readonly id: string;
+  /** Português, do Apolo (PROVISÓRIO até `docs/combos-proprios.md`). */
+  readonly nome: string;
+  readonly sequencia: readonly NomeGolpe[];
+  /** Passos que, DENTRO desta sequência, não derrubam (o `hs` do golpe vira atordoamento). Índices de 0 até `sequencia.length - 2`. */
+  readonly semQueda?: readonly number[];
+  /** Propriedade do último golpe comum: 'cruza' troca de lado; 'lanca' e 'parede' derrubam com altura/distância diferentes. Só sem especial no fim. */
+  readonly final?: FinalDoCombo;
+};
+
 /** mid: bloqueia em pé ou agachado · low: só agachado · over: só em pé · throw: não bloqueia. */
 export type NivelGolpe = 'mid' | 'low' | 'over' | 'throw';
 /** `carga`/`rebote`/`aparar`/`troca` são as primitivas da E3 (docs/mecanicas-e3.md §1): o tipo existe desde a S0, a lógica entra na fatia de cada lutador. */
@@ -301,6 +321,8 @@ export type LutadorDef = {
   armadura?: { rankMax: number };
   /** Fichas nomeadas (ver `FichaDef`). Montadas no boot por `montarLutador`; ausente = só a base. */
   fichas?: Record<string, FichaDef>;
+  /** V2-4: combos próprios (ver `ComboProprio`). A ficha que define a lista SUBSTITUI a da base (NILA: um por postura). Só valem com `motorV2.combos`. */
+  combosProprios?: readonly ComboProprio[];
   /** Presente = este lutador pode ser o chefe (`ConfigPartida.chefe`). Sem `cfg.chefe` o lutador é o jogável normal. */
   chefe?: ConfigChefe;
 };
@@ -316,6 +338,8 @@ export type PoseDados = {
   tipY?: number;
   /** Centro do retrato relativo ao canto do quadro (ver data/atlas.ts). */
   rosto?: readonly [number, number];
+  /** Quadro de painel do filme do especial (vem do manifesto; só a UI usa). */
+  painel?: boolean;
 };
 export type Poses = Record<string, PoseDados>;
 

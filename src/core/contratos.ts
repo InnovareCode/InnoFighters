@@ -49,6 +49,13 @@ export type MotorV2 = {
    * de existir). Liga também o teto de combo (40% da vida total) em todo acerto. Desligada: o motor de antes, bit a bit.
    */
   filmes?: boolean;
+  /**
+   * V2-4 (§6): COMBOS PRÓPRIOS (`LutadorDef/FichaDef.combosProprios`). O atacante guarda os golpes que acertaram desde que o rival saiu de
+   * `gotHits === 0`; se `histórico + próximo golpe` é prefixo de uma sequência da ficha ativa, o cancelamento vale mesmo fora da regra de
+   * rank (a cadeia universal por rank continua para todos). Dentro de uma sequência reconhecida valem `semQueda` e `final`. A CPU DIFÍCIL
+   * passa a usá-los (`AI_LEVELS[n].proprio`), o que consome o RNG da CPU. Desligada: o motor de antes, bit a bit.
+   */
+  combos?: boolean;
 };
 
 /** Posição de um lutador num instante do filme (`antes` = no tick do contato, antes de o motor mexer; `depois` = estado final). */

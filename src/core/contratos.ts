@@ -31,6 +31,29 @@ export type InputFrame = {
   esq?: boolean;
 };
 
+/**
+ * Mecânicas da REVISÃO DO MOTOR DE LUTA v2 (docs/spec-revisao-motor-luta-v2.md §2), cada uma atrás da sua flag. Ausente ou `false` =
+ * o motor de antes, bit a bit (é o que o oráculo, o harness de balanço, o trailer e o `?expansao=4` rodam). Quem liga é a UI, a partir de
+ * `Regras.motorV2`; as flags das outras fatias (filmes, combos) entram aqui quando forem implementadas.
+ */
+export type MotorV2 = {
+  /**
+   * V2-1 (§7.1): o botão de ataque e as direções feitas DURANTE o hitstop não se perdem; só a entrada HUMANA é lida no tick congelado
+   * (a CPU consome RNG e o boneco do treino não é humano) e é entregue ao 1º tick acionável.
+   */
+  entradaNoHitstop?: boolean;
+  /**
+   * V2-3c (§3): o FILME do especial. O 1º contato limpo de um especial (golpe com `filme` em `src/data/filmes.ts`) resolve TUDO no tick
+   * do acerto (dano pela fórmula do §4.1, energia de UM acerto, KO, troca de barra, estado final de queda) e emite o evento aditivo
+   * `filme`. Defendido, esquivado ou absorvido por armadura = sem filme, 1 contato só (os acertos e tiros restantes da execução deixam
+   * de existir). Liga também o teto de combo (40% da vida total) em todo acerto. Desligada: o motor de antes, bit a bit.
+   */
+  filmes?: boolean;
+};
+
+/** Posição de um lutador num instante do filme (`antes` = no tick do contato, antes de o motor mexer; `depois` = estado final). */
+export type PosFilme = { x: number; y: number; facing: 1 | -1 };
+
 export const INPUT_VAZIO: Readonly<InputFrame> = Object.freeze({
   left: false,
   right: false,
@@ -422,6 +445,31 @@ export type EventoLuta =
       dreno?: number;
       /** Nível da carga do MASHI neste acerto (1..3). Só em golpe `carga`. */
       nivelCarga?: 1 | 2 | 3;
+      /** V2-3c: este acerto é o contato que abriu um FILME (vem sempre acompanhado do evento `filme`, logo depois). Ausente = acerto comum. */
+      filme?: true;
+    }
+  | {
+      /**
+       * V2-3c (§3.4): o 1º contato limpo de um especial, resolvido por inteiro no tick (a UI só apresenta, sem chamar `game.update`).
+       * Ordem dos eventos do tick: `fase-chefe` (se houver) -> `hit {filme: true}` -> `filme` -> `ko` (se houver). Não leva duração,
+       * batidas nem poses: isso é da UI. Agarrão de especial (HURACANRANA, ARREMESSO DO AVARGA) emite `throw` no lugar do `hit`.
+       */
+      tipo: 'filme';
+      atacante: IndiceLutador;
+      defensor: IndiceLutador;
+      /** Chave do golpe (`sFire`, `sDown`, `sFwd`, `sResp`) e a ficha do atacante (null = base). */
+      golpe: string;
+      ficha: string | null;
+      projetil: boolean;
+      nivelCarga?: 1 | 2 | 3;
+      /** O que saiu da barra (mesma regra do `hit.dano`: na troca de barra do chefão, o que saiu da barra que acabou). */
+      dano: number;
+      contragolpe: boolean;
+      ko: boolean;
+      trocaDeBarra: boolean;
+      final: 'derruba' | 'parede' | 'lanca';
+      antes: { atacante: PosFilme; defensor: PosFilme };
+      depois: { atacante: PosFilme; defensor: PosFilme };
     }
   | {
       tipo: 'throw';
@@ -434,6 +482,8 @@ export type EventoLuta =
       /** Agarrão de ESPECIAL (ARREMESSO DO AVARGA, ABRAÇO DA ESTEPE, HURACANRANA). O arremesso comum (→+HP) não leva a marca. */
       especial?: true;
       golpe?: string;
+      /** V2-3c: este agarrão abriu um FILME (o evento `filme` vem logo depois). Ausente = arremesso comum. */
+      filme?: true;
     }
   | { tipo: 'ko'; defensor: IndiceLutador; pitch: number }
   | {

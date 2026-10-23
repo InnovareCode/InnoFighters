@@ -1,4 +1,5 @@
 import { IDS_LUTADORES, type IdLutador } from '../core/contratos';
+import type { MotorV2 } from '../core/contratos';
 import type { Regras } from './tipos';
 
 /** Liberados de fabrica (decisao do dono): HAYATO, WEI LONG, MIN-JI, CAIO. */
@@ -37,3 +38,12 @@ export const REGRAS_PADRAO: Regras = {
   // o trailer de abertura (montagem no motor do jogo); a CenaIntro de hoje segue como queda e como oráculo de pixel do ?expansao=4
   trailer: true,
 };
+
+/**
+ * O pedaço da `ConfigPartida` que carrega as flags do motor v2 (`Regras.motorV2`). Sem flag nenhuma ligada devolve `{}`: a cfg fica idêntica
+ * à de antes (nem a chave `motorV2` aparece), o que mantém os testes que comparam a cfg inteira.
+ */
+export function cfgMotorV2(regras: { readonly motorV2?: MotorV2 }): { motorV2?: MotorV2 } {
+  const m = regras.motorV2;
+  return m && Object.values(m).some((v) => v === true) ? { motorV2: m } : {};
+}

@@ -16,6 +16,9 @@
  *   --jobs N        processos em paralelo (padrão: núcleos − 1, no máximo 8)
  *   --saida <pasta> onde gravar (padrão acima)
  *   --esquiva       liga a ESQUIVA em todas as lutas (V2); com --completo grava a referência de PRODUÇÃO em docs/balanco (a rodada sem a flag vai para docs/balanco/sem-esquiva); com --rapido, em relatorios/balanco-esquiva
+ *   --entrada-hitstop liga `motorV2.entradaNoHitstop` (V2-1) em todas as lutas; PROVA de que a flag não muda o harness (o hash tem de ser o mesmo); sai em relatorios/balanco-entrada-hitstop, nunca em docs/
+ *   --filmes        liga `motorV2.filmes` (V2-3c: o filme do especial no motor) em todas as lutas E na frame data (ganha a coluna "Filme"); muda o resultado de propósito, então sai em relatorios/balanco-filmes, nunca em docs/ (a referência nova é da V2-6)
+ *   --motor-v2 a,b  atalho para as flags do motor v2: entrada (= --entrada-hitstop) e filmes (= --filmes), ex.: --motor-v2 entrada,filmes
  *   --ajustes <json> "e se...": ajustes em memória, ex. '{"wei-long":{"hp":100,"pow":1.08}}' (não grava dados; saída em relatorios/)
  *   --verificar     antes de tudo, joga uma amostra duas vezes e exige resultado idêntico (determinismo)
  *
@@ -35,7 +38,7 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 function lerArgumentos(argv, env) {
   const a = {
     modo: 'rapido', sementes: null, niveis: null, pares: env.BALANCO_PARES ?? null, base: 1, chefe: true, so: null, jobs: null, saida: null,
-    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, chefes: null, semRegulares: false, varrerDano: null,
+    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: false, filmes: false, chefes: null, semRegulares: false, varrerDano: null,
   };
   if (env.BALANCO_SEMENTES) a.sementes = Number(env.BALANCO_SEMENTES);
   if (env.BALANCO_NIVEIS) a.niveis = env.BALANCO_NIVEIS.split(',').map(Number);
@@ -58,6 +61,15 @@ function lerArgumentos(argv, env) {
     else if (t === '--saida') a.saida = resolve(valor());
     else if (t === '--ajustes') a.ajustes = JSON.parse(valor());
     else if (t === '--esquiva') a.esquiva = true;
+    else if (t === '--entrada-hitstop') a.entradaHitstop = true;
+    else if (t === '--filmes') a.filmes = true;
+    else if (t === '--motor-v2') {
+      for (const f of valor().split(',').map((x) => x.trim()).filter(Boolean)) {
+        if (f === 'entrada') a.entradaHitstop = true;
+        else if (f === 'filmes') a.filmes = true;
+        else throw new Error(`--motor-v2: flag desconhecida '${f}' (use entrada e/ou filmes)`);
+      }
+    }
     else if (t === '--chefes') a.chefes = valor().split(',').map((x) => x.trim()).filter(Boolean);
     else if (t === '--sem-regulares') a.semRegulares = true;
     else if (t === '--varrer-dano') a.varrerDano = valor().split(',').map(Number);
@@ -81,7 +93,10 @@ function lerArgumentos(argv, env) {
   // a rodada sem a flag fica ao lado, em docs/balanco/sem-esquiva (o `--completo` sem `--esquiva` NÃO sobrescreve a de produção).
   // Rodada parcial (sem regulares ou só alguns chefões) NUNCA vira a referência de docs/balanco.
   const parcial = a.semRegulares || a.chefes !== null;
+  // `--entrada-hitstop` é uma PROVA (o hash tem de bater com o de referência), nunca a referência: sai sempre em relatorios/
   a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
+    : a.filmes ? join(RAIZ, 'relatorios', 'balanco-filmes')
+    : a.entradaHitstop ? join(RAIZ, 'relatorios', 'balanco-entrada-hitstop')
     : parcial ? join(RAIZ, 'relatorios', 'balanco-chefes')
     : a.modo === 'completo' ? join(RAIZ, 'docs', 'balanco', a.esquiva ? '' : 'sem-esquiva')
     : join(RAIZ, 'relatorios', a.esquiva ? 'balanco-esquiva' : 'balanco');
@@ -130,6 +145,8 @@ function paramsDe(a) {
     sementes: a.sementes, niveis: a.niveis, base: a.base, filtro: a.pares, incluirChefe: a.chefe,
     ...(a.chefes ? { chefes: a.chefes } : {}), ...(a.semRegulares ? { semRegulares: true } : {}),
     ...(a.ajustes ? { ajustes: a.ajustes } : {}), ...(a.esquiva ? { esquiva: true } : {}),
+    ...(a.entradaHitstop ? { entradaNoHitstop: true } : {}),
+    ...(a.filmes ? { filmes: true } : {}),
   };
 }
 
@@ -188,7 +205,7 @@ async function principal() {
   if (a.worker) {
     // os parâmetros chegam do processo principal, já validados (a linha de comando do worker só leva o --worker)
     const p = JSON.parse(process.env.BALANCO_PARAMS ?? '{}');
-    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
+    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
     return modoWorker(a);
   }
 
@@ -233,7 +250,7 @@ async function principal() {
         ? Promise.resolve()
         : (async () => {
             const t0 = Date.now();
-            frame = ids.flatMap((id) => m.frame.medirLutador(elenco, id));
+            frame = ids.flatMap((id) => m.frame.medirLutador(elenco, id, a.filmes ? { filmes: true } : undefined));
             writeFileSync(join(a.saida, 'frame-data.md'), m.rel.frameDataMd(frame, ids, { geradoEm: hoje, versaoDados }));
             writeFileSync(join(a.saida, 'frame-data.json'), JSON.stringify({ versaoDados, linhas: frame }, null, 1));
             console.log(`frame data: ${frame.length} linhas em ${((Date.now() - t0) / 1000).toFixed(1)} s -> ${join(relDir, 'frame-data.md')}`);
@@ -264,7 +281,7 @@ async function principal() {
         dif = null;
       }
     }
-    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
+    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
     writeFileSync(join(a.saida, 'resultados.md'), m.rel.resultadosMd(agr, ids, achados, dif, cab));
     writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, hashRegulares, hashChefes, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
     resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, { hashRegulares, hashChefes, semRegulares: a.semRegulares });

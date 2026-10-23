@@ -1,5 +1,5 @@
 import { GROUND, JUMP_FORCE } from '../../src/core/constantes';
-import type { EstadoLutador, EventoLuta, IdLutador, InputFrame } from '../../src/core/contratos';
+import type { EstadoLutador, EventoLuta, IdLutador, InputFrame, MotorV2 } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
 import type { NivelGolpe, NomeGolpe, TipoGolpe } from '../../src/data/tipos';
 import { Game, type DummyTreino, type FonteEntradas } from '../../src/fight/game';
@@ -45,6 +45,8 @@ export type Cenario = {
   segurar?: number;
   /** 'conexao' para no 1º acerto/bloqueio (varredura de alcance); 'completo' anda até os dois ficarem livres. */
   parar: 'conexao' | 'completo';
+  /** Liga `motorV2.filmes` na `Game` do ensaio (V2-3c): o 1º contato limpo de um especial vira filme. */
+  filmes?: boolean;
 };
 
 export type Ensaio = {
@@ -71,12 +73,14 @@ export type Ensaio = {
   ticks: number;
   /** `momento` do RESORTE no 1º acerto (0 se o golpe não é `rebote`). */
   momentoNoAcerto: number;
+  /** Eventos `filme` do ATACANTE (V2-3c; sempre 0 com a flag desligada). */
+  filmes: number;
 };
 
 /** Um ensaio de um golpe contra o boneco. Função pura: cada chamada monta a própria `Game`. */
 export function ensaiar(c: Cenario): Ensaio {
   const g = new Game({ lutadores: c.elenco, rng: criarRng(1) });
-  g.setup({ mode: 'training', c1: c.id, c2: BONECO }, { rounds: 2, time: 99, shake: false });
+  g.setup({ mode: 'training', c1: c.id, c2: BONECO, ...(c.filmes ? { motorV2: { filmes: true } } : {}) }, { rounds: 2, time: 99, shake: false });
   g.phase = 'fight';
   g.t = 0;
   g.trocarAlvoDoTreino(c.dummy);
@@ -134,6 +138,7 @@ export function ensaiar(c: Cenario): Ensaio {
     quebras: 0,
     ticks: 0,
     momentoNoAcerto: 0,
+    filmes: 0,
   };
   const t0 = g.tick;
   let ultimoN = 0;
@@ -148,6 +153,7 @@ export function ensaiar(c: Cenario): Ensaio {
     for (const e of g.events as readonly EventoLuta[]) {
       if (!('atacante' in e) || e.atacante !== 0) continue;
       r.eventos[e.tipo] = (r.eventos[e.tipo] ?? 0) + 1;
+      if (e.tipo === 'filme') r.filmes++;
       if (e.tipo === 'quebra-guarda') {
         // atravessou o bloqueio: conta como bloqueio QUEBRADO (o defensor tentou bloquear), não como acerto limpo
         r.conectou = true;
@@ -270,6 +276,8 @@ export type MedidaGolpe = {
   raspao: number | null;
   /** Nível de bloqueio medido contra `block` e `crouchblock`. */
   bloqueioMedido: Bloqueio | null;
+  /** V2-3c: o 1º contato limpo do golpe abre um FILME? null = não medido (flag desligada); só especiais (e o FOUETTÉ) podem ser true. */
+  filme: boolean | null;
   notas: string[];
 };
 
@@ -286,7 +294,8 @@ export function ticksParaNivel(S: number, niveis: readonly number[], n: number):
 }
 
 /** Mede UM golpe (ou uma variante dele) de um lutador na ficha dada. */
-export function medirGolpe(elenco: Elenco, id: IdLutador, ficha: string | null, golpe: NomeGolpe, nivelCarga: number | null = null): MedidaGolpe {
+export function medirGolpe(elenco: Elenco, id: IdLutador, ficha: string | null, golpe: NomeGolpe, nivelCarga: number | null = null, motorV2?: MotorV2): MedidaGolpe {
+  const filmes = motorV2?.filmes === true;
   const base = elenco[id];
   const ch = ficha === null ? base : (base.fichas[ficha] as typeof base);
   const mv = ch.moves[golpe];
@@ -301,6 +310,7 @@ export function medirGolpe(elenco: Elenco, id: IdLutador, ficha: string | null, 
     golpe,
     ...(segurar !== undefined ? { segurar } : {}),
     ...(alvoNoAr ? { alvoNoAr: true } : {}),
+    ...(filmes ? { filmes: true } : {}),
     ...extra,
   });
 
@@ -338,6 +348,7 @@ export function medirGolpe(elenco: Elenco, id: IdLutador, ficha: string | null, 
     vantagemBloqueio: null,
     raspao: null,
     bloqueioMedido: null,
+    filme: filmes ? false : null,
     notas,
   };
 
@@ -400,6 +411,7 @@ export function medirGolpe(elenco: Elenco, id: IdLutador, ficha: string | null, 
   medida.acertos = acerto.acertos;
   medida.derruba = acerto.caiu;
   medida.hitstun = acerto.ticksEmHit > 0 ? acerto.ticksEmHit : null;
+  if (filmes) medida.filme = acerto.filmes === 1;
   if (acerto.livreAtacante !== null && acerto.livreDefensor !== null) medida.vantagemAcerto = acerto.livreDefensor - acerto.livreAtacante;
   if (acerto.momentoNoAcerto > 0) notas.push(`momento no acerto ${Math.round(acerto.momentoNoAcerto)} px`);
 
@@ -435,7 +447,7 @@ export function medirGolpe(elenco: Elenco, id: IdLutador, ficha: string | null, 
 }
 
 /** Todas as medidas de um lutador: a ficha base e cada ficha, todos os golpes (menos `_lag`), cada nível da carga. */
-export function medirLutador(elenco: Elenco, id: IdLutador): MedidaGolpe[] {
+export function medirLutador(elenco: Elenco, id: IdLutador, motorV2?: MotorV2): MedidaGolpe[] {
   const base = elenco[id];
   const saida: MedidaGolpe[] = [];
   const fichas: (string | null)[] = [null, ...Object.keys(base.fichas)];
@@ -445,8 +457,8 @@ export function medirLutador(elenco: Elenco, id: IdLutador): MedidaGolpe[] {
     for (const golpe of nomes) {
       const mv = ch.moves[golpe];
       if (mv.carga) {
-        for (let n = 1; n <= mv.carga.niveis.length; n++) saida.push(medirGolpe(elenco, id, ficha, golpe, n));
-      } else saida.push(medirGolpe(elenco, id, ficha, golpe));
+        for (let n = 1; n <= mv.carga.niveis.length; n++) saida.push(medirGolpe(elenco, id, ficha, golpe, n, motorV2));
+      } else saida.push(medirGolpe(elenco, id, ficha, golpe, null, motorV2));
     }
   }
   return saida;

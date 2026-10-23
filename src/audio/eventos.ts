@@ -38,15 +38,20 @@ export function sonsDoEvento(ev: EventoLuta): ChamadaSom[] {
     case 'armor':
       return [{ metodo: ev.snd, args: [] }];
     case 'hit':
+      if (ev.filme === true) return []; // V2-3c: o som do acerto que abre um FILME toca por batida, na apresentação (spec §3.5)
       return [
         { metodo: ev.snd, args: [] },
         { metodo: 'hurt', args: [ev.pitch] },
       ];
     case 'throw':
+      if (ev.filme === true) return [];
       return [
         { metodo: 'kick', args: [] },
         { metodo: 'hurt', args: [ev.pitch] },
       ];
+    // --- V2-3c: o filme do especial. Muda; o som é do roteiro (por batida), tocado pela apresentação ---
+    case 'filme':
+      return [];
     case 'ko':
       return [{ metodo: 'ko', args: [ev.pitch] }];
     case 'round':

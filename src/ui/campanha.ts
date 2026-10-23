@@ -1,8 +1,8 @@
-import type { Etapa, Regras } from '../meta';
+import { cfgMotorV2, type Etapa, type Regras } from '../meta';
 import type { CampanhaArcade, ConfigPartidaUI } from './tipos';
 
 /** Configuração de partida da etapa `run.idx` do ARCADE (a 1ª não mantém pontuação; as seguintes sim). */
-export function cfgDaEtapa(run: CampanhaArcade, manterPontos: boolean, regras: Pick<Regras, 'esquiva'>): ConfigPartidaUI {
+export function cfgDaEtapa(run: CampanhaArcade, manterPontos: boolean, regras: Pick<Regras, 'esquiva' | 'motorV2'>): ConfigPartidaUI {
   const e = run.etapas[run.idx] as Etapa;
   return {
     mode: 'arcade',
@@ -10,6 +10,7 @@ export function cfgDaEtapa(run: CampanhaArcade, manterPontos: boolean, regras: P
     c2: e.id,
     cpu: run.diff,
     esquiva: regras.esquiva,
+    ...cfgMotorV2(regras),
     ...(manterPontos ? { keepScore: true } : {}),
     ...(e.chefe ? { chefe: true } : {}),
   };

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { EventoLuta, IdLutador, InputFrame } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
+import { todosOsFilmes } from '../../src/data/filmes';
 import { ROSTER } from '../../src/data/lutadores';
 import { Game, type ConfigPartida, type FonteEntradas } from '../../src/fight/game';
 import { montarBaatarChefe } from './_baatar-chefe';
@@ -45,6 +46,23 @@ describe('dados de produção: nada trivial nem degenerado', () => {
       }
     }
     expect(maior).toBeGreaterThan(15); // o teste enxerga os golpes fortes de verdade
+  });
+
+  it('V2-3c: o FILME de cada especial (src/data/filmes.ts) também fica abaixo de 60% da menor barra (o limite não mudou) e machuca', () => {
+    let maior = 0;
+    for (const { id, ficha, golpe, filme } of todosOsFilmes()) {
+      const v = ficha === null ? prod[id] : (prod[id].fichas[ficha] as (typeof prod)[typeof id]);
+      const mv = v.moves[golpe];
+      const niveis = filme.danoPorNivel ?? [filme.dano];
+      for (const base of niveis) {
+        const efetivo = mv.proj ? base : base * v.pow; // projétil não usa `pow`
+        const rot = `${id}${ficha ? `/${ficha}` : ''} ${golpe}`;
+        expect(efetivo, `${rot} filme sem dano`).toBeGreaterThan(0);
+        maior = Math.max(maior, efetivo);
+        expect(efetivo, `${rot} filme ${efetivo.toFixed(1)}`).toBeLessThan(menorBarra * 0.6);
+      }
+    }
+    expect(maior).toBeGreaterThan(20); // enxerga o filme forte de verdade (MASHI 3, ARREMESSO DO AVARGA)
   });
 
   it('o BAATAR é lutador normal (sem fichas), com 92 de vida e pow 0,9 (os números da E6b); o bloco de guardião (R1) não tem fichas de fase', () => {

@@ -22,7 +22,9 @@ export function criarPartida(
 ): Game {
   const game = new Game({ lutadores, rng: criarRng(tomada.semente) });
   game.setup(
-    // ESQUIVA ligada como no jogo; o P9 é luta de chefe (round único, a ficha e a IA do ZENON como no ARCADE)
+    // ESQUIVA ligada como no jogo; o P9 é luta de chefe (round único, a ficha e a IA do ZENON como no ARCADE).
+    // SEM `motorV2` de propósito (V2, spec §2.2/§10): as tomadas têm semente, `tickMotor` e impressão fixados com o motor de antes; ligar
+    // `filmes` aqui muda o resultado de todas. Só entra na regravação do trailer (V2-6), com o dono reaprovando.
     { mode: 'cpu', c1: plano.c1, c2: plano.c2, cpu: tomada.cpu[1], p1cpu: tomada.cpu[0], stage: plano.stage, esquiva: true, ...(plano.tipo === 'arconte' ? { chefe: true } : {}) },
     { ...AJUSTES_DO_TRAILER },
   );

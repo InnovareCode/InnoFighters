@@ -1,5 +1,6 @@
 import type { EventoLuta, IdLutador, InputFrame } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
+import type { NomeGolpe } from '../../src/data/tipos';
 import { Game, type FonteEntradas } from '../../src/fight/game';
 import type { Fighter } from '../../src/fight/fighter';
 import type { ProjetilLuta } from '../../src/fight/projetil';
@@ -34,6 +35,10 @@ export type Tarefa = {
   semente: number;
   /** ESQUIVA ligada nesta luta (`--esquiva`). A semente NÃO muda: a mesma luta com e sem esquiva é comparável. */
   esquiva?: true;
+  /** `motorV2.entradaNoHitstop` ligada nesta luta (`--entrada-hitstop`). CPU x CPU não lê a fonte: o resultado tem de ser idêntico. */
+  entradaNoHitstop?: true;
+  /** `motorV2.filmes` ligada nesta luta (`--filmes`, V2-3c). Muda o resultado de propósito (dano do especial, queda, teto de combo): referência própria. */
+  filmes?: true;
 };
 
 export type ParametrosSim = {
@@ -50,6 +55,10 @@ export type ParametrosSim = {
   semRegulares?: boolean;
   /** Liga a esquiva (V2) em todas as lutas. Ausente/false = como sempre. */
   esquiva?: boolean;
+  /** Liga `motorV2.entradaNoHitstop` (V2-1) em todas as lutas: prova que a flag não muda o harness (o hash tem de continuar o mesmo). */
+  entradaNoHitstop?: boolean;
+  /** Liga `motorV2.filmes` (V2-3c) em todas as lutas. A semente não muda: a mesma luta com e sem filme é comparável. */
+  filmes?: boolean;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
   ajustes?: Record<string, unknown>;
 };
@@ -127,6 +136,8 @@ export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | nul
       nivel,
       semente: semente32(`${p.base}|${tipo}|${a}|${b}|${nivel}|${i}`),
       ...(p.esquiva ? { esquiva: true as const } : {}),
+      ...(p.entradaNoHitstop ? { entradaNoHitstop: true as const } : {}),
+      ...(p.filmes ? { filmes: true as const } : {}),
     });
   };
   if (p.semRegulares !== true) {
@@ -186,11 +197,17 @@ function contagem(r: Record<string, ContagemGolpe>, chave: string): ContagemGolp
   return c;
 }
 
+/** As flags do motor v2 desta tarefa (`{}` quando nenhuma: a cfg fica idêntica à de antes, nem a chave `motorV2` aparece). */
+function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; filmes?: true } } {
+  if (!t.entradaNoHitstop && !t.filmes) return {};
+  return { motorV2: { ...(t.entradaNoHitstop ? { entradaNoHitstop: true as const } : {}), ...(t.filmes ? { filmes: true as const } : {}) } };
+}
+
 /** Joga UMA luta CPU x CPU até o fim (ou o teto) e devolve tudo o que o relatório precisa. */
 export function lutar(elenco: Elenco, t: Tarefa): Registro {
   const g = new Game({ lutadores: elenco, rng: criarRng(t.semente) });
   g.setup(
-    { mode: 'cpu', c1: t.a, c2: t.b, cpu: t.nivel, p1cpu: t.nivel, ...(t.tipo === 'chefe' ? { chefe: true } : {}), ...(t.esquiva ? { esquiva: true } : {}) },
+    { mode: 'cpu', c1: t.a, c2: t.b, cpu: t.nivel, p1cpu: t.nivel, ...(t.tipo === 'chefe' ? { chefe: true } : {}), ...(t.esquiva ? { esquiva: true } : {}), ...motorV2DaTarefa(t) },
     { ...AJUSTES_SIM },
   );
   const [f0, f1] = g.fighters;
@@ -271,9 +288,11 @@ function contarEvento(reg: Registro, e: EventoLuta, f: readonly [Fighter, Fighte
   switch (e.tipo) {
     case 'hit': {
       const a = f[e.atacante];
-      const chave = e.projetil ? golpeDoProjetil(a, mortos, e.x, e.y) : a.move !== null ? chaveDoGolpe(a, a.move) : null;
+      // Acerto que abriu um FILME (V2-3c): o atacante já está em `_lag` neste ponto, então `a.move` não diz mais qual golpe foi; o evento diz.
+      const chave = e.filme === true && e.golpe !== undefined ? chaveDoGolpe(a, e.golpe) : e.projetil ? golpeDoProjetil(a, mortos, e.x, e.y) : a.move !== null ? chaveDoGolpe(a, a.move) : null;
       if (chave) contagem(reg.golpes[e.atacante], chave)[1]++;
-      const mv = !e.projetil && a.move !== null ? a.ch.moves[a.move] : null;
+      const golpeDoAcerto = e.filme === true && e.golpe !== undefined ? (e.golpe as NomeGolpe) : a.move;
+      const mv = !e.projetil && golpeDoAcerto !== null ? a.ch.moves[golpeDoAcerto] : null;
       if (mv?.rebote) {
         const fr = Math.min(a.momento, mv.rebote.maxDist) / mv.rebote.maxDist;
         reg.reboteFaixas[e.atacante][fr < 0.1 ? 0 : fr < 0.25 ? 1 : fr < 0.5 ? 2 : 3]++;
@@ -282,7 +301,8 @@ function contarEvento(reg: Registro, e: EventoLuta, f: readonly [Fighter, Fighte
     }
     case 'throw': {
       const a = f[e.atacante];
-      if (a.move !== null) contagem(reg.golpes[e.atacante], chaveDoGolpe(a, a.move))[1]++;
+      if (e.filme === true && e.golpe !== undefined) contagem(reg.golpes[e.atacante], chaveDoGolpe(a, e.golpe))[1]++; // idem: o agarrão de especial com filme
+      else if (a.move !== null) contagem(reg.golpes[e.atacante], chaveDoGolpe(a, a.move))[1]++;
       reg.agarroes[e.atacante]++;
       break;
     }

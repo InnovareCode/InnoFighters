@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { InputFrame } from '../../src/core/contratos';
+import type { InputFrame, MotorV2 } from '../../src/core/contratos';
 import { criarRng, type Rng } from '../../src/core/rng';
 import { ESQUIVA_PADRAO } from '../../src/data/esquiva';
 import { AI_LEVELS, cpuInput, perfilChefe, type PerfilCpu } from '../../src/fight/cpu';
@@ -224,9 +224,9 @@ describe('perfil do chefe e do nível', () => {
 describe('CPU x CPU com esquiva (fumaça e snapshot)', () => {
   const SEM_ENTRADA: FonteEntradas = { p1: () => ({ left: false, right: false, up: false, down: false, lp: false, lk: false, hp: false, hk: false, sp: false }), p2: () => ({ left: false, right: false, up: false, down: false, lp: false, lk: false, hp: false, hk: false, sp: false }) };
 
-  function resumo(semente: number, ticks: number, esquiva: boolean) {
+  function resumo(semente: number, ticks: number, esquiva: boolean, motorV2?: MotorV2) {
     const g = new Game({ lutadores: elenco, rng: criarRng(semente) });
-    g.setup({ mode: 'cpu', c1: 'wei-long', c2: 'min-ji', cpu: 2, p1cpu: 2, esquiva }, { rounds: 2, time: 99, shake: true });
+    g.setup({ mode: 'cpu', c1: 'wei-long', c2: 'min-ji', cpu: 2, p1cpu: 2, esquiva, ...(motorV2 ? { motorV2 } : {}) }, { rounds: 2, time: 99, shake: true });
     const contagem: Record<string, number> = {};
     for (let i = 0; i < ticks; i++) {
       g.update(SEM_ENTRADA);
@@ -258,6 +258,10 @@ describe('CPU x CPU com esquiva (fumaça e snapshot)', () => {
 
   it('CPU x CPU de 6000 ticks, semente 42, COM esquiva, tem resultado fixo (regressão; o snapshot antigo SEM esquiva fica no fight.test.ts)', () => {
     expect(resumo(42, 6000, true)).toMatchSnapshot();
+  });
+
+  it('V2-1: com motorV2.entradaNoHitstop LIGADA o CPU x CPU de 6000 ticks COM esquiva é o MESMO do snapshot acima', () => {
+    expect(resumo(42, 6000, true, { entradaNoHitstop: true })).toEqual(resumo(42, 6000, true));
   });
 
   it('todas as ocorrências do estado esquiva voltam ao normal (nenhum lutador fica preso)', () => {

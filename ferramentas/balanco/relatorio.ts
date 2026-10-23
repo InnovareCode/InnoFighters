@@ -25,6 +25,11 @@ export function frameDataMd(linhas: readonly MedidaGolpe[], ids: readonly IdLuta
     '- **Caixa**: alcance estático da caixa (`fx + w`, px a partir do x do atacante; sai da `ponta` do atlas). **Alcance medido**: distância entre os dois x em que o golpe conecta (varredura de 6 px, bordas a 1 px). O mínimo entre corpos é 78; o teto da varredura é 780 (`+`).',
     '',
   );
+  // V2-3c: a coluna "Filme" só existe quando a medida foi feita com `motorV2.filmes` (`--filmes`); sem a flag o arquivo é o de sempre.
+  const comFilme = linhas.some((l) => l.filme === true || l.filme === false);
+  if (comFilme) {
+    o.splice(o.length - 1, 0, '- **Filme** (medido com `--filmes`, V2-3c): ✓ = o 1º contato limpo do golpe abre o filme do especial (e o **Dano** passa a ser o do filme, §4.1 da spec v2); – = não abre (golpe comum, PARADE, VADIVU).');
+  }
   for (const id of ids) {
     const doLutador = linhas.filter((l) => l.lutador === id);
     if (!doLutador.length) continue;
@@ -33,8 +38,8 @@ export function frameDataMd(linhas: readonly MedidaGolpe[], ids: readonly IdLuta
     for (const ficha of fichas) {
       const pow = doLutador.find((l) => l.ficha === ficha)?.nominal.pow;
       o.push(ficha === null && fichas.length === 1 ? `_pow ${pow}_` : `### ficha ${ficha ?? 'base'} _(pow ${pow})_`, '');
-      o.push('| Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |');
-      o.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+      o.push(`| Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano |${comFilme ? ' Filme |' : ''} Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |`);
+      o.push(`|---|---|---|---|---|---|${comFilme ? '---|' : ''}---|---|---|---|---|---|---|`);
       for (const l of doLutador.filter((x) => x.ficha === ficha)) {
         const lv = l.bloqueioMedido === null ? l.nominal.lvl : l.bloqueioMedido === 'nenhum' ? `${l.nominal.lvl}→–` : l.bloqueioMedido === l.nominal.lvl ? l.nominal.lvl : `${l.nominal.lvl}→**${l.bloqueioMedido}**`;
         const a = l.alcance;
@@ -51,6 +56,7 @@ export function frameDataMd(linhas: readonly MedidaGolpe[], ids: readonly IdLuta
             `${l.nominal.S}/${l.nominal.A}/${l.nominal.R}`,
             l.inicio === null ? '–' : `${l.inicio}/${l.ativos}/${l.recuperacao ?? '–'}`,
             dano,
+            ...(comFilme ? [l.filme === true ? '✓' : '–'] : []),
             num(l.hitstun),
             va,
             num(l.blockstun),

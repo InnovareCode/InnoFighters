@@ -1,4 +1,4 @@
-import { LARGURA, MAX_EN, SH } from '../core/constantes';
+import { GROUND, LARGURA, MAX_EN, SH } from '../core/constantes';
 import type {
   CameraLeitura,
   Configuracoes,
@@ -10,17 +10,21 @@ import type {
   InputFrame,
   LeituraLuta,
   ModoLuta,
+  MotorV2,
+  PosFilme,
   TextoFlutuante,
 } from '../core/contratos';
 import { clamp, lerp, overlap, type Retangulo } from '../core/math';
 import type { Rng } from '../core/rng';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { PROJ_BASE } from '../data/base-moves';
+import { filmeDoGolpe, type FilmeDoGolpe } from '../data/filmes';
 import type { LutadorMontado } from '../data/montar';
 import type { ContraDef, DrenaEnergiaDef, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
 import { NO_INPUT, cpuInput, perfilChefe } from './cpu';
-import { Fighter, type PartidaParaLutador } from './fighter';
+import { dirNum } from './comandos';
+import { ATK_KEYS, Fighter, type ChaveAtaque, type PartidaParaLutador } from './fighter';
 import type { ProjetilLuta } from './projetil';
 
 /** Alvo do modo treino (DUMMY_NAMES do protótipo). */
@@ -47,7 +51,24 @@ export type ConfigPartida = {
    * nada muda (nem o RNG da CPU). Quem liga é a UI, a partir de `Regras.esquiva`.
    */
   esquiva?: boolean;
+  /** Mecânicas da revisão do motor (v2), cada uma atrás da sua flag. Ausente = o motor de antes, bit a bit. Quem liga é a UI (`Regras.motorV2`). */
+  motorV2?: MotorV2;
 };
+
+/** O que um humano fez durante o hitstop e ainda não chegou ao `Fighter` (V2-1): o último botão de ataque, as mudanças de direção e a ESQUIVA. */
+type EntradaGuardada = { botao: ChaveAtaque | null; dirs: number[]; esq: boolean };
+const entradaGuardadaVazia = (): EntradaGuardada => ({ botao: null, dirs: [], esq: false });
+
+/** V2-3c (spec §4.1): nenhum golpe isolado, filme incluído, passa de 26 (28% da menor vida comum, 92). */
+export const TETO_GOLPE = 26;
+/** V2-3c (spec §4.1, H2): fração da vida TOTAL do defensor (todas as barras do chefão) que um combo tira, no máximo. */
+export const TETO_COMBO = 0.4;
+/** Piso do teto de combo: o teste CPU x CPU proíbe acerto de dano zero. */
+const PISO_ACERTO_NO_TETO = 0.5;
+/** Distância final entre os dois depois do filme, quando o dado não diz (spec §3.4). */
+const DISTANCIA_PADRAO_DO_FILME = 150;
+/** Margem de parede de quem está caído (a mesma de `Fighter.physics`). */
+const MARGEM_CAIDO = 150;
 
 /** Parte das configurações que a luta lê. Passe o MESMO objeto que a UI altera (shake é lido ao vivo). */
 export type AjustesLuta = Pick<Configuracoes, 'rounds' | 'time' | 'shake'>;
@@ -88,6 +109,9 @@ type AtaqueAcerto = {
   nivelCarga: 0 | 1 | 2 | 3;
   /** ZENON: imposto de energia no acerto/bloqueio (TRIBUTO, DECRETO). Projétil e golpe de vários acertos nunca têm (`montar` recusa). */
   drenaEnergia: DrenaEnergiaDef | undefined;
+  /** V2-3c: a EXECUÇÃO que deu este acerto (`atkId` do atacante no `startMove`; num projétil, o do golpe que o lançou) e a ficha dele nesse instante. */
+  atk: number;
+  ficha: string | null;
 };
 
 /** Campos de cinemática que os eventos de acerto/defesa levam (só o que existe: `exactOptionalPropertyTypes`). */
@@ -125,6 +149,8 @@ const noAtaque = (mv: GolpeMontado, atacante: Fighter): AtaqueAcerto => {
     especial: mv.id[0] === 's',
     nivelCarga: mv.carga ? atacante.nivelCarga : 0,
     drenaEnergia: mv.drenaEnergia,
+    atk: atacante.atkId,
+    ficha: atacante.ficha,
   };
 };
 
@@ -170,6 +196,17 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private trocaDeBarraNoTick = false;
   /** ESQUIVA ligada nesta partida (`ConfigPartida.esquiva`). Lida pelo `Fighter` (via `PartidaParaLutador`) e pela CPU. */
   esquivaLigada = false;
+  /** V2-1 (`ConfigPartida.motorV2.entradaNoHitstop`): lê a entrada humana nos ticks congelados e a entrega ao 1º tick acionável. */
+  private entradaNoHitstop = false;
+  private guardada: [EntradaGuardada, EntradaGuardada] = [entradaGuardadaVazia(), entradaGuardadaVazia()];
+  /** V2-3c (`ConfigPartida.motorV2.filmes`): o 1º contato limpo de um especial vira FILME. Desligada, nada disto roda. */
+  private filmesLigados = false;
+  /** Já houve um filme neste tick? O 2º contato de especial do mesmo tick resolve como acerto comum (spec §3.1). Zera em `update`. */
+  private filmeNoTick = false;
+  /** Execuções de especial que já tiveram o seu contato (filme, bloqueio, esquiva ou armadura): chave `atk * 2 + indice`. Zera por round. */
+  private execConsumidas = new Set<number>();
+  /** De qual execução (e ficha) cada projétil veio, para os tiros restantes de um especial já consumido deixarem de existir. */
+  private execDoProjetil = new WeakMap<ProjetilLuta, { atk: number; ficha: string | null }>();
   private pid = 0;
   private tick60 = 0;
   private refillT = 0;
@@ -207,7 +244,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.projectiles = [];
     this.shake = 0;
     this.hitstop = 0;
+    this.guardada = [entradaGuardadaVazia(), entradaGuardadaVazia()]; // o aperto do round que acabou não vale no seguinte
     this.trocaDeBarraNoTick = false; // não vaza para o round/luta seguinte se `resolverVidaZerada` foi chamada sem `applyHit`/`arremessar`
+    this.execConsumidas.clear(); // `atkId` recomeça em 0 a cada round: a chave de uma execução não vale no round seguinte
+    this.filmeNoTick = false;
   }
 
   setup(cfg: ConfigPartida, ajustes: AjustesLuta): void {
@@ -222,6 +262,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.p1.cpu = cfg.p1cpu != null ? cfg.p1cpu : null;
     this.p2.cpu = cfg.cpu != null ? cfg.cpu : null;
     this.esquivaLigada = cfg.esquiva === true;
+    this.entradaNoHitstop = cfg.motorV2?.entradaNoHitstop === true;
+    this.filmesLigados = cfg.motorV2?.filmes === true;
     this.winsNeeded = cfgChefe ? 1 : ajustes.rounds;
     this.timeMax = this.training ? 0 : ajustes.time;
     this.dummy = 'stand';
@@ -291,6 +333,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
 
   /** Arremesso: joga o rival por cima do ombro. */
   arremessar(a: Fighter, d: Fighter, golpe?: GolpeMontado): void {
+    const filme = golpe && this.filmesLigados && !this.filmeNoTick && golpe.id[0] === 's' ? filmeDoGolpe(a.ch.id, a.ficha, golpe.id) : undefined;
+    if (golpe && filme) {
+      this.arremessarComFilme(a, d, golpe, filme);
+      return;
+    }
     const dmg = this.danoNoDefensor(d, (golpe?.agarrao?.dmg ?? 12) * a.ch.pow);
     const hpAntes = d.hp;
     d.hp = Math.max(this.training ? 1 : 0, d.hp - dmg);
@@ -330,6 +377,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   lancarProjetil(f: Fighter, mv: GolpeMontado, i: number, n: number): void {
     const sp = mv.proj;
     if (!sp) return;
+    // V2-3c: os tiros restantes de um especial que já teve o seu contato (acertou, foi defendido, esquivado ou absorvido) não existem.
+    if (this.filmesLigados && this.execConsumidas.has(this.chaveDaExecucao(f.indice, f.atkId))) return;
     const low = !!sp.low;
     const pr: ProjetilLuta = {
       id: ++this.pid,
@@ -351,6 +400,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       ...(mv.id[0] === 's' ? { especial: true as const } : {}),
     };
     this.projectiles.push(pr);
+    if (this.filmesLigados) this.execDoProjetil.set(pr, { atk: f.atkId, ficha: f.ficha });
     this.emitir({ tipo: 'projectile', lutador: f.indice, x: pr.x, y: pr.y, style: pr.style });
   }
 
@@ -385,11 +435,43 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     return inp;
   }
 
+  /**
+   * V2-1: tick congelado pelo hitstop. Lê SÓ a entrada humana, com as mesmas regras de `inputs` (a CPU não é tocada: `cpuInput` consome
+   * RNG; o alvo do treino também não é humano), e guarda por lutador o último botão de ataque e as mudanças de direção (a mesma
+   * direção em sequência não se repete, para uma meia-lua feita num hitstop longo caber na janela de 18 ticks do `motion`).
+   */
+  private guardarEntradaDoCongelamento(fonte: FonteEntradas): void {
+    const humano1 = this.p1.cpu === null;
+    const humano2 = this.p2.cpu === null && !this.training;
+    if (humano1) this.guardar(0, fonte.p1(this.solo || this.training));
+    if (humano2) this.guardar(1, fonte.p2());
+  }
+
+  private guardar(i: 0 | 1, inp: InputFrame): void {
+    const f = this.fighters[i];
+    const g = this.guardada[i];
+    const botao = ATK_KEYS.find((k) => inp[k]);
+    if (botao) g.botao = botao;
+    if (this.esquivaLigada && inp.esq === true) g.esq = true; // a borda do ESQ também vive 1 tick (e a esquiva só vale com a mecânica ligada)
+    const d = dirNum(inp, f.facing);
+    if (d !== (g.dirs.length ? g.dirs[g.dirs.length - 1] : f.hist[f.hist.length - 1])) g.dirs.push(d);
+  }
+
+  /** 1º tick acionável depois do congelamento: entrega o guardado aos lutadores (antes do `update` deles) ou o descarta se a luta não está em 'fight'. */
+  private entregarEntradaDoCongelamento(luta: boolean): void {
+    for (const i of [0, 1] as const) {
+      const g = this.guardada[i];
+      if (luta && (g.botao || g.dirs.length || g.esq)) this.fighters[i].receberEntradaDoCongelamento(g.botao, g.dirs, g.esq);
+      this.guardada[i] = entradaGuardadaVazia();
+    }
+  }
+
   /** Um tick da luta. */
   update(fonte: FonteEntradas): void {
     this.events = this.pendentes;
     this.pendentes = [];
     this.trocaDeBarraNoTick = false;
+    this.filmeNoTick = false;
     this.dentroDoUpdate = true;
     try {
       this.passo(fonte);
@@ -404,6 +486,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.t++;
     if (this.hitstop > 0) {
       this.hitstop--;
+      if (this.entradaNoHitstop && this.phase === 'fight') this.guardarEntradaDoCongelamento(fonte);
       return;
     }
     this.tick++;
@@ -415,6 +498,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
     const fighting = this.phase === 'fight';
     const [i1, i2] = this.inputs(fonte);
+    if (this.entradaNoHitstop) this.entregarEntradaDoCongelamento(fighting);
     if (this.phase === 'roundend' || this.phase === 'matchend') {
       for (const p of [this.p1, this.p2]) {
         if (p.indice === this.winner && p.grounded && p.state !== 'move' && p.state !== 'hit' && p.state !== 'down' && p.state !== 'win' && this.t > 20) p.setState('win');
@@ -573,10 +657,14 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     ] as const) {
       const mv = a.activeMove();
       if (!mv || a.hitDone || a.atkEsquivado === a.atkId) continue; // esquivado = consumido para o alvo (como um acerto)
+      if (this.filmesLigados && this.execConsumidas.has(this.chaveDaExecucao(a.indice, a.atkId))) continue; // V2-3c: 1 contato só por execução de especial
       if (d.untouchable) {
         // ESQUIVA: quem está na janela invulnerável e levaria o golpe "esquivou" (uma vez por golpe) e o golpe é CONSUMIDO: não acerta mais
         // quando a janela fechar no meio da fase ativa. Fora disso, sem efeito, como sempre.
-        if (d.state === 'esquiva' && this.verEsquivada(a, d, mv.box ? a.ch.boxes[mv.box] : undefined, `a${a.atkId}`, false)) a.atkEsquivado = a.atkId;
+        if (d.state === 'esquiva' && this.verEsquivada(a, d, mv.box ? a.ch.boxes[mv.box] : undefined, `a${a.atkId}`, false)) {
+          a.atkEsquivado = a.atkId;
+          if (this.filmeDaExecucao(a, mv.id, a.ficha)) this.consumirExecucao(a.indice, a.atkId); // esquivado = o contato da execução (sem filme)
+        }
         continue;
       }
       const caixa = mv.box ? a.ch.boxes[mv.box] : undefined;
@@ -591,6 +679,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       if (pr.life <= 0) continue;
       const d = pr.owner === this.p1 ? this.p2 : this.p1;
       const o = pr.owner;
+      const exec = this.filmesLigados ? this.execDoProjetil.get(pr) : undefined;
+      if (exec && this.execConsumidas.has(this.chaveDaExecucao(o.indice, exec.atk))) {
+        pr.life = 0; // V2-3c: tiro de uma execução que já teve o seu contato: sai sem colidir (0 eventos extras)
+        continue;
+      }
       const box = { x: pr.x - 34 * pr.sc, y: pr.y - 30 * pr.sy, w: 68 * pr.sc, h: 60 * pr.sy };
       // E3: escudo da GARKUWA. Projétil que vem de frente e toca o lutador na janela ativa de um golpe `absorveProj`
       // some como num choque de projéteis (evento `clash`); não há dano nem applyHit. Pelas costas ou fora da janela: acerta.
@@ -612,7 +705,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       }
       if (d.untouchable && d.state === 'esquiva') {
         // o projétil atravessa quem esquiva (segue voando), a esquiva é anunciada uma vez por projétil e ele fica CONSUMIDO para este alvo
-        if (this.verEsquivada(o, d, { fx: 0, fy: 0, w: 0, h: 0 }, `p${pr.id}`, true, box)) pr.esquivou = true;
+        if (this.verEsquivada(o, d, { fx: 0, fy: 0, w: 0, h: 0 }, `p${pr.id}`, true, box)) {
+          pr.esquivou = true;
+          if (exec && this.filmeDaExecucao(o, pr.golpe, exec.ficha)) this.consumirExecucao(o.indice, exec.atk); // os outros tiros da execução também deixam de existir
+        }
       }
       if (!d.untouchable && !pr.esquivou && overlap(box, d.hurtbox())) {
         pr.life = 0;
@@ -640,6 +736,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
             especial: pr.especial === true,
             nivelCarga: 0,
             drenaEnergia: undefined, // projétil não drena (o SELO é projétil)
+            atk: exec?.atk ?? o.atkId,
+            ficha: exec ? exec.ficha : o.ficha,
           },
           box,
         );
@@ -724,6 +822,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       });
       return;
     }
+    // V2-3c: todo contato (bloqueio, armadura ou acerto) de um especial com filme consome a execução; só o acerto limpo abre o filme.
+    const doFilme = this.filmeDaExecucao(a, mv.golpe ?? '', mv.ficha);
+    if (doFilme) this.consumirExecucao(a.indice, mv.atk);
     const blocked = d.canBlock(mv.lvl);
     const hb = d.hurtbox();
     const ox = (Math.max(box.x, hb.x) + Math.min(box.x + box.w, hb.x + hb.w)) / 2;
@@ -812,7 +913,15 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       return;
     }
     if (d.gotHits === 0) d.comboDmg = 0;
-    let dmg = this.danoNoDefensor(d, danoDoGolpe(mv.dmg, a.ch.pow, mv.proj, d.gotHits, counter, emPreparo ? mv.contra?.mult : undefined));
+    // V2-3c: o 2º contato de especial do MESMO tick resolve como acerto comum (spec §3.1); o 1º leva o filme.
+    const filme = this.filmeNoTick ? undefined : doFilme;
+    const antes = filme ? this.posicoesDoFilme(a, d) : undefined;
+    const multContra = emPreparo ? mv.contra?.mult : undefined;
+    let dmg = this.danoNoDefensor(
+      d,
+      filme ? this.danoDoFilme(filme, a, mv.nivelCarga, mv.proj, d.gotHits, counter, multContra) : danoDoGolpe(mv.dmg, a.ch.pow, mv.proj, d.gotHits, counter, multContra),
+    );
+    if (this.filmesLigados) dmg = this.limitarAoTetoDoCombo(d, dmg);
     const stunExtra = emPreparo ? (mv.contra?.hs ?? 0) : 0;
     if (this.training) dmg = Math.min(dmg, d.hp - 1 > 0 ? dmg : 0);
     const hpAntes = d.hp;
@@ -829,8 +938,13 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     const drenoAcerto = this.cobrarDreno(a, d, mv.drenaEnergia, 'acerto'); // depois dos ganhos do ramo (spec ZENON §1.2)
     d.flash = 8;
     d.move = null;
-    const kill = this.resolverVidaZerada(d, a);
-    if (kill) {
+    const barrasAntes = d.barras;
+    const diferidos: EventoLuta[] = []; // o `ko` do filme sai DEPOIS do `hit` e do `filme` (spec §3.2); fora do filme sai na hora, como sempre
+    const kill = this.resolverVidaZerada(d, a, filme ? diferidos : undefined);
+    if (filme) {
+      this.filmeNoTick = true;
+      this.estadoFinalDoFilme(a, d, filme, mv.proj, kill);
+    } else if (kill) {
       // o KO já foi aplicado em resolverVidaZerada: não há reação de hit/knockdown
     } else if (mv.hits && a.hitCount < mv.hits) {
       // acertos intermediários: segura o rival no combo
@@ -848,7 +962,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       d.stun = mv.hs + stunExtra;
       d.vx = mv.kb * a.facing;
     }
-    if (cornered && !kill) a.vx = -a.facing * mv.kb * 0.8;
+    if (cornered && !kill && !filme) a.vx = -a.facing * mv.kb * 0.8;
     this.shake = this.ajustes.shake ? (mv.heavy || mv.proj || kill ? 9 : 5) : 0;
     this.hitstop = mv.heavy || kill ? 6 : 4;
     this.reforcarTrocaDeBarra();
@@ -875,7 +989,160 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       ...marcaDoGolpe(mv),
       ...(mv.nivelCarga > 0 ? { nivelCarga: mv.nivelCarga as 1 | 2 | 3 } : {}),
       ...(drenoAcerto > 0 ? { dreno: drenoAcerto } : {}),
+      ...(filme ? { filme: true as const } : {}),
     });
+    if (filme && antes) {
+      this.emitir({
+        tipo: 'filme',
+        atacante: a.indice,
+        defensor: d.indice,
+        golpe: mv.golpe ?? '',
+        ficha: mv.ficha,
+        projetil: mv.proj,
+        ...(mv.nivelCarga > 0 ? { nivelCarga: mv.nivelCarga as 1 | 2 | 3 } : {}),
+        dano: danoCausado,
+        contragolpe: counter,
+        ko: kill,
+        trocaDeBarra: d.barras < barrasAntes,
+        final: filme.final ?? 'derruba',
+        antes,
+        depois: this.posicoesDoFilme(a, d),
+      });
+      for (const ev of diferidos) this.emitir(ev);
+    }
+  }
+
+  // ----- V2-3c: filme do especial (docs/spec-revisao-motor-luta-v2.md §3 e §4) -----
+
+  /** O filme do golpe `golpe` (chave de `ch.moves`) de `a` na ficha `ficha`, ou undefined (flag desligada, golpe comum, ou especial sem filme: PARADE, VADIVU). */
+  private filmeDaExecucao(a: Fighter, golpe: string, ficha: string | null): FilmeDoGolpe | undefined {
+    if (!this.filmesLigados || golpe[0] !== 's') return undefined;
+    return filmeDoGolpe(a.ch.id, ficha, golpe);
+  }
+
+  private chaveDaExecucao(indice: IndiceLutador, atk: number): number {
+    return atk * 2 + indice;
+  }
+
+  /** A execução `atk` do lutador `indice` teve o seu contato: nenhum acerto ou tiro dela existe mais (os projéteis em voo somem no próximo `resolveHits`). */
+  private consumirExecucao(indice: IndiceLutador, atk: number): void {
+    this.execConsumidas.add(this.chaveDaExecucao(indice, atk));
+  }
+
+  private posicoesDoFilme(a: Fighter, d: Fighter): { atacante: PosFilme; defensor: PosFilme } {
+    return { atacante: { x: a.x, y: a.y, facing: a.facing }, defensor: { x: d.x, y: d.y, facing: d.facing } };
+  }
+
+  /**
+   * Dano do filme inteiro antes do `danoRecebido` (spec §4.1): `dano x (projétil ? 1 : pow) x escalaCombo x contragolpe`, no máximo `TETO_GOLPE`.
+   * Mesma conta e mesma ordem de `danoDoGolpe`; a MASHI usa o `danoPorNivel` do nível da carga.
+   */
+  private danoDoFilme(filme: FilmeDoGolpe, a: Fighter, nivelCarga: number, projetil: boolean, gotHits: number, contragolpe: boolean, multContra: number | undefined): number {
+    const base = filme.danoPorNivel && nivelCarga >= 1 ? (filme.danoPorNivel[Math.min(3, nivelCarga) - 1] as number) : filme.dano;
+    return Math.min(TETO_GOLPE, danoDoGolpe(base, a.ch.pow, projetil, gotHits, contragolpe, multContra));
+  }
+
+  /**
+   * Teto de combo (spec §4.1, H2): um combo tira no máximo `TETO_COMBO` da vida TOTAL do defensor (todas as barras do chefão), sempre
+   * deixando passar `PISO_ACERTO_NO_TETO` (o teste CPU x CPU proíbe acerto de dano zero). Vale para todo acerto com `motorV2.filmes`.
+   * `dmg` já é o que a vida sofre (depois do `danoRecebido`), e `comboDmg` acumula a mesma grandeza.
+   */
+  private limitarAoTetoDoCombo(d: Fighter, dmg: number): number {
+    return Math.min(dmg, Math.max(PISO_ACERTO_NO_TETO, TETO_COMBO * d.maxHp * d.barrasMax - d.comboDmg));
+  }
+
+  /**
+   * Estado final do filme (spec §3.3): o defensor deitado (`down`/`lie`, ou `ko`) no chão, a `distancia` do atacante, presos nas margens de
+   * quem está caído; o atacante (exceto projétil) no chão, em `_lag` com `recuperacao` ticks, recuando se o defensor encostou na parede.
+   * O combo acaba (queda), então nada mais acerta o defensor até ele levantar.
+   */
+  private estadoFinalDoFilme(a: Fighter, d: Fighter, filme: FilmeDoGolpe, projetil: boolean, ko: boolean): void {
+    const distancia = filme.distancia ?? DISTANCIA_PADRAO_DO_FILME;
+    if (!ko) {
+      d.setState('down');
+      d.phase = 'lie';
+    }
+    d.st = 0;
+    d.stun = 0;
+    d.move = null;
+    d.vx = 0;
+    d.vy = 0;
+    d.y = GROUND;
+    d.x = clamp(a.x + a.facing * distancia, MARGEM_CAIDO, LARGURA - MARGEM_CAIDO);
+    if (!projetil) {
+      a.vx = 0;
+      a.vy = 0;
+      a.y = GROUND;
+      // Parede nas costas do defensor: é o atacante quem recua para manter a distância (nunca menos que a soma dos corpos).
+      const livre = clamp(d.x - a.facing * distancia, 60, LARGURA - 60);
+      if (Math.abs(d.x - a.x) < distancia) a.x = livre;
+      a.move = '_lag';
+      a.mt = 0;
+      a.lagR = filme.recuperacao;
+      a.hitDone = true;
+      a.connected = false; // sem cancelamento: a vantagem depois do filme é a do dado (48 - recuperacao)
+      a.armor = 0;
+    }
+    this.aoCair(d);
+  }
+
+  /** Agarrão de ESPECIAL que pega (HURACANRANA, ARREMESSO DO AVARGA) com filme: faz o papel de `applyHit` + `arremessar` (spec §3.1). */
+  private arremessarComFilme(a: Fighter, d: Fighter, golpe: GolpeMontado, filme: FilmeDoGolpe): void {
+    this.filmeNoTick = true;
+    this.consumirExecucao(a.indice, a.atkId);
+    const antes = this.posicoesDoFilme(a, d);
+    if (d.gotHits === 0) d.comboDmg = 0;
+    let dmg = this.danoNoDefensor(d, this.danoDoFilme(filme, a, 0, false, d.gotHits, false, undefined));
+    dmg = this.limitarAoTetoDoCombo(d, dmg);
+    if (this.training) dmg = Math.min(dmg, d.hp - 1 > 0 ? dmg : 0);
+    const hpAntes = d.hp;
+    d.hp = Math.max(0, d.hp - dmg);
+    const dano = hpAntes - d.hp;
+    d.gotHits++;
+    d.comboDmg += dmg;
+    d.dmgTaken += dmg;
+    a.score += Math.round(dmg * 100);
+    a.maxCombo = Math.max(a.maxCombo, d.gotHits);
+    this.trainInfo = { hits: d.gotHits, dmg: d.comboDmg };
+    a.connected = true;
+    a.en = Math.min(MAX_EN, a.en + 8);
+    d.en = Math.min(MAX_EN, d.en + 5);
+    d.flash = 8;
+    d.move = null;
+    const barrasAntes = d.barras;
+    const diferidos: EventoLuta[] = [];
+    const kill = this.resolverVidaZerada(d, a, diferidos);
+    this.estadoFinalDoFilme(a, d, filme, false, kill);
+    this.shake = 8;
+    this.hitstop = 6;
+    this.reforcarTrocaDeBarra();
+    this.emitir({
+      tipo: 'throw',
+      atacante: a.indice,
+      defensor: d.indice,
+      pitch: d.ch.pitch,
+      texto: textoFlutuante(a.x, a.y - SH, 'ARREMESSO!', '#ffd23f', 22),
+      dano,
+      golpe: golpe.id,
+      especial: true,
+      filme: true,
+    });
+    this.emitir({
+      tipo: 'filme',
+      atacante: a.indice,
+      defensor: d.indice,
+      golpe: golpe.id,
+      ficha: a.ficha,
+      projetil: false,
+      dano,
+      contragolpe: false,
+      ko: kill,
+      trocaDeBarra: d.barras < barrasAntes,
+      final: filme.final ?? 'derruba',
+      antes,
+      depois: this.posicoesDoFilme(a, d),
+    });
+    for (const ev of diferidos) this.emitir(ev);
   }
 
   /**
@@ -900,7 +1167,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
    * por 60 ticks (o combo não atravessa para a barra final) e a Dança da Águia fica pendente. Devolve false, então
    * os chamadores aplicam a reação normal (atordoamento ou derrubada). O evento `fase-chefe` sai ANTES do `hit`.
    */
-  resolverVidaZerada(d: Fighter, a: Fighter): boolean {
+  resolverVidaZerada(d: Fighter, a: Fighter, diferidos?: EventoLuta[]): boolean {
     if (d.hp > 0) return false;
     if (this.training) {
       d.hp = 1;
@@ -918,7 +1185,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       this.emitir({ tipo: 'fase-chefe', lutador: d.indice, etapa: 'troca', barrasRestantes: d.barras });
       return false;
     }
-    this.ko(d, a);
+    this.ko(d, a, diferidos);
     return true;
   }
 
@@ -932,7 +1199,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.shake = this.ajustes.shake ? 14 : 0;
   }
 
-  private ko(d: Fighter, a: Fighter): void {
+  private ko(d: Fighter, a: Fighter, diferidos?: EventoLuta[]): void {
     d.hp = 0;
     d.stun = 0;
     d.setState('ko');
@@ -944,7 +1211,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.t = 0;
     this.shake = 14;
     this.hitstop = 14;
-    this.emitir({ tipo: 'ko', defensor: d.indice, pitch: d.ch.pitch });
+    const ev: EventoLuta = { tipo: 'ko', defensor: d.indice, pitch: d.ch.pitch };
+    if (diferidos) diferidos.push(ev); // V2-3c: o `ko` de um filme sai depois do `hit` e do `filme`
+    else this.emitir(ev);
   }
 
   private endRound(): void {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { EventoLuta, IdLutador, InputFrame } from '../../src/core/contratos';
+import type { EventoLuta, IdLutador, InputFrame, MotorV2 } from '../../src/core/contratos';
 import { INPUT_VAZIO } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
 import { attackBox, danoDeArmadura, danoDoGolpe, escalaCombo, hurtbox, podeBloquear } from '../../src/fight/colisao';
@@ -12,7 +12,7 @@ import { montarTodos } from './_lutadores';
 const lutadores = montarTodos();
 const SEM_ENTRADA: FonteEntradas = { p1: () => ({ ...INPUT_VAZIO }), p2: () => ({ ...INPUT_VAZIO }) };
 
-function novaLuta(c1: IdLutador, c2: IdLutador, semente: number, cfg: { cpu?: number | null; p1cpu?: number | null; mode?: 'versus' | 'cpu' | 'training' } = {}): Game {
+function novaLuta(c1: IdLutador, c2: IdLutador, semente: number, cfg: { cpu?: number | null; p1cpu?: number | null; mode?: 'versus' | 'cpu' | 'training'; motorV2?: MotorV2 } = {}): Game {
   const g = new Game({ lutadores, rng: criarRng(semente) });
   g.setup({ mode: cfg.mode ?? 'versus', c1, c2, ...cfg }, { rounds: 2, time: 99, shake: true });
   return g;
@@ -177,8 +177,8 @@ describe('Game: regras de partida', () => {
 });
 
 describe('RNG: mesma semente -> mesma luta; semente diferente -> outra', () => {
-  function resumo(semente: number, ticks: number) {
-    const g = novaLuta('wei-long', 'min-ji', semente, { mode: 'cpu', cpu: 2, p1cpu: 2 });
+  function resumo(semente: number, ticks: number, motorV2?: MotorV2) {
+    const g = novaLuta('wei-long', 'min-ji', semente, { mode: 'cpu', cpu: 2, p1cpu: 2, ...(motorV2 ? { motorV2 } : {}) });
     const contagem: Record<string, number> = {};
     for (let i = 0; i < ticks; i++) {
       g.update(SEM_ENTRADA);
@@ -201,6 +201,9 @@ describe('RNG: mesma semente -> mesma luta; semente diferente -> outra', () => {
   });
   it('CPU x CPU de 6000 ticks com semente 42 tem resultado fixo (regressão)', () => {
     expect(resumo(42, 6000)).toMatchSnapshot();
+  });
+  it('V2-1: com motorV2.entradaNoHitstop LIGADA o CPU x CPU de 6000 ticks é o MESMO do snapshot acima (a CPU não é lida no congelamento)', () => {
+    expect(resumo(42, 6000, { entradaNoHitstop: true })).toEqual(resumo(42, 6000));
   });
 });
 

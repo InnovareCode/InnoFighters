@@ -183,6 +183,7 @@ export const AMOSTRAS_POR_EVENTO: Readonly<Record<EventoLuta['tipo'], CoberturaD
   armor: ['imp.soco.leve', 'imp.chute.leve', 'voz.*.esforco'],
   hit: ['imp.soco.*', 'imp.chute.*', 'magia.impacto', 'voz.*.leve', 'voz.*.pesado', 'esp.*'],
   throw: ['arremesso', 'voz.*.pesado', 'esp.*'],
+  filme: [], // o evento é mudo (o som do acerto que abre o filme toca por batida, na apresentação da V2-3d); nenhum id de amostra é dele
   ko: ['voz.*.ko', 'ko.queda'],
   round: ['voz.*.vitoria', 'voz.zenon.riso'],
   perfect: 'sintese',

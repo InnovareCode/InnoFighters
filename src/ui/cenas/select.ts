@@ -4,7 +4,7 @@ import type { Rng } from '../../core/rng';
 import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
 import { TEXTOS_COMUNS } from '../../render/textos-dos-chefoes';
-import { liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
+import { cfgMotorV2, liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
 import { embaralhar, passoDaRolagem, rostoEmRepouso, rostosDaRolagem, sortear, TICKS_DA_REVELACAO, TICKS_DA_ROLAGEM } from '../aleatoria';
 import { dicaArcadeSelecao } from '../escada-texto';
 import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa, retanguloDeToque, temCasaDeHonra, type EstadoCasa } from '../grade';
@@ -303,8 +303,8 @@ export class CenaSelect implements Cena {
       const c1 = this.idEm(this.pick[0]);
       const c2 = this.idEm(this.pick[1]);
       if (this.mode === 'arcade' || this.mode === 'cpu') this.ui.go('diff', { mode: this.mode, c1, c2 });
-      else if (this.mode === 'versus') this.ui.go('vs', { cfg: { mode: 'versus', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva } });
-      else this.ui.go('fight', { cfg: { mode: 'training', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva } });
+      else if (this.mode === 'versus') this.ui.go('vs', { cfg: { mode: 'versus', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva, ...cfgMotorV2(this.ui.c.regras) } });
+      else this.ui.go('fight', { cfg: { mode: 'training', c1, c2, cpu: null, esquiva: this.ui.c.regras.esquiva, ...cfgMotorV2(this.ui.c.regras) } });
     }
   }
 

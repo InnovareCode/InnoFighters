@@ -23,7 +23,7 @@ import { MOTIONS, dirNum, motion } from './comandos';
 import type { Retangulo } from '../core/math';
 
 export type ChaveAtaque = 'sp' | 'hp' | 'hk' | 'lp' | 'lk';
-const ATK_KEYS: readonly ChaveAtaque[] = ['sp', 'hp', 'hk', 'lp', 'lk'];
+export const ATK_KEYS: readonly ChaveAtaque[] = ['sp', 'hp', 'hk', 'lp', 'lk'];
 /** Margem da parede em que `physics` trava o x de um lutador em pé (60 px de cada lado). */
 const MARGEM_PAREDE = 60;
 
@@ -491,6 +491,22 @@ export class Fighter {
 
   update(inp: InputFrame, opp: Fighter, jogo: PartidaParaLutador): void {
     this.corpoDoUpdate(inp, opp, jogo);
+  }
+
+  /**
+   * V2-1 (`motorV2.entradaNoHitstop`): entrega o que o jogador fez DURANTE o hitstop, antes do `update` do 1º tick acionável.
+   * As direções entram em `hist` antes da do tick, então uma meia-lua feita no congelamento conta. O botão vira `buf` com `t: 10`
+   * porque o `update` do próprio tick o decrementa antes de ler a entrada: ao fim da leitura ele vale 9, como um aperto neste tick; se
+   * o tick traz outro botão, esse sobrescreve (o aperto mais recente vence).
+   */
+  receberEntradaDoCongelamento(botao: ChaveAtaque | null, dirs: readonly number[], esq = false): void {
+    for (const d of dirs) {
+      this.hist.push(d);
+      if (this.hist.length > 30) this.hist.shift();
+    }
+    if (botao) this.buf = { k: botao, t: 10 };
+    // ESQUIVA apertada no congelamento: o `update` do tick decrementa `bufEsq` antes de ler a entrada, então +1 deixa o buffer inteiro.
+    if (esq) this.bufEsq = ESQUIVA_PADRAO.buffer + 1;
   }
 
   private corpoDoUpdate(inp: InputFrame, opp: Fighter, jogo: PartidaParaLutador): void {

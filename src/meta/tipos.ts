@@ -1,4 +1,4 @@
-import type { Configuracoes, IdLutador } from '../core/contratos';
+import type { Configuracoes, IdLutador, MotorV2 } from '../core/contratos';
 
 /**
  * Progresso de desbloqueio (C4 v2, plano 3.1). So tipos: este arquivo nao tem codigo de execucao,
@@ -72,6 +72,12 @@ export type Regras = {
    * (`CenaIntro`, oráculo de pixel da fidelidade com o protótipo): o `?expansao=4`.
    */
   readonly trailer: boolean;
+  /**
+   * Revisão do motor de luta v2 (docs/spec-revisao-motor-luta-v2.md §2), flag por mecânica. AUSENTE = o motor de antes, bit a bit: é o que o
+   * oráculo, o harness de balanço, o `?expansao=4` e `REGRAS_PADRAO` rodam hoje. Só vai à `ConfigPartida` das lutas montadas pela UI (`cfgMotorV2`);
+   * o trailer monta a sua e nunca a recebe. Liga-se na V2-6, quando o dono mandar.
+   */
+  readonly motorV2?: MotorV2;
 };
 
 /**

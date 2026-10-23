@@ -53,10 +53,11 @@ Pasta: `arte-fonte/lutadores/<id>/folhas/`. Fica fora do git (decisão D5).
 |---|---|---|
 | `layout` | troca o layout da folha (`padrao`, `chefe`, `zenon`) | ZENON: `"zenon"` |
 | `celulas` | troca o mapa de poses de uma folha. Lista = apelidos (o mesmo desenho serve a dois quadros). `null` descarta a figura | CENTELLA f1: `["idle0", ["idle1", "idle3"], null, ...]` |
-| `alturaRef` | altura do idle0 no atlas (padrão 410) | BAATAR: `525`; ZENON: `558` |
+| `alturaRef` | altura do idle0 no atlas (padrão 410) | BAATAR: `525`; ZENON: `558`; CAIO: `396` (idle agachado). Atenção: o K do jogo é `scale x 255 / idle0.h`, então `alturaRef` só muda os px do atlas, não o tamanho em jogo (o idle0 sempre vira 255 x scale); abaixo de 410 o retrato/rosto continua usando 410 |
 | `fatorFolha` | multiplica a escala de uma folha | NILA: `{"f2": 1.2, "f3": 1.15, "f4": 1.1}` |
 | `folhasExtras` | folha fora do layout | NILA f5, grade 4x3, poses `sarpa*` |
 | `ponta` | modo da ponta do golpe por pose (`cima`, `direita`, `mao`, `mao:0.5`, `pe`, `pe:0.75`, `nenhuma`). `mao:F` é o `mao` olhando só as linhas acima da fração F do quadro (WEI LONG `sc1` "mao:0.5": a ombrada tem o joelho da frente abaixo do ombro e ele ganhava). `nenhuma` deixa o quadro SEM ponta: não há rastro nele e não vira aviso "sem ponta". Só serve a quadro que não decide a caixa (a caixa sai do PRIMEIRO quadro ativo da animação) | ZENON: `"lk1": "mao", "upper": "mao", "sb1": "cima", "decreto1": "mao"`; CAIO: `"sb2": "nenhuma"` (a perna aponta para trás, o ponto mais à direita seria a cabeça) |
+| `ancora` | âncora horizontal (`ax`) por pose: `{ "idle*": "pes" }` põe o `ax` no meio dos pés (vão das últimas 5% x `alturaRef` linhas) em vez do centro de massa (`massa`, o padrão). `*` = prefixo, sem `*` = nome exato. Para o idle que balança o tronco sobre pés plantados (CAIO, ginga): com a massa os pés patinavam até 18 px no laço | CAIO: `{"idle*": "pes"}` |
 | `acolchoar` | pixels de fundo por borda antes do corte | BAATAR b9: `{"esquerda": 16}`; ZENON s8: `{"s8": {"direita": 16}}` |
 | `arquivos` | `{ folha: "nome.png" }` fixa a versão de uma folha (dentro de `folhas/`) no lugar da maior `-vN`. Arquivo inexistente é erro. Serve quando a maior versão é de OUTRA geração | WEI LONG: `{"f4": "wei-long-f4-especiais-v1.png"}` (as f4 `-v2..-v4` antigas, do traje velho, ganhariam) |
 

@@ -13,7 +13,7 @@ const nucleo = await carregarFerramenta<{
   cortarBorda: F; estimarFundo: F; detectarChave: F; calcularAlfa: F; dilatar: F; despill: F; medirHalo: F; vazamento: F;
   mascaraDeAlfa: F; rotular: F; agruparFiguras: F; ordenarGrade: F; recortarFigura: F; caixaOpaca: F; cortarRgba: F;
   espelharRgba: F; centroDeMassaX: F; pontaDireita: F; pontaCima: F; rostoDoQuadro: F; janelaRgba: F; montarManifesto: F;
-  separarFundidas: F; acolchoarRgb: F;
+  separarFundidas: F; acolchoarRgb: F; meioDosPes: F; modoDeAncora: F;
 }>('ferramentas/sprites/nucleo.mjs');
 const empacotador = await carregarFerramenta<{ empacotar: F; validarEmpacotamento: F }>('ferramentas/sprites/empacotar.mjs');
 const poses = await carregarFerramenta<{
@@ -23,7 +23,7 @@ const poses = await carregarFerramenta<{
 const {
   cortarBorda, estimarFundo, detectarChave, calcularAlfa, dilatar, despill, medirHalo, vazamento, mascaraDeAlfa, rotular,
   agruparFiguras, ordenarGrade, recortarFigura, caixaOpaca, espelharRgba, centroDeMassaX, pontaDireita, pontaCima,
-  rostoDoQuadro, janelaRgba, montarManifesto, separarFundidas, acolchoarRgb,
+  rostoDoQuadro, janelaRgba, montarManifesto, separarFundidas, acolchoarRgb, meioDosPes, modoDeAncora,
 } = nucleo;
 const { empacotar, validarEmpacotamento } = empacotador;
 
@@ -295,6 +295,33 @@ describe('âncora (centro de massa X)', () => {
   });
   it('quadro vazio é erro, não NaN', () => {
     expect(() => centroDeMassaX(new Uint8Array(40), 10, 1)).toThrow(/vazio/);
+  });
+});
+
+describe('âncora pelos pés (meioDosPes / modoDeAncora)', () => {
+  it('meio do vão entre o pé de trás e o da frente, não o centro de massa: tronco pesado à frente não puxa a âncora', () => {
+    // pés em x 2..5 e 12..15 (últimas linhas); tronco largo e pesado em x 10..19 acima deles
+    const rgba = quadroRgba(20, 30, [[2, 26, 4, 4], [12, 26, 4, 4], [10, 0, 10, 26]]);
+    expect(meioDosPes(rgba, 20, 30, { faixa: 4 })).toBe(9); // (2 + 15 + 1) / 2
+    expect(centroDeMassaX(rgba, 20, 30)).toBeGreaterThan(12); // a massa está no tronco
+  });
+  it('só olha a faixa de baixo: um braço largo acima dos pés não alarga o vão', () => {
+    const rgba = quadroRgba(30, 30, [[8, 26, 4, 4], [14, 26, 4, 4], [0, 5, 30, 3]]);
+    expect(meioDosPes(rgba, 30, 30, { faixa: 4 })).toBe(13); // (8 + 17 + 1) / 2
+    expect(meioDosPes(rgba, 30, 30, { faixa: 30 })).toBe(15); // faixa que alcança o braço: 0..29
+  });
+  it('o quadro vazio é erro, não NaN', () => {
+    expect(() => meioDosPes(new Uint8Array(40), 10, 1)).toThrow(/vazio/);
+  });
+  it('modoDeAncora: `*` é prefixo, sem `*` é nome exato, padrão é massa e modo desconhecido é erro', () => {
+    const mapa = { 'idle*': 'pes', walk3: 'pes' };
+    expect(modoDeAncora('idle0', mapa)).toBe('pes');
+    expect(modoDeAncora('idle3', mapa)).toBe('pes');
+    expect(modoDeAncora('walk3', mapa)).toBe('pes');
+    expect(modoDeAncora('walk30', mapa)).toBe('massa');
+    expect(modoDeAncora('block', mapa)).toBe('massa');
+    expect(modoDeAncora('idle0', undefined)).toBe('massa');
+    expect(() => modoDeAncora('idle0', { 'idle*': 'pe' })).toThrow(/desconhecido/);
   });
 });
 

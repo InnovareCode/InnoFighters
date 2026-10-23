@@ -457,6 +457,44 @@ export function centroDeMassaX(rgba, largura, altura) {
 }
 
 /**
+ * Âncora horizontal pelos PÉS: meio do vão entre o pixel mais à esquerda e o mais à direita das últimas `faixa` linhas
+ * da figura (a partir da linha mais baixa ocupada). Serve a quadro que balança o tronco sobre pés plantados (idle da
+ * ginga): a âncora no centro de massa acompanharia o tronco e os pés patinariam no laço. Em px a partir do canto
+ * esquerdo do quadro (borda do pixel: o meio de [x0, x1] ocupado é (x0 + x1 + 1) / 2).
+ */
+export function meioDosPes(rgba, largura, altura, { faixa = 20, limiar = 128 } = {}) {
+  let base = -1;
+  for (let y = altura - 1; y >= 0 && base < 0; y--) {
+    for (let x = 0; x < largura; x++) if (rgba[(y * largura + x) * 4 + 3] >= limiar) { base = y; break; }
+  }
+  if (base < 0) throw new Error('meioDosPes: quadro vazio');
+  let x0 = largura;
+  let x1 = -1;
+  for (let y = Math.max(0, base - Math.max(1, faixa) + 1); y <= base; y++) {
+    for (let x = 0; x < largura; x++) {
+      if (rgba[(y * largura + x) * 4 + 3] >= limiar) { if (x < x0) x0 = x; if (x > x1) x1 = x; }
+    }
+  }
+  return (x0 + x1 + 1) / 2;
+}
+
+/**
+ * Modo de âncora de uma pose segundo `ancora` do lutadores.json ({ "idle*": "pes" }; `*` casa qualquer sufixo, sem `*`
+ * o nome é exato; vale a primeira chave que casa). Padrão 'massa' (centro de massa X). Modo desconhecido é erro: a
+ * âncora errada some do olho e só aparece como pé deslizando no jogo.
+ */
+export function modoDeAncora(nome, ancora) {
+  for (const [padrao, modo] of Object.entries(ancora ?? {})) {
+    if (modo !== 'massa' && modo !== 'pes') throw new Error(`ancora "${padrao}": modo "${modo}" desconhecido (massa | pes)`);
+  }
+  for (const [padrao, modo] of Object.entries(ancora ?? {})) {
+    const casa = padrao.endsWith('*') ? nome.startsWith(padrao.slice(0, -1)) : nome === padrao;
+    if (casa) return modo;
+  }
+  return 'massa';
+}
+
+/**
  * Ponta do golpe: o ponto MAIS À DIREITA da figura (ela sempre olha para a direita), com y = média das linhas
  * ocupadas nas últimas `faixa` colunas (centro do punho/pé, não o canto do pixel). Em px do quadro, relativos ao
  * canto superior esquerdo. `yMax` ignora as linhas de baixo (o modo 'mao' tira a faixa dos pés). É o que o motor usa: `tipX` = alcance à frente, `tipY` = altura do golpe (data/montar.ts).

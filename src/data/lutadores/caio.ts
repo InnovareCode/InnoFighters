@@ -33,11 +33,17 @@ export const CAIO: LutadorDef = {
   // jhp 1.05 -> 0.8, jlk 1.15 -> 0.74, jhk 1.25 -> 0.8; RABO-DE-ARRAIA rm 2 -> 2.8; MEIA-LUA rm 1.2 -> 0.76 e bh 92 -> 160.
   // clp, clk e chk já caem a menos de 10%: intactos. O hp ficou +9% (e não -1%): com a largura igual o CAIO perdia 5 pontos de
   // vitória no harness (49,2% -> 43,8%); com 0.72 volta a 47,8%. Altura da caixa (não corrigível por dados): ver o teste.
+  // GINGA (f1 v2, 2026-10-23): o idle agachado (553 px contra 573) com alturaRef 396 sobe o K do jogo em 410/396 (+3,5%) e todo
+  // alcance cresce junto (hp +8,6% -> +12,3%, clp +6,5% -> +10,0%; os outros ficam a +3-4%, dentro da janela). Só dois ajustes: clp
+  // rm .99 (volta a +8,8%) e hk bh 168 -> 184 (o pé da caixa, que sobe com a ponta, volta a 158). Devolver TODAS as larguras ao
+  // que eram derrubou o CAIO a 46,4% (esquiva) no harness; sem tocar nelas ele fica a 49,6%: a taxa mora no hp (rm .72 -> .70 = -1,8 pt).
+  // O hp ficou em .72 (+12,3%, ver o teste). Harness: 49,7% com esquiva (referência 49,2%) e 50,7% sem (referência 51,3%).
   mods: {
     lp: { rm: 0.65 },
     lk: { rm: 0.87 },
     hp: { S: 8, dmg: 8.5, rm: 0.72 },
-    hk: { S: 10, dmg: 12.5, rm: 1.22, bh: 168 },
+    hk: { S: 10, dmg: 12.5, rm: 1.22, bh: 184 },
+    clp: { rm: 0.99 },
     clk: { rm: 1.1 },
     chk: { rm: 1.4 },
     jlp: { rm: 0.76 },

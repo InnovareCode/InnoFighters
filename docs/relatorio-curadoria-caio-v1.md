@@ -18,7 +18,7 @@ ficam só nesta máquina.
 | Folha | Componentes | Veredito | O que fazer |
 |---|---|---|---|
 | mestra | 1 | aprovada | nada |
-| f1 base | 12 | 10 aprovadas, 1 no limite, **2 reprovadas** (`idle3`, `walk6`) | reparo **sem crédito**: mapa de células (seção 3.1) |
+| f1 base | 12 | 10 aprovadas, 1 no limite, **2 reprovadas** (`idle3`, `walk6`) | reparo **sem crédito**: mapa de células (seção 3.1). **Substituída pela f1 v2 GINGA (seção 7)** |
 | f2 reações | **18** na v1, 12 na v2 | v2: 11 aprovadas, 1 no limite (`block`) | usar a **v2** (tracinhos limpos) + acolchoar o topo |
 | f3 golpes | 12 | 11 aprovadas, 1 no limite (`sweep`) | nada obrigatório |
 | f4 especiais | 12 | v2: 9 aprovadas, 3 no limite (`sa1`, `sb0`, `sb2`) | usar a **f4 v2** (risco limpo) + espelhar `sb2` + ponta dos chutes |
@@ -330,3 +330,168 @@ A primeira é mais limpa, mas precisa confirmar que `folhasExtras` aceita nome c
 | `docs/relatorio-curadoria-caio-v1.md` | este relatório |
 
 Os arquivos v1 não foram alterados.
+
+---
+
+## 7. f1 v2 GINGA (`caio-f1-base-v2.png`, 23/10/2026)
+
+Origem: `folhas/_candidatas/caio-f1-base-ginga-v2.png`, aprovada a olho pelo dono. Ela substitui a f1 v1 (guarda de
+boxe) pelo gingado da capoeira. A promoção é o arquivo novo `caio-f1-base-v2.png` na raiz de `folhas/`: o
+`acharFolha` pega o maior `-vN`. A v1 e a candidata ficam intactas.
+
+### 7.1 Resumo
+
+| Item | Medida | Veredito |
+|---|---|---|
+| Componentes | bruta: **2** (a linha de chão une as fileiras); limpa: **12** | ok |
+| Linha de chão | 3 linhas de 4 px (y 561–564, 1140–1143, 1746–1749), de x 46 a 2353 | **removida por código** |
+| Halo / fundo | fundo 253,2,250; halo 87,8% → 0,0% depois do despill (pipeline) | ok |
+| Magenta no miolo | 16 a 98 px por figura (o máximo é o L2C2) | ok, mesmo padrão da f3 v1 (até 51) |
+| Margem das bordas | cabelo a 24–35 px do topo; pés a 32–38 px da base; laterais ≥ 61 px | ok |
+| Figura / linha | 546–598 px = 91–100% da linha de 597 px | igual às outras folhas (seção 2.0) |
+| Vão entre figuras | distância real mínima de 31,8 px (L1C1 x L2C1); as caixas das fileiras se sobrepõem até 14 px | ok, o pipeline recorta por componente |
+| idle0–3 | 32,6 a 51,7% entre si | **4 desenhos distintos, sem cópia, sem apelido** |
+| walk | vizinhos a 32–45% na ordem nova; o pior era 56,2% (walk7 → walk0) na ordem da grade | **reordenado** (7.4) |
+| Escala | cabeça e pé dentro de ±4% das f2–f4 | **sem `fatorFolha`** (7.5) |
+| Mãos | abertas nas 12 | ok; 2 no limite (7.3) |
+| Eco da mestra | mestra x idle0 = 68,1% | não é eco |
+
+Medido com o pipeline real (`node ferramentas/sprites/cli.mjs caio --saida <scratchpad> --sem-contato`: 12
+componentes nas 4 folhas, escala 0,7396, 48 quadros), com `curadoria-medir.mjs` e com os scripts Python do
+scratchpad. **[medido]**
+
+### 7.2 Linha de chão: como saiu sem comer pé nem contorno [medido + visto]
+
+Script: `arte-fonte/ferramentas-curadoria/caio-f1-tirar-linha.py`. Uso:
+`python -P caio-f1-tirar-linha.py <entrada> <saida>`. É reprodutível a partir da candidata.
+
+- **Primeira tentativa, reprovada:** trocar por fundo todo pixel roxo (B ≈ R, G ≈ 0) na faixa da linha. Isso comeu a
+  base da sola na fileira 3, porque o contorno da sola desta folha tem a mesma cor da linha. Ficaram 39 fragmentos
+  soltos sob os pés: a contagem deu 51, e foi assim que o erro apareceu.
+- **Regra que ficou:** a figura está desenhada POR CIMA da linha. Coluna a coluna, varro a faixa da linha (±3 px):
+  - de cima para baixo, se acima da faixa há fundo;
+  - de baixo para cima, se abaixo da faixa há fundo.
+
+  Troco por fundo só o pixel que bate com a cor da linha naquela altura (mediana das ~1.650 colunas expostas) ou que já
+  é quase fundo. A varredura **para no primeiro pixel que não bate**, que é o contorno do pé. Coluna com figura acima
+  e abaixo da faixa não é tocada (ali o pé cobre a linha).
+- **2ª passada:** nos trechos em que a sola apoiava na própria linha, a base ficava em degrau ou com entalhe. Faço um
+  fechamento morfológico da base da sola, coluna a coluna, com janela de 9. Entre a base atual e a base fechada,
+  devolvo os pixels **originais**: 124 + 101 + 124 px. Isso não estende as pontas do pé.
+- Resultado: 54.770 px alterados, todos nas faixas y 558–567, 1137–1146 e 1743–1752. Fora delas, nenhum pixel mudou.
+  **12 componentes.** Pés conferidos a 5–6x, antes e depois, e os 12 quadros do atlas final sobre fundo escuro: sem
+  resto de linha e sem halo.
+- **Limite honesto:**
+  - onde os dedos apoiavam na linha, 1 px da mistura linha/contorno ficou como contorno (L2C1, x 136–145, y 1143);
+  - 4 colunas de 1 px de antisserrilhado ficaram coladas a pés (x 1294, 1795, 1283 e 1877).
+
+  Na escala do jogo (0,74) isso fica abaixo de 1 px.
+
+### 7.3 Por célula
+
+| Célula | Pose (mapa novo) | Veredito | Medida e motivo |
+|---|---|---|---|
+| L1C1 | idle0 | aprovada | referência da escala. Mão da frente aberta à altura do rosto |
+| L1C2 | idle1 | aprovada | 34,6% do idle0. Braço da frente cruzado baixo, mão aberta sobre a coxa |
+| L1C3 | idle2 | aprovada | 51,7% do idle0 e 35,7% do idle3. Os dois antebraços cruzam diante do rosto, palmas abertas |
+| L1C4 | idle3 | **no limite** | 41,3% do idle0. **A mão de trás segura o cordão** (dedos em volta da corda verde): não é punho, mas não é mão "solta". A 0,74 lê como mão no quadril |
+| L2C1 | walk0 | aprovada (pés: ver 7.4) | de costas, girando, mão da frente aberta |
+| L2C2 | walk1 | aprovada | — |
+| L2C3 | walk2 | aprovada | abre o tronco, mãos abertas |
+| L2C4 | walk4 | **no limite** | a mão de trás segura o cordão, como o idle3 |
+| L3C1 | walk3 | aprovada | — |
+| L3C2 | walk7 | aprovada | mão da frente erguida e aberta (dedos levemente curvos, sem punho) |
+| L3C3 | walk6 | **no limite** | **a borla amarela salta para entre as pernas** (nas outras 7 está no quadril de trás). É um "pop" de 1 quadro, de ~30 px na escala do jogo. Ver 7.6 |
+| L3C4 | walk5 | aprovada | braços bem abertos, mãos abertas |
+
+Traje: os 12 quadros têm a tatuagem no ombro, o cordão verde e amarelo com 2 borlas e o prendedor verde-limão, e estão
+descalços. Nos quadros de costas (L2C1, L2C2), a tatuagem aparece no ombro da frente. Isso é coerente com o giro do
+tronco, não é troca de lado. **[visto]**
+
+### 7.4 Ciclo do andar: reordenado pelo mapa [medido + proposta]
+
+A grade agrupa os desenhos em dois tipos:
+- **de costas/girando:** L2C1, L2C2, L2C3, L3C2;
+- **de frente:** L2C4, L3C1, L3C3, L3C4.
+
+Na ordem da grade, o ciclo atravessa de um grupo para o outro 4 vezes. O fechamento walk7 → walk0 (braços abertos de
+frente → de costas) dá **56,2%**, contra 32–48% nos outros passos. Busquei a ordem de 8 quadros que minimiza o pior
+salto do laço (todas as 5.040 permutações com o L2C1 fixo):
+
+| Ordem | Passos do laço (% XOR) | Pior | Média |
+|---|---|---|---|
+| grade (L2C1…L3C4) | 34,4 · 36,7 · 48,0 · 36,6 · 41,9 · 44,8 · 32,3 · **56,2** | 56,2 | 41,4 |
+| **nova** (L2C1, L2C2, L2C3, L3C1, L2C4, L3C4, L3C3, L3C2) | 34,4 · 36,7 · 42,8 · 36,6 · 33,1 · 32,3 · 44,8 · 33,6 | **44,8** | **36,8** |
+
+- Na ordem nova, o tronco faz **uma** balançada por ciclo: gira, abre de frente, abre os braços e volta a fechar a
+  guarda com a mão no rosto (L3C2), que emenda no L2C1. Montei as duas sequências ancoradas no `ax` e conferi a olho.
+  A nova lê como ginga contínua. **[visto]**
+- **Pés em relação ao `ax` (atlas final, px do jogo):** a base é quase constante (de 335 a 395 px entre o calcanhar de
+  trás e a ponta do pé da frente). Não há passada de verdade: as pernas nunca trocam de lado. É uma ginga que avança,
+  então os pés **deslizam** com o deslocamento do andar, como em qualquer andar sem passo alternado.
+- O meio dos pés fica entre −10 e −15 px do `ax` em 7 quadros. O **walk0 (L2C1) fica em −38**: o corpo vai para a
+  frente sobre a perna da frente. Na entrada e na saída do walk0, os pés pulam ~25 px para trás e voltam. Como o
+  personagem avança, isso lê como o pé de apoio ficando para trás, mas **conferir no harness**. Se incomodar, a saída
+  sem crédito é trocar o walk0 por apelido do walk1 (`["walk1", "walk0"]` no L2C2, com `null` no L2C1). O custo é o
+  laço passar de walk7 (L3C2) para walk1 com 47,1%.
+
+### 7.5 Escala: sem `fatorFolha`; atenção ao `alturaRef` [medido]
+
+| Régua | f1 v2 (ginga) | f1 v1 | f2 v2 | f3 v1 | f4 v2 |
+|---|---|---|---|---|---|
+| Cabeça topo→queixo, grade de 10 px (px) | idle 108–112; walk 103–117 | 102 | 105 (`block`) | 110 (`lp0`) | 110 (`sa3`) |
+| Pé da frente de perfil, faixa de 22–30 px (px) | idle 102–104; walk 108–117 | 96–98 | 99 | 97–98 | 98–104 |
+
+- **Idle x f2–f4:** cabeça de +0 a +4% e pé +3%. Dentro dos 5%: **não usar `fatorFolha.f1`**.
+- **Walk:** a cabeça varia de 103 a 117 px, porque os quadros de cabeça inclinada e sorriso aberto inflam o queixo
+  (lição do ZENON). O pé da frente mede 108–117 px porque fica chapado de perfil, enquanto no idle ele gira um pouco
+  para o espectador. Uma busca de escala pelas pernas contra o walk4 dá de 0,95 a 1,06 em 11 de 12 quadros. A exceção
+  é o L2C2, a 1,11, porque tem a base mais estreita (294 px contra 330–366): é pose, não escala.
+- **Achado que não é `fatorFolha`:** o pipeline tira a escala do lutador inteiro da altura do `idle0`
+  (`executar.mjs`, `alturaRef / idle0`). O idle novo é agachado na ginga: 553 px, contra 573 no v1. Por isso, **o CAIO
+  inteiro cresce 3,4% no jogo**: escala de 0,7155 para 0,7396. Medido no atlas: `block` 424 → 438, `lp0` 438 → 453,
+  `sa3` 410 → 424.
+  - Está abaixo dos 5%, então não é obrigatório mexer.
+  - Para manter o tamanho que o dono já viu, use **`"alturaRef": 396`** na entrada `caio` (410 × 553/573). **[proposta]**
+  - `fatorFolha.f1` seria a ferramenta errada: ele escala só a f1 e deixa o idle0 fora do `alturaRef`.
+
+### 7.6 O que fazer com as células no limite
+
+- **idle3 e walk4 (mão no cordão):** aceitar. A memória da capoeira pede "mãos soltas ou guardando o rosto". Brincar
+  com o cordão é solto e não é punho. Regerar custaria 6 créditos e arriscaria perder a ginga aprovada.
+- **walk6 (borla entre as pernas):** aceitar e conferir no harness. Se o dono notar o salto, há duas saídas.
+  - **Sem crédito:** apagar a borla de entre as pernas e repintar a calça. É o mesmo método da seção 4.2 (véu por
+    difusão).
+  - **Com crédito (6), só esta célula:** use o prompt abaixo. Anexe **uma** imagem, a `caio-f1-base-v2.png`
+    recortada no L3C3, e não a mestra: a pose a manter é a da célula. 2K, 1:1.
+
+```
+Edit this exact image. Keep the pose, the body, the face, the hands, the white capoeira pants, the bare feet, the shoulder tattoo and the solid magenta (#FF00FF) background EXACTLY as they are. Change ONLY the belt cord: both cord tassels (one green, one yellow) hang together at the BACK HIP on the left side of the figure, swinging slightly backward, both fully visible against the background. Nothing hangs between the legs. No ground line, no shadow, no motion lines, no effects.
+```
+
+  Depois de gerar, rode o `difcruz` contra a anexada. Uma diferença menor que 3% fora da área da borla prova que
+  só a borla mudou; a mais que isso, houve mudança de pose. Transplante a célula para uma f1 v3 pelo método da AMINU
+  f3 v3: máscara do componente + âncora no pé de apoio.
+- **Nenhuma célula reprovada:** não há regeração obrigatória.
+
+### 7.7 Mapa de células (aplicado em `ferramentas/sprites/lutadores.json`, entrada `caio`)
+
+```json
+"f1": ["idle0", "idle1", "idle2", "idle3", "walk0", "walk1", "walk2", "walk4", "walk3", "walk7", "walk6", "walk5"]
+```
+
+- Sem apelido: o idle anda 0 → 1 → 2 → 3 → 0, com passos de 34,6, 40,8, 35,7 e 41,3%. A ida e volta da v1 deixou de
+  ser necessária.
+- Pés do idle no atlas: a base fica constante (372–376 px), mas o meio dos pés vai de +6 a −12 px do `ax`. O corpo
+  balança sobre os pés plantados, e a âncora no centro de massa transforma isso em **pés deslizando ~18 px** no laço
+  do idle. Hoje o pipeline não tem chave para ancorar pelos pés. A **proposta para a Vega** é `"ancora": { "idle*":
+  "pes" }`, com `ax` no meio dos pés, nos quadros do idle. Assim a ginga balança o tronco sem patinar. Até lá,
+  conferir no harness. **[medido + proposta]**
+
+### 7.8 Arquivos
+
+| Arquivo | O quê |
+|---|---|
+| `arte-fonte/lutadores/caio/folhas/caio-f1-base-v2.png` | **novo**, f1 ginga sem a linha de chão (promoção) |
+| `arte-fonte/ferramentas-curadoria/caio-f1-tirar-linha.py` | **novo**, a limpeza da seção 7.2 |
+| `ferramentas/sprites/lutadores.json` | `celulas.f1` e `_nota` do `caio` |

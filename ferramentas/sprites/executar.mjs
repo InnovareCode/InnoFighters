@@ -11,7 +11,7 @@ import sharp from 'sharp';
 import { empacotar, validarEmpacotamento } from './empacotar.mjs';
 import {
   acolchoarRgb, agruparFiguras, caixaOpaca, calcularAlfa, centroDeMassaX, cortarBorda, cortarRgba, despill, detectarChave,
-  espelharRgba, estimarFundo, janelaRgba, mascaraDeAlfa, medirHalo, montarManifesto, ordenarGrade, pontaCima, pontaDireita,
+  espelharRgba, estimarFundo, janelaRgba, mascaraDeAlfa, medirHalo, meioDosPes, modoDeAncora, montarManifesto, ordenarGrade, pontaCima, pontaDireita,
   recortarFigura, rostoDoQuadro, rotular, separarFundidas, validarBlocoFilme,
 } from './nucleo.mjs';
 import { COM_PONTA, FAIXA_DOS_PES, FRACAO_PE, GRADE_PADRAO, MINIMAS, MODO_PONTA, ORDEM_COMPLETA, nomesDaCelula, resolverLayout } from './poses.mjs';
@@ -202,7 +202,8 @@ export async function reamostrar(q, escala) {
  *
  * Exceções por lutador (ferramentas/sprites/lutadores.json): `layout` ('padrao' 4x3 | 'chefe' 3x2), `celulas` (troca
  * as células de uma folha), `alturaRef`, `acolchoar` (por folha), `fatorFolha` (multiplicador de escala por folha, para
- * uma folha que o gerador desenhou em outro tamanho) e `ponta` (modo por pose; pose fora de COM_PONTA entra também; 'nenhuma' = quadro sem ponta).
+ * uma folha que o gerador desenhou em outro tamanho), `ancora` ({ "idle*": "pes" }: ax no meio dos pés em vez do centro
+ * de massa; padrão 'massa') e `ponta` (modo por pose; pose fora de COM_PONTA entra também; 'nenhuma' = quadro sem ponta).
  */
 export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, espelhar = {}, opcoes = {}, excecoes: excecoesDadas, log = () => {} }) {
   const excecoes = excecoesDadas ?? lerExcecoes(id); // `excecoes` explícito = teste; senão o lutadores.json
@@ -266,9 +267,13 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
   }
   const alturaRef = finais['idle0'] ? finais['idle0'].altura : Math.round(o.alturaRef);
 
+  // retrato/rosto: a janela nunca encolhe abaixo de 190 px (ferramentas/gerar-retratos.mjs#ladoDoRetrato faz o mesmo); com alturaRef < 410
+  // (CAIO, 396) o rosto a 91 * k ficaria 3 px acima do topo da pagina e o recorte do retrato sairia da imagem
+  const alturaDoRetrato = Math.max(alturaRef, 410);
   const comPonta = new Set([...COM_PONTA, ...Object.keys(excecoes.ponta ?? {})]);
   for (const [nome, q] of Object.entries(finais)) {
-    q.ax = centroDeMassaX(q.rgba, q.largura, q.altura);
+    q.modoAncora = modoDeAncora(nome, excecoes.ancora);
+    q.ax = q.modoAncora === 'pes' ? meioDosPes(q.rgba, q.largura, q.altura, { faixa: Math.round(0.05 * alturaRef) }) : centroDeMassaX(q.rgba, q.largura, q.altura);
     if (comPonta.has(nome)) {
       const modo = excecoes.ponta?.[nome] ?? MODO_PONTA[nome] ?? 'direita';
       q.modoPonta = modo;
@@ -288,7 +293,7 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
       }
       else q.ponta = pontaDireita(q.rgba, q.largura, q.altura);
     }
-    if (nome === 'idle0') q.rosto = rostoDoQuadro(q.rgba, q.largura, q.altura, alturaRef);
+    if (nome === 'idle0') q.rosto = rostoDoQuadro(q.rgba, q.largura, q.altura, alturaDoRetrato);
   }
 
   const itens = Object.values(finais).map((q) => ({ nome: q.nome, w: q.largura, h: q.altura }));
@@ -334,7 +339,7 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
   let retrato;
   const idleFinal = finais['idle0'];
   if (idleFinal?.rosto) {
-    const k = alturaRef / 410;
+    const k = alturaDoRetrato / 410;
     const lado = Math.round(LADO_RETRATO * k);
     const x0 = Math.floor(idleFinal.rosto[0] - lado / 2);
     const y0 = Math.floor(idleFinal.rosto[1] - lado / 2);
@@ -366,6 +371,7 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
     const f = finais[nome] ?? finais[apelidoDe[nome]];
     relatorio.quadros[nome] = {
       w: f.largura, h: f.altura, ax: Math.round(f.ax * 10) / 10,
+      ...(f.modoAncora === 'pes' ? { ancora: 'pes' } : {}),
       alturaOriginal: f.alturaOriginal, baseYOriginal: f.baseYOriginal,
       ...(f.ponta ? { ponta: f.ponta.map((v) => Math.round(v * 10) / 10), modoPonta: f.modoPonta } : {}),
       ...(nome !== f.nome ? { apelidoDe: f.nome } : {}),

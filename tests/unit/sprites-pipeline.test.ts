@@ -245,7 +245,7 @@ describe('pipeline sintético 3x2 (layout do chefão)', () => {
     expect(m.quadros['idle0']!.rosto).toBeDefined();
     expect(r.relatorio.atlas).toMatchObject({ quadros: 6, desenhos: 5 });
     expect(r.relatorio.quadros['idle2'].apelidoDe).toBe('idle0');
-    // alturaRef 205 = k 0,5: a janela do retrato é 95 px do atlas, entregue reduzida a 190x190
+    // alturaRef 205 (< 410): a janela do retrato não encolhe (190 px do atlas, como em gerar-retratos) e o rosto fica em 91
     const retrato = await sharp(join(saida, 'retrato.png')).metadata();
     expect([retrato.width, retrato.height]).toEqual([190, 190]);
     expect(m.retrato).toMatchObject({ arquivo: 'retrato.png' });
@@ -301,6 +301,33 @@ describe('pipeline sintético 3x2 (layout do chefão)', () => {
     await expect(
       executar.gerarLutador({ raiz: tmp, id: 'chefe-teste', folhas: ['zz'], saida, arquivos: {}, excecoes: { layout: 'chefe' } }),
     ).rejects.toThrow(/folha desconhecida/);
+  });
+
+  it('ancora { "idle*": "pes" }: ax do idle no meio dos pés (não no centro de massa); o resto segue a massa; alturaRef < 410 não tira o recorte do retrato da imagem', async () => {
+    const arquivo = await folha3x2('baatar-t-b1-v1.png');
+    const base = { layout: 'chefe', alturaRef: 200 };
+    const rMassa = await executar.gerarLutador({ raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida: join(tmp, 'saida-anc-massa'), arquivos: { b1: arquivo }, excecoes: base });
+    const rPes = await executar.gerarLutador({
+      raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida: join(tmp, 'saida-anc-pes'), arquivos: { b1: arquivo }, excecoes: { ...base, ancora: { 'idle*': 'pes' } },
+    });
+    const { finais } = rPes;
+    // os pés da figura sintética (corpo 40 px + mão/braço à frente): o meio dos pés é o meio do corpo, a massa é puxada pelo braço
+    expect(rPes.relatorio.quadros['idle0'].ancora).toBe('pes');
+    expect(rMassa.relatorio.quadros['idle0'].ancora).toBeUndefined();
+    expect(rPes.relatorio.quadros['idle0'].ax).not.toBe(rMassa.relatorio.quadros['idle0'].ax);
+    // conferência independente da função do núcleo: vão ocupado (alfa >= 128) nas últimas 5% x alturaRef = 10 linhas
+    const f = finais['idle0'];
+    let x0 = f.largura; let x1 = -1;
+    for (let y = f.altura - 10; y < f.altura; y++) for (let x = 0; x < f.largura; x++) if (f.rgba[(y * f.largura + x) * 4 + 3] >= 128) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); }
+    expect(rPes.relatorio.quadros['idle0'].ax).toBeCloseTo((x0 + x1 + 1) / 2, 0);
+    expect(rPes.relatorio.quadros['walk0'].ax).toBe(rMassa.relatorio.quadros['walk0'].ax); // fora do padrão `idle*`
+    expect(rPes.relatorio.quadros['walk0'].ancora).toBeUndefined();
+    await expect(
+      executar.gerarLutador({ raiz: tmp, id: 'chefe-teste', folhas: ['b1'], saida: join(tmp, 'saida-anc-ruim'), arquivos: { b1: arquivo }, excecoes: { ...base, ancora: { 'idle*': 'pe' } } }),
+    ).rejects.toThrow(/desconhecido/);
+    // alturaRef 200 (< 410): rosto a 91 e janela de 190, como a de gerar-retratos
+    const m = validarManifesto(JSON.parse(readFileSync(join(tmp, 'saida-anc-pes', 'atlas.json'), 'utf8')), 'x');
+    expect(m.quadros['idle0']!.rosto![1]).toBe(91);
   });
 
   it('fatorFolha multiplica a escala só da folha indicada (idle0 continua a referência)', async () => {

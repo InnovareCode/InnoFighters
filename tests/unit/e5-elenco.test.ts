@@ -395,16 +395,19 @@ describe('HAYATO, MIN-JI, CAIO e WEI LONG: arte nova (folhas do pipeline) em pro
   const nova = montarTodos({ arteReal: true });
   const DOIS = ['hayato', 'min-ji', 'caio', 'wei-long'] as const;
 
-  it('atlas de produção: v2 de 2 páginas, 48 quadros canônicos, alturaRef 410 = idle0, K = scale × 255 / 410 (igual ao do protótipo)', () => {
+  // CAIO (ginga, 23/10): o idle é agachado (553 px contra 573) e lutadores.json fixa alturaRef 396 (= 410 x 553/573) para o atlas ficar
+  // na escala de antes (f2..f4 com os mesmos px). O K do jogo é scale x 255 / idle0.h, então NÃO fica igual ao do protótipo: 410/396.
+  const ALTURA_REF: Record<string, number> = { hayato: 410, 'min-ji': 410, caio: 396, 'wei-long': 410 };
+  it('atlas de produção: v2 de 2 páginas, 48 quadros canônicos, alturaRef = idle0 (410; CAIO 396), K = scale × 255 / alturaRef (igual ao do protótipo, menos o CAIO: x 410/396)', () => {
     for (const id of DOIS) {
       const m = lerManifestoC1(id);
       expect(m.versao, id).toBe(2);
       expect(m.imagens, id).toEqual(['atlas-0.webp', 'atlas-1.webp']);
       expect(Object.keys(m.quadros), id).toHaveLength(id === 'wei-long' ? 49 : 48); // WEI LONG: + jpunch (folha de reposição wr)
-      expect(m.alturaRef, id).toBe(410);
-      expect(m.quadros['idle0']!.h, id).toBe(410);
-      expect(nova[id].K, id).toBeCloseTo((LUTADORES[id].scale * 255) / 410, 9);
-      expect(nova[id].K, id).toBeCloseTo(real[id].K, 9); // a escala do jogo não muda com a troca de arte
+      expect(m.alturaRef, id).toBe(ALTURA_REF[id]);
+      expect(m.quadros['idle0']!.h, id).toBe(ALTURA_REF[id]);
+      expect(nova[id].K, id).toBeCloseTo((LUTADORES[id].scale * 255) / ALTURA_REF[id]!, 9);
+      expect(nova[id].K, id).toBeCloseTo(real[id].K * (410 / ALTURA_REF[id]!), 9); // a escala do jogo não muda com a troca de arte (CAIO: idle agachado)
       expect(existsSync(caminho(`public/assets/lutadores/${id}/retrato.png`)), id).toBe(true);
     }
   });

@@ -10,4 +10,5 @@
 - [Revisão do motor de luta](project_revisao-motor-luta.md) — v2 escrita 23/10: filme nos 33 (opção A, todo filme derruba), piso 1,10×hk, teto 26/40%, flags motorV2, D-V1..D-V9
 - [Estado em 2026-10-23](project_estado-2026-10-23.md) — CAIO/WEI LONG e cn/kr/br ainda do protótipo, orçamentos estourados, PROGRESSO atrasado
 - [Orçamentos revisados (R-8)](project_orcamentos.md) — MiB, título/VS bloqueante, vitrine "preferida", residência por peso, canvas iOS, OR-1..OR-9
+- [Residência de memória na luta](project_residencia-memoria.md) — tabela por cena, luta exclusiva, jp sai da luta, teto 136, 'fixa' x 'por-peso', L1-L7
 - [Armadilhas da arte e do protótipo](project_armadilhas-arte.md) — linha 320 de 9 MB, tipX já escalado, chave magenta, FX rosa MIN-JI

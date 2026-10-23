@@ -16,6 +16,8 @@ Escolhas e porquês que não estão óbvios no código:
 - O corte que paga a FILME é a vitrine deixar de ser fixa na luta ("fixo" vira "preferido", residência por peso).
 - Achado: `criarSilhuetaBranca` lança se `getContext` for null → no iPhone, estourar o teto de canvas vira exceção no flash.
 - Tetos de canvas do iOS e cota de Cache API ficaram [não verificado]: a busca na web falhou nesta sessão.
+- Erro meu corrigido na spec de residência (23/10): a conta do §3.1 supunha 1 cenário na luta, mas o `jp` (fundo dos menus) ficava
+  sempre vivo via `rec.cenarioPadrao`. Ver [[project-residencia-memoria]].
 
 **Why:** a meta antiga de bytes "até a 1ª luta ≤ 4 MB" não fecha com vitrine de 4 atlas + FILME; a métrica certa é espera bloqueante.
 **How to apply:** ao planejar desempenho, PWA ou FILME, partir das tarefas T1-T13 do doc e conferir no PROGRESSO quais OR o dono

@@ -7,6 +7,7 @@ import { montarElenco } from '../../ferramentas/balanco/elenco';
 import {
   ALFA_MAX_DO_FLASH,
   Cinematica,
+  deslocamentoDaTarja,
   DURACAO_COMPLETA,
   DURACAO_CURTA,
   linhaDoTempo,
@@ -149,6 +150,17 @@ describe('linha do tempo', () => {
     expect(q(20).saida).toBe(0);
     expect(q(20 + TICKS_DA_SAIDA_AO_PULAR).saida).toBe(1);
     expect(q(20 + TICKS_DA_SAIDA_AO_PULAR).veu).toBeCloseTo(VEU_DA_SESSAO, 5);
+  });
+
+  it('deslocamentoDaTarja: curva de saída quártica prolonga a permanência no centro antes do escape veloz', () => {
+    // Saída no meio (q.saida = 0.5): com a curva quártica (s = 0.5^4 = 0.0625), a tarja ainda está a apenas 6.25% do escape
+    const dMeio = deslocamentoDaTarja('lateral', 1, 270, 120, { entrada: 1, saida: 0.5 }, 'MEDIO', 40);
+    const dFim = deslocamentoDaTarja('lateral', 1, 270, 120, { entrada: 1, saida: 1.0 }, 'MEDIO', 47);
+    expect(dMeio.x).toBeCloseTo(0.0625 * (960 + 1000 / 2), 1);
+    expect(dFim.x).toBeCloseTo(960 + 1000 / 2, 1);
+    // Entrada MEDIO tem micro-snap (assenta suave) em torno de q.entrada = 0.5
+    const dEntradaMeio = deslocamentoDaTarja('lateral', 1, 270, 120, { entrada: 0.5, saida: 0 }, 'MEDIO', 8);
+    expect(dEntradaMeio.x).toBeLessThan(0); // ainda vindo da esquerda
   });
 });
 

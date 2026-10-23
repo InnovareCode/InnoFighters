@@ -10,7 +10,7 @@ import { desenharEstilo, estampaDaTarja, mistura, type EstiloId, type Paleta } f
 import { identidadeDe, identidadePadrao, type Identidade, type Ritmo } from './identidade-especiais';
 import { chDaFicha, desenharLutador } from './lutador';
 import type { Ctx } from './tela';
-import { FH, textoArcade } from './texto';
+import { FONTE_DO_ESPECIAL, textoArcade } from './texto';
 
 /*
  * Cinemática do especial (docs/spec-esquiva-e-cinematica-especial.md 3, docs/identidade-visual-especiais.md). É APRESENTAÇÃO: a cena da luta
@@ -136,9 +136,10 @@ export function linhaDoTempo(modo: ModoCine, ritmo: Ritmo, t: number, pulouEm: n
 /** Onde a tarja está (deslocamento em relação ao centro da tela), dado o tipo de entrada, o lado do atacante e o progresso. */
 export function deslocamentoDaTarja(entrada: EntradaTarja, lado: 1 | -1, yCentro: number, altura: number, q: Pick<Quadro, 'entrada' | 'saida'>, ritmo: Ritmo, t: number): { x: number; y: number } {
   const e = ritmo === 'RAPIDO' ? ease.quartica(q.entrada) : ease.cubica(q.entrada);
-  // PESADO: passa 6% do ponto e volta (a tarja "assenta"), e nos ticks 13–15 só ela desce 3 px
-  const e2 = ritmo === 'PESADO' ? e + 0.06 * Math.sin(Math.PI * q.entrada) : e;
-  const s = ease.entra(q.saida);
+  // PESADO: passa 6% do ponto e volta (a tarja "assenta"), e nos ticks 13–15 só ela desce 3 px; MEDIO assenta suave com micro-snap
+  const e2 = ritmo === 'PESADO' ? e + 0.06 * Math.sin(Math.PI * q.entrada) : ritmo === 'MEDIO' ? e + 0.015 * Math.sin(Math.PI * q.entrada) : e;
+  // Saída suave e mais longa no centro: curva quártica com permanência prolongada antes do escape veloz
+  const s = q.saida * q.saida * q.saida * q.saida;
   const assenta = ritmo === 'PESADO' && t >= 13 && t <= 16 ? 3 * Math.sin((Math.PI * (t - 13)) / 3) : 0;
   const L = LARGURA + LARGURA_DA_TARJA / 2;
   switch (entrada) {
@@ -173,15 +174,53 @@ const fabricaDoDocumento: FabricaDeCanvas = (w, h) => {
 /** Pinta o fundo da tarja (degradê vertical, borda, fio e a estampa do estilo a 10%) em coordenadas lógicas (0..W, 0..H). Estático: vai para o cache. */
 export function pintarTarja(g: Ctx, id: Identidade, W = LARGURA_DA_TARJA, H = id.faixa.h): void {
   const { sombra, brilho, nucleo } = id.paleta;
+
+  // 1. Degradê vertical de fundo com alto contraste
   const gr = g.createLinearGradient(0, 0, 0, H);
   gr.addColorStop(0, sombra);
   gr.addColorStop(0.5, mistura(sombra, brilho, 0.35));
   gr.addColorStop(1, sombra);
-  g.globalAlpha = 0.94;
+  g.globalAlpha = 0.95;
   g.fillStyle = gr;
   g.fillRect(0, 0, W, H);
   g.globalAlpha = 1;
+
+  // 2. Placa de contraste escuro na área de letreiro para máxima legibilidade
+  const grTexto = g.createLinearGradient(W * 0.25, 0, W, 0);
+  grTexto.addColorStop(0, 'rgba(0,0,0,0)');
+  grTexto.addColorStop(0.2, 'rgba(0,0,0,0.25)');
+  grTexto.addColorStop(0.65, 'rgba(0,0,0,0.45)');
+  grTexto.addColorStop(1, 'rgba(0,0,0,0.2)');
+  g.fillStyle = grTexto;
+  g.fillRect(W * 0.25, 0, W * 0.75, H);
+
+  // 3. Estampa textural do estilo do lutador
   estampaDaTarja(g, id.estilo, brilho, W, H);
+
+  // 4. Barras de destaque luminosas horizontais (topo e base) na cor do lutador
+  const altBarra = Math.max(4, Math.round(H * 0.04));
+  const grBarra = g.createLinearGradient(0, 0, W, 0);
+  grBarra.addColorStop(0, sombra);
+  grBarra.addColorStop(0.25, brilho);
+  grBarra.addColorStop(0.5, nucleo);
+  grBarra.addColorStop(0.75, brilho);
+  grBarra.addColorStop(1, sombra);
+  g.fillStyle = grBarra;
+  g.fillRect(0, 0, W, altBarra);
+  g.fillRect(0, H - altBarra, W, altBarra);
+
+  // 5. Linha divisória vertical de destaque entre pose e letreiro
+  const xDiv = W * 0.31;
+  const grDiv = g.createLinearGradient(0, altBarra, 0, H - altBarra);
+  grDiv.addColorStop(0, 'rgba(0,0,0,0)');
+  grDiv.addColorStop(0.3, brilho);
+  grDiv.addColorStop(0.5, nucleo);
+  grDiv.addColorStop(0.7, brilho);
+  grDiv.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grDiv;
+  g.fillRect(xDiv - 1, altBarra, 2, H - altBarra * 2);
+
+  // 6. Moldura chanfrada de contorno e fio interno de energia
   g.lineWidth = 3;
   g.strokeStyle = brilho;
   g.strokeRect(1.5, 1.5, W - 3, H - 3);
@@ -415,14 +454,38 @@ export class Cinematica {
   }
 
   private desenharCurta(ctx: Ctx, x: number, y: number, a: Ativa, id: Identidade, nome: string, q: Quadro): void {
-    // nome pequeno (20 px) sobre o atacante, em núcleo com contorno sombra, com o "pop"; uma rajada do estilo com no máximo 12 primitivas
+    // nome (22 px) sobre o atacante, em núcleo com contorno sombra, com o "pop"; uma rajada do estilo com no máximo 12 primitivas
     ctx.save();
     ctx.translate(x, y - SH - 18);
-    if (q.pop > 0) textoArcade(ctx, nome, 0, 0, 20, id.paleta.nucleo, id.paleta.sombra, 'center', q.pop, trava(1 - q.saida));
+    const alfa = trava(1 - q.saida * q.saida * q.saida);
+    if (q.pop > 0) textoArcade(ctx, nome, 0, 0, 22, id.paleta.nucleo, mistura(id.paleta.sombra, '#000000', 0.65), 'center', q.pop, alfa, FONTE_DO_ESPECIAL(22));
     ctx.restore();
     ctx.save();
     ctx.translate(x - 150, y - SH * 0.75);
     desenharEstilo(id.estilo, { ctx, t: q.tEstilo, vida: q.vivo, p: id.paleta, c: { x: 40, y: 0, w: 300, h: 100 }, sem: a.sem, variante: id.variante, escala: 0.5, pesado: id.ritmo === 'PESADO' });
+    ctx.restore();
+  }
+
+  private desenharBarraDestaque(ctx: Ctx, x: number, y: number, id: Identidade, alfa: number): void {
+    ctx.save();
+    ctx.globalAlpha = alfa * 0.9;
+    const comp = 140;
+    const gr = ctx.createLinearGradient(x - comp, y, x + comp, y);
+    gr.addColorStop(0, 'rgba(0,0,0,0)');
+    gr.addColorStop(0.25, id.paleta.sombra);
+    gr.addColorStop(0.5, id.paleta.brilho);
+    gr.addColorStop(0.75, id.paleta.sombra);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gr;
+    ctx.fillRect(x - comp, y - 1, comp * 2, 2);
+    ctx.fillStyle = id.paleta.nucleo;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 4);
+    ctx.lineTo(x + 5, y);
+    ctx.lineTo(x, y + 4);
+    ctx.lineTo(x - 5, y);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
   }
 
@@ -467,30 +530,55 @@ export class Cinematica {
     ctx.rotate(rot);
     if (q.pop > 0) {
       const tamanho = this.tamanhoDoNome(ctx, nome);
-      const alfa = trava(1 - q.saida);
+      // Mantém a tarja e o nome legíveis por mais tempo na tela e com transição suave
+      const alfa = trava(1 - q.saida * q.saida * q.saida);
       // faixa fina (90-110 px: BOTE, MARMA, PARADE, KAMINARI-STEP): o nome sobe e o do lutador encosta na borda de baixo, para não se tocarem
       const fina = H < 110;
-      textoArcade(ctx, nome, cxTexto, fina ? -14 : -6, tamanho, [id.paleta.nucleo, mistura(id.paleta.nucleo, id.paleta.brilho, 0.4)], mistura(id.paleta.sombra, '#000000', 0.45), 'center', q.pop, alfa);
-      textoArcade(ctx, ch.name, cxTexto, H / 2 - (fina ? 13 : 22), 18, id.paleta.nucleo, mistura(id.paleta.sombra, '#000000', 0.45), 'center', 1, alfa * 0.85);
+      this.desenharBarraDestaque(ctx, cxTexto, fina ? 8 : 14, id, alfa);
+      textoArcade(
+        ctx,
+        nome,
+        cxTexto,
+        fina ? -14 : -8,
+        tamanho,
+        [id.paleta.nucleo, mistura(id.paleta.nucleo, id.paleta.brilho, 0.45)],
+        mistura(id.paleta.sombra, '#000000', 0.7),
+        'center',
+        q.pop,
+        alfa,
+        FONTE_DO_ESPECIAL(tamanho),
+      );
+      textoArcade(
+        ctx,
+        ch.name.toUpperCase(),
+        cxTexto,
+        H / 2 - (fina ? 12 : 20),
+        18,
+        id.paleta.nucleo,
+        mistura(id.paleta.sombra, '#000000', 0.65),
+        'center',
+        1,
+        alfa * 0.9,
+      );
     }
     ctx.restore();
   }
 
-  /** Nome em 44 px; encolhe se não couber nos dois terços livres da faixa. */
+  /** Nome em até 48 px (Bangers/Impact); encolhe proporcionalmente se não couber no espaço livre da faixa. */
   private tamanhoDoNome(ctx: Ctx, nome: string): number {
     ctx.save();
-    ctx.font = FH(44);
+    ctx.font = FONTE_DO_ESPECIAL(48);
     const w = ctx.measureText(nome).width;
     ctx.restore();
-    const livre = LARGURA_DA_TARJA * 0.6;
-    return w > livre ? Math.max(24, Math.floor((44 * livre) / w)) : 44;
+    const livre = LARGURA_DA_TARJA * 0.62;
+    return w > livre ? Math.max(26, Math.floor((48 * livre) / w)) : 48;
   }
 
   private riscos(ctx: Ctx, a: Ativa, id: Identidade, q: Quadro, W: number, H: number): void {
     if (q.vivo <= 0) return;
     ctx.save();
-    ctx.globalAlpha = 0.3 * q.vivo;
-    ctx.strokeStyle = mistura(id.paleta.sombra, '#ffffff', 0.3);
+    ctx.globalAlpha = 0.35 * q.vivo;
+    ctx.strokeStyle = id.paleta.brilho;
     ctx.lineWidth = 2;
     const n = id.variante === 'rastro' ? 24 : 16;
     ctx.beginPath();
@@ -503,6 +591,18 @@ export class Cinematica {
       ctx.lineTo(xx + comp, y);
     }
     ctx.stroke();
+
+    // Partículas luminosas nas pontas das linhas de velocidade
+    ctx.fillStyle = id.paleta.nucleo;
+    ctx.beginPath();
+    for (let i = 0; i < n; i += 2) {
+      const comp = 80 + ((i * 53) % 160);
+      const y = 6 + (((i * 37 + a.sem) >>> 0) % (H - 12));
+      const x = (((i * 211 + a.sem) >>> 0) % (W + comp)) + (a.t - 8) * 24 * (id.variante === 'cordas' && a.t > 24 ? -1 : 1);
+      const xx = ((((x % (W + comp)) + (W + comp)) % (W + comp)) - comp) + comp;
+      ctx.rect(xx - 2, y - 2, 4, 4);
+    }
+    ctx.fill();
     ctx.restore();
   }
 

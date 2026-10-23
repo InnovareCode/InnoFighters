@@ -15,6 +15,11 @@ export const FB = (tamanho: number): string => `600 ${tamanho}px ${FAMILIA_CORPO
  * Barlow Condensed e a Impact como reserva (a Bangers só tem caixa alta: o texto vai em maiúsculas, `toLocaleUpperCase('pt-BR')`).
  */
 export const FONTE_DA_FALA = (tamanho: number): string => `400 ${tamanho}px Bangers, "Barlow Condensed", Impact, sans-serif`;
+/**
+ * Fonte de impacto marcante para a tarja e nome do golpe especial:
+ * Bangers com Barlow Condensed e Impact como reserva imediata.
+ */
+export const FONTE_DO_ESPECIAL = (tamanho: number): string => `400 ${tamanho}px Bangers, "Barlow Condensed", Impact, sans-serif`;
 
 export type Alinhamento = 'left' | 'center' | 'right';
 /** Cor sólida ou gradiente vertical [topo, base]. */
@@ -32,12 +37,13 @@ export function textoArcade(
   alinhamento: Alinhamento = 'center',
   escala = 1,
   alfa = 1,
+  fonte?: string,
 ): void {
   ctx.save();
   ctx.globalAlpha = alfa;
   ctx.translate(x, y);
   ctx.scale(escala, escala);
-  ctx.font = FH(tamanho);
+  ctx.font = fonte ?? FH(tamanho);
   ctx.textAlign = alinhamento;
   ctx.textBaseline = 'middle';
   ctx.lineWidth = Math.max(4, tamanho / 6);

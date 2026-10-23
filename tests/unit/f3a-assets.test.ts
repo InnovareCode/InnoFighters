@@ -81,6 +81,11 @@ describe.each(NOVOS)('arte real de %s', (id) => {
     // cada quadro desenha da imagem da SUA página
     const poses = a.poses();
     for (const [nome, pd] of Object.entries(poses)) {
+      if (m.filme?.quadros[nome]) {
+        // quadro da página FILME: a imagem só vem em carregarFilme (fora da carga do atlas), então aqui ela é null
+        expect(a.imagemDe(pd), nome).toBeNull();
+        continue;
+      }
       expect((a.imagemDe(pd) as unknown as { url: string }).url, nome).toBe(`/assets/lutadores/${id}/${m.imagens[a.paginaDe(nome)]}`);
     }
     a.liberar();

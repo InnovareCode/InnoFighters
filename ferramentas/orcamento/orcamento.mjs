@@ -7,6 +7,8 @@
  *   js-total       gzip de TODO .js do dist, menos os pedaços de `jsExcluidos` (`escuta` só existe com ?escuta=1)
  *   atlas-peso     soma dos bytes das páginas de cada lutador (atlas.webp ou atlas-N.webp), com exceção nominal por lutador
  *   atlas-px       maior página do lutador (largura e altura, lidas do cabeçalho do WebP; cai no `tamanho` do atlas.json)
+ *   filme-peso     a página FILME (filme.webp) do lutador, item PRÓPRIO: não entra na soma do atlas-peso
+ *   filme-px       largura e altura da página FILME (cabeçalho do WebP)
  *   cenario-peso   cada arquivo de dist/assets/cenarios
  *
  * Modo: `aviso` (padrão) imprime a tabela e sai 0 mesmo com itens estourados; `bloqueante` sai 1. A promoção é POR ITEM:
@@ -92,6 +94,26 @@ function linha(grupo, alvo, item, meta, medido, passou) {
   return { chave: alvo ? `${grupo}:${alvo}` : grupo, grupo, alvo, item, meta, medido, passou };
 }
 
+/**
+ * Página FILME do lutador (docs/orcamentos-2026-10-23.md, 2c): carrega só na luta e é decodificada à parte (10 MiB), então tem
+ * orçamento próprio, fora do atlas. Sem filme.webp no dist, nada a medir (nem todo lutador tem a página).
+ */
+function medirFilme(linhas, dir, id, cfg) {
+  const arq = join(dir, 'filme.webp');
+  if (!existsSync(arq)) return;
+  const limMib = cfg.filmeMiB ?? 0.8;
+  const bytes = statSync(arq).size;
+  linhas.push(linha('filme-peso', id, `Filme ${id}: peso`, `<= ${limMib} MiB`, fmtMib(bytes), bytes <= limMib * MIB));
+  const [maxW, maxH] = cfg.filmePaginaPx ?? [2048, 1280];
+  const metaPx = `<= ${maxW} x ${maxH}`;
+  const d = dimensoesDoArquivo(arq);
+  if (!d) {
+    linhas.push(linha('filme-px', id, `Filme ${id}: pagina (px)`, metaPx, 'ilegivel', false));
+    return;
+  }
+  linhas.push(linha('filme-px', id, `Filme ${id}: pagina (px)`, metaPx, `${d.w} x ${d.h}`, d.w <= maxW && d.h <= maxH));
+}
+
 /** Mede o dist e devolve as linhas (sem decidir bloqueio). Lança Error se o dist não parece um build. */
 export function medir(distDir, cfg) {
   const indexHtml = join(distDir, 'index.html');
@@ -123,6 +145,7 @@ export function medir(distDir, cfg) {
   const raizLutadores = join(distDir, 'assets', 'lutadores');
   for (const id of listar(raizLutadores, (n) => statSync(join(raizLutadores, n)).isDirectory())) {
     const dir = join(raizLutadores, id);
+    medirFilme(linhas, dir, id, cfg);
     const paginas = listar(dir, (n) => /^atlas(-\d+)?\.webp$/.test(n));
     if (paginas.length === 0) {
       linhas.push(linha('atlas-peso', id, `Atlas ${id}: peso`, 'ter paginas', 'nenhuma pagina', false));

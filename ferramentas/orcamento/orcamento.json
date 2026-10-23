@@ -6,7 +6,9 @@
   "atlasMiB": 1.6,
   "atlasExcecoesMiB": { "baatar": 2.0, "zenon": 2.0 },
   "atlasPaginaPx": 2048,
+  "filmeMiB": 0.8,
+  "filmePaginaPx": [2048, 1280],
   "cenarioKiB": 250,
-  "_bloqueantes": "Vazio = tudo em aviso (exit 0). Para promover: '*' (tudo), um grupo (js-inicial, js-total, atlas-peso, atlas-px, cenario-peso) ou uma chave exata ('atlas-px:wei-long', 'cenario-peso:cenario-kr.webp'). Ver ferramentas/orcamento/README.md.",
+  "_bloqueantes": "Vazio = tudo em aviso (exit 0). Para promover: '*' (tudo), um grupo (js-inicial, js-total, atlas-peso, atlas-px, filme-peso, filme-px, cenario-peso) ou uma chave exata ('atlas-px:wei-long', 'cenario-peso:cenario-kr.webp'). Ver ferramentas/orcamento/README.md.",
   "bloqueantes": []
 }

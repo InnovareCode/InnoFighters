@@ -543,7 +543,7 @@ const arredonda = (v, casas = 2) => Math.round(v * 10 ** casas) / 10 ** casas;
  * Monta o JSON do atlas C1 v2 (src/assets/manifesto.ts#validarManifesto). `quadros`: { nome: {p,x,y,w,h,ax,ponta?,rosto?} }
  * na ordem canônica. Números com 2 casas (o manifesto é lido uma vez; não vale guardar 15 casas de ruído).
  */
-export function montarManifesto({ lutador, imagens, tamanho, alturaRef, quadros, retrato }) {
+export function montarManifesto({ lutador, imagens, tamanho, alturaRef, quadros, retrato, filme }) {
   const saida = {};
   for (const [nome, q] of Object.entries(quadros)) {
     const o = { p: q.p, x: q.x, y: q.y, w: q.w, h: q.h, ax: arredonda(q.ax) };
@@ -553,7 +553,37 @@ export function montarManifesto({ lutador, imagens, tamanho, alturaRef, quadros,
   }
   const m = { versao: 2, lutador, imagens, tamanho, alturaRef, quadros: saida };
   if (retrato) m.retrato = retrato;
+  if (filme) m.filme = filme;
   return m;
+}
+
+/** Quadros da página FILME (src/assets/manifesto.ts#validarFilme): f0..f5, todos `painel: true`. */
+export const QUADROS_FILME = ['f0', 'f1', 'f2', 'f3', 'f4', 'f5'];
+
+/**
+ * Confere o bloco `filme` de lutadores.json ANTES de ele ir para o atlas.json (mesmas regras do validarFilme do jogo, para o
+ * erro aparecer na geração e não na luta). A página FILME NÃO é gerada pelo pipeline: vem pronta da curadoria
+ * (public/assets/lutadores/<id>/filme.webp); o pipeline só repõe o bloco que o atlas.json novo perderia.
+ * Devolve a lista de problemas (vazia = válido).
+ */
+export function validarBlocoFilme(filme) {
+  const erros = [];
+  if (!filme || typeof filme !== 'object') return ['filme nao e um objeto'];
+  if (typeof filme.imagem !== 'string' || !/^[A-Za-z0-9._-]+\.webp$/.test(filme.imagem)) erros.push('imagem: nome de .webp sem pasta');
+  if (/^atlas(-\d+)?\.webp$/.test(filme.imagem ?? '')) erros.push('imagem: nao pode ser uma pagina do atlas');
+  const t = filme.tamanho;
+  const [W, H] = Array.isArray(t) ? t : [];
+  if (!Array.isArray(t) || t.length !== 2 || !Number.isInteger(W) || !Number.isInteger(H) || W <= 0 || H <= 0) erros.push('tamanho: [largura, altura] inteiros positivos');
+  const qs = filme.quadros;
+  if (!qs || typeof qs !== 'object' || Object.keys(qs).length === 0) return [...erros, 'quadros: vazio'];
+  for (const [nome, q] of Object.entries(qs)) {
+    if (!QUADROS_FILME.includes(nome)) { erros.push(`quadro ${nome}: so f0..f5`); continue; }
+    if (q.painel !== true) erros.push(`${nome}: painel precisa ser true`);
+    if ('p' in q) erros.push(`${nome}: sem campo p (a pagina e uma so)`);
+    for (const c of ['x', 'y', 'w', 'h', 'ax']) if (!Number.isFinite(q[c])) erros.push(`${nome}.${c}: numero`);
+    if (q.w > 0 && q.h > 0 && Number.isFinite(W) && Number.isFinite(H) && (q.x < 0 || q.y < 0 || q.x + q.w > W || q.y + q.h > H)) erros.push(`${nome}: sai da pagina ${W}x${H}`);
+  }
+  return erros;
 }
 
 // ---------------------------------------------------------------------------------------------------------------

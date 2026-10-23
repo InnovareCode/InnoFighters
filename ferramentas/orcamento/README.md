@@ -21,9 +21,11 @@ Exit: `0` ok ou só avisos, `1` há FALHA, `2` dist ausente ou argumento inváli
 | `js-total` | gzip de todo `.js` do dist, **sem** o pedaço `escuta` | <= 200 kB |
 | `atlas-peso:<id>` | soma das páginas `atlas*.webp` do lutador | <= 1,6 MiB; BAATAR e ZENON <= 2,0 (`atlasExcecoesMiB`) |
 | `atlas-px:<id>` | maior página (cabeçalho do WebP) | <= 2048 x 2048 |
+| `filme-peso:<id>` | a página FILME (`filme.webp`), item próprio, **fora** da soma do atlas | <= 0,8 MiB |
+| `filme-px:<id>` | largura e altura da `filme.webp` (cabeçalho do WebP) | <= 2048 x 1280 (BAATAR 2032 x 1248 cabe) |
 | `cenario-peso:<arquivo>` | cada arquivo de `assets/cenarios/` | <= 250 KiB |
 
-Não cobertos aqui (outras tarefas de `docs/orcamentos-2026-10-23.md`): memória decodificada por lutador (2b, 40/64 MiB), folha FILME (2c),
+Não cobertos aqui (outras tarefas de `docs/orcamentos-2026-10-23.md`): memória decodificada por lutador (2b, 40/64 MiB), memória decodificada da FILME (2c; o peso e os px dela já estão aqui),
 JS até a 1ª luta (1c), pesos de boot (4 e 5). Entram quando o dado existir no dist.
 
 ## Como virar bloqueante (por item)
@@ -36,7 +38,7 @@ edite `bloqueantes` em `orcamento.json` (e rode `npm run orcamento` para conferi
 ```
 
 - `"*"`: tudo bloqueante (equivale a `--modo=bloqueante`).
-- um **grupo** (`js-inicial`, `js-total`, `atlas-peso`, `atlas-px`, `cenario-peso`): todas as linhas do grupo.
+- um **grupo** (`js-inicial`, `js-total`, `atlas-peso`, `atlas-px`, `filme-peso`, `filme-px`, `cenario-peso`): todas as linhas do grupo.
 - uma **chave exata** (`atlas-px:wei-long`, `cenario-peso:cenario-kr.webp`): só aquela linha.
 
 Quando WEI LONG v2, BAATAR/ZENON a 0,9 e os cenários br/kr fecharem, promova os grupos correspondentes e, no fim, troque a lista por `["*"]`.

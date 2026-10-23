@@ -3,7 +3,7 @@
  * normaliza com UMA escala por lutador, mede âncora/ponta/rosto, empacota em páginas e grava o atlas C1 v2.
  * As decisões geométricas e de cor moram em nucleo.mjs (puro e testado); aqui fica o disco e o `sharp`.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
@@ -12,7 +12,7 @@ import { empacotar, validarEmpacotamento } from './empacotar.mjs';
 import {
   acolchoarRgb, agruparFiguras, caixaOpaca, calcularAlfa, centroDeMassaX, cortarBorda, cortarRgba, despill, detectarChave,
   espelharRgba, estimarFundo, janelaRgba, mascaraDeAlfa, medirHalo, montarManifesto, ordenarGrade, pontaCima, pontaDireita,
-  recortarFigura, rostoDoQuadro, rotular, separarFundidas,
+  recortarFigura, rostoDoQuadro, rotular, separarFundidas, validarBlocoFilme,
 } from './nucleo.mjs';
 import { COM_PONTA, FAIXA_DOS_PES, FRACAO_PE, GRADE_PADRAO, MINIMAS, MODO_PONTA, ORDEM_COMPLETA, nomesDaCelula, resolverLayout } from './poses.mjs';
 
@@ -78,6 +78,29 @@ function arquivoFixado(raiz, id, folha, excecoes) {
 async function lerRgb(arquivo) {
   const { data, info } = await sharp(arquivo).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   return { largura: info.width, altura: info.height, dados: new Uint8Array(data.buffer, data.byteOffset, data.length) };
+}
+
+/**
+ * Reposição do bloco `filme` (lutadores.json, chave `filme`) no atlas gerado. Sem a chave: nada muda (o lutador não tem página
+ * FILME). Com a chave: o bloco é validado (lança se inválido) e, se a imagem existir em public/assets/lutadores/<id>/, o tamanho
+ * do cabeçalho tem que bater com o declarado (lança se não) e ela é copiada para `dirSaida`. Imagem ausente é só aviso: o jogo
+ * cai no Alt sem a FILME, mas o atlas.json fica com o bloco para a imagem entrar depois.
+ */
+async function prepararFilme({ raiz, id, filme, dirSaida, relatorio }) {
+  if (!filme) return undefined;
+  const erros = validarBlocoFilme(filme);
+  if (erros.length > 0) throw new Error(`lutadores.json: filme de ${id} invalido: ${erros.join('; ')}`);
+  const origem = join(raiz, 'public', 'assets', 'lutadores', id, filme.imagem);
+  if (!existsSync(origem)) {
+    relatorio.avisos.push(`filme: ${filme.imagem} nao existe em public/assets/lutadores/${id}/ (o bloco entrou no atlas.json; sem a imagem o jogo usa o Alt)`);
+    return filme;
+  }
+  const meta = await sharp(origem).metadata();
+  if (meta.width !== filme.tamanho[0] || meta.height !== filme.tamanho[1]) {
+    throw new Error(`lutadores.json: filme de ${id} declara ${filme.tamanho.join('x')}, mas ${filme.imagem} tem ${meta.width}x${meta.height}`);
+  }
+  copyFileSync(origem, join(dirSaida, filme.imagem));
+  return filme;
 }
 
 /**
@@ -325,7 +348,10 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
     retrato.recorte = retrato.recorte.map((v) => Math.round(v * 100) / 100);
   }
 
-  const manifesto = montarManifesto({ lutador: id, imagens, tamanho: pacote.tamanho, alturaRef, quadros, retrato });
+  // página FILME: o atlas.json novo não sabe dela, então o bloco `filme` volta de lutadores.json (fonte versionada) e a imagem
+  // (public/assets/lutadores/<id>/filme.webp, também versionada) é copiada ao lado, para a pasta de saída sair completa.
+  const filme = await prepararFilme({ raiz, id, filme: excecoes.filme, dirSaida, relatorio });
+  const manifesto = montarManifesto({ lutador: id, imagens, tamanho: pacote.tamanho, alturaRef, quadros, retrato, filme });
   writeFileSync(join(dirSaida, 'atlas.json'), `${JSON.stringify(manifesto, null, 2)}\n`);
 
   // relatório e conferências de contrato

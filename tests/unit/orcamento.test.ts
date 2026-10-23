@@ -51,6 +51,7 @@ interface Opcoes {
   escutaBytes?: number;
   atlas?: Record<string, { paginas: number; bytesPorPagina: number; w: number; h: number }>;
   cenarios?: Record<string, number>; // nome -> bytes
+  filmes?: Record<string, { bytes: number; w: number; h: number }>; // id do lutador -> filme.webp
 }
 
 let n = 0;
@@ -79,6 +80,7 @@ function montarDist(o: Opcoes = {}): string {
     escrever(`assets/lutadores/${id}/atlas.json`, JSON.stringify({ versao: 2, tamanho: [a.w, a.h] }));
     escrever(`assets/lutadores/${id}/retrato.png`, randomBytes(2000));
   }
+  for (const [id, f] of Object.entries(o.filmes ?? {})) escrever(`assets/lutadores/${id}/filme.webp`, webpFalso(f.w, f.h, f.bytes));
   for (const [nome, bytes] of Object.entries(o.cenarios ?? { 'cenario-jp.webp': 200 * KIB })) escrever(`assets/cenarios/${nome}`, randomBytes(bytes));
   return dist;
 }
@@ -95,6 +97,8 @@ describe('orcamento: configuracao', () => {
     expect(cfg.atlasMiB).toBe(1.6);
     expect(cfg.atlasExcecoesMiB).toEqual({ baatar: 2.0, zenon: 2.0 });
     expect(cfg.atlasPaginaPx).toBe(2048);
+    expect(cfg.filmeMiB).toBe(0.8);
+    expect(cfg.filmePaginaPx).toEqual([2048, 1280]);
     expect(cfg.cenarioKiB).toBe(250);
     expect(cfg.bloqueantes).toEqual([]);
   });
@@ -157,6 +161,39 @@ describe('orcamento: leitura do dist', () => {
     expect(wei.passou).toBe(false);
     expect(wei.medido).toBe('3600 x 2296');
     expect(porChave(linhas, 'atlas-px:caio').passou).toBe(true);
+  });
+
+  it('filme: item proprio (<= 0,8 MiB e <= 2048 x 1280), fora da soma do atlas; BAATAR 2032 x 1248 passa', () => {
+    const atlas = { baatar: { paginas: 4, bytesPorPagina: 0.45 * MIB, w: 2048, h: 1664 }, nila: { paginas: 3, bytesPorPagina: 0.5 * MIB, w: 2048, h: 1536 } };
+    const dist = montarDist({
+      atlas,
+      filmes: {
+        baatar: { bytes: 0.37 * MIB, w: 2032, h: 1248 }, // 1,8 MiB de atlas + 0,37 de filme: o filme nao soma no atlas-peso
+        nila: { bytes: 0.9 * MIB, w: 1920, h: 1216 }, // pesado demais
+      },
+    });
+    const linhas = orc.medir(dist, cfg);
+    expect(porChave(linhas, 'filme-peso:baatar')!.passou).toBe(true);
+    expect(porChave(linhas, 'filme-px:baatar')!.passou).toBe(true);
+    expect(porChave(linhas, 'filme-px:baatar')!.medido).toBe('2032 x 1248');
+    expect(porChave(linhas, 'atlas-peso:baatar')!.passou).toBe(true); // 1,8 <= 2,0 so com o filme de fora
+    expect(porChave(linhas, 'filme-peso:nila')!.passou).toBe(false);
+    expect(porChave(linhas, 'filme-px:nila')!.passou).toBe(true);
+    const grande = orc.medir(montarDist({ atlas, filmes: { nila: { bytes: 0.3 * MIB, w: 2400, h: 1280 } } }), cfg);
+    expect(porChave(grande, 'filme-px:nila')!.passou).toBe(false);
+    expect(porChave(grande, 'filme-peso:nila')!.passou).toBe(true);
+    const alto = orc.medir(montarDist({ atlas, filmes: { nila: { bytes: 0.3 * MIB, w: 1920, h: 1300 } } }), cfg);
+    expect(porChave(alto, 'filme-px:nila')!.passou).toBe(false);
+  });
+
+  it('filme: lutador sem filme.webp nao gera linha de filme; webp ilegivel reprova', () => {
+    const semFilme = orc.medir(montarDist(), cfg);
+    expect(semFilme.some((l) => l.grupo.startsWith('filme'))).toBe(false);
+    const dist = montarDist({ filmes: { hayato: { bytes: 300 * KIB, w: 1920, h: 1280 } } });
+    writeFileSync(join(dist, 'assets', 'lutadores', 'hayato', 'filme.webp'), 'isto nao e um webp, mas e bem comprido para passar de trinta bytes');
+    const linhas = orc.medir(dist, cfg);
+    expect(porChave(linhas, 'filme-px:hayato')!.passou).toBe(false);
+    expect(porChave(linhas, 'filme-px:hayato')!.medido).toBe('ilegivel');
   });
 
   it('cenario: > 250 KiB estoura', () => {

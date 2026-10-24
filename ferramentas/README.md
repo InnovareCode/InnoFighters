@@ -7,9 +7,10 @@ na F1 (`extrair-prototipo.mjs`). Vazio na Fase 0.
   (`sprites-gerados/<id>/`, gitignored) + contact-sheet em `arte-fonte/lutadores/<id>/`. Núcleo puro em `nucleo.mjs`
   (testes: `tests/unit/sprites-*.test.ts`). Opções e decisões: `docs/handoff-vega-f2.md` e o cabeçalho de `sprites/cli.mjs`.
 
-- `gerar-retratos.mjs` (E1b): gera `retrato.png` + `retrato.json` de cada lutador a partir do atlas (usa o Chromium do
-  Playwright para decodificar o WebP; o PNG sai do `zlib` do Node, sem dependência nova). `--verificar` confere o que
-  está no disco sem gravar; `--so <id>` limita a um lutador. Rode de novo se o atlas de um lutador mudar.
+- `gerar-retratos.mjs` (E1b, WebP desde a T6 do orçamento): gera `retrato.webp` + `retrato.json` de cada lutador a partir do
+  atlas (usa o Chromium do Playwright para decodificar o WebP; o WebP sai do `sharp`, quase sem perdas) e acerta o campo
+  `retrato` do `atlas.json` (só ele). `--verificar` confere o que está no disco sem gravar; `--so <id>` limita a um lutador.
+  Rode de novo se o atlas de um lutador mudar (o `npm run sprites` entrega um retrato 190x190 de reserva; o publicado é o desta ferramenta).
 
 - `balanco/` (E6a): `npm run balanco -- [--rapido | --completo] [opções]` (ver `--ajuda`). Mede a frame data de cada golpe NO MOTOR e joga CPU x CPU
   (9x9, dois lados, NORMAL e DIFÍCIL, N sementes) mais o BAATAR chefão contra os 8; grava `frame-data.md/.json` e `resultados.md/.json`

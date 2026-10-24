@@ -51,8 +51,31 @@ export async function verificarVersao(
   }
 }
 
+/**
+ * Com service worker (src/platform/sw.ts), o index.html vem do shell da versão instalada: recarregar com `?v=` serviria a MESMA versão. O SW
+ * registra aqui um atualizador que pede e ativa a versão nova; ele devolve true quando a troca foi feita (a página recarrega sozinha) e false quando
+ * não há versão nova no SW, caso em que vale o recarregar de sempre.
+ */
+let atualizadorSw: (() => Promise<boolean>) | null = null;
+export function definirAtualizadorSw(f: (() => Promise<boolean>) | null): void {
+  atualizadorSw = f;
+}
+
 /** Recarrega a página furando o cache do index.html (parâmetro novo na URL = outra entrada de cache). */
 export function recarregarSemCache(alvo: Pick<Window, 'location'> = window, noAr: IdentidadeDoBuild | null = null): void {
+  if (!atualizadorSw) {
+    recarregarDireto(alvo, noAr);
+    return;
+  }
+  void atualizadorSw().then(
+    (trocou) => {
+      if (!trocou) recarregarDireto(alvo, noAr);
+    },
+    () => recarregarDireto(alvo, noAr),
+  );
+}
+
+function recarregarDireto(alvo: Pick<Window, 'location'>, noAr: IdentidadeDoBuild | null): void {
   const url = new URL(alvo.location.href);
   url.searchParams.set('v', noAr?.commit ?? String(Date.now()));
   alvo.location.replace(url.toString());

@@ -11,7 +11,7 @@ import { montarLutador } from '../../src/data/montar';
 /*
  * F3a: a arte REAL dos cinco novos (public/assets/lutadores/<id>) e os seis cenários novos (public/assets/cenarios)
  * passam pelo carregador de verdade: manifesto C1 v2 válido, páginas com o tamanho declarado, apelidos que repetem o
- * retângulo, BAATAR com alturaRef 525 e 4 páginas, retrato que o jogo sabe recortar.
+ * retângulo, BAATAR com alturaRef 472 e 3 páginas, retrato que o jogo sabe recortar.
  */
 
 const caminho = (rel: string): string => fileURLToPath(new URL(`../../${rel}`, import.meta.url));
@@ -21,7 +21,7 @@ const ferramenta = (await import(/* @vite-ignore */ pathToFileURL(caminho('ferra
 
 const NOVOS = ['aminu', 'centella', 'camille', 'nila', 'baatar'] as const;
 const DEFS = { aminu: AMINU, centella: CENTELLA, camille: CAMILLE, nila: NILA, baatar: BAATAR } as const;
-const PAGINAS = { aminu: 2, centella: 2, camille: 2, nila: 3, baatar: 4 } as const;
+const PAGINAS = { aminu: 2, centella: 2, camille: 2, nila: 3, baatar: 3 } as const;
 
 const lerManifesto = (id: string) => validarManifesto(JSON.parse(readFileSync(caminho(`public/assets/lutadores/${id}/atlas.json`), 'utf8')), `${id}/atlas.json`);
 
@@ -126,22 +126,22 @@ describe('apelidos (dois nomes, o mesmo retângulo)', () => {
 
 describe('BAATAR (chefão)', () => {
   const m = lerManifesto('baatar');
-  it('alturaRef 525 (1,28 x 410), 54 nomes e as poses extras do contrato', () => {
-    expect(m.alturaRef).toBe(525);
+  it('alturaRef 472 (0,9 de 1,28 x 410, T10 do orçamento), 54 nomes e as poses extras do contrato', () => {
+    expect(m.alturaRef).toBe(472);
     expect(Object.keys(m.quadros)).toHaveLength(54);
     for (const nome of ['jpunch', 'devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1']) expect(m.quadros[nome], nome).toBeDefined();
   });
 
-  it('usa as 4 páginas (nenhuma fica vazia)', () => {
+  it('usa as 3 páginas (nenhuma fica vazia; eram 4 antes da T10)', () => {
     const usadas = new Set(Object.values(m.quadros).map((q) => q.p));
-    expect([...usadas].sort()).toEqual([0, 1, 2, 3]);
+    expect([...usadas].sort()).toEqual([0, 1, 2]);
   });
 
   it('as pontas saem na escala da guarda (SH_IDLE / alturaRef), como as dos outros', () => {
     const a = new AtlasLutador('baatar', m, '/');
     const q = m.quadros['lp1']!;
     const pd = a.poses()['lp1']!;
-    expect(pd.tipX).toBeCloseTo((q.ponta![0] - q.ax) * (SH_IDLE / 525), 9);
+    expect(pd.tipX).toBeCloseTo((q.ponta![0] - q.ax) * (SH_IDLE / 472), 9);
   });
 });
 

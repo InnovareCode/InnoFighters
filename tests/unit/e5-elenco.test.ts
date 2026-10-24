@@ -325,12 +325,12 @@ describe('E5 · poses dos dados × atlas real', () => {
     expect(real.baatar.alias['crouchPunch']).toBe('clp');
   });
 
-  it('BAATAR: 54 quadros, alturaRef 525 e escala única (K = 1,28 × 255 / 525); apelido idle0/idle2 é o mesmo retângulo', () => {
+  it('BAATAR: 54 quadros, alturaRef 472 (0,9 de 525, T10 do orçamento) e escala única (K = 1,28 × 255 / 472); apelido idle0/idle2 é o mesmo retângulo', () => {
     const m = lerManifestoC1('baatar');
     expect(Object.keys(m.quadros)).toHaveLength(54);
-    expect(m.alturaRef).toBe(525);
+    expect(m.alturaRef).toBe(472);
     for (const n of ['jpunch', 'devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1']) expect(m.quadros[n], n).toBeDefined();
-    expect(real.baatar.K).toBeCloseTo((1.28 * 255) / 525, 9);
+    expect(real.baatar.K).toBeCloseTo((1.28 * 255) / 472, 9);
     const ret = (n: string) => ((p) => [p?.x, p?.y, p?.w, p?.h, p?.ax])(real.baatar.pd[n]);
     expect(ret('idle2')).toEqual(ret('idle0'));
   });
@@ -408,7 +408,7 @@ describe('HAYATO, MIN-JI, CAIO e WEI LONG: arte nova (folhas do pipeline) em pro
       expect(m.quadros['idle0']!.h, id).toBe(ALTURA_REF[id]);
       expect(nova[id].K, id).toBeCloseTo((LUTADORES[id].scale * 255) / ALTURA_REF[id]!, 9);
       expect(nova[id].K, id).toBeCloseTo(real[id].K * (410 / ALTURA_REF[id]!), 9); // a escala do jogo não muda com a troca de arte (CAIO: idle agachado)
-      expect(existsSync(caminho(`public/assets/lutadores/${id}/retrato.png`)), id).toBe(true);
+      expect(existsSync(caminho(`public/assets/lutadores/${id}/retrato.webp`)), id).toBe(true);
     }
   });
 
@@ -555,6 +555,6 @@ describe('E5 · fumaça: CPU × CPU com a arte real', () => {
     const evs = [];
     for (let i = 0; i < 3000; i++) evs.push(...l.passo());
     expect(tipos(evs, 'hit').length + tipos(evs, 'block').length, id).toBeGreaterThan(5);
-    expect(l.g.p1.hp < l.g.p1.maxHp || l.g.p2.hp < l.g.p2.maxHp || l.g.p1.barras !== l.g.p1.barrasMax || l.g.p2.barras !== l.g.p2.barrasMax, id).toBe(true);
+    expect(l.g.p1.hp < l.g.p1.maxHp || l.g.p2.hp < l.g.p2.maxHp || l.g.p1.barras !== l.g.p1.barrasMax || l.g.p2.barras !== l.g.p2.barrasMax || l.g.round > 1 || l.g.p1.wins + l.g.p2.wins > 0, id).toBe(true); // round > 1: um KO no meio dos 3000 ticks devolve a vida cheia (o BAATAR a 0,9 da escala, semente 42, cai nesse caso)
   });
 });

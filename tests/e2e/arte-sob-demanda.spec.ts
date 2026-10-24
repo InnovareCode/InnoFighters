@@ -37,7 +37,7 @@ test.describe('retratos e carga de arte', () => {
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     // E5/Z5: o elenco tem 10 (manifesto e retrato de todos no boot), mas só a vitrine (os 4 de fábrica) baixa as imagens do atlas
     expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(10);
-    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(10);
+    expect(urls.filter((u) => u.endsWith('/retrato.webp')).length).toBe(10);
     expect(atlasDe(urls)).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
     expect(atlasV1De(urls)).toEqual([]); // desde 0e6cd26 CAIO e WEI LONG também têm arte nova: nenhum atlas v1 (atlas.webp) é baixado
     for (const id of ['hayato', 'min-ji', 'caio', 'wei-long']) expect(paginasDe(urls, id), id).toEqual(['atlas-0.webp', 'atlas-1.webp']); // arte nova: 2 páginas, uma vez cada
@@ -62,7 +62,7 @@ test.describe('retratos e carga de arte', () => {
     // boot: manifestos, retratos e o cenário padrão; NENHUM atlas e nenhum outro cenário
     expect(atlasDe(urls)).toEqual([]);
     expect(cenariosDe(urls)).toEqual(['cenario-jp.webp']);
-    expect(urls.filter((u) => u.endsWith('/retrato.png')).length).toBe(10);
+    expect(urls.filter((u) => u.endsWith('/retrato.webp')).length).toBe(10);
 
     await page.keyboard.press('Enter');
     await esperarCena(page, 'intro');

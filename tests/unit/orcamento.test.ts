@@ -93,7 +93,7 @@ describe('orcamento: configuracao', () => {
   it('traz as metas aprovadas (OR-1) e nasce toda em aviso', () => {
     expect(cfg.jsInicialKb).toBe(135);
     expect(cfg.jsTotalKb).toBe(200);
-    expect(cfg.jsExcluidos).toEqual(['escuta']);
+    expect(cfg.jsExcluidos).toEqual(['escuta', 'sw']);
     expect(cfg.atlasMiB).toBe(1.6);
     expect(cfg.atlasExcecoesMiB).toEqual({ baatar: 2.0, zenon: 2.0 });
     expect(cfg.atlasPaginaPx).toBe(2048);

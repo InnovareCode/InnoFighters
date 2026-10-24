@@ -71,6 +71,10 @@ export const BAATAR: LutadorDef = {
   // PESO DA MONTANHA: armadura nos golpes fortes e nos especiais; `armadura.rankMax` limita a quem ela absorve.
   armadura: { rankMax: 2 },
   mods: {
+    // T10 do orçamento (atlas a 0,9 da escala): a ponta do `lp1` caiu 3,8 px na medição (a mão em y 44,1 -> 40,3) e o fundo da caixa
+    // passou do topo da cabeça do rival (252,2 -> 256,4 contra ~254): o soco leve deixou de conectar em qualquer distância. `bh` 62
+    // devolve o fundo a 252,4, a geometria de antes (frame data medida, docs/balanco/frame-data.md).
+    lp: { bh: 62 },
     hp: { S: 9, dmg: 11, armor: 1 },
     hk: { S: 12, dmg: 15, armor: 1 },
     chp: { dmg: 12, armor: 1 },

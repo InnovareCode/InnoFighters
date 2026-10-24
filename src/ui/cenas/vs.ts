@@ -1,3 +1,4 @@
+import { prepararLutaSonora } from '../../audio/camadas';
 import { ALTURA, LARGURA } from '../../core/constantes';
 import { easeOut } from '../../core/math';
 import { AI_LEVELS } from '../../fight/cpu';
@@ -21,6 +22,8 @@ export class CenaVs implements Cena {
   enter(a: ArgsVs): void {
     this.a = a;
     this.espera.iniciar(this.ui.m, a.cfg);
+    // os sons dos dois lutadores (e a base, se a etapa ociosa ainda não a pediu) descem enquanto a VS se mostra: ela dura de 0,5 a 3 s (T5 do orçamento)
+    prepararLutaSonora([a.cfg.c1, a.cfg.c2], this.ui.c.audio.ctx);
     this.ui.c.audio.uiVs();
   }
 

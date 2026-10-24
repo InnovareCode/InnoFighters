@@ -50,9 +50,9 @@ describe('pipeline · layout do ZENON', () => {
     expect(() => poses.resolverLayout(v1)).toThrow(/sweep/);
   });
 
-  it('exceções: alturaRef 558, acolchoar s8 à direita 16, pontas por exceção (lk1 e upper mão, sb1 cima, decreto1 mão)', () => {
+  it('exceções: alturaRef 502 (0,9 de 558, T10 do orçamento), acolchoar s8 à direita 16, pontas por exceção (lk1 e upper mão, sb1 cima, decreto1 mão)', () => {
     expect(zenon['layout']).toBe('zenon');
-    expect(zenon['alturaRef']).toBe(558);
+    expect(zenon['alturaRef']).toBe(502);
     expect(zenon['acolchoar']).toEqual({ s8: { direita: 16 } });
     expect(zenon['ponta']).toEqual({ lk1: 'mao', upper: 'mao', sb1: 'cima', decreto1: 'mao' });
     expect(zenon['fatorFolha']).toBeUndefined(); // cabeças e botas iguais entre as folhas (±5%): sem fator

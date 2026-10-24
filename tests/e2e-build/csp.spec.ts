@@ -51,7 +51,7 @@ test.describe('CSP no build de produção', () => {
     expect(meta, 'meta CSP ausente no HTML do build').not.toBeNull();
     const politica = (meta?.[1] ?? '').replaceAll('&#39;', "'");
     expect(politica).toBe(
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:; worker-src 'self'",
     );
     expect(html.indexOf('Content-Security-Policy')).toBeLessThan(html.indexOf('<script'));
     expect(html.indexOf('Content-Security-Policy')).toBeLessThan(html.indexOf('<link'));

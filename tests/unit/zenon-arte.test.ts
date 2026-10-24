@@ -109,9 +109,9 @@ describe('ZENON · limites do atlas (spec §9.4)', () => {
     expect(manifesto.imagens.length * w * h * 4).toBeLessThanOrEqual(80 * 1024 * 1024);
   });
 
-  it('alturaRef 558 = altura do idle0 (410 × 1,36, a arte; o jogo a desenha a 1,32) e o retrato do atlas é o do retrato.json', () => {
-    expect(manifesto.alturaRef).toBe(558);
-    expect(quadros['idle0']!.h).toBe(558);
+  it('alturaRef 502 = altura do idle0 (410 × 1,36 × 0,9 da T10 do orçamento; o jogo a desenha a 1,32) e o retrato do atlas é o do retrato.json', () => {
+    expect(manifesto.alturaRef).toBe(502);
+    expect(quadros['idle0']!.h).toBe(502);
     const retrato = JSON.parse(readFileSync(caminho('public/assets/lutadores/zenon/retrato.json'), 'utf8')) as { recorte: number[] };
     expect([...(manifesto.retrato?.recorte ?? [])]).toEqual(retrato.recorte);
   });

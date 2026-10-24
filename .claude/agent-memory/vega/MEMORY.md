@@ -29,3 +29,4 @@
 - [CAIO ginga f1 v2](project_caio_ginga_f1v2.md) — alturaRef 396 NAO mantem tamanho (K), chave ancora idle*=pes, retrato com alturaRef<410, hp e a alavanca, trailer P2
 
 - [V2-6 regravação](project_v2_6_regravacao.md) — MOTOR_V2_PADRAO, ?motorv2=0, harness v2 por padrão, pow x filmes.ts, hpPorBarra, portões, trailer, sed -i tira CR
+- [Orçamento T5/T6/T10](project_orcamento_t5_t6_t10.md) — sons fora do boot, retratos WebP, BAATAR/ZENON 0,9 (lp do BAATAR parou de conectar), hashes novos

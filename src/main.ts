@@ -15,7 +15,8 @@ import { Game } from './fight/game';
 import { REGRAS_PADRAO, regrasComMotorV2 } from './meta';
 import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
-import { verificarVersao } from './versao';
+import { VERSAO, verificarVersao } from './versao';
+import { iniciarSw } from './platform/sw';
 import { mostrarErrosNaTela } from './platform/erros';
 import { observarFoco } from './platform/foco';
 import { criarAviso } from './platform/aviso';
@@ -70,6 +71,8 @@ async function iniciar(): Promise<void> {
   window.addEventListener('resize', () => ajustarEscala(canvas));
   // a logo oficial (splash, logo completa e horizontal) começa a baixar JÁ, em paralelo com as fontes, o áudio e a arte: o boot desenha o splash enquanto o resto carrega
   iniciarMarca(import.meta.env.BASE_URL);
+  // service worker (T7): só em produção; `?sw=0` desliga e limpa (src/platform/sw.ts, docs/service-worker.md)
+  iniciarSw({ base: import.meta.env.BASE_URL, versao: VERSAO });
 
   // ---- semente e sorteios (a lógica e os efeitos visuais nunca dividem a mesma sequência) ----
   const semente = lerSemente();

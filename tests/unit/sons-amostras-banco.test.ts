@@ -396,10 +396,14 @@ describe('o manifesto no boot: ausente = síntese, inválido = derruba', () => {
     await expect(falha).rejects.toThrow(/origem ausente/);
     await expect(falha).rejects.toThrow(/som\.inventado/);
   });
-  it('manifesto válido: devolve o banco e já pede a base (só os bytes)', async () => {
+  it('manifesto válido: devolve o banco SEM pedir folha nenhuma (T5: a base sobe na etapa 2, os lutadores na VS); a base só desce quando pedida (só os bytes)', async () => {
     const pacote = criarPacote();
     const banco = await carregarBanco({ baseUrl: base, sufixo: '?v=abc', aviso, buscar: pacote.buscar, decodificar: pacote.decodificar, buscarManifesto: async (url) => (url === `${base}manifesto.json?v=abc` ? JSON.stringify(pacote.manifesto) : null) });
     expect(banco).not.toBeNull();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(pacote.pedidos).toEqual([]);
+    expect(banco?.nomesDeFolha().every((n) => banco.estadoDaFolha(n) === 'pendente')).toBe(true);
+    void banco?.baixarFolha('base');
     await esperar(() => banco?.estadoDaFolha('base') === 'baixada');
     expect(pacote.pedidos).toEqual(['/assets/sons/base.mp3?v=abc']);
   });

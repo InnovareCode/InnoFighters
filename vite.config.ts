@@ -1,6 +1,8 @@
 import { execSync } from 'node:child_process';
-import type { Plugin } from 'vite';
+import { resolve } from 'node:path';
+import { build as viteBuild, type Plugin, type ResolvedConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { escreverManifesto } from './ferramentas/sw/manifesto.mjs';
 
 /**
  * Política de segurança de conteúdo (achado do Órion, E8 prévia). Vai por `<meta http-equiv>` porque o Pages não
@@ -25,6 +27,8 @@ export const POLITICA_CSP = [
   "img-src 'self' data: blob:",
   "connect-src 'self'",
   "media-src 'self' blob:",
+  // service worker (T7): o sw.js é do mesmo site; sem a diretiva valeria o fallback (script-src/default-src, também 'self'). Explícita para o teste de build a fixar.
+  "worker-src 'self'",
 ].join('; ');
 
 /** Injeta o `<meta>` da CSP SÓ no build: o servidor de desenvolvimento injeta scripts inline (HMR, preamble). */
@@ -69,8 +73,49 @@ function versaoJson(): Plugin {
   };
 }
 
+/**
+ * Service worker (T7, docs/service-worker.md). Depois que o build termina (com o `public/` já copiado em dist/):
+ *  1. compila src/sw/sw.ts para dist/sw.js (IIFE, sem hash no nome: o navegador o procura sempre no mesmo endereço);
+ *  2. escreve dist/sw-manifesto.js, o manifesto de revisões (hash de conteúdo de cada arquivo), que o sw.js carrega com importScripts.
+ * `INNO_SW=off` no build gera o SW APOSENTADO (apaga os caches e se desregistra ao ativar): é o rollback de emergência por deploy.
+ */
+function serviceWorker(): Plugin {
+  let cfg: ResolvedConfig;
+  return {
+    name: 'inno-service-worker',
+    apply: 'build',
+    configResolved(c) {
+      cfg = c;
+    },
+    async closeBundle() {
+      if (cfg.build.ssr) return;
+      const dist = resolve(cfg.root, cfg.build.outDir);
+      await viteBuild({
+        configFile: false,
+        root: cfg.root,
+        logLevel: 'warn',
+        publicDir: false,
+        define: {},
+        build: {
+          outDir: dist,
+          emptyOutDir: false,
+          copyPublicDir: false,
+          sourcemap: false,
+          minify: true,
+          target: 'es2022',
+          lib: { entry: resolve(cfg.root, 'src/sw/sw.ts'), formats: ['iife'], name: 'InnoSw', fileName: () => 'sw.js' },
+        },
+      });
+      const r = escreverManifesto({ dist, base: cfg.base, build: { commit: BUILD.commit, data: BUILD.data }, desligado: process.env['INNO_SW'] === 'off' });
+      cfg.logger.info(
+        `sw: dist/sw.js + sw-manifesto.js (versao ${r.manifesto.versao}${r.manifesto.desligado ? ', APOSENTADO' : ''}): ${r.arquivos} arquivos com revisao, shell de ${r.manifesto.shell.length} (${(r.bytesShell / 1048576).toFixed(2)} MiB), manifesto de ${(r.bytesManifesto / 1024).toFixed(1)} KiB`,
+      );
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [cspSoNoBuild(), versaoJson()],
+  plugins: [cspSoNoBuild(), versaoJson(), serviceWorker()],
   define: { __INNO_BUILD__: JSON.stringify(BUILD) },
   server: { port: 5173, strictPort: true },
   preview: { port: 4173, strictPort: true },

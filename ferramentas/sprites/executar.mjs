@@ -8,6 +8,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import sharp from 'sharp';
+import { ARQUIVO_RETRATO, OPCOES_WEBP } from '../gerar-retratos.mjs';
 import { empacotar, validarEmpacotamento } from './empacotar.mjs';
 import {
   acolchoarRgb, agruparFiguras, caixaOpaca, calcularAlfa, centroDeMassaX, cortarBorda, cortarRgba, despill, detectarChave,
@@ -334,7 +335,7 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
     };
   }
 
-  // retrato: janela do idle0 centrada no `rosto`, sempre entregue em 190x190 (PNG com alfa). Com alturaRef maior que
+  // retrato: janela do idle0 centrada no `rosto`, sempre entregue em 190x190 (WebP quase sem perdas, com alfa; era PNG até a T6 do orçamento). Com alturaRef maior que
   // 410 (BAATAR) a janela é `190 * k` px do atlas e é reduzida a 190, para enquadrar como nos outros lutadores.
   let retrato;
   const idleFinal = finais['idle0'];
@@ -346,10 +347,10 @@ export async function gerarLutador({ raiz, id, folhas, saida, arquivos = {}, esp
     const rgba = janelaRgba(idleFinal.rgba, idleFinal.largura, idleFinal.altura, x0, y0, lado);
     let png = sharp(Buffer.from(rgba), { raw: { width: lado, height: lado, channels: 4 } });
     if (lado !== LADO_RETRATO) png = png.resize(LADO_RETRATO, LADO_RETRATO, { kernel: 'lanczos3' });
-    await png.png({ compressionLevel: 9 }).toFile(join(dirSaida, 'retrato.png'));
+    await png.webp(OPCOES_WEBP).toFile(join(dirSaida, ARQUIVO_RETRATO));
     // o rosto fica no centro da janela; se o arredondamento deslocou, o recorte compensa em fração (em px do retrato)
     const sobra = (centro, ini) => (centro - lado / 2 - ini) * (LADO_RETRATO / lado);
-    retrato = { arquivo: 'retrato.png', recorte: [sobra(idleFinal.rosto[0], x0), sobra(idleFinal.rosto[1], y0), LADO_RETRATO, LADO_RETRATO] };
+    retrato = { arquivo: ARQUIVO_RETRATO, recorte: [sobra(idleFinal.rosto[0], x0), sobra(idleFinal.rosto[1], y0), LADO_RETRATO, LADO_RETRATO] };
     retrato.recorte = retrato.recorte.map((v) => Math.round(v * 100) / 100);
   }
 

@@ -2,7 +2,7 @@
 
 > Arquivo GERADO por `npm run balanco`. Não edite à mão: rode o comando de novo.
 
-Gerado em 2026-10-24 · versão dos dados/motor `0a39396db39d` · `motorV2.combos` e `motorV2.filmes` ligados.
+Gerado em 2026-10-24 · versão dos dados/motor `0b5ad77394bb` · `motorV2.combos` e `motorV2.filmes` ligados.
 
 **20 de 20 combos passam.**
 

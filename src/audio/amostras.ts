@@ -378,7 +378,8 @@ const buscarManifestoPadrao = async (url: string): Promise<string | null> => {
 };
 
 /**
- * Baixa e VALIDA o manifesto e devolve o banco (já pedindo a `base`). Manifesto AUSENTE ou ilegível (404, rede caída, o servidor de desenvolvimento devolvendo o
+ * Baixa e VALIDA o manifesto e devolve o banco. NÃO pede nenhuma folha (T5 do orçamento de 2026-10-23): a `base` (272 KiB) sobe na etapa 2 do boot (ocioso, depois do 1º
+ * gesto, ver `camadas.ts`) e as dos lutadores na tela VS (`prepararLutadores`); antes disso o jogo toca a síntese. Manifesto AUSENTE ou ilegível (404, rede caída, o servidor de desenvolvimento devolvendo o
  * `index.html` no lugar do JSON) = devolve null e o jogo fica 100% na síntese. Manifesto que existe e é INVÁLIDO (id fora da tabela, corte sem origem ou sem CC0, peso)
  * LANÇA: derruba o boot, alto e cedo, como os dados de sons. O CI valida o manifesto de verdade, então isso nunca chega ao ar.
  */
@@ -402,7 +403,5 @@ export async function carregarBanco(o: OpcoesDoCarregamento): Promise<BancoDeAmo
     aviso('amostras: manifesto ilegível (não é JSON); seguindo com a síntese', e);
     return null;
   }
-  const banco = new BancoDeAmostras(exigirManifestoValido(bruto), o);
-  void banco.baixarFolha('base');
-  return banco;
+  return new BancoDeAmostras(exigirManifestoValido(bruto), o);
 }

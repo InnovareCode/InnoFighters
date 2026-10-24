@@ -30,7 +30,7 @@ export function manifestoFalso(id: string, d: DefDeAtlas = {}): unknown {
     tamanho,
     alturaRef: 20,
     quadros: { idle0: quadro(0), guard: quadro(0), punch: quadro(10) },
-    retrato: { arquivo: 'retrato.png', recorte: [2, 2, 190, 190] },
+    retrato: { arquivo: 'retrato.webp', recorte: [2, 2, 190, 190] },
     ...(d.filme
       ? { filme: { imagem: 'filme.webp', tamanho: d.filme, quadros: { f0: { x: 0, y: 0, w: 30, h: 30, ax: 15, painel: true, p: 0 } } } }
       : {}),
@@ -79,7 +79,7 @@ function tamanhoDa(url: string, defs: Record<string, DefDeAtlas>, retrato: reado
   if (/\/assets\/cenarios\//.test(url)) return [1920, 1080];
   const m = /lutadores\/([^/]+)\/(.+)$/.exec(url);
   const def = m?.[1] ? defs[m[1]] : undefined;
-  if (m?.[2] === 'retrato.png') return retrato;
+  if (m?.[2] === 'retrato.webp') return retrato;
   if (m?.[2] === 'filme.webp') return def?.filme ?? [1, 1];
   return def?.tamanho ?? [1024, 1024];
 }

@@ -105,7 +105,7 @@ describe('pipeline sintético (folha 4x3 -> atlas C1 v2)', () => {
     }
     expect(m.quadros['idle0']!.rosto).toBeDefined();
     expect(m.quadros['idle1']!.rosto).toBeUndefined();
-    const retrato = await sharp(join(saida, 'retrato.png')).metadata();
+    const retrato = await sharp(join(saida, 'retrato.webp')).metadata();
     expect([retrato.width, retrato.height, retrato.channels]).toEqual([190, 190, 4]);
 
     // relê as páginas do disco: o interior de cada quadro tem pixels opacos e a pele não ficou rosa
@@ -246,9 +246,9 @@ describe('pipeline sintético 3x2 (layout do chefão)', () => {
     expect(r.relatorio.atlas).toMatchObject({ quadros: 6, desenhos: 5 });
     expect(r.relatorio.quadros['idle2'].apelidoDe).toBe('idle0');
     // alturaRef 205 (< 410): a janela do retrato não encolhe (190 px do atlas, como em gerar-retratos) e o rosto fica em 91
-    const retrato = await sharp(join(saida, 'retrato.png')).metadata();
+    const retrato = await sharp(join(saida, 'retrato.webp')).metadata();
     expect([retrato.width, retrato.height]).toEqual([190, 190]);
-    expect(m.retrato).toMatchObject({ arquivo: 'retrato.png' });
+    expect(m.retrato).toMatchObject({ arquivo: 'retrato.webp' });
   });
 
   it('gerarLutador: `arquivos` em lutadores.json fixa a versão da folha (a maior -vN, de outra geração, não ganha); arquivo ausente é erro', async () => {
@@ -411,14 +411,14 @@ describe.skipIf(!existsSync(hayatoF1))('arte real (arte-fonte local)', () => {
 const existe = (...partes: string[]) => existsSync(join(RAIZ, 'arte-fonte', 'lutadores', ...partes));
 
 describe.skipIf(!existe('baatar', 'folhas', 'baatar-b9-v2.png'))('BAATAR (arte real, grade 3x2, escala própria)', () => {
-  it('atlas completo: 54 poses, alturaRef 525 = idle0, mínimas, ponta, apelido do idle e margem à esquerda na B9', async () => {
+  it('atlas completo: 54 poses, alturaRef 472 = idle0, mínimas, ponta, apelido do idle e margem à esquerda na B9', async () => {
     const saida = join(tmp, 'baatar');
     const r = await executar.gerarLutador({ raiz: RAIZ, id: 'baatar', saida });
     const m = validarManifesto(JSON.parse(readFileSync(join(saida, 'atlas.json'), 'utf8')), 'baatar/atlas.json');
     expect(Object.keys(m.quadros)).toHaveLength(54);
     expect(r.relatorio.atlas.desenhos).toBe(53); // idle2 é o mesmo desenho do idle0
-    expect(m.alturaRef).toBe(525);
-    expect(m.quadros['idle0']!.h).toBe(525);
+    expect(m.alturaRef).toBe(472);
+    expect(m.quadros['idle0']!.h).toBe(472);
     for (const n of poses.MINIMAS) expect(m.quadros[n], n).toBeDefined();
     for (const n of [...poses.COM_PONTA, 'dive1']) expect(m.quadros[n]?.ponta, `ponta de ${n}`).toBeDefined();
     for (const n of ['devekh0', 'devekh1', 'devekh2', 'dive0', 'dive1']) expect(m.quadros[n], n).toBeDefined();

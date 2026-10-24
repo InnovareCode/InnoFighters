@@ -53,7 +53,7 @@ Pasta: `arte-fonte/lutadores/<id>/folhas/`. Fica fora do git (decisão D5). **A 
 |---|---|---|
 | `layout` | troca o layout da folha (`padrao`, `chefe`, `zenon`) | ZENON: `"zenon"` |
 | `celulas` | troca o mapa de poses de uma folha. Lista = apelidos (o mesmo desenho serve a dois quadros). `null` descarta a figura | CENTELLA f1: `["idle0", ["idle1", "idle3"], null, ...]` |
-| `alturaRef` | altura do idle0 no atlas (padrão 410) | BAATAR: `525`; ZENON: `558`; CAIO: `396` (idle agachado). Atenção: o K do jogo é `scale x 255 / idle0.h`, então `alturaRef` só muda os px do atlas, não o tamanho em jogo (o idle0 sempre vira 255 x scale); abaixo de 410 o retrato/rosto continua usando 410 |
+| `alturaRef` | altura do idle0 no atlas (padrão 410) | BAATAR: `472`; ZENON: `502` (0,9 de 525 e 558 desde a T10 do orçamento: -21 MiB no pior par; depois de mudar `alturaRef` meça a frame data, porque a ponta da mão se desloca alguns px e uma caixa que roçava a cabeça do rival deixa de conectar, foi o `lp` do BAATAR); CAIO: `396` (idle agachado). Atenção: o K do jogo é `scale x 255 / idle0.h`, então `alturaRef` só muda os px do atlas, não o tamanho em jogo (o idle0 sempre vira 255 x scale); abaixo de 410 o retrato/rosto continua usando 410 |
 | `fatorFolha` | multiplica a escala de uma folha | NILA: `{"f2": 1.2, "f3": 1.15, "f4": 1.1}` |
 | `folhasExtras` | folha fora do layout | NILA f5, grade 4x3, poses `sarpa*` |
 | `ponta` | modo da ponta do golpe por pose (`cima`, `direita`, `mao`, `mao:0.5`, `pe`, `pe:0.75`, `nenhuma`). `mao:F` é o `mao` olhando só as linhas acima da fração F do quadro (WEI LONG `sc1` "mao:0.5": a ombrada tem o joelho da frente abaixo do ombro e ele ganhava). `nenhuma` deixa o quadro SEM ponta: não há rastro nele e não vira aviso "sem ponta". Só serve a quadro que não decide a caixa (a caixa sai do PRIMEIRO quadro ativo da animação) | ZENON: `"lk1": "mao", "upper": "mao", "sb1": "cima", "decreto1": "mao"`; CAIO: `"sb2": "nenhuma"` (a perna aponta para trás, o ponto mais à direita seria a cabeça) |
@@ -75,7 +75,7 @@ Opções (`ferramentas/sprites/cli.mjs`, função `lerArgumentos`, `:25`):
 - `--altura-ref <px>`, `--escala <n>`, `--tolerancia <n>`, `--sem-contato`.
 - Opção desconhecida dá erro: `opcao desconhecida: ...`.
 
-Saída esperada: `sprites-gerados/<id>/` com `atlas-N.webp`, `atlas.json` (versão 2), `retrato.png` e `relatorio.json`. Mais `arte-fonte/lutadores/<id>/contact-sheet-<id>.png` para conferir. Se o lutador tem bloco `filme` em `lutadores.json`, o gerador copia a `filme.webp` de `public/assets/lutadores/<id>/` e confere o tamanho declarado.
+Saída esperada: `sprites-gerados/<id>/` com `atlas-N.webp`, `atlas.json` (versão 2), `retrato.webp` (190x190, de reserva: o publicado sai do `gerar-retratos`, passo 5) e `relatorio.json`. Mais `arte-fonte/lutadores/<id>/contact-sheet-<id>.png` para conferir. Se o lutador tem bloco `filme` em `lutadores.json`, o gerador copia a `filme.webp` de `public/assets/lutadores/<id>/` e confere o tamanho declarado.
 
 **Verificado em 2026-10-21:** `npm run sprites` sem argumento imprime `ERRO: uso: npm run sprites -- <id> [opcoes]`, sem erro de import. **Não reexecutado nesta passada.** Rodar com um id real grava em `sprites-gerados/` e `arte-fonte/`. O ZENON foi gerado pela Vega com este pipeline (11 folhas, 63 quadros, 4 páginas, 1,79 MB; `docs/handoff-vega-zenon.md`).
 
@@ -85,9 +85,9 @@ Quando rodar: ler `relatorio.json`, conferir avisos, halo, número de componente
 
 Manual. Não há script de cópia.
 
-1. Copie para `public/assets/lutadores/<id>/`: `atlas-*.webp`, `atlas.json`, `retrato.png` e `retrato.json`. Se houver folha FILME, copie também `filme.webp`.
-   Exemplo real: `public/assets/lutadores/aminu/` tem `atlas-0.webp`, `atlas-1.webp`, `atlas.json`, `retrato.png` e `retrato.json`.
-2. Retrato, se for regerar: `node ferramentas/gerar-retratos.mjs --so <id>`. Lê o `atlas.json` de `public/assets`. Usa o Chromium do Playwright. Com `--verificar`, só confere e não grava. Não há script npm para ele.
+1. Copie para `public/assets/lutadores/<id>/`: `atlas-*.webp` e `atlas.json` (apague as páginas que sobrarem de uma versão anterior com mais páginas). Se houver folha FILME, copie também `filme.webp`. O `retrato.webp` e o `retrato.json` vêm do passo 2, não da cópia.
+   Exemplo real: `public/assets/lutadores/aminu/` tem `atlas-0.webp`, `atlas-1.webp`, `atlas.json`, `retrato.webp` e `retrato.json`.
+2. Retrato (SEMPRE que o atlas mudar): `node ferramentas/gerar-retratos.mjs --so <id>`. Lê o `atlas.json` de `public/assets`, grava `retrato.webp` (quase sem perdas, T6 do orçamento: os 10 juntos pesam ~0,28 MiB, meta 0,35) e `retrato.json`, acerta SÓ o campo `retrato` do `atlas.json` e apaga o `retrato.png` antigo. Usa o Chromium do Playwright. Com `--verificar`, só confere e não grava. Não há script npm para ele.
 3. Cenário, se for novo:
    - Fonte: `arte-fonte/cenarios/cenario-<sigla>-vN.png`.
    - Conversão: `node ferramentas/converter-cenarios.mjs [qualidade] [--so <sigla>]`. A lista `FONTES` é fixa (`ferramentas/converter-cenarios.mjs:16`). Para uma sigla nova, acrescente a entrada antes de rodar.
@@ -199,7 +199,7 @@ npm run balanco -- --chefes <id> --esquiva                 # só este chefão, c
 npm run balanco -- --sem-regulares --varrer-dano 1,0.9,0.8 --esquiva
 ```
 
-  A rodada `--chefes` nunca grava em `docs/balanco/` (`docs/balanco/README.md`). Mantenha o hash das lutas regulares igual antes e depois de um ajuste de chefão (na rodada de produção do commit `78de1be`: `05bf1b64b46008a0`).
+  A rodada `--chefes` nunca grava em `docs/balanco/` (`docs/balanco/README.md`). Mantenha o hash das lutas regulares igual antes e depois de um ajuste de chefão (na rodada de produção do commit `78de1be`: `05bf1b64b46008a0`; depois da T10 do orçamento, com BAATAR e ZENON a 0,9 da escala: `e5db8a2586c836b5`).
 
 **Para o guardião entrar no ARCADE:**
 
@@ -387,7 +387,7 @@ Hoje `bloqueantes` está vazio, então estouro vira aviso. Os valores medidos no
 
 - [ ] Mestra e folha 1 aprovadas pelo dono. Folhas em `arte-fonte/lutadores/<id>/folhas/`.
 - [ ] `npm run sprites -- <id>` roda e o `relatorio.json` não traz avisos.
-- [ ] `atlas.json` (versão 2), `retrato.png` e `retrato.json` em `public/assets/lutadores/<id>/`.
+- [ ] `atlas.json` (versão 2), `retrato.webp` e `retrato.json` em `public/assets/lutadores/<id>/`.
 - [ ] Folha FILME (`filme.webp`) e bloco `filme` no `atlas.json`, dentro do orçamento (passo 6f).
 - [ ] Cenário em `public/assets/cenarios/cenario-<sigla>.webp` e entrada em `CENARIOS`.
 - [ ] `src/data/lutadores/<id>.ts` criado; `index.ts` com `ROSTER`, `VITRINE` e `LUTADORES`.

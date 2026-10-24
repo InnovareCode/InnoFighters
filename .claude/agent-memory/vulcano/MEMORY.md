@@ -1,3 +1,4 @@
 - [Pipeline Pages e hardening](project_pipeline-pages-e-hardening.md) — CI/Pages do InnoFighters, SHAs pinados, sem gh CLI, configure-pages pages:read nao provado
 - [CI e2e:build + noturno](project_ci-e2e-build-e-noturno.md) — job e2e-build com cache Chromium, e2e-completo.yml cron/manual, actionlint local
 - [Portao de orcamento (T8)](project_portao-de-orcamento.md) — npm run orcamento na CI, aviso por padrao, promocao por item, px pelo cabecalho WebP
+- [Service worker T7](project_service-worker-t7.md) — manifesto de revisoes, troca segura no boot, ?sw=0, INNO_SW=off, armadilha MSYS --base

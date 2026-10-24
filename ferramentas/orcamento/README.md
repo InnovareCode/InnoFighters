@@ -18,7 +18,7 @@ Exit: `0` ok ou só avisos, `1` há FALHA, `2` dist ausente ou argumento inváli
 | grupo | o que mede | meta |
 |---|---|---|
 | `js-inicial` | gzip do `<script type=module>` + `modulepreload` do `index.html` | <= 135 kB (1 kB = 1000 bytes, gzip nível 9) |
-| `js-total` | gzip de todo `.js` do dist, **sem** o pedaço `escuta` | <= 200 kB |
+| `js-total` | gzip de todo `.js` do dist, **sem** o pedaço `escuta` e os arquivos do service worker (`sw.js`, `sw-manifesto.js`) | <= 200 kB |
 | `atlas-peso:<id>` | soma das páginas `atlas*.webp` do lutador | <= 1,6 MiB; BAATAR e ZENON <= 2,0 (`atlasExcecoesMiB`) |
 | `atlas-px:<id>` | maior página (cabeçalho do WebP) | <= 2048 x 2048 |
 | `filme-peso:<id>` | a página FILME (`filme.webp`), item próprio, **fora** da soma do atlas | <= 0,8 MiB |

@@ -2,7 +2,7 @@
   "_fonte": "docs/orcamentos-2026-10-23.md §1 (OR-1 aprovada pelo dono). JS em kB de 1000 bytes gzip; atlas em MiB (2^20); cenario em KiB (2^10).",
   "jsInicialKb": 135,
   "jsTotalKb": 200,
-  "jsExcluidos": ["escuta"],
+  "jsExcluidos": ["escuta", "sw"],
   "atlasMiB": 1.6,
   "atlasExcecoesMiB": { "baatar": 2.0, "zenon": 2.0 },
   "atlasPaginaPx": 2048,

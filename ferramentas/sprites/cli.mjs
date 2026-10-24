@@ -12,7 +12,7 @@
  *   --tolerancia <n>       distância de cor até o fundo puro (padrão 48)
  *   --sem-contato          não gera o contact-sheet
  *
- * Saída: atlas-0.webp, atlas-1.webp..., atlas.json (C1 v2), retrato.png, relatorio.json e, em
+ * Saída: atlas-0.webp, atlas-1.webp..., atlas.json (C1 v2), retrato.webp, relatorio.json e, em
  * arte-fonte/lutadores/<id>/, contact-sheet-<id>.png (fundo escuro) e contact-sheet-<id>-claro.png.
  */
 import { join, resolve, dirname } from 'node:path';

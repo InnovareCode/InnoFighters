@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import sharp from 'sharp';
 import { inflateSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import type { CriarCanvas } from '../../src/assets/canvas';
@@ -10,7 +11,7 @@ import { ErroDeAsset } from '../../src/assets/tipos';
 import { IDS_LUTADORES } from '../../src/core/contratos';
 import { VITRINE } from '../../src/data/lutadores';
 // @ts-expect-error ferramenta .mjs pura, sem tipos
-import { codificarPng, dimensoesPng, janelaInteira, recorteDoRosto } from '../../ferramentas/gerar-retratos.mjs';
+import { codificarPng, dimensoesPng, janelaInteira, recorteDoRosto, trocarCampoRetrato } from '../../ferramentas/gerar-retratos.mjs';
 
 // ---------- leitor falso com contagem de pedidos ----------
 type Defs = {
@@ -29,12 +30,12 @@ function leitor(d: Defs) {
       pedidos.push(url);
       const m = /lutadores\/([^/]+)\/(atlas|retrato)\.json/.exec(url);
       if (m?.[2] === 'atlas' && m[1] && d.manifestos[m[1]]) return d.manifestos[m[1]];
-      if (m?.[2] === 'retrato' && !d.semSidecar) return { arquivo: 'retrato.png', recorte: [2.5, 2, 190, 190] };
+      if (m?.[2] === 'retrato' && !d.semSidecar) return { arquivo: 'retrato.webp', recorte: [2.5, 2, 190, 190] };
       throw new ErroDeAsset(`404 ${url}`, url);
     },
     async imagem(url) {
       pedidos.push(url);
-      const tam = d.imagens?.[url.replace(/^.*assets\/(lutadores\/)?/, '')] ?? (/retrato\.png$/.test(url) ? [195, 194] : [64, 32]);
+      const tam = d.imagens?.[url.replace(/^.*assets\/(lutadores\/)?/, '')] ?? (/retrato\.webp$/.test(url) ? [195, 194] : [64, 32]);
       return { width: tam[0], height: tam[1], url } as unknown as ImagemCarregada;
     },
     async prebuscar(url) {
@@ -165,7 +166,7 @@ describe('AtlasLutador com várias páginas', () => {
     expect(await a.carregarRetrato(L.l)).toBe(true); // sidecar retrato.json
     const r = a.retrato(head);
     expect(r?.recorte).toEqual([2.5, 2, 190, 190]);
-    expect((r?.imagem as unknown as { url: string }).url).toMatch(/retrato\.png$/);
+    expect((r?.imagem as unknown as { url: string }).url).toMatch(/retrato\.webp$/);
     a.liberar();
     expect(a.retrato(head)).not.toBeNull(); // o retrato sobrevive à liberação do atlas
   });
@@ -306,7 +307,7 @@ describe('iniciarArte (boot) com o elenco real e leitor falso', () => {
     expect(Object.keys(elenco).sort()).toEqual([...IDS_LUTADORES].sort());
     expect(arte.lutadoresResidentes().sort()).toEqual([...VITRINE].sort());
     expect(L.atlasBaixados()).toHaveLength(VITRINE.length);
-    expect(L.pedidos.filter((p) => p.endsWith('/retrato.png'))).toHaveLength(IDS_LUTADORES.length);
+    expect(L.pedidos.filter((p) => p.endsWith('/retrato.webp'))).toHaveLength(IDS_LUTADORES.length);
     expect(arte.cenarios.has('jp')).toBe(true);
   });
 
@@ -348,13 +349,20 @@ describe('ferramenta de retratos (gerar-retratos.mjs)', () => {
     expect(Buffer.concat(linhas)).toEqual(rgba);
   });
 
-  it.each(IDS_LUTADORES)('%s: retrato.png/retrato.json em disco batem com o atlas (recorte dentro da imagem, mesma geometria do jogo)', (id) => {
+  it.each(IDS_LUTADORES)('%s: retrato.webp/retrato.json em disco batem com o atlas (recorte dentro da imagem, mesma geometria do jogo)', async (id) => {
     const dir = `public/assets/lutadores/${id}`;
     const manifesto = JSON.parse(readFileSync(`${dir}/atlas.json`, 'utf8'));
     const sidecar = validarRetrato(JSON.parse(readFileSync(`${dir}/retrato.json`, 'utf8')), id);
-    const [w, h] = dimensoesPng(readFileSync(`${dir}/${sidecar.arquivo}`)) as [number, number];
+    // T6 do orçamento: o campo `retrato` do atlas.json (que o jogo lê primeiro) e o sidecar dizem a MESMA coisa, e o arquivo é WebP
+    expect(manifesto.retrato, id).toEqual({ arquivo: 'retrato.webp', recorte: sidecar.recorte });
+    expect(sidecar.arquivo).toBe('retrato.webp');
+    expect(existsSync(`${dir}/retrato.png`), 'o retrato antigo (PNG) não fica ao lado do novo').toBe(false);
+    const meta = await sharp(`${dir}/${sidecar.arquivo}`).metadata();
+    expect(meta.format).toBe('webp');
+    expect(meta.hasAlpha).toBe(true);
+    const [w, h] = [meta.width!, meta.height!];
     const [fx, fy, rw, rh] = sidecar.recorte!;
-    // 190 px; nos atlas de alturaRef maior (BAATAR, 525) a janela cresce na mesma proporção (mesmo enquadramento do rosto)
+    // 190 px; nos atlas de alturaRef maior que 410 a janela cresce na mesma proporção (mesmo enquadramento do rosto)
     expect([rw, rh]).toEqual([Math.round((190 * Math.max(manifesto.alturaRef, 410)) / 410), Math.round((190 * Math.max(manifesto.alturaRef, 410)) / 410)]);
     expect(fx).toBeGreaterThanOrEqual(0);
     expect(fy).toBeGreaterThanOrEqual(0);
@@ -365,6 +373,21 @@ describe('ferramenta de retratos (gerar-retratos.mjs)', () => {
     expect(Math.abs(hx! - Math.floor(hx!) - (fx - Math.floor(fx)))).toBeLessThan(1e-6);
     expect(Math.abs(hy! - Math.floor(hy!) - (fy - Math.floor(fy)))).toBeLessThan(1e-6);
     // pequeno: muito menor que o atlas inteiro
-    expect(readFileSync(`${dir}/${sidecar.arquivo}`).length).toBeLessThan(150_000);
+    expect(statSync(`${dir}/${sidecar.arquivo}`).size).toBeLessThan(50_000);
+  });
+
+  it('T6 do orçamento: os 10 retratos juntos pesam <= 0,35 MiB (eram 0,57 MiB em PNG)', () => {
+    const total = IDS_LUTADORES.reduce((soma, id) => soma + statSync(`public/assets/lutadores/${id}/retrato.webp`).size, 0);
+    expect(IDS_LUTADORES).toHaveLength(10);
+    expect(total / 1048576).toBeLessThanOrEqual(0.35);
+  });
+
+  it('trocarCampoRetrato: troca só o bloco `retrato` e preserva o resto do texto (formatação à mão incluída)', () => {
+    const texto = '{\n  "versao": 2,\n  "quadros": { "a": { "x": 1, "y": 2 } },\n  "retrato": {\n    "arquivo": "retrato.png",\n    "recorte": [\n      2.5,\n      0,\n      190,\n      190\n    ]\n  },\n  "fim": true\n}\n';
+    const novo = trocarCampoRetrato(texto, { arquivo: 'retrato.webp', recorte: [2.5, 0, 190, 190] }, 'x') as string;
+    expect(novo.replace(/"retrato": \{[\s\S]*?\n {2}\}/, '')).toBe(texto.replace(/"retrato": \{[\s\S]*?\n {2}\}/, ''));
+    expect(JSON.parse(novo).retrato).toEqual({ arquivo: 'retrato.webp', recorte: [2.5, 0, 190, 190] });
+    expect(novo).toContain('"quadros": { "a": { "x": 1, "y": 2 } },'); // a linha escrita à mão sobrevive
+    expect(() => trocarCampoRetrato('{"a":1}', { arquivo: 'r.webp', recorte: [0, 0, 1, 1] }, 'x')).toThrow(/sem o bloco/);
   });
 });

@@ -66,16 +66,17 @@ afterEach(() => {
 });
 
 describe('carregarCamadasSonoras({ amostras })', () => {
-  it('baixa o manifesto (com ?v=<commit> contra cache velho), valida, cria o banco e já pede só a BASE (bytes, sem decodificar)', async () => {
+  it('baixa o manifesto (com ?v=<commit> contra cache velho), valida e cria o banco; NENHUM mp3 no boot (a base é da etapa 2, os lutadores da VS)', async () => {
     const pacote = criarPacote();
     const urls = redeFalsa(pacote);
     expect(await carregarCamadasSonoras({ identidade: true, amostras: true, baseDasAmostras: BASE })).toBe(true);
     const banco = bancoDeAmostrasAtivo();
     expect(banco).not.toBeNull();
-    await esperar(() => banco?.estadoDaFolha('base') === 'baixada');
+    await new Promise((r) => setTimeout(r, 10));
+    expect(urls).toHaveLength(1);
     expect(urls[0]).toMatch(/^\/assets\/sons\/manifesto\.json\?v=/);
-    expect(urls.filter((u) => u.includes('.mp3')).map((u) => u.split('?')[0])).toEqual(['/assets/sons/base.mp3']);
-    expect(banco?.estadoDaFolha('hayato')).toBe('pendente');
+    expect(urls.filter((u) => u.includes('.mp3'))).toEqual([]);
+    expect(banco?.nomesDeFolha().every((n) => banco.estadoDaFolha(n) === 'pendente')).toBe(true);
   });
 
   it('sem manifesto (404, ou o servidor devolve a página no lugar do JSON): o jogo segue 100% na síntese, sem erro e sem banco', async () => {
@@ -298,12 +299,13 @@ describe('a luta: pré-carga das folhas dos 2 lutadores e decodificação', () =
 });
 
 describe('o destrave do áudio (iOS) decodifica a base no 1º gesto, não no meio da 1ª luta', () => {
-  it('o gesto cria o contexto (como já fazia) e, com a base baixada, dispara a decodificação; gestos seguintes só conferem', async () => {
+  it('o gesto cria o contexto (como já fazia) e, com a base baixada (etapa 2, ociosa), dispara a decodificação; gestos seguintes só conferem', async () => {
     const pacote = criarPacote();
     redeFalsa(pacote);
+    const ociosos: (() => void)[] = [];
+    vi.stubGlobal('requestIdleCallback', (fn: () => void) => ociosos.push(fn));
     await carregarCamadasSonoras({ identidade: true, amostras: true, baseDasAmostras: BASE });
     const banco = bancoDeAmostrasAtivo();
-    await esperar(() => banco?.estadoDaFolha('base') === 'baixada');
     const { audio, c } = audioComDecode(pacote);
     const ouvintes = new Map<string, () => void>();
     const alvo = {
@@ -312,11 +314,13 @@ describe('o destrave do áudio (iOS) decodifica a base no 1º gesto, não no mei
     };
     const desfaz = desbloquearAudio(alvo, audio);
     expect(audio.ctx).toBeNull();
-    expect(banco?.estadoDaFolha('base')).toBe('baixada'); // sem gesto, sem contexto: não decodifica
+    expect(banco?.estadoDaFolha('base')).toBe('pendente'); // sem gesto, nada baixa
     ouvintes.get('touchend')?.();
     expect(audio.ctx).not.toBeNull();
-    expect(banco?.estadoDaFolha('base')).toBe('decodificando');
-    await esperar(() => banco?.estadoDaFolha('base') === 'pronta');
+    expect(ociosos).toHaveLength(1); // a etapa 2 foi AGENDADA para o ocioso; ainda não baixou
+    expect(banco?.estadoDaFolha('base')).toBe('pendente');
+    ociosos[0]?.();
+    await esperar(() => banco?.estadoDaFolha('base') === 'pronta'); // o contexto já existia: baixou e decodificou sem esperar outro gesto
     ouvintes.get('click')?.(); // contexto já running: só confere, não recria nada
     expect(c.criados.compressor).toBe(1);
     desfaz();

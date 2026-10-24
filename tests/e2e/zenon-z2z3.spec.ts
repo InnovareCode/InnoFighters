@@ -763,7 +763,7 @@ test.describe('Z5: a carga sob demanda do ZENON', () => {
     await semear(page);
     await abrirJogo(page);
     const paginas = (): string[] => urls.filter((u) => /\/atlas-\d\.webp$/.test(u));
-    expect(urls.filter((u) => u.endsWith('/retrato.png') || u.endsWith('/atlas.json')).length).toBeGreaterThanOrEqual(2); // manifesto e retrato no boot
+    expect(urls.filter((u) => u.endsWith('/retrato.webp') || u.endsWith('/atlas.json')).length).toBeGreaterThanOrEqual(2); // manifesto e retrato no boot
     expect(paginas()).toEqual([]);
     // seleção e menus não pedem as páginas dele
     await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('select', { mode: 'versus' }); h.avancar(30); }");

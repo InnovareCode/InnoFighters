@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Gera `retrato.png` + `retrato.json` de cada lutador a partir do atlas (docs/plano-expansao.md 1.4).
+ * Gera `retrato.webp` + `retrato.json` de cada lutador a partir do atlas (docs/plano-expansao.md 1.4). WebP desde a T6 do
+ * orcamento de 2026-10-23: os 10 PNG somavam 0,57 MiB e a meta e <= 0,35 MiB no conjunto.
  *
  * Por que existe: a seleção e o HUD desenhavam o rosto recortando o atlas INTEIRO (milhões de pixels) só para
  * mostrar 88-120 px. Com carga sob demanda, a seleção não pode exigir todos os atlas na memória; o retrato é um
@@ -11,13 +12,18 @@
  * guarda o recorte fracionário dentro dele. O jogo desenha `drawImage(retrato, fx, fy, 190, 190, ...)`: a mesma
  * amostragem de antes, só que lendo um arquivo pequeno.
  *
- * Sem dependência nova: o Node não decodifica WebP, então usa o Chromium que o Playwright já instala (devDependency)
- * para decodificar o atlas e ler os pixels; o PNG é escrito com zlib do próprio Node (sem perdas).
+ * O Node não decodifica WebP, então o Chromium que o Playwright já instala (devDependency) decodifica o atlas e entrega os
+ * pixels; o WebP sai do `sharp` (devDependency do pipeline de sprites) em modo QUASE sem perdas (nearLossless 80): o alfa
+ * e o traço ficam como no atlas (erro de alfa <= 1 em 255) e os 10 juntos ficam em ~0,3 MiB. `codificarPng` (sem perdas)
+ * continua exportado: serve para ler/comparar pixels crus nos testes.
+ *
+ * Além do sidecar `retrato.json`, atualiza o campo `retrato` do `atlas.json` (o jogo lê o campo primeiro e só cai no
+ * sidecar sem ele; os dois TÊM de dizer o mesmo). Só esse campo muda; o resto do atlas nunca é reescrito aqui.
  *
  * Uso:  node ferramentas/gerar-retratos.mjs [--so <id>] [--verificar] [--saida <pasta>]
  *   --verificar  não grava: regenera em memória e sai com código 1 se o que está no disco diferir.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
@@ -26,6 +32,10 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 /** Lado do retrato no atlas (LADO_RETRATO de src/data/atlas.ts). */
 export const LADO = 190;
 const MARGEM = 2;
+/** Arquivo do retrato (T6 do orçamento: era retrato.png). */
+export const ARQUIVO_RETRATO = 'retrato.webp';
+/** Parâmetros do WebP do retrato: quase sem perdas (alfa preservado), esforço máximo (o arquivo é pequeno). */
+export const OPCOES_WEBP = { nearLossless: true, quality: 80, effort: 6 };
 
 /** Altura do idle0 no atlas dos lutadores de tamanho normal (a janela do retrato é LADO nesta escala). */
 const ALTURA_REF_NORMAL = 410;
@@ -92,6 +102,29 @@ export function codificarPng(rgba, largura, altura) {
   ]);
 }
 
+/** WebP do retrato a partir de pixels RGBA crus (w*h*4), com as OPCOES_WEBP. O `sharp` é injetado para o módulo carregar sem ele. */
+export async function codificarWebp(sharp, rgba, largura, altura) {
+  return sharp(rgba, { raw: { width: largura, height: altura, channels: 4 } }).webp(OPCOES_WEBP).toBuffer();
+}
+
+/**
+ * Troca SÓ o bloco `"retrato": { ... }` do texto do atlas.json (indentação de 2, como o pipeline escreve), sem reescrever o resto:
+ * alguns atlas (WEI LONG) têm formatação à mão e um JSON.stringify do arquivo inteiro apagaria isso num diff enorme.
+ * Confere que o texto novo, lido de volta, só difere do antigo no campo `retrato`.
+ */
+export function trocarCampoRetrato(texto, retrato, id = '?') {
+  const bloco = /"retrato":\s*\{[^{}]*"recorte":\s*\[[^\]]*\]\s*\}/;
+  if (!bloco.test(texto)) throw new Error(`${id}: atlas.json sem o bloco "retrato" no formato esperado`);
+  const novo = `"retrato": ${JSON.stringify(retrato, null, 2).replace(/\n/g, '\n  ')}`;
+  const saida = texto.replace(bloco, () => novo);
+  const antes = JSON.parse(texto);
+  const depois = JSON.parse(saida);
+  if (JSON.stringify({ ...antes, retrato: null }) !== JSON.stringify({ ...depois, retrato: null }) || JSON.stringify(depois.retrato) !== JSON.stringify(retrato)) {
+    throw new Error(`${id}: a troca do campo retrato mexeu em mais que ele`);
+  }
+  return saida;
+}
+
 /** Largura e altura de um PNG (lidas do IHDR). */
 export function dimensoesPng(buf) {
   if (buf.readUInt32BE(0) !== 0x89504e47) throw new Error('nao e PNG');
@@ -111,6 +144,7 @@ function argumentos(argv) {
 async function principal() {
   const args = argumentos(process.argv.slice(2));
   const { chromium } = await import('@playwright/test');
+  const sharp = (await import('sharp')).default;
   const ids = (await import('node:fs')).readdirSync(args.saida, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => d.name).filter((id) => !args.so || id === args.so);
   const navegador = await chromium.launch();
   const pagina = await navegador.newPage();
@@ -144,19 +178,25 @@ async function principal() {
         },
         { url: `data:${mime};base64,${bytes.toString('base64')}`, j },
       );
-      const png = codificarPng(Buffer.from(b64, 'base64'), j.w, j.h);
-      const json = `${JSON.stringify({ arquivo: 'retrato.png', recorte: j.recorte }, null, 2)}\n`;
-      const caminhoPng = join(dir, 'retrato.png');
+      const webp = await codificarWebp(sharp, Buffer.from(b64, 'base64'), j.w, j.h);
+      const retrato = { arquivo: ARQUIVO_RETRATO, recorte: j.recorte };
+      const json = `${JSON.stringify(retrato, null, 2)}\n`;
+      const caminhoImg = join(dir, ARQUIVO_RETRATO);
       const caminhoJson = join(dir, 'retrato.json');
+      const campoIgual = JSON.stringify(m.retrato) === JSON.stringify(retrato);
       if (args.verificar) {
-        const igual = existsSync(caminhoPng) && existsSync(caminhoJson) && readFileSync(caminhoPng).equals(png) && readFileSync(caminhoJson, 'utf8') === json;
+        const igual = existsSync(caminhoImg) && existsSync(caminhoJson) && readFileSync(caminhoImg).equals(webp) && readFileSync(caminhoJson, 'utf8') === json && campoIgual;
         console.log(`${id}: ${igual ? 'ok' : 'DIFERE'}`);
         if (!igual) diferentes++;
       } else {
         mkdirSync(dir, { recursive: true });
-        writeFileSync(caminhoPng, png);
+        writeFileSync(caminhoImg, webp);
         writeFileSync(caminhoJson, json);
-        console.log(`${id}: retrato.png ${j.w}x${j.h} (${png.length} bytes), recorte ${j.recorte.map((v) => +v.toFixed(3)).join(', ')}`);
+        if (!campoIgual) {
+          writeFileSync(jsonAtlas, trocarCampoRetrato(readFileSync(jsonAtlas, 'utf8'), retrato, id));
+        }
+        rmSync(join(dir, 'retrato.png'), { force: true }); // o formato antigo: nao deixar dois retratos lado a lado
+        console.log(`${id}: ${ARQUIVO_RETRATO} ${j.w}x${j.h} (${webp.length} bytes), recorte ${j.recorte.map((v) => +v.toFixed(3)).join(', ')}`);
       }
     }
   } finally {

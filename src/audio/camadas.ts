@@ -25,6 +25,7 @@ let banco: BancoDeAmostras | null = null;
 let desfazOuvinte: (() => void) | null = null;
 let ultimoPar = '';
 let ultimoTick = 0;
+let etapa2Agendada = false;
 
 export interface QuaisCamadas {
   readonly identidade?: boolean;
@@ -87,9 +88,14 @@ export async function carregarCamadasSonoras(quais: QuaisCamadas): Promise<boole
         if (banco) {
           identidade.registrarBancoDeAmostras(banco);
           const b = banco;
+          etapa2Agendada = false; // banco novo, etapa 2 nova
           desfazOuvinte?.();
-          // o AudioContext nasce no 1º gesto: a base já baixada decodifica nesse instante, não no meio da 1ª luta
-          desfazOuvinte = aoGestoDeAudio((a) => b.sincronizar(a.ctx as BaseAudioContext | null));
+          // O AudioContext nasce no 1º gesto: a base já baixada decodifica nesse instante, não no meio da 1ª luta. É também o gatilho da ETAPA 2 do boot (T5 do orçamento):
+          // nada de som é baixado antes do gesto, e a base (272 KiB) só começa a descer quando o navegador está ocioso.
+          desfazOuvinte = aoGestoDeAudio((a) => {
+            b.sincronizar(a.ctx as BaseAudioContext | null);
+            agendarEtapa2(b);
+          });
         }
       }
     } catch (e) {
@@ -119,11 +125,32 @@ export function descartarAmostras(): void {
   amostras = null;
   ultimoPar = '';
   ultimoTick = 0;
+  etapa2Agendada = false;
+}
+
+/** `requestIdleCallback` onde existe; no WebKit (iOS/Safari não o têm) um `setTimeout` curto. Nada de relógio de parede em `src/audio`. */
+function noOcio(fn: () => void): void {
+  const g = globalThis as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number };
+  if (typeof g.requestIdleCallback === 'function') g.requestIdleCallback(fn, { timeout: 3000 });
+  else setTimeout(fn, 200);
 }
 
 /**
- * A luta foi montada: pede a folha da base e as dos dois lutadores (só bytes; a decodificação espera o contexto e vai em fila). Idempotente. `reagirDoJogo` chama isto no
- * 1º tick de cada confronto; quem montar a luta antes (a cena, o arcade com o próximo rival) pode chamar já.
+ * ETAPA 2 do boot (docs/orcamentos-2026-10-23.md §2.2, T5): depois do 1º gesto e com o navegador ocioso, baixa a folha `base` (só bytes; decodifica quando há contexto). Uma vez
+ * por banco. As folhas dos lutadores NÃO vêm aqui: sobem na tela VS (`prepararLutaSonora`) e, no mais tardar, no 1º tick da luta (`reagirDoJogo`). Até chegarem, o jogo toca a
+ * síntese de hoje: o 1º golpe nunca fica mudo.
+ */
+function agendarEtapa2(b: BancoDeAmostras): void {
+  if (etapa2Agendada) return;
+  etapa2Agendada = true;
+  noOcio(() => {
+    if (banco === b && chavesSonoras.amostras) void b.baixarFolha('base');
+  });
+}
+
+/**
+ * O confronto foi decidido: pede a folha da base e as dos dois lutadores (só bytes; a decodificação espera o contexto e vai em fila). Idempotente. A tela VS chama isto ao
+ * entrar (a espera dela, de 0,5 a 3 s, é o que paga o download de ~50 KiB por lutador); `reagirDoJogo` repete no 1º tick de cada confronto, como rede de segurança.
  */
 export function prepararLutaSonora(ids: readonly string[], ctx?: unknown): void {
   if (!banco) return;

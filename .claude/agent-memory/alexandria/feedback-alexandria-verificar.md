@@ -26,6 +26,7 @@ Regra: confira no commit-alvo antes de afirmar, e rode o comando que a doc cita 
 - Não é seu: alterações de `src/` ou `public/` de outro agente no working tree. Não tente corrigi-las nem documentá-las como estáveis.
 - Limite do que foi provado: sem rodar a suíte, a doc fala "a confirmar" para número de teste, e cita o handoff com a data dele. Comportamento que só se vê no navegador ou em aparelho: "não testado em aparelho real".
 - Não conclua "não existe" por busca de literal. Em 2026-10-24 eu procurei só `jp` e concluí que a pré-recarga da L4 não existia; ela estava em `aoFimDaLuta` (`src/ui/cenas/fight.ts`). Busque pelo símbolo, pelo chamador e pelo nome do método antes de afirmar ausência.
+- Outros agentes também editam docs e commitam (em 2026-10-24, `d48cf1e` mudou arquitetura e o guia de lutadores). Antes de editar, compare a cópia de trabalho com o HEAD (`git status -- <doc>`, `git diff HEAD -- <doc>`) e aplique edições pontuais, sem regravar o arquivo inteiro a partir de uma cópia antiga.
 - Pré-existente não é meu: ao reescrever um doc, marque como "a confirmar" o que copiou sem reconferir. Não passe o texto antigo como verificado.
 
 Ver [[docs-innofighters]].

@@ -4,7 +4,7 @@ Direção de arte e texto: Apolo, 23/10/2026. Fatia V2-4 (`docs/spec-revisao-mot
 definitivo no campo `nome` de `src/data/lutadores/*.ts`. O `id`, a `sequencia`, o `semQueda` e o `final` não mudaram: o verificador do
 balanço e o reconhecimento no motor seguem iguais. O campo `efeito`, que estava proposto aqui, já está no código (commit `17696b0`).
 
-Estado no commit `78de1be`: 20 combos; 11 fecham com especial (todos com `efeito`) e 9 terminam com golpe comum e `final`. Conferido
+Estado no commit `9dce4da`: 20 combos; 11 fecham com especial (todos com `efeito`) e 9 terminam com golpe comum e `final`. Conferido
 nos dados de `src/data/lutadores/*.ts` (e `fichas` da NILA e do ZENON, que herdam os combos da base).
 
 ## Regras de nome

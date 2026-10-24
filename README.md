@@ -3,7 +3,7 @@
 Jogo de luta 2D para navegador. Canvas 2D, TypeScript em modo estrito (`tsconfig.json`), Vite.
 `prototipo/` é a referência congelada do jogo original; não é código de produção.
 
-**Estado (2026-10-24, commit `78de1be`, `origin/main`):** 10 lutadores no jogo. O motor de luta v2 está **ligado por padrão**: entrada no hitstop, filme do especial (33 entradas, com folha FILME por lutador), combos próprios (20) e CPU DIFÍCIL que usa os combos. Os chefões do ARCADE são os guardiões da fila (AMINU, CENTELLA, CAMILLE, NILA e BAATAR, nessa ordem) e, por último, o ZENON ARGYROS, "O Arconte", com luta de duas barras, cena da fase 2 e entrada dramática. Sons por lutador, temas musicais e amostras reais estão **ligados**. O trailer de abertura (com o filme do especial em versão curta), o logo oficial, os balões premium, os botões de toque e a tela cheia estão no jogo. O histórico de marcos está em `CHANGELOG.md`; o estado e as decisões em aberto, em `PROGRESSO.md`.
+**Estado (2026-10-24, commit `9dce4da`, `origin/main`):** 10 lutadores no jogo. O motor de luta v2 está **ligado por padrão**: entrada no hitstop, filme do especial (33 entradas, com folha FILME por lutador), combos próprios (20) e CPU DIFÍCIL que usa os combos. Os chefões do ARCADE são os guardiões da fila (AMINU, CENTELLA, CAMILLE, NILA e BAATAR, nessa ordem) e, por último, o ZENON ARGYROS, "O Arconte", com luta de duas barras, cena da fase 2 e entrada dramática. Sons por lutador, temas musicais e amostras reais estão **ligados**; a base sonora e os retratos carregam fora do boot. Há service worker em produção: a 2ª visita abre sem rede e sem baixar a arte de novo. O trailer de abertura (com o filme do especial em versão curta), o logo oficial, os balões premium, os botões de toque e a tela cheia estão no jogo. A residência de memória da arte está concluída, com a política por peso como padrão. O histórico de marcos está em `CHANGELOG.md`; o estado e as decisões em aberto, em `PROGRESSO.md`.
 
 A residência de memória da arte está concluída: a política por peso é o padrão desde `78de1be` (rollback `?residencia=fixa`), a chegada da arte é suave e a aba oculta solta memória. O `decode()` antecipado não foi feito, porque muda o pixel (medido).
 
@@ -26,7 +26,7 @@ Para os testes e2e, na primeira vez: `npx playwright install chromium` (só o Ch
 |---|---|
 | `npm ci` | instala as dependências exatas do `package-lock.json` |
 | `npm run dev` | servidor de desenvolvimento (`vite`) |
-| `npm run build` | `tsc --noEmit && vite build`: gera `dist/` (com sourcemap e `version.json`) |
+| `npm run build` | `tsc --noEmit && vite build`: gera `dist/` (com sourcemap, `version.json`, `sw.js` e `sw-manifesto.js`) |
 | `npm run preview` | serve o `dist/` |
 | `npm run typecheck` | `tsc --noEmit` (modo estrito); não escreve nada |
 | `npm test` | testes de unidade (Vitest, `tests/unit`) |
@@ -69,7 +69,7 @@ Dez lutadores (`IDS_LUTADORES`, `src/core/contratos.ts:174`). O ZENON é o chef�
 **Regras do desbloqueio** (`src/meta/regras.ts`, `src/meta/progresso.ts`, `src/meta/chefes.ts`):
 
 - A ordem da fila é AMINU, CENTELLA, CAMILLE, NILA, BAATAR (`FILA_DESBLOQUEIO`, `src/meta/regras.ts:24`).
-- Com `chefesDaFila = true` (o padrão no commit `78de1be`, `src/meta/regras.ts:47`), **derrotar o guardião da vez** o libera. Zerar o Arcade sozinho não libera mais ninguém.
+- Com `chefesDaFila = true` (o padrão no commit `9dce4da`, `src/meta/regras.ts:47`), **derrotar o guardião da vez** o libera. Zerar o Arcade sozinho não libera mais ninguém.
 - Chave de rollback `chefesDaFila = false`: cada Arcade zerado libera o próximo da fila ainda travado.
 - A escada tem 5 rivais sorteados e o chefão por último: 6 lutas (`TAMANHO_ESCADA = 5`, `src/meta/regras.ts:34`).
 - Lutadores ainda travados podem aparecer como rivais na escada (`travadosNaEscada: true`).
@@ -112,7 +112,7 @@ Dez lutadores (`IDS_LUTADORES`, `src/core/contratos.ts:174`). O ZENON é o chef�
 
 - **Identidade sonora por lutador** (voz, gritos, assinatura dos especiais): ligada (`IDENTIDADE_SONORA = true`, `src/audio/chaves.ts:14`).
 - **Temas musicais por lutador** (nove temas, um por lutador jogável; o ZENON mantém a valsa): ligados (`TEMAS_POR_LUTADOR = true`, `src/audio/chaves.ts:16`).
-- **Amostras reais** (impacto, voz e família de especial, sob a identidade sonora): ligadas (`AMOSTRAS_REALISTAS = true`, `src/audio/chaves.ts:23`). As amostras são CC0 (`public/assets/sons/CREDITOS.txt`). Sem os arquivos ou com falha de rede, o jogo toca a síntese, sem calar nada.
+- **Amostras reais** (impacto, voz e família de especial, sob a identidade sonora): ligadas (`AMOSTRAS_REALISTAS = true`, `src/audio/chaves.ts:23`). As amostras são CC0 (`public/assets/sons/CREDITOS.txt`). Sem os arquivos ou com falha de rede, o jogo toca a síntese, sem calar nada. A base e as folhas dos lutadores baixam depois do primeiro gesto e na tela VS, não no boot.
 - As três chaves são só rollback por código. Não há opção no menu nem parâmetro de URL para elas.
 - **Painel de escuta:** `?escuta=1` abre um painel para ouvir cada som, voz e tema sem jogar. Vale também no build de produção. Não grava nada.
 - Nada disso foi ouvido por ninguém ainda (decisão em aberto no `PROGRESSO.md`). Os testes provam que os sons e temas são diferentes e cabem no orçamento de CPU; não provam que são bonitos.
@@ -159,7 +159,7 @@ Joystick à esquerda, quatro botões de ataque (soco fraco, soco forte, chute fr
 
 - Tecla F e linha TELA CHEIA nas Opções. No computador e no Android, liga a tela cheia e trava a paisagem no celular quando o navegador deixa.
 - No iPhone, a API de tela cheia não existe no Safari nem no Chrome do iOS. A linha das Opções explica o caminho que existe: Compartilhar > Adicionar à Tela de Início, que abre o jogo sem barras. Não testado em aparelho real.
-- O manifesto (`public/manifest.webmanifest`) e as metas de `index.html` cuidam do ícone e do modo de app. Não há service worker (o serviço worker está previsto no orçamento, tarefa T7).
+- O manifesto (`public/manifest.webmanifest`) e as metas de `index.html` cuidam do ícone e do modo de app. Há service worker em produção: a 2ª visita abre sem rede e sem baixar a arte de novo. Ver `docs/service-worker.md`.
 
 ## Logo oficial
 
@@ -169,8 +169,9 @@ A logo é a imagem aprovada pelo dono (`public/assets/ui/logo/`), usada no títu
 
 Valem em produção:
 
-- `?seed=N`: fixa a semente do sorteio (`src/main.ts:52`).
+- `?seed=N`: fixa a semente do sorteio (`src/main.ts:53`).
 - `?escuta=1`: abre o painel de escuta de sons e temas (`src/audio/chaves.ts:33-35`).
+- `?sw=0`: desliga o service worker (desregistra, apaga os caches e fica desligado até `?sw=1`). `INNO_SW=off npm run build` gera o SW aposentado, para rollback por deploy. Ver `docs/service-worker.md`.
 - `?motorv2=0|off`: desliga o motor v2 inteiro (o motor de antes). `?motorv2=filmes,combos` liga só essas mecânicas. Valor desconhecido cai no padrão (tudo ligado). Detalhes em `docs/arquitetura.md`, seção 20 (`src/meta/regras.ts:71`).
 - `?residencia=fixa`: volta à política de memória de antes (rollback em produção, sem deploy). `?residencia=peso` pede a política por peso explicitamente. Sem o parâmetro, vale a por peso, que é o padrão desde o commit `78de1be` (`POLITICA_PADRAO`, `src/assets/elenco.ts:87`). Ver `docs/arquitetura.md`, seção 21.
 
@@ -178,19 +179,19 @@ Só com `npm run dev` (fora do DEV, não fazem nada):
 
 - `?expansao=1`: todos os lutadores liberados, para testar sem zerar o Arcade (`src/ui/dev-expansao.ts`).
 - `?expansao=4`: só os 4 lutadores de fábrica, sem fila nem chefão, sem esquiva, sem cinemática, sem temas, sem trailer (`src/ui/dev-expansao.ts`, `regrasDeQuatro`).
-- `?precarga=minima`: não carrega atlas no boot (`src/main.ts:178`).
-- `?manual=1`: desliga o laço em tempo real, para testes (`src/main.ts:252`). Com `&fluidez=1`, liga a fluidez do desenho nesse modo.
+- `?precarga=minima`: não carrega atlas no boot (`src/main.ts:181`).
+- `?manual=1`: desliga o laço em tempo real, para testes (`src/main.ts:255`). Com `&fluidez=1`, liga a fluidez do desenho nesse modo.
 - `?trailer=0`: desliga o trailer. `?trailer=P5`: abre o trailer no plano 5, para aprovar o corte (`src/ui/cenas/trailer.ts:17`).
 - `?dano-filme=hoje|v2|forte`: A/B do dano do filme (ferramenta, não é o jogo; `src/meta/regras.ts:98`).
 - `?filme=<lutador>:<golpe>`: abre um filme falso do golpe indicado no começo da luta (gancho de desenvolvimento, `src/ui/cenas/fight.ts:1010`).
 
 ## Versão no ar
 
-O build gera `version.json` com o commit e a data. O jogo compara com o que está no ar e mostra "NOVA VERSÃO NO AR" nas Opções, com o toque para atualizar (`src/versao.ts`).
+O build gera `version.json` com o commit e a data. O jogo compara com o que está no ar e mostra "NOVA VERSÃO NO AR" nas Opções. Tocar no aviso (ou apertar U nas Opções, com o aviso na tela) recarrega sem cache. Com service worker, a versão nova só assume no boot seguinte ou nesse botão, nunca no meio de uma luta (`src/versao.ts`, `docs/service-worker.md`).
 
 ## Estado do motor de luta
 
-- O motor v2 está **ligado por padrão** no commit `78de1be` (`MOTOR_V2_PADRAO`, `src/meta/regras.ts:11`), em qualquer modo de elenco.
+- O motor v2 está **ligado por padrão** no commit `9dce4da` (`MOTOR_V2_PADRAO`, `src/meta/regras.ts:11`), em qualquer modo de elenco.
 - As três mecânicas: entrada no hitstop (V2-1), filme do especial (V2-3) e combos próprios (V2-4), mais o render v2 (fluidez, mola, silhueta por quadro e tecla H). Detalhes e limites em `docs/arquitetura.md`, seção 20.
 - Kill switch em produção: `?motorv2=0`. A/B: `?motorv2=<lista>`.
 - A proposta original é `docs/spec-revisao-motor-luta.md` (superada). A spec que foi implementada é `docs/spec-revisao-motor-luta-v2.md`.
@@ -199,7 +200,7 @@ O build gera `version.json` com o commit e a data. O jogo compara com o que est�
 
 Os resultados do harness estão em `docs/balanco/` (`resultados.md`, `frame-data.md`). A pasta de produção é a rodada COM esquiva e com o motor v2 ligado (`docs/balanco/README.md` diz qual é qual). Não edite à mão: gere com `npm run balanco`.
 
-Resumo da rodada de produção no commit `78de1be` (25 800 lutas, 0 travadas): os 12 números de chefão (NORMAL e DIFÍCIL, seis chefões) estão dentro da meta; a taxa de vitória dos dez lutadores nas lutas regulares vai de 44,8% a 56,1%. Tabela e metas em `docs/arquitetura.md`, seção 8.
+Resumo da rodada de produção no commit `9dce4da` (25 800 lutas, 0 travadas, hash das lutas regulares `e5db8a2586c836b5`): os 12 números de chefão (NORMAL e DIFÍCIL, seis chefões) estão dentro da meta; a taxa de vitória dos dez lutadores nas lutas regulares vai de 44,8% a 56,2%. Tabela e metas em `docs/arquitetura.md`, seção 8.
 
 ## Site de teste (temporário)
 
@@ -217,6 +218,7 @@ Resumo da rodada de produção no commit `78de1be` (25 800 lutas, 0 travadas): o
 - Specs: `docs/spec-revisao-motor-luta-v2.md` (motor v2), `docs/spec-residencia-de-memoria.md` (residência da arte), `docs/roteiros-filme-especiais.md`, `docs/orcamentos-2026-10-23.md` (metas de peso e memória), `docs/spec-provocacao-prerround-e-vitoria.md` (a seção "Decisões do dono" no topo prevalece), `docs/spec-chefoes-progressivos-temas-e-dificuldade.md`, `docs/spec-sons-por-lutador.md`, `docs/plano-sons-realistas.md`, `docs/spec-trailer-abertura.md`, `docs/spec-revisao-motor-luta.md` (proposta superada).
 - Direção de arte: `docs/direcao-arte-baloes.md`, `docs/direcao-arte-controles-toque.md`, `docs/direcao-arte-trailer.md`, `docs/logo-oficial.md`.
 - `docs/balanco/`: resultados do harness, gerados por `npm run balanco`. `docs/balanco-motor-v2.md`: nota sobre o balanço do motor v2.
+- `docs/service-worker.md`: service worker (T7): como funciona, atualização, desligar e medição.
 - `docs/handoff-<agente>-<fase>.md`: registros de entrega da squad. Não são fonte de verdade; o código e a seção de estado de `PROGRESSO.md` são.
 - `CHANGELOG.md`: marcos do projeto.
 - `PLANO.md`, `PROGRESSO.md`, `docs/plano-expansao.md`, `docs/spec-chefao-zenon.md`, `docs/mecanicas-e3.md`, `docs/prompts-arte.md`.

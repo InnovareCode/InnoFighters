@@ -1,6 +1,6 @@
 # Como adicionar um lutador
 
-Passo a passo, da arte ao lutador jogável. Tudo confrontado com o código no commit `78de1be` (2026-10-24, `origin/main`).
+Passo a passo, da arte ao lutador jogável. Tudo confrontado com o código no commit `9dce4da` (2026-10-24, `origin/main`).
 Onde algo não foi confirmado, está marcado **a confirmar**.
 
 Exemplos reais: AMINU (lutador de fila, o modelo mais simples), NILA (duas fichas e folha extra), ZENON (chefão final, com cena, dreno e
@@ -129,7 +129,7 @@ export const AMINU: LutadorDef = {
 - `parry` (PARADE da CAMILLE): condição da PARADE em `src/fight/game.ts:814`.
 - `troca` (VADIVU da NILA): `src/fight/fighter.ts:789`.
 
-Linhas conferidas no commit `78de1be`.
+Linhas conferidas no commit `9dce4da`.
 
 **Fichas (variações de um lutador):** `fichas` aceita campos parciais que sobrescrevem a base (`FichaDef`, `src/data/tipos.ts:265`). A NILA usa `fichas.sarpa` (`src/data/lutadores/nila.ts`).
 
@@ -146,7 +146,7 @@ Linhas conferidas no commit `78de1be`.
 
 Campo `chefe` no `LutadorDef` (`src/data/tipos.ts:337`); o tipo `ConfigChefe` está em `src/data/tipos.ts:124`. Quem vira chefão é decidido por `chefeDoArcade` (`src/meta/chefes.ts:21`): o ZENON (id em `CHEFE`, `src/meta/regras.ts:31`) ou o próximo guardião da fila (ver "Guardião", abaixo). Fora da luta de chefe, o lutador é jogável comum.
 
-Exemplo real, ZENON (`src/data/lutadores/zenon.ts:151-162`, commit `78de1be`, campos resumidos):
+Exemplo real, ZENON (`src/data/lutadores/zenon.ts:151-162`, commit `9dce4da`, campos resumidos):
 
 ```ts
 chefe: {
@@ -177,7 +177,7 @@ chefe: {
 
 ### Guardião (chefe da fila)
 
-Os guardiões AMINU, CENTELLA, CAMILLE, NILA e BAATAR têm um `chefe` como o do ZENON, mas **sem** `fichaFase1`/`fichaFase2`: lutam com a ficha de jogável e a fase 2 é só a troca de barra. Exemplo real, AMINU (`src/data/lutadores/aminu.ts:71-78`, commit `78de1be`):
+Os guardiões AMINU, CENTELLA, CAMILLE, NILA e BAATAR têm um `chefe` como o do ZENON, mas **sem** `fichaFase1`/`fichaFase2`: lutam com a ficha de jogável e a fase 2 é só a troca de barra. Exemplo real, AMINU (`src/data/lutadores/aminu.ts:71-78`, commit `9dce4da`):
 
 ```ts
 chefe: {
@@ -199,13 +199,13 @@ npm run balanco -- --chefes <id> --esquiva                 # só este chefão, c
 npm run balanco -- --sem-regulares --varrer-dano 1,0.9,0.8 --esquiva
 ```
 
-  A rodada `--chefes` nunca grava em `docs/balanco/` (`docs/balanco/README.md`). Mantenha o hash das lutas regulares igual antes e depois de um ajuste de chefão (na rodada de produção do commit `78de1be`: `05bf1b64b46008a0`; depois da T10 do orçamento, com BAATAR e ZENON a 0,9 da escala: `e5db8a2586c836b5`).
+  A rodada `--chefes` nunca grava em `docs/balanco/` (`docs/balanco/README.md`). Mantenha o hash das lutas regulares igual antes e depois de um ajuste de chefão (na rodada de produção do commit `9dce4da`: `e5db8a2586c836b5` (com BAATAR e ZENON a 0,9 da escala, T10 do orçamento)).
 
 **Para o guardião entrar no ARCADE:**
 
 1. Id em `FILA_DESBLOQUEIO` (`src/meta/regras.ts:24`, ordem da fila). O ZENON continua em `CHEFE`. Um id em `INICIAIS` ou `FILA_DESBLOQUEIO` não pode também estar em `CHEFE` (`tests/unit/papeis-lutadores.test.ts`).
-2. `chefesDaFila` precisa estar `true` em `REGRAS_PADRAO` (`src/meta/regras.ts:47`). No commit `78de1be` está `true`. Com a chave `false` (rollback), o guardião existe nos dados, mas o ARCADE só põe o ZENON como chefão.
-3. Textos e roteiro (no commit `78de1be`, já commitados):
+2. `chefesDaFila` precisa estar `true` em `REGRAS_PADRAO` (`src/meta/regras.ts:47`). No commit `9dce4da` está `true`. Com a chave `false` (rollback), o guardião existe nos dados, mas o ARCADE só põe o ZENON como chefão.
+3. Textos e roteiro (no commit `9dce4da`, já commitados):
    - `TEXTOS_DOS_CHEFOES[id]` em `src/render/textos-dos-chefoes.ts`: `cartao` (nome, título, rodapé), `aviso`, `avisoRodape`, `vs`, `falas` (`derrota`, `fase2`, `vitoria`), `epilogo` (`quem`, `porque`, `convite`) e `tituloHud` (até 16 caracteres).
    - `ROTEIROS_DOS_GUARDIOES[id]` em `src/render/roteiros-de-entrada.ts` (`:56`): batidas (`em`, `pose`, e `zoom`/`dx` opcionais), efeito e som. As poses precisam existir no atlas.
    - `APRESENTACAO[id] = doGuardiao('<id>')` em `src/render/apresentacao-lutadores.ts`. `doGuardiao` (`:60`) lança erro no carregamento se faltar texto ou roteiro: o boot não sobe.
@@ -381,7 +381,7 @@ Metas de peso e de tamanho, em `ferramentas/orcamento/orcamento.json` (fonte: `d
 - Folha FILME: até 0,8 MiB e até 2048 x 1280 px.
 - Cenário: até 250 KiB por arquivo em `public/assets/cenarios/`.
 
-Hoje `bloqueantes` está vazio, então estouro vira aviso. Os valores medidos no commit `78de1be` não foram reconferidos nesta passada (é preciso `npm run build` antes de `npm run orcamento`).
+Hoje `bloqueantes` está vazio, então estouro vira aviso. Os valores medidos no commit `9dce4da` não foram reconferidos nesta passada (é preciso `npm run build` antes de `npm run orcamento`).
 
 ## Checklist de entrega
 

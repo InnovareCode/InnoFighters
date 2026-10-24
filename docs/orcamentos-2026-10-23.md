@@ -188,21 +188,23 @@ Sem OR-3, nenhuma meta de memória fecha, com ou sem FILME. Sem OR-2, a meta 4 n
 
 ## 5. Tarefas, em ordem
 
-| # | Tarefa | Dono | Tam. | Depende de | Aceite (quem valida: Íris) |
-|---|---|---|---|---|---|
-| T1 | Cenários `cn`, `kr`, `br` em WebP 1920 x 1080 (curados: cn q80 192, kr q70 235, br q70 202 KiB); `arquivo` em `src/data/cenarios.ts`; apagar os JPG; conferir o oráculo de fidelidade | Vega | P | nada | 10 de 10 cenários na meta 3 |
-| T2 | Silhueta **por quadro** com cache LRU (≤ 6 MiB); sem contexto 2D, pula o flash em vez de lançar; zerar canvas ao soltar | Lyra | M | nada | teste com `getContext` nulo; canvas em luta ≤ 24 MiB (6b) |
-| T3 | `GerenciadorDeArte` por **peso**: "fixo" vira "preferido", poda de cenários, soltar o que não está em uso ao começar a luta e ao esconder a aba; FILME com ciclo de vida da luta | Lyra | M | T2 | 6a nos pares do §3.1 pela conta w·h·4 da Íris; reescrever `arte-sob-demanda.spec` |
-| T4 | Boot em 4 etapas (§2.2), `data-pronto` só depois da etapa 0, intro conforme OR-2 | Lyra | M | T3, OR-2 | meta 4 ≤ 1,5 MiB bloqueante pelo método da Íris |
-| T5 | `base.mp3` e sons por lutador fora do boot (etapa 2 e VS) | Vega | P | nada | nenhum som some no 1º golpe (o fallback sintetizado já existe) |
-| T6 | Retratos em WebP | Vega | P | OR-8 | peso dos 10 retratos ≤ 0,35 MiB |
-| T7 | **Service worker (PLANO F4)**: shell no install; `/assets/` em cache-first com revisão por hash de conteúdo (os arquivos de `public/` não têm hash no nome); `index.html` e `version.json` em network-first; nada no dev; troca de versão só fora da luta; `worker-src 'self'` na CSP; base do Pages (`/InnoFighters/`) e do EasyPanel (`/`) | Vulcano | M | T4 (as etapas definem o que vai no install) | e2e:build: 2ª visita offline abre e luta; meta 5c ≤ 0,1 MiB |
-| T8 | Portão de orçamento na CI (`npm run orcamento`): gzip por pedaço de JS, peso e px por atlas, cenário e FILME, falha se passar | Vulcano | P | OR-1 | CI vermelha com um atlas de 3600 px de propósito |
-| T9 | WEI LONG v2 pelo pipeline (páginas ≤ 2048) | Vega (+ Apolo na arte) | M | OR-6 e a arte | 2a e 2b para os 10 |
-| T10 | BAATAR e ZENON a 0,9 da escala | Vega | M | OR-4 | 6a no BAATAR x ZENON; balanço rodado de novo |
-| T11 | Formato da folha FILME no pipeline (≤ 2048 x 1280, ≤ 0,8 MiB) e desenho direto da imagem, sem canvas intermediário (§3.2) | Vega (pipeline) + Lyra (desenho) | P | piloto HAYATO | critério 4 do piloto: +10 MiB na luta HAYATO x HAYATO |
-| T12 | Trailer refeito no orçamento de 150 MiB (§2.3) | Lyra | P | T3 | memória do trailer ≤ 150 MiB pela ferramenta `ferramentas/trailer` |
-| T13 | Medição em aparelho real: iPhone do dono (Chrome) e um Android médio, roteiro com memória, quadro, FILME e trailer | Íris (roteiro) + dono | P | T2, T3, T7 | 6a, 6b e 7b medidos e registrados |
+| # | Tarefa | Dono | Tam. | Depende de | Aceite (quem valida: Íris) | Status |
+|---|---|---|---|---|---|---|
+| T1 | Cenários `cn`, `kr`, `br` em WebP 1920 x 1080 (curados: cn q80 192, kr q70 235, br q70 202 KiB); `arquivo` em `src/data/cenarios.ts`; apagar os JPG; conferir o oráculo de fidelidade | Vega | P | nada | 10 de 10 cenários na meta 3 | feita (9dce4da) |
+| T2 | Silhueta **por quadro** com cache LRU (≤ 6 MiB); sem contexto 2D, pula o flash em vez de lançar; zerar canvas ao soltar | Lyra | M | nada | teste com `getContext` nulo; canvas em luta ≤ 24 MiB (6b) | — |
+| T3 | `GerenciadorDeArte` por **peso**: "fixo" vira "preferido", poda de cenários, soltar o que não está em uso ao começar a luta e ao esconder a aba; FILME com ciclo de vida da luta | Lyra | M | T2 | 6a nos pares do §3.1 pela conta w·h·4 da Íris; reescrever `arte-sob-demanda.spec` | — |
+| T4 | Boot em 4 etapas (§2.2), `data-pronto` só depois da etapa 0, intro conforme OR-2 | Lyra | M | T3, OR-2 | meta 4 ≤ 1,5 MiB bloqueante pelo método da Íris | em andamento (Lyra) |
+| T5 | `base.mp3` e sons por lutador fora do boot (etapa 2 e VS) | Vega | P | nada | nenhum som some no 1º golpe (o fallback sintetizado já existe) | feita (d48cf1e) |
+| T6 | Retratos em WebP | Vega | P | OR-8 | peso dos 10 retratos ≤ 0,35 MiB | feita (d48cf1e) |
+| T7 | **Service worker (PLANO F4)**: shell no install; `/assets/` em cache-first com revisão por hash de conteúdo (os arquivos de `public/` não têm hash no nome); `index.html` e `version.json` em network-first; nada no dev; troca de versão só fora da luta; `worker-src 'self'` na CSP; base do Pages (`/InnoFighters/`) e do EasyPanel (`/`) | Vulcano | M | T4 (as etapas definem o que vai no install) | e2e:build: 2ª visita offline abre e luta; meta 5c ≤ 0,1 MiB | feita (d48cf1e) |
+| T8 | Portão de orçamento na CI (`npm run orcamento`): gzip por pedaço de JS, peso e px por atlas, cenário e FILME, falha se passar | Vulcano | P | OR-1 | CI vermelha com um atlas de 3600 px de propósito | — |
+| T9 | WEI LONG v2 pelo pipeline (páginas ≤ 2048) | Vega (+ Apolo na arte) | M | OR-6 e a arte | 2a e 2b para os 10 | feita (relatado pelo Atlas) |
+| T10 | BAATAR e ZENON a 0,9 da escala | Vega | M | OR-4 | 6a no BAATAR x ZENON; balanço rodado de novo | feita (d48cf1e, 9dce4da) |
+| T11 | Formato da folha FILME no pipeline (≤ 2048 x 1280, ≤ 0,8 MiB) e desenho direto da imagem, sem canvas intermediário (§3.2) | Vega (pipeline) + Lyra (desenho) | P | piloto HAYATO | critério 4 do piloto: +10 MiB na luta HAYATO x HAYATO | — |
+| T12 | Trailer refeito no orçamento de 150 MiB (§2.3) | Lyra | P | T3 | memória do trailer ≤ 150 MiB pela ferramenta `ferramentas/trailer` | em andamento (Lyra) |
+| T13 | Medição em aparelho real: iPhone do dono (Chrome) e um Android médio, roteiro com memória, quadro, FILME e trailer | Íris (roteiro) + dono | P | T2, T3, T7 | 6a, 6b e 7b medidos e registrados | pendente (dono, aparelho) |
+
+Coluna Status atualizada em 2026-10-24 (alvo `9dce4da`). `—` = sem status registrado nesta passada. A análise de cada tarefa não foi reescrita.
 
 **Caminho crítico:** T2 → T3 → T4 → T7 → T13. T1, T5, T6 e T8 rodam em paralelo desde já. T9 e T10 esperam decisão.
 Contrato entre Lyra e Vulcano para T4/T7: a lista do que a etapa 0 baixa sai de **um** módulo (o mesmo que o boot usa), e o

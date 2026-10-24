@@ -3,6 +3,19 @@
 Marcos do InnoFighters, do mais recente para o mais antigo. Datas e hashes vêm do `git log` (fuso -03:00).
 Os nomes de fase (F0, E1a, E3 S2...) são os de `PLANO.md` e `docs/plano-expansao.md`.
 
+## 2026-10-24: orçamento T1, T5, T6, T7, T9 e T10 (`d48cf1e`, `9dce4da`)
+
+- **Sons fora do boot** (T5, `d48cf1e`): a `base` (272 KiB) desce depois do primeiro gesto, com o navegador ocioso; as folhas dos dois lutadores descem na tela VS e, no mais tardar, no primeiro tick da luta (`src/audio/camadas.ts`, `src/ui/cenas/vs.ts`).
+- **Retratos em WebP** (T6, `d48cf1e`): 10 arquivos, 0,283 MiB. `retrato.png` removido.
+- **Service worker** (T7, `d48cf1e`): shell e arte em cache, com revisão por hash de conteúdo. A troca de versão só acontece no boot ou no botão U das Opções, nunca no meio de uma luta. `?sw=0` desliga (até `?sw=1`); `INNO_SW=off npm run build` gera o SW aposentado. Ver `docs/service-worker.md`.
+- **BAATAR e ZENON a 0,9** (T10, `d48cf1e`, `9dce4da`): atlas com `alturaRef` 472 e 502 e três páginas cada. O `scale` não mudou. O `lp` do BAATAR foi recalibrado (`bh` 62, a ponta do soco leve voltou a conectar).
+- **Balanço regravado** (`9dce4da`): regulares `e5db8a2586c836b5`, versão `0b5ad77394bb`. 12 de 12 chefões na meta. Vitória das regulares de 44,8% a 56,2%.
+- **Cenários**: os JPG `cn`, `kr` e `br` saíram (T1, `9dce4da`); os WebP já estavam no repositório desde `0e6cd26`.
+- **WEI LONG v2 pelo pipeline** (T9): atlas versão 2, páginas de 2048 px (relatado pelo Atlas).
+- **Memória por luta final** (relatada pela coordenação; a confirmar): BAATAR x ZENON 134 MiB, NILA x ZENON 129 MiB, e os confrontos comuns até 109 MiB (analítico).
+- **Não provado:** aparelho (T13, do dono); service worker medido só no Chromium; e2e de build 18/18 relatado, não reconferido nesta passada.
+- **Pendente:** T4 (boot em etapas) e T12 (trailer no orçamento de 150 MiB), em andamento na Lyra.
+
 ## 2026-10-24: residência da arte concluída, L3 a L6 (`41e1ffb`, `78de1be`)
 
 - **Luta exclusiva e volta sem piscar** (L3 e L4, `41e1ffb`): a luta solta o que não usa e o filme sai ao fim dela (`src/ui/navegador.ts:96`). Ao voltar ao menu, a tela segura no preto até o essencial chegar, com teto de 45 ticks (`TETO_DO_PRETO`). No fim da luta, o fundo `jp` volta em segundo plano, uma vez por luta (`src/ui/cenas/fight.ts:366`).

@@ -70,9 +70,9 @@ const nota = (info: { annotations: Array<{ type: string; description?: string }>
 const FIXA: Array<[string, string, number]> = [
   ['hayato', 'min-ji', 135.3],
   ['nila', 'centella', 206.7],
-  ['baatar', 'baatar', 195.2],
-  ['baatar', 'zenon', 255.2],
-  ['zenon', 'zenon', 203.2],
+  ['baatar', 'baatar', 185.1],
+  ['baatar', 'zenon', 231.6],
+  ['zenon', 'zenon', 189.6],
   ['caio', 'aminu', 173.2],
   ['aminu', 'caio', 165.3],
 ];
@@ -100,10 +100,10 @@ const PESO: Array<[string, string, number]> = [
   ['nila', 'aminu', 94.9],
   ['caio', 'aminu', 85.7],
   ['hayato', 'hayato', 42.9],
-  ['baatar', 'baatar', 71.1],
-  ['zenon', 'zenon', 78.2],
-  ['nila', 'zenon', 124.6],
-  ['baatar', 'zenon', 139.7],
+  ['baatar', 'baatar', 61.0],
+  ['zenon', 'zenon', 64.6],
+  ['nila', 'zenon', 111.0],
+  ['baatar', 'zenon', 116.1],
 ];
 
 test.describe("política 'por-peso' (?residencia=peso): a vitrine é solta na luta", () => {
@@ -118,6 +118,9 @@ test.describe("política 'por-peso' (?residencia=peso): a vitrine é solta na lu
       expect(m.imagens).toBeGreaterThan(esperado - 0.5);
       expect(m.imagens).toBeLessThan(esperado + 0.5);
       expect(m.silhuetas).toBeLessThanOrEqual(6);
+      // orçamento de memória por luta (docs/orcamentos-2026-10-23.md §6a): ≤ 115 MiB numa luta comum, ≤ 150 com BAATAR ou ZENON (folhas pesadas)
+      const pesado = [c1, c2].some((id) => id === 'baatar' || id === 'zenon');
+      expect(m.imagens + BASE_FORA_DAS_IMAGENS, 'total estimado da luta (imagens + base)').toBeLessThanOrEqual(pesado ? 150 : 115);
     });
   }
 

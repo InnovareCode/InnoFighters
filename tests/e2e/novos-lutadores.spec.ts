@@ -68,7 +68,7 @@ const NOVOS = [
   { id: 'centella', cenario: 'mx', paginas: 2 },
   { id: 'camille', cenario: 'fr', paginas: 2 },
   { id: 'nila', cenario: 'in', paginas: 3 }, // GAJA (f1-f4) + SARPA (f5): 60 quadros em 3 páginas
-  { id: 'baatar', cenario: 'mn', paginas: 4 },
+  { id: 'baatar', cenario: 'mn', paginas: 3 },
 ] as const;
 
 test.describe('arte real dos cinco novos', () => {

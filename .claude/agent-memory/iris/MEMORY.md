@@ -13,3 +13,4 @@
 - [QA V2-3e: filme no jogo real](project_qa-v2-3e-filme.md) — achado desenharPose/flash, specs novos, memoria da folha FILME, armadilhas da cinematica
 - [Re-QA 76957be (gate do push)](project_reqa-76957be-gate-push.md) — APROVADO: e2e 317/0, folha so com flag (A/B), balao 83 para 0 px2; incidente node_modules/junction
 - [Paginas FILME v2 AMINU/ZENON/BAATAR](project_qa-paginas-filme-v2-aminu-zenon-baatar.md) — APROVADO; ampliacao 1,019/1,019/1,054 no drawImage; memoria-filme (processos) vermelho por ruido, ajuste proposto
+- [Validacao final d48cf1e](project_validacao-final-d48cf1e.md) — 3 specs velhos pos-commit, SW x page.route, ARCADE flaky sob carga, memoria por luta final, JPGs removidos

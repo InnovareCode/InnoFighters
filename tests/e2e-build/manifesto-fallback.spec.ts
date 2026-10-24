@@ -7,6 +7,8 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
 test.describe.configure({ timeout: 120_000 });
+// O service worker (T7) atende estes pedidos por dentro e o `page.route` do Playwright NÃO os vê: o spec testa o fallback de ÁUDIO, não o SW (esse é o service-worker.spec). Sem o bloqueio as rotas falsas nunca disparam.
+test.use({ serviceWorkers: 'block' });
 
 const URL_MANIFESTO = '**/assets/sons/manifesto.json*';
 

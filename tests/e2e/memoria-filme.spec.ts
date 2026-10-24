@@ -28,11 +28,14 @@ type Amostra = { com: boolean; fase: string; ws: number; priv: number; cpu: numb
 
 async function amostrar(browser: Browser, baseURL: string, com: boolean, aposFilme: boolean): Promise<Amostra> {
   const { defaultBrowserType: _tipo, ...celular } = devices['Pixel 7'];
-  const ctx = await browser.newContext({ ...celular, baseURL });
+  const ctx = await browser.newContext({ ...celular, baseURL: baseURL! });
   const page = await ctx.newPage();
   try {
     if (!com) await page.route('**/assets/lutadores/hayato/filme.webp', (r) => r.abort());
-    await page.goto('/?seed=7&manual=1&expansao=1');
+    // residencia=fixa: este teste mede a memória dos PROCESSOS só com a diferença da folha. De 78de1be a 2403b2d a medida deu +14 com 'fixa' e +54-57 com 'por-peso' (o padrão
+    // desde 78de1be), enquanto a contabilidade da arte do jogo dá +9,375 MiB exatos nos dois: a oscilação é do Chromium com a política por-peso, não custo da folha.
+    // A contabilidade do padrão tem teste próprio, o último deste arquivo.
+    await page.goto('/?seed=7&manual=1&expansao=1&residencia=fixa');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     const args = JSON.stringify({ cfg: { mode: 'versus', c1: 'hayato', c2: 'hayato', cpu: null, esquiva: false, motorV2: { filmes: true } } });
     await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', ${args}); (${SEM_PROVOCACAO})(h); }`);
@@ -111,4 +114,42 @@ test('memória dos processos (renderer + GPU), perfil de celular, HAYATO x HAYAT
   // Sem a folha (404, ou a carga quebrada) a diferença fica perto de 0.
   expect(comWS - semWS, 'a folha decodificada custa working set (7 a 30 MiB); perto de 0 = a folha não carregou').toBeGreaterThan(7);
   expect(comWS - semWS).toBeLessThan(30);
+});
+
+test('residência por-peso (o padrão): na contabilidade da arte do jogo a folha FILME custa exatamente 9,375 MiB e nenhuma outra imagem muda (com x sem a folha)', async ({ browser, baseURL }, info) => {
+  test.skip(info.project.name !== 'celular', 'perfil de celular');
+  const { defaultBrowserType: _tipo, ...celular } = devices['Pixel 7'];
+  const medir = async (com: boolean): Promise<{ m: any; pedidos: string[] }> => {
+    const ctx = await browser.newContext({ ...celular, baseURL: baseURL! });
+    const page = await ctx.newPage();
+    try {
+      if (!com) await page.route('**/assets/lutadores/hayato/filme.webp', (r) => r.abort());
+      const pedidos: string[] = [];
+      page.on('requestfinished', (r) => {
+        const u = r.url();
+        if (u.includes('/assets/')) pedidos.push(u.split('/assets/')[1]!.split('?')[0]!);
+      });
+      await page.goto('/?seed=7&manual=1&expansao=1'); // SEM residencia=: o padrão (por-peso)
+      await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+      const args = JSON.stringify({ cfg: { mode: 'versus', c1: 'hayato', c2: 'hayato', cpu: null, esquiva: false, motorV2: { filmes: true } } });
+      await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', ${args}); (${SEM_PROVOCACAO})(h); }`);
+      await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 60_000 });
+      for (let i = 0; i < 300; i++) if ((await hook(page, '(h) => { h.avancar(2); return h.mundo().game.phase; }')) === 'fight') break;
+      if (com) await page.waitForFunction(() => (window as any).__inno.mundo().arte.filmesResidentes().includes('hayato'), undefined, { timeout: 30_000 });
+      await page.waitForTimeout(500);
+      expect(await hook(page, '(h) => h.mundo().arte.politica'), 'o padrão é a residência por peso').toBe('por-peso');
+      return { m: await hook(page, '(h) => h.mundo().arte.memoria()'), pedidos };
+    } finally {
+      await ctx.close();
+    }
+  };
+  const sem = await medir(false);
+  const com = await medir(true);
+  expect(com.m.filmes).toEqual({ hayato: 1920 * 1280 * 4 });
+  expect(sem.m.filmes).toEqual({});
+  expect(com.m.imagens - sem.m.imagens, 'a diferença total é a folha, nada mais').toBe(1920 * 1280 * 4);
+  expect(com.m.atlas).toEqual(sem.m.atlas);
+  expect(com.m.cenarios).toEqual(sem.m.cenarios);
+  expect(com.pedidos.filter((u) => u.includes('filme.webp')), 'a folha só é pedida com a folha').toHaveLength(1);
+  expect(sem.pedidos.filter((u) => u.includes('filme.webp'))).toHaveLength(0);
 });

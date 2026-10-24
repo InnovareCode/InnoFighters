@@ -278,7 +278,7 @@ test.describe('fidelidade das telas: ui/ novo x protótipo (pixel a pixel)', () 
     const ca = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     app = await ca.newPage();
     await usarArteDoPrototipo(ca);
-    await app.goto('/?seed=5&manual=1&expansao=4&motorv2=0&residencia=fixa'); // 4 lutadores: é o que o protótipo tem. `motorv2=0`: o protótipo não tem a lista de combos do "Como jogar" (V2-4), que o padrão do jogo agora mostra; `residencia=fixa`: o oráculo de pixel desenha cenas pulando entre elas por `set` em tick fixo, sem esperar a rede, e compara com a arte toda residente (a residência por peso tem os e2e dela)
+    await app.goto('/?seed=5&manual=1&expansao=4&motorv2=0&ritmo=0&residencia=fixa'); // 4 lutadores: é o que o protótipo tem. `motorv2=0`: o protótipo não tem a lista de combos do "Como jogar" (V2-4), que o padrão do jogo agora mostra; `residencia=fixa`: o oráculo de pixel desenha cenas pulando entre elas por `set` em tick fixo, sem esperar a rede, e compara com a arte toda residente (a residência por peso tem os e2e dela)
     await app.waitForSelector('html[data-pronto]', { timeout: 60_000 });
     // logo e emblema desligados dos dois lados (ver o cabeçalho)
     await app.evaluate(async () => {

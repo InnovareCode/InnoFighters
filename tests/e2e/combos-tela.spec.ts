@@ -17,7 +17,7 @@ async function abrir(page: Page): Promise<void> {
   await hook(
     page,
     `(h) => {
-      h.ui.c.regras = { ...h.ui.c.regras, motorV2: { ...(h.ui.c.regras.motorV2 ?? {}), combos: true } };
+      h.ui.c.regras = { ...h.ui.c.regras, ritmo: {}, motorV2: { ...(h.ui.c.regras.motorV2 ?? {}), combos: true } }; // ritmo: {} = geometria SEM a linha do SUPER (com ela a lista encolhe e a caixa sobe; o padrão tem teste próprio em ritmo-padrao-super.spec.ts)
       const ctx = h.ui.c.ctx;
       const original = ctx.fillText.bind(ctx);
       window.__textos = [];

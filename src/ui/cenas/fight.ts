@@ -12,6 +12,7 @@ import type { DummyTreino, FonteEntradas } from '../../fight/game';
 import { chefeDaLeitura } from '../../render/aura-chefe';
 import { APRESENTACAO, falaDoChefe, roteiroDe } from '../../render/apresentacao-lutadores';
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
+import { FaixaRitmo } from '../../render/faixa-ritmo';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
 import { alturaDoLutador, FilmeDoEspecial, type EventoFilme, type HudDoRival, type ModoFilme } from '../../render/filme';
 import { Fluidez } from '../../render/fluidez';
@@ -46,6 +47,7 @@ import type { Navegador } from '../navegador';
 import { alturaDosCombos, combosDoLutador, desenharCombos, DICA_DOS_COMBOS } from '../combos-tela';
 import { desenharLinhasDeGolpes, P_COL } from '../personagens';
 import { NAV, type ArgsFight, type Cena } from '../tipos';
+import { criarContadorRitmo, motivoDoTick, registrarTickDeRitmo, type ContadorRitmo, type MotivoRitmo } from './ritmo-contador';
 
 type Vista = 'main' | 'moves' | 'audio' | 'confirm';
 const ALVOS = Object.keys(NOMES_ALVO_TREINO) as DummyTreino[];
@@ -65,6 +67,8 @@ export class CenaFight implements Cena {
   private fimDoAcendeu: ReturnType<typeof setTimeout> | null = null;
   /** CINEMÁTICA do especial (apresentação pura: enquanto roda a cena não chama `game.update`, como a pausa) e a sessão dos acertos dele. */
   readonly cine: Cinematica;
+  /** FAIXA DO RITMO (R-2, `Regras.ritmo.tarja`): o mesmo aviso do especial, SEM pausar a cena — usada no lugar de `cine` quando a flag está ligada (§3.2). */
+  readonly faixaRitmo = new FaixaRitmo();
   readonly sessao: SessaoEspecial;
   /** ENTRADA DRAMÁTICA do chefão (apresentação pura, antes do 1º `game.update`: o motor e o lock-step não a veem). */
   readonly entrada: EntradaDoChefe;
@@ -117,6 +121,8 @@ export class CenaFight implements Cena {
   private aquecendo = true;
   /** A arte da luta está na memória? (a luta só anda depois) */
   readonly espera = new EsperaDeArte();
+  /** R-1 (DEV): ticks por motivo desta luta (espelhado em `window.__ritmo`); `null` em produção (nunca aloca nem soma). */
+  private readonly ritmo: ContadorRitmo | null = import.meta.env.DEV ? criarContadorRitmo() : null;
   private m: MenuList;
   private am: MenuList;
   private cm: MenuList;
@@ -240,7 +246,11 @@ export class CenaFight implements Cena {
     else if (tipo === 'vitoria') this.vitoriaDisparada = true;
     if (!this.a || !this.queroProvocar(tipo === 'vitoria' ? 'vitoria' : 'prerround')) return;
     const reduz = this.reduzMovimento();
-    const modo = modoDaProvocacao(tipo, this.ui.c.persist.settings.cinematica, reduz, this.confrontoRepetido);
+    // D-R8/R-2 (`Regras.ritmo.provocacao`): a COMPLETA do round 1 só no 1º confronto do ARCADE (`run.idx === 0`) ou no chefão; sem a
+    // flag, `true` preserva a regra de hoje (COMPLETA sempre que não repetido). `provocacaoLigada` já exclui o chefão do pré-round
+    // (a entrada dramática ocupa o lugar), então o `cfg.chefe` aqui é defensivo, não alcançado hoje.
+    const primeiroOuChefe = this.ui.c.regras.ritmo?.provocacao !== true || this.a.cfg.chefe === true || this.a.run?.idx === 0;
+    const modo = modoDaProvocacao(tipo, this.ui.c.persist.settings.cinematica, reduz, this.confrontoRepetido, primeiroOuChefe);
     const { game, elenco } = this.ui.m;
     const ids = [game.p1.id, game.p2.id] as const;
     const dados: DadosDeFala = { ids, nomes: [elenco[ids[0]].ch.name, elenco[ids[1]].ch.name] };
@@ -314,7 +324,13 @@ export class CenaFight implements Cena {
     this.fluidez.zerar();
     this.ultimoTick = game.tick;
     this.cine.zerarLuta();
+    this.faixaRitmo.zerarLuta();
     this.sessao.zerarLuta();
+    if (this.ritmo) {
+      for (const motivo of Object.keys(this.ritmo.porMotivo) as (keyof typeof this.ritmo.porMotivo)[]) this.ritmo.porMotivo[motivo] = 0;
+      this.ritmo.total = 0;
+      if (typeof window !== 'undefined') window.__ritmo = this.ritmo;
+    }
     this.aquecendo = true;
     this.musicaBaixa = true; // força a volta ao volume salvo (a cena anterior pode ter saído no meio de uma cinemática)
     this.baixarMusica(false);
@@ -496,6 +512,11 @@ export class CenaFight implements Cena {
     if (!this.cine.ativa) this.baixarMusica(false);
   }
 
+  /** R-1: registra o motivo deste tick no contador (só DEV; em produção `this.ritmo` é `null` e não custa nada). */
+  private registrarRitmo(motivo: MotivoRitmo): void {
+    if (this.ritmo) registrarTickDeRitmo(this.ritmo, motivo);
+  }
+
   /** Os eventos do tick: a sessão dos acertos e a abertura da cinemática (no início do golpe, ou no SUCESSO da PARADE/GARKUWA). */
   private reagirAoEspecial(ev: EventoLuta): void {
     const modo = this.modoDaCine();
@@ -511,6 +532,12 @@ export class CenaFight implements Cena {
       abrir = { lutador: ev.lutador, golpe: ev.golpe, ficha: game.fighters[ev.lutador].ficha ?? null, ...(ev.quadro ? { quadro: ev.quadro } : {}), ...(ev.entrada ? { entrada: ev.entrada } : {}) };
     }
     if (!abrir) return;
+    // R-2 (`Regras.ritmo.tarja`): o especial comum deixa de congelar — a MESMA faixa, sem pausar a cena (nenhum `super` existe ainda no
+    // motor, então todo especial cai aqui enquanto a flag estiver ligada; o `cine` congelante fica de reserva para o rollback).
+    if (this.ui.c.regras.ritmo?.tarja === true) {
+      this.faixaRitmo.iniciar({ lutador: abrir.lutador, golpe: abrir.golpe, ficha: abrir.ficha ?? null });
+      return;
+    }
     this.cine.iniciar(abrir, modo);
     this.baixarMusica(true);
   }
@@ -527,20 +554,30 @@ export class CenaFight implements Cena {
       this.entrada.avancar();
       // as tarjas dos especiais se pintam durante a entrada (sobra tempo aqui e o 1º especial não paga o custo de primeira vez)
       if (this.aquecendo && this.modoDaCine() !== null) this.aquecendo = this.cine.aquecer(this.ui.m.game, this.ui.m.elenco);
+      this.registrarRitmo('entrada-chefe');
       return;
     }
-    // PROVOCAÇÃO do round 1: antes do 1º `game.update` (o motor fica em `intro` t 0; o `round start` segue pendente e sai no 1º update depois dela)
+    // PROVOCAÇÃO do round 1: antes do 1º `game.update` (o motor fica em `intro` t 0; o `round start` segue pendente e sai no 1º update depois dela).
+    // R-2 (`Regras.ritmo.provocacao`): a CURTA do round 1 passa a correr por CIMA da contagem — `sobreposta` deixa de retornar aqui e cai
+    // no fluxo normal abaixo, que chama `game.update` no MESMO tick (o balão continua desenhando por cima, em `draw()`, sem mudar nada
+    // ali). A COMPLETA (1º confronto do ARCADE/chefão, D-R8) continua bloqueando como hoje: é rara e intencional, como a entrada do chefão.
     if (this.aberturaPendente) this.comecarProvocacao('abertura');
     if (this.provocacao.ativa) {
+      const sobreposta = this.ui.c.regras.ritmo?.provocacao === true && this.provocacao.roteiro?.tipo === 'abertura' && this.provocacao.roteiro?.modo === 'curta';
       this.passoDaProvocacao();
-      return;
+      if (!sobreposta) {
+        this.registrarRitmo('provocacao');
+        return;
+      }
     }
     // FILME do especial: o motor não anda (como a cinemática); KO, troca de barra e fim de round esperam o último quadro
     if (this.filme.ativo) {
+      this.registrarRitmo('filme');
       this.passoDoFilme();
       return;
     }
     if (this.cine.ativa) {
+      this.registrarRitmo('tarja'); // flash-super entra com o R-7 (motor): ainda não existe super
       this.passoDaCinematica();
       return;
     }
@@ -551,9 +588,12 @@ export class CenaFight implements Cena {
       this.dispararFilmeDev();
       return;
     }
+    // FAIXA DO RITMO (R-2): nunca bloqueia, então anda em TODO tick que chega até aqui (a luta anda igual, com ou sem ela ativa).
+    this.faixaRitmo.avancar();
     this.antesDoTick = [game.fighters[0], game.fighters[1]].map((f) => ({ hp: f.hp, hpShown: f.hpShown, barras: f.barras })) as [HudDoRival, HudDoRival];
     const t0 = game.t;
     game.update(this.fonte);
+    this.registrarRitmo(motivoDoTick({ entradaChefeAtiva: false, provocacaoBloqueando: false, filmeAtivo: false, tarjaBloqueando: false, tarjaDoSuper: false, fase: game.phase, hitstop: game.hitstop }));
     petalasLuta.avancar(t0);
     // eventos -> som e efeitos visuais; depois os efeitos andam um tick (só se a luta andou: hitstop congela).
     // Tick com FILME: o acerto que o abriu e os sons/efeitos dele são do filme (por batida); KO, troca de barra, fim de round e o pó da queda esperam.
@@ -945,6 +985,9 @@ export class CenaFight implements Cena {
       if (fala && c && game.phase === 'matchend' && game.matchWinner === c.indice && !game.matchDone && this.queroProvocar('vitoria')) fala = null;
       if (fala) desenharLegenda(ctx, fala, Math.min(1, game.t / 12));
     }
+    // FAIXA DO RITMO (R-2): por cima de tudo, independente do resto (a luta continua jogável enquanto ela aparece; `cine` e `pv` nunca
+    // coexistem com ela, porque `reagirAoEspecial` escolhe um ou outro pela flag).
+    this.faixaRitmo.desenhar(ctx, game, m.elenco, this.cine);
     if (!this.paused) {
       if (game.training && game.phase === 'fight' && game.t < 400) {
         f.T('ESC pausa  •  R reposiciona  •  T troca o alvo', W / 2, H - 56, 13, '#cfd6f5', 'center', { alpha: 1 - game.t / 400 });

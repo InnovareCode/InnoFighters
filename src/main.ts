@@ -13,7 +13,7 @@ import { VITRINE } from './data/lutadores';
 // efeito colateral PROPOSITAL: valida as falas das provocações no carregamento (lutador sem falas ou fora dos limites derruba o boot, alto e cedo)
 import './data/provocacoes';
 import { Game } from './fight/game';
-import { REGRAS_PADRAO, regrasComMotorV2 } from './meta';
+import { REGRAS_PADRAO, regrasComMotorV2, regrasComRitmo } from './meta';
 import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
 import { VERSAO, verificarVersao } from './versao';
@@ -90,7 +90,11 @@ async function iniciar(): Promise<void> {
   const modoExpansao = import.meta.env.DEV ? params.get('expansao') : null;
   const fixture = modoExpansao === '1' || modoExpansao === '4' ? await import('./ui/dev-expansao') : null;
   // o motor de luta v2 (entrada no hitstop, filme do especial, combos próprios) vale em QUALQUER modo de elenco, inclusive `?expansao=4`; `?motorv2=0` é o rollback
-  const regras = regrasComMotorV2(!fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao(), window.location.search, import.meta.env.DEV);
+  // o redesenho de ritmo (docs/spec-redesenho-jogabilidade.md): nasce DESLIGADO em produção; `?ritmo=1` é a prévia do dono, `?ritmo=0` o rollback
+  const regras = regrasComRitmo(
+    regrasComMotorV2(!fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao(), window.location.search, import.meta.env.DEV),
+    window.location.search,
+  );
   // sem a mecânica da ESQUIVA (?expansao=4) o botão ESQ do toque some (a casa fica; ver toque.css)
   document.body.classList.toggle('sem-esquiva', !regras.esquiva);
 

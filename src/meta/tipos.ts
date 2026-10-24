@@ -78,6 +78,36 @@ export type Regras = {
    * kill switch é `?motorv2=0` (`regrasComMotorV2`). Vai à `ConfigPartida` das lutas montadas pela UI (`cfgMotorV2`) e à do trailer (`criarPartida`).
    */
   readonly motorV2?: MotorV2;
+  /**
+   * Redesenho de ritmo (docs/spec-redesenho-jogabilidade.md §4), flag por mecânica. AUSENTE ou `{}` = o jogo de hoje, bit a bit (é o
+   * que os testes de fidelidade e os hashes do balanço fixam). `tarja`/`provocacao` são da Lyra (R-1/R-2, só UI); as demais (`intervalos`,
+   * `filmeRestrito`, `super`, `cadeia`, `cpu`, `impacto`) são do motor (Vega, onda 2) e ainda não têm efeito. Kill switch/A-B: `?ritmo=`
+   * (`ritmoDaUrl`), como `?motorv2=`. Cada onda vai para produção DESLIGADA: só o dono vira o padrão depois de jogar com `?ritmo=1`.
+   */
+  readonly ritmo?: Ritmo;
+};
+
+/**
+ * As flags do redesenho de ritmo (docs/spec-redesenho-jogabilidade.md §4). Todas booleanas; ausente = desligada. SEM `readonly`
+ * nos campos (como `MotorV2`): `ritmoDaUrl` monta o objeto campo a campo; a imutabilidade de fora (`Regras.ritmo`) já é `readonly`.
+ */
+export type Ritmo = {
+  /** R-2: a tarja do especial comum para de congelar a luta (faixa no alto, 40/24 ticks, enquanto o motor anda). */
+  tarja?: boolean;
+  /** R-2: a provocação CURTA do round 1 some por cima da contagem (o motor anda); a COMPLETA (1º confronto do ARCADE/chefão) não muda. */
+  provocacao?: boolean;
+  /** R-6 (Vega): intervalos de KO/roundend/intro/matchend mais curtos. */
+  intervalos?: boolean;
+  /** R-6 (Vega): o filme só no super e no especial que dá KO. */
+  filmeRestrito?: boolean;
+  /** R-7 (Vega): o golpe super (barra cheia). */
+  super?: boolean;
+  /** R-8 (Vega): cadeia de combo por força, até 4 golpes. */
+  cadeia?: boolean;
+  /** R-10 (Vega): CPU que confirma, varia e pune. */
+  cpu?: boolean;
+  /** R-17 (opcional, Vega+Lyra): hitstop por força, faísca e empurrão. */
+  impacto?: boolean;
 };
 
 /**

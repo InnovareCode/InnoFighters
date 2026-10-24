@@ -7,3 +7,4 @@
 - [Residência de memória L1+L2](residencia-memoria-l1l2.md) — gerenciador por peso: fixa idêntica (diferencial), geração de carga, dublês sem entrarNaLuta, Stop-Process mata o próprio bash
 - [Boot em etapas T4 + trailer T12](boot-etapas-t4-t12.md) — etapa0.mjs unica p/ boot+SW, data-pronto=0,91 MiB, data-vitrine, trailer sem arte fixa (pico 145,3), ordem iniciar>usar>soltar, heredoc come barra invertida
 - [Residência L3-L6 e trailer com filme](residencia-memoria-l3l4.md) — Navegador/arteDaCena, preto 45 ticks, FundoPadrao, ChegadaDeArte, decode() muda pixel (revertido), padrão por-peso, D-V6
+- [Ritmo R-1/R-2: faixa sem congelar](ritmo-r1-r2-tarja-sem-congelar.md) — canvas tem buffer fixo (RS=2, medir geometria por viewport não muda nada; medir o boundingBox sim), intro dura 90 ticks e ignora ataque, servidor e2e isolado sem HMR (porta própria, `--host 127.0.0.1`), input real em `?manual=1`

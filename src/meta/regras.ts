@@ -1,7 +1,7 @@
 import { IDS_LUTADORES, type IdLutador } from '../core/contratos';
 import type { MotorV2 } from '../core/contratos';
 import { VARIANTES_DO_DANO, type VarianteDoDano } from '../data/filmes';
-import type { Regras } from './tipos';
+import type { Regras, Ritmo } from './tipos';
 
 /**
  * Motor de luta v2 (docs/spec-revisao-motor-luta-v2.md), V2-6: as três mecânicas SEMPRE ligadas por padrão (ordem do dono), inclusive em
@@ -89,6 +89,57 @@ export function regrasComMotorV2(regras: Regras, busca: string, dev = false): Re
   const motor = motorV2DaUrl(busca);
   const ab = dev ? danoFilmeDaUrl(busca) : undefined;
   return { ...regras, motorV2: ab ? { ...motor, danoFilme: ab } : motor };
+}
+
+/** Nomes das flags de `Ritmo` na URL (`?ritmo=tarja,provocacao`), na ordem do contrato (docs/spec-redesenho-jogabilidade.md §4). */
+export const NOMES_RITMO: Readonly<Record<string, keyof Ritmo>> = Object.freeze({
+  tarja: 'tarja',
+  provocacao: 'provocacao',
+  intervalos: 'intervalos',
+  filmerestrito: 'filmeRestrito',
+  super: 'super',
+  cadeia: 'cadeia',
+  cpu: 'cpu',
+  impacto: 'impacto',
+});
+
+/** Todas as flags do ritmo ligadas (`?ritmo=1`, prévia do dono). */
+export const RITMO_TUDO_LIGADO: Readonly<Required<Ritmo>> = Object.freeze({
+  tarja: true,
+  provocacao: true,
+  intervalos: true,
+  filmeRestrito: true,
+  super: true,
+  cadeia: true,
+  cpu: true,
+  impacto: true,
+});
+
+/**
+ * Kill switch e A/B do redesenho de ritmo pela URL (`?ritmo=`), no mesmo molde de `motorV2DaUrl` — com uma diferença: o PADRÃO
+ * (ausente) é tudo DESLIGADO (o jogo de hoje), porque cada onda nasce em produção desligada e só o dono a liga depois de jogar:
+ *  - ausente -> `{}` (nada ligado, o jogo de hoje);
+ *  - `1`, `on`, `true` ou `sim` -> tudo ligado (a prévia completa);
+ *  - `0`, `off`, `false`, `nao` ou `não` -> `{}` (explícito, igual ao ausente);
+ *  - lista (`tarja,provocacao`, em qualquer ordem) -> só essas ligadas (A/B de uma mecânica).
+ * Valor desconhecido (`?ritmo=xyz`, nome de flag errado) cai em `{}`: nunca liga nada por acidente de digitação.
+ */
+export function ritmoDaUrl(busca: string): Ritmo {
+  const bruto = new URLSearchParams(busca).get('ritmo');
+  if (bruto === null) return {};
+  const v = bruto.trim().toLowerCase();
+  if (v === '' || v === '1' || v === 'on' || v === 'true' || v === 'sim') return { ...RITMO_TUDO_LIGADO };
+  if (v === '0' || v === 'off' || v === 'false' || v === 'nao' || v === 'não') return {};
+  const nomes = v.split(',').map((x) => x.trim()).filter(Boolean);
+  if (nomes.length === 0 || !nomes.every((n) => Object.hasOwn(NOMES_RITMO, n))) return {};
+  const r: Ritmo = {};
+  for (const n of nomes) r[NOMES_RITMO[n]!] = true;
+  return r;
+}
+
+/** As regras com o ritmo resolvido pela URL. Vale para QUALQUER base, como `regrasComMotorV2`. Não muta a entrada. */
+export function regrasComRitmo(regras: Regras, busca: string): Regras {
+  return { ...regras, ritmo: ritmoDaUrl(busca) };
 }
 
 /**

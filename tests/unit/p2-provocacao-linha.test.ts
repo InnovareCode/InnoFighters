@@ -363,6 +363,21 @@ describe('quando a provocação existe (provocacaoLigada) e em que modo (modoDaP
     expect(modoDaProvocacao('vitoria', 'curta', false, false)).toBe('curta');
     expect(modoDaProvocacao('vitoria', 'desligada', false, false)).toBe('curta');
   });
+
+  it('R-2/D-R8: `primeiroOuChefe` só restringe a COMPLETA do round 1; omitido (padrão `true`) é o comportamento de hoje', () => {
+    // omitido = true: idêntico às linhas de cima (nenhuma regressão para quem chama com 4 args)
+    expect(modoDaProvocacao('abertura', 'completa', false, false)).toBe('completa');
+    // explícito true: mesma coisa
+    expect(modoDaProvocacao('abertura', 'completa', false, false, true)).toBe('completa');
+    // false (não é o 1º confronto do ARCADE nem o chefão, com `Regras.ritmo.provocacao` ligada): cai para CURTA mesmo sem repetir
+    expect(modoDaProvocacao('abertura', 'completa', false, false, false)).toBe('curta');
+    // repetido já bastava para CURTA; `primeiroOuChefe` não muda isso (continua curta nos dois casos)
+    expect(modoDaProvocacao('abertura', 'completa', false, true, true)).toBe('curta');
+    expect(modoDaProvocacao('abertura', 'completa', false, true, false)).toBe('curta');
+    // round 2+ e vitória: `primeiroOuChefe` não entra (só vale para 'abertura', R-2 é só o round 1)
+    expect(modoDaProvocacao('rodada', 'completa', false, false, false)).toBe('completa');
+    expect(modoDaProvocacao('vitoria', 'completa', false, false, false)).toBe('completa');
+  });
 });
 
 describe('o controlador Provocacao', () => {

@@ -293,6 +293,15 @@ export class Cinematica {
     return this.cache.size;
   }
 
+  /**
+   * O fundo cacheado de UMA tarja (pinta se ainda não tiver; o mesmo cache de até `MAX_TARJAS_NO_CACHE`), para quem desenha a faixa
+   * SEM CONGELAR (R-2, `FaixaRitmo`): a mesma pintura, só menor, reaproveitando o aquecimento que já roda na entrada/abertura da
+   * luta. Público só por isso — o resto da classe continua privado.
+   */
+  fundoDaTarja(chave: string, id: Identidade): CanvasLike | null {
+    return this.tarja(chave, id);
+  }
+
   /** Duração em ticks da que está rodando (considera o pulo). */
   get duracao(): number {
     const a = this.atual;

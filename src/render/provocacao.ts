@@ -103,15 +103,19 @@ export function provocacaoLigada(d: DadosDaLuta, momento: 'prerround' | 'vitoria
 
 /**
  * COMPLETA, CURTA ou nada. A preferência de CINEMÁTICA só escolhe o jeito (decisão do dono: ligar e desligar é a opção PROVOCAÇÕES):
- * - round 1: COMPLETA na 1ª vez do confronto com cinemática COMPLETA; CURTA se o confronto se repete (continue, reinício, revanche) ou a cinemática é CURTA/DESLIGADA;
+ * - round 1: COMPLETA na 1ª vez do confronto com cinemática COMPLETA (e, com `Regras.ritmo.provocacao`, D-R8: só no 1º confronto do
+ *   ARCADE ou no chefão — `primeiroOuChefe`); CURTA se o confronto se repete (continue, reinício, revanche), a cinemática é
+ *   CURTA/DESLIGADA, ou (com a flag) não é o 1º confronto/chefão;
  * - round 2+: um balão curto de 1 linha SEMPRE (decisão do dono: "sempre antes dos rounds"; a opção PROVOCAÇÕES é quem liga e desliga): COMPLETA com a cinemática
  *   COMPLETA (letra a letra, com pop), CURTA nas demais (texto inteiro com fade, sem pop);
  * - vitória: COMPLETA com a cinemática COMPLETA, senão CURTA.
  * Sem preferência salva: COMPLETA, ou CURTA se o aparelho pede menos movimento (a mesma regra da cinemática do especial).
+ * `primeiroOuChefe` (padrão `true` = o comportamento de hoje, sem a restrição nova): quem chama só passa `false` com
+ * `Regras.ritmo.provocacao` ligada E esta não é a 1ª luta do ARCADE nem o chefão (R-2, D-R8).
  */
-export function modoDaProvocacao(tipo: TipoProvocacao, pref: PreferenciaCinematica | undefined, reduzMovimento: boolean, repetido: boolean): ModoProvocacao {
+export function modoDaProvocacao(tipo: TipoProvocacao, pref: PreferenciaCinematica | undefined, reduzMovimento: boolean, repetido: boolean, primeiroOuChefe = true): ModoProvocacao {
   const p = pref ?? (reduzMovimento ? 'curta' : CINEMATICA_PADRAO);
-  if (tipo === 'abertura') return p === 'completa' && !repetido ? 'completa' : 'curta';
+  if (tipo === 'abertura') return p === 'completa' && !repetido && primeiroOuChefe ? 'completa' : 'curta';
   return p === 'completa' ? 'completa' : 'curta';
 }
 

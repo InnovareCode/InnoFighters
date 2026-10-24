@@ -2,7 +2,10 @@
 
 Direção de arte e texto: Apolo, 23/10/2026. Fatia V2-4 (`docs/spec-revisao-motor-luta-v2.md` §6). Os 20 combos da 1ª leva ganham o nome
 definitivo no campo `nome` de `src/data/lutadores/*.ts`. O `id`, a `sequencia`, o `semQueda` e o `final` não mudaram: o verificador do
-balanço e o reconhecimento no motor seguem iguais.
+balanço e o reconhecimento no motor seguem iguais. O campo `efeito`, que estava proposto aqui, já está no código (commit `17696b0`).
+
+Estado no commit `78de1be`: 20 combos; 11 fecham com especial (todos com `efeito`) e 9 terminam com golpe comum e `final`. Conferido
+nos dados de `src/data/lutadores/*.ts` (e `fichas` da NILA e do ZENON, que herdam os combos da base).
 
 ## Regras de nome
 
@@ -50,22 +53,26 @@ Notas por lutador:
   linha de efeito diz "cobra o tributo" (o DECRETO também cobra) e não cita o nome do especial.
 - **NILA:** a tela já põe a postura antes do efeito ("GAJA ·", "SARPA ·"), por isso a coluna mostra a linha inteira como aparece.
 
-## Efeito: o que a tela já mostra e o que falta
+## Efeito: o que a tela mostra
 
-`combosDoLutador` (`src/ui/combos-tela.ts`) monta a linha de efeito sozinha, do dado:
+Campo `efeito?: string` em `ComboProprio` (`src/data/tipos.ts:36`). Regras (`validarCombosProprios`, `src/data/combos-proprios.ts:23`):
+texto de uma linha, sem espaço nas pontas, até `EFEITO_MAX_CARACTERES = 40` caracteres.
 
-- **combo com `final`** (10 dos 20): a tela já escreve "lança o rival", "empurra o rival para a parede" ou "troca de lado com o rival".
-  A coluna "efeito" acima repete exatamente esse texto: **não há nada a mudar** nesses 10.
-- **combo que fecha com especial** (10 dos 20): a tela escreve só "fecha com o especial", igual para todos. A coluna acima propõe a linha
-  específica (o especial pelo nome e, quando há `semQueda`, "segura em pé", que é o que o combo faz de diferente da cadeia universal: o
-  chute forte do meio atordoa em vez de derrubar).
+`combosDoLutador` (`src/ui/combos-tela.ts:111`) monta a linha de efeito assim:
 
-Aplicar essas 10 linhas exige um campo novo (por exemplo `efeito?: string` em `ComboProprio`, usado no lugar de "fecha com o especial"
-quando existe). Isso é código de contrato e tela, fora desta entrega: fica como pendência.
+- **`efeito` presente:** usa o texto do campo. É o caso dos **11 combos que fecham com especial**, todos com linha própria (ex.: "segura em
+  pé e fecha no PASSO DO LEÃO"). "Segura em pé" marca o que o combo faz de diferente da cadeia universal: o chute forte do meio atordoa em
+  vez de derrubar (`semQueda`).
+- **sem `efeito`, com `final`:** usa o texto padrão do `final` ("lança o rival", "empurra o rival para a parede" ou "troca de lado com o
+  rival"). São os **9 combos que terminam com golpe comum**.
+- **sem nenhum dos dois:** "fecha com o especial" (não ocorre no commit, porque os 11 combos com especial têm `efeito`).
+
+Na NILA, a tela põe a postura antes da linha ("GAJA ·", "SARPA ·"), porque a ficha da SARPA tem combo próprio e a tela etiqueta os grupos.
+O dado guarda só o texto depois da postura.
 
 Medida das linhas de efeito (Barlow 600 a 10 px, coluna do TREINO; a linha fica na altura das teclas, então divide o mesmo espaço do
 nome): a menor folga é **20,6 px** ("GAJA · do soco forte ao PASSO DO ELEFANTE"). A versão "SARPA · três toques e o BOTE rasteiro" dava
-13,4 px e foi cortada para "SARPA · três toques e o BOTE" (50,1 px).
+13,4 px e foi cortada para "SARPA · três toques e o BOTE" (50,1 px). Medição registrada pelo Apolo; não reconferida nesta passada.
 
 ## Garantia
 

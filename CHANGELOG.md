@@ -3,6 +3,32 @@
 Marcos do InnoFighters, do mais recente para o mais antigo. Datas e hashes vêm do `git log` (fuso -03:00).
 Os nomes de fase (F0, E1a, E3 S2...) são os de `PLANO.md` e `docs/plano-expansao.md`.
 
+## 2026-10-24: residência da arte concluída, L3 a L6 (`41e1ffb`, `78de1be`)
+
+- **Luta exclusiva e volta sem piscar** (L3 e L4, `41e1ffb`): a luta solta o que não usa e o filme sai ao fim dela (`src/ui/navegador.ts:96`). Ao voltar ao menu, a tela segura no preto até o essencial chegar, com teto de 45 ticks (`TETO_DO_PRETO`). No fim da luta, o fundo `jp` volta em segundo plano, uma vez por luta (`src/ui/cenas/fight.ts:366`).
+- **Chegada suave** (L5, `78de1be`): um lutador cuja arte chega com a cena aberta sobe em 12 ticks em vez de aparecer de estalo (`src/ui/chegada-de-arte.ts`). Usada pelo título, pelo menu e pela seleção. Com a arte pronta na entrada, o desenho é idêntico ao de antes.
+- **Política por peso como padrão** (L6, `78de1be`): `POLITICA_PADRAO = 'por-peso'` (`src/assets/elenco.ts:87`), com teto em bytes e despejo antes de decodificar. `?residencia=fixa` volta à política de antes, como rollback em produção, sem deploy.
+- **Aba oculta** (L6, `78de1be`): ao ocultar a aba, a arte fora de uso e as silhuetas saem da memória (o iOS mata a página por memória). Ao voltar, a tabela da cena atual é reaplicada.
+- **`decode()` antecipado: não feito.** Medido: muda 1 px em 4 cenas do `fidelidade-prototipo`. O gate da spec proíbe (spec §3, item 5).
+- **Não provado:** o comportamento em iPhone e Android não foi medido (T13). Os testes novos (`chegada-de-arte`, `residencia-aba`, `foco`) não foram reconferidos nesta passada.
+
+## 2026-10-23 (noite): motor v2 ligado, filme do especial, combos próprios e residência da arte (`6698d88`..`41e1ffb`)
+
+- **Motor v2 ligado por padrão** (`41e1ffb`): `MOTOR_V2_PADRAO` (`src/meta/regras.ts:11`) liga entrada no hitstop, filme do especial e combos próprios em todos os modos de elenco. Rollback sem deploy: `?motorv2=0`. A/B por mecânica: `?motorv2=filmes,combos`. `?dano-filme=` só em desenvolvimento.
+- **Filme do especial** (`d1cad33`, `81e24e1`, `2f44509`, `6fadc65`): 33 entradas de dano em `src/data/filmes.ts`, roteiros da apresentação em `src/data/roteiros-filme.ts` e uma folha `filme.webp` com seis quadros por lutador. As dez folhas estão instaladas. AMINU (f2, PASSO DO LEÃO), ZENON (f3, DECRETO) e BAATAR (f1, cordão) foram curados em `38627cf`.
+- **Trailer com filme** (`41e1ffb`): o trailer mostra o filme do especial em modo curto, de 30 ticks (`src/trailer/filme.ts`).
+- **Combos próprios** (`bd14dbc`, `7b1cc31`, `17696b0`): 20 combos com nomes definitivos do Apolo e campo `efeito` (até 40 caracteres), com linha própria na tela de combos. A CPU DIFÍCIL usa os combos (`src/fight/cpu.ts`, `proprio: 0,85`).
+- **Render v2** (`8a992c4`): fluidez (interpolação e mola entre ticks), tremor do rival, silhueta por quadro e tecla H para as caixas de colisão (só em desenvolvimento e no treino).
+- **Chefões por nível** (`41e1ffb`): `danoRecebidoDificil` nos seis chefões. O fator vale quando a CPU está em DIFÍCIL.
+- **Balanço regravado** (`41e1ffb`): referência de produção com motor v2 e esquiva, 25 800 lutas, 0 travadas. Os 12 números de chefão (NORMAL e DIFÍCIL) estão na meta. A vitória das lutas regulares vai de 44,8% (MIN-JI) a 56,1% (BAATAR).
+- **CAIO e WEI LONG novos** (`0e6cd26`, `4998c89`): arte nova dos dois. CAIO com gingado (atlas novo, idle e andar; chave `ancora` no pipeline). WEI LONG com atlas na versão 2, duas páginas de 2048 x 1664.
+- **Cenários em WebP 1920x1080** (`0e6cd26`): os dez cenários estão em WebP. Os JPG antigos (`br.jpg`, `cn.jpg`, `kr.jpg`) ainda estão no repositório e saem depois.
+- **Residência de memória da arte** (`4bf908a`, `16e9524`, `41e1ffb`): gerenciador por peso e luta exclusiva. O padrão de produção continua `'fixa'`; `?residencia=peso` liga a política nova. Fica pendente a fatia L5 (chegada suave, que só existe na árvore de trabalho) e a L6 (virar o padrão).
+- **Portões** (`6698d88`): CI com e2e de build e `npm run orcamento`. As metas estão em `ferramentas/orcamento/orcamento.json`; por enquanto estouro vira só aviso.
+- **Higiene pública** (`013d9bd`, `14e6e98`, `c864d0c`): caminhos locais removidos dos docs e das memórias.
+- **Não provado:** nenhum som, filme ou trailer foi ouvido ou jogado em aparelho real pelo dono. iPhone e Android não foram medidos (T13 do orçamento). A suíte não foi reconferida nesta passada.
+- **Documentação** deste marco: `README.md`, `docs/arquitetura.md`, `docs/combos-proprios.md`, `docs/como-adicionar-um-lutador.md`, `CHANGELOG.md` e `PROGRESSO.md`. Alterações não commitadas, aguardando OK do dono.
+
 ## 2026-10-22 e 2026-10-23: bloco do dono, trailer, sons reais e tarja (`64f2647`..`f5b5fab`)
 
 - **Sons reais, CC0** (`497cb33`): camada de amostras por cima da identidade sonora (impacto, voz e família de especial). Pacote em `public/assets/sons/` (`manifesto.json`, MP3 e `CREDITOS.txt`). Sem os arquivos ou com falha de rede, o jogo toca a síntese. Painel `?escuta=1` com A/B amostra x síntese.

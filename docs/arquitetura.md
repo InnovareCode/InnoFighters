@@ -1,6 +1,6 @@
 # Arquitetura
 
-Como o código está organizado no HEAD `f5b5fab` (2026-10-23). Os `arquivo:linha` foram conferidos contra o HEAD (`git show` / `git grep`) nesta passada. Em `src/`, a árvore de trabalho estava igual ao HEAD no início desta passada. O que não foi confirmado por leitura ou execução está marcado **a confirmar**.
+Como o código está organizado no commit `78de1be` (2026-10-24, `origin/main`). Os `arquivo:linha` foram conferidos contra esse commit com `git show` e `git grep`, não contra a árvore de trabalho. O que não foi confirmado por leitura ou execução está marcado **a confirmar**.
 
 Histórico de marcos: `CHANGELOG.md`. Estado e decisões: `PROGRESSO.md`.
 
@@ -11,22 +11,22 @@ Cada camada importa só das camadas da coluna "Importa de", com as exceções re
 | Pasta | Responsabilidade | Importa de |
 |---|---|---|
 | `core/` | tipos de contrato (`contratos.ts`), RNG com semente (`rng.ts`), armazenamento v2 (`storage.ts`), constantes (`constantes.ts`) | `meta/` (só `storage.ts`) |
-| `meta/` | regras de desbloqueio e chefões (`regras.ts`, `chefes.ts`), progresso puro (`progresso.ts`), escada do Arcade (`escada.ts`) | `core/` |
-| `data/` | lutadores (`lutadores/*.ts`), golpes, cenas (`cena.ts`), cenários, montagem e validação (`montar.ts`), falas das provocações (`provocacoes*.ts`), sons (`sons/`), temas musicais (`musica/`), roteiro do trailer (`trailer/`), esquiva (`esquiva.ts`) | `core/`, `data/tipos.ts` |
-| `fight/` | motor da luta: `Game`, `Fighter`, CPU, colisão, projétil. Sem DOM, áudio nem render | `core/`, `data/` |
+| `meta/` | regras de desbloqueio, chefões e flags (`regras.ts`, `chefes.ts`), progresso puro (`progresso.ts`), escada do Arcade (`escada.ts`) | `core/` |
+| `data/` | lutadores (`lutadores/*.ts`), golpes, cenas (`cena.ts`), cenários, montagem e validação (`montar.ts`), falas das provocações (`provocacoes*.ts`), sons (`sons/`), temas musicais (`musica/`), roteiro do trailer (`trailer/`), esquiva (`esquiva.ts`), filme do especial (`filmes.ts`, `roteiros-filme.ts`), combos próprios (`combos-proprios.ts`) | `core/`, `data/tipos.ts` |
+| `fight/` | motor da luta: `Game`, `Fighter`, CPU, colisão, projétil. Motor v2 (entrada no hitstop, filme, combos) atrás de flags. Sem DOM, áudio nem render | `core/`, `data/` |
 | `audio/` | sons e música sintetizados (`audio-sys.ts`, `TRILHAS`), tradução de eventos em som (`eventos.ts`), temas (`temas.ts`, `partitura.ts`), identidade sonora (`identidade-sonora.ts`), amostras reais (`amostras.ts`, `plano-amostras.ts`), carga por pedaços (`camadas.ts`) e chaves (`chaves.ts`) | `core/`, `data/musica/`, `data/sons/` |
-| `render/` | desenho em canvas: pose, HUD, cenário, efeitos, cinemática (tarja do especial), entrada do chefão, aura, provocação e balão, trailer (`render/trailer/`) | `core/`, `data/`, `assets/` |
-| `trailer/` | trailer de abertura, sem DOM: diretor (`diretor.ts`), música (`musica.ts`), quadros estáticos (`estatica.ts`), marca (`marca.ts`) | a confirmar (importa `data/musica` em `src/trailer/musica.ts:5`) |
-| `assets/` | manifesto C1 (`manifesto.ts`), carregador (`carregador.ts`), carga sob demanda (`gerenciador.ts`), elenco (`elenco.ts`) | `data/`, `core/` |
-| `ui/` | cenas (`ui/cenas/*.ts`), menus, grade (`grade.ts`), navegador, persistência, painel de escuta (`escuta.ts`), logo oficial (`logo.ts`), trailer em cena (`ui/trailer/`, carregado sob demanda) | quase todas as outras |
+| `render/` | desenho em canvas: pose, HUD, cenário, efeitos, cinemática (tarja do especial), entrada do chefão, aura, provocação e balão, filme do especial (`filme.ts`), fluidez e mola (`fluidez.ts`, `mola.ts`), caixas de dano (`caixas.ts`), trailer (`render/trailer/`) | `core/`, `data/`, `assets/` |
+| `trailer/` | trailer de abertura, sem DOM: diretor (`diretor.ts`), música (`musica.ts`), quadros estáticos (`estatica.ts`), marca (`marca.ts`), filme do especial no trailer (`filme.ts`) | `core/`, `data/`, `meta/` (`regras`), `fight/game`, `audio/` (`abertura`, `partitura`, `receitas`), `render/tela` (imports lidos em `src/trailer/` no commit `78de1be`) |
+| `assets/` | manifesto C1 (`manifesto.ts`), carregador (`carregador.ts`), carga sob demanda e residência (`gerenciador.ts`), elenco (`elenco.ts`) | `data/`, `core/` |
+| `ui/` | cenas (`ui/cenas/*.ts`), menus, grade (`grade.ts`), navegador, residência da arte (`residencia.ts`, `espera-de-arte.ts`), persistência, painel de escuta (`escuta.ts`), logo oficial (`logo.ts`), trailer em cena (`ui/trailer/`, carregado sob demanda) | quase todas as outras |
 | `input/` | teclado, gamepad, toque: viram teclas virtuais e `InputFrame`; botões de toque (`toque.ts`) | `core/` |
 | `platform/` | escala do canvas, foco, tela cheia (`tela-cheia.ts`), avisos, erros | `core/` |
-| `versao.ts` | identidade do build e verificação de versão nova no ar | a confirmar |
-| `main.ts` | monta tudo e roda o laço | todas |
+| `versao.ts` | identidade do build e verificação de versão nova no ar | nenhuma (sem imports internos) |
+| `main.ts` | monta tudo, lê os parâmetros de URL e roda o laço | todas |
 
 **Exceções registradas:**
 
-- `core/storage.ts` importa `meta/` (`src/core/storage.ts:13-15`). O próprio arquivo diz que isso não cria ciclo. Ciclos no grafo inteiro não foram verificados com ferramenta: **a confirmar**.
+- `core/storage.ts` importa `meta/progresso` (`src/core/storage.ts:13`). O próprio arquivo diz que isso não cria ciclo. Ciclos no grafo inteiro não foram verificados com ferramenta: **a confirmar**.
 - `audio/temas.ts` e `audio/identidade-sonora.ts` importam `data/musica/` e `data/sons/` (`src/audio/temas.ts:2`, `src/audio/identidade-sonora.ts:2`). `data/` não importa `audio/`. Motivo: a validação de orçamento de fontes (`validarOrcamentoDosTemas`, `src/audio/temas.ts:62`) precisa da partitura.
 - `ui/escuta.ts` importa `data/sons` (`src/ui/escuta.ts:9`), pelo mesmo motivo de ouvir os sons sem jogar.
 
@@ -34,18 +34,20 @@ Cada camada importa só das camadas da coluna "Importa de", com as exceções re
 
 `src/main.ts`:
 
-- Passo fixo de 1000/60 ms: `const PASSO = 1000 / 60;` (`src/main.ts:195`), ou seja, 60 ticks de lógica por segundo.
-- O tempo acumulado por quadro é limitado a 100 ms (`src/main.ts:206`), para não dar um salto depois de uma aba parada.
-- Cada tick chama `entrada.fimDoTick()` (`src/main.ts:199` e `:212`).
-- Pausa ao perder o foco ou ocultar a aba: `observarFoco(window, { aoPerderFoco: () => ui.blur(), ... })` (`src/main.ts:164`; a função está em `src/platform/foco.ts:12`).
+- Passo fixo de 1000/60 ms: `const PASSO = 1000 / 60;` (`src/main.ts:218`), ou seja, 60 ticks de lógica por segundo.
+- O tempo acumulado por quadro é limitado a 100 ms (`src/main.ts:229`), para não dar um salto depois de uma aba parada.
+- Cada tick chama `entrada.fimDoTick()` (`src/main.ts:222` e `:235`).
+- Pausa ao perder o foco ou ocultar a aba: `observarFoco(window, { aoPerderFoco: () => ui.blur(), ... })` (`src/main.ts:166`; a função está em `src/platform/foco.ts:14`).
+- Aba oculta: com a política `'por-peso'`, `aoOcultar` chama `ui.aoOcultarAba()` (`src/main.ts:169-171`), que alivia a arte fora de uso e as silhuetas (`aoOcultarAba`, `src/ui/navegador.ts:131`; `aliviar`, `src/assets/gerenciador.ts:146`). `aoVoltar` reaplica a tabela da cena atual (`src/main.ts:173`; `aoVoltarAba`, `src/ui/navegador.ts:140`). Com `'fixa'`, nenhuma das duas faz nada.
 
 Fluxo de entrada: teclado, gamepad e toque escrevem em `TeclasVirtuais` (`src/input/teclas.ts`). A luta lê um `InputFrame` (C2) por jogador por tick. A luta gera uma `LeituraLuta` (C3), que o render, a UI e o áudio leem.
 
-Três apresentações congelam o motor **sem** tocar no lock-step, porque a cena da luta não chama `game.update` enquanto elas rodam (`src/ui/cenas/fight.ts`, método `update()`, `:428`):
+Três apresentações congelam o motor **sem** tocar no lock-step, porque a cena da luta não chama `game.update` enquanto elas rodam (`src/ui/cenas/fight.ts`, método `update()`, `:518`):
 
-- a **entrada dramática** do chefão: `this.entrada.avancar()` no lugar de `game.update` (`fight.ts:434`), com `return` em `:437`;
-- a **cinemática do especial**: `passoDaCinematica()` (definido em `fight.ts:403`, chamado em `:446`), com `return` em `:447`;
-- a **provocação** (balão antes do round, na vitória): ramo próprio do `update` da cena (`fight.ts:440` e `:441-444`), que não anda o relógio do motor. Ver a seção 13.
+- a **entrada dramática** do chefão: `this.entrada.avancar()` no lugar de `game.update` (`fight.ts:527`), com `return` logo depois;
+- a **cinemática do especial**: `passoDaCinematica()` (definido em `fight.ts:493`, chamado no mesmo `update`);
+- a **provocação** (balão antes do round, na vitória): ramo próprio do `update` da cena (`fight.ts:534`), que não anda o relógio do motor. Ver a seção 13.
+- o **filme do especial** (motor v2): a cena também não chama `game.update` enquanto o filme roda. Ver a seção 20.
 
 ## 3. Contratos
 
@@ -53,13 +55,14 @@ Os contratos de tipos ficam em `src/core/contratos.ts`. Quem escreve é o motor 
 
 ### C1: manifesto de atlas (versão 2)
 
-Arquivo: `public/assets/lutadores/<id>/atlas.json`. Validação: `validarManifesto` (`src/assets/manifesto.ts:64`).
+Arquivo: `public/assets/lutadores/<id>/atlas.json`. Validação: `validarManifesto` (`src/assets/manifesto.ts:101`).
 
-- `versao`: `1` ou `2`. A versão 1 (campo `imagem`, uma imagem só) continua aceita.
+- `versao`: `1` ou `2`. A versão 1 (campo `imagem`, uma imagem só) continua aceita pelo código, mas nenhum lutador do commit usa mais a versão 1.
 - `imagens`: de 1 a 8 arquivos (`MAX_PAGINAS = 8`, `src/assets/manifesto.ts:10`). Só nome de arquivo, sem pasta.
 - `tamanho`: `[largura, altura]` de cada página, em px.
-- `alturaRef`: altura do `idle0` em px. 410 nos lutadores comuns, 525 no BAATAR, 558 no ZENON (`ferramentas/sprites/lutadores.json`).
+- `alturaRef`: altura do `idle0` em px. Vem de `ferramentas/sprites/lutadores.json` (padrão 410).
 - `quadros`: mapa nome da pose para `{ p, x, y, w, h, ax, rosto?, ponta? }`. `p` é a página; `rosto` e `ponta` são pares `[x, y]` relativos ao canto do quadro.
+- `filme` (opcional): bloco da folha FILME, descrito abaixo.
 
 Exemplo real, `public/assets/lutadores/aminu/atlas.json` (trecho, sem as demais poses):
 
@@ -76,22 +79,36 @@ Exemplo real, `public/assets/lutadores/aminu/atlas.json` (trecho, sem as demais 
 }
 ```
 
-Situação dos atlas (lida em 2026-10-21; nenhum `public/assets/lutadores` mudou no git até `f5b5fab`):
+**Situação dos atlas no commit `78de1be`** (lida dos `atlas.json`; todos na versão 2):
 
-| Lutador | Versão | Páginas | Tamanho da página 1 (px) | alturaRef | Quadros |
+| Lutador | Páginas | Tamanho da página 1 (px) | alturaRef | Quadros | Folha FILME (px) |
 |---|---|---|---|---|---|
-| HAYATO | 2 | 2 | 2048x1536 | 410 | 48 |
-| MIN-JI | 2 | 2 | 2048x1536 | 410 | 48 |
-| AMINU | 2 | 2 | 2048x1920 | 410 | 48 |
-| CENTELLA | 2 | 2 | 2048x1664 | 410 | 48 |
-| CAMILLE | 2 | 2 | 2048x1472 | 410 | 48 |
-| NILA | 2 | 3 | 2048x1600 | 410 | 60 |
-| BAATAR | 2 | 4 | 2048x1664 | 525 | 54 |
-| ZENON | 2 | 4 | 2048x1920 | 558 | 63 |
-| WEI LONG | 1 | 1 (imagem única) | 3600x2296 | 410 | 63 |
-| CAIO | 1 | 1 (imagem única) | 3600x2251 | 410 | 75 |
+| HAYATO | 2 | 2048x1536 | 410 | 48 | 1920x1280 |
+| WEI LONG | 2 | 2048x1664 | 410 | 49 | 1824x1280 |
+| MIN-JI | 2 | 2048x1536 | 410 | 48 | 1920x1216 |
+| CAIO | 2 | 2048x1792 | 396 | 48 | 1888x1280 |
+| AMINU | 2 | 2048x1920 | 410 | 48 | 1824x1280 |
+| CENTELLA | 2 | 2048x1664 | 410 | 48 | 1920x1280 |
+| CAMILLE | 2 | 2048x1472 | 410 | 48 | 1616x1280 |
+| NILA | 3 | 2048x1600 | 410 | 60 | 1920x1216 |
+| BAATAR | 4 | 2048x1664 | 525 | 54 | 2000x1248 |
+| ZENON | 4 | 2048x1920 | 558 | 63 | 1760x1280 |
 
 Convenção, não validada pelo carregador: quadro ativo tem `ponta` (`ferramentas/sprites/poses.mjs:19`, lista `COM_PONTA`). **a confirmar** se algum atlas viola a convenção.
+
+**Bloco `filme` (folha FILME):** imagem à parte, com seis quadros `f0` a `f5`, todos com `"painel": true` e sem campo `p`. Forma:
+
+```json
+"filme": {
+  "imagem": "filme.webp",
+  "tamanho": [1920, 1280],
+  "quadros": {
+    "f0": { "x": 4, "y": 4, "w": 664, "h": 631, "ax": 332, "painel": true }
+  }
+}
+```
+
+O bloco nasce em `ferramentas/sprites/lutadores.json` (chave `filme` de cada lutador) e é validado por `validarBlocoFilme` (`ferramentas/sprites/nucleo.mjs:607`): imagem `.webp` sem pasta e não página do atlas, `tamanho` inteiro, quadros só `f0..f5`, `painel: true`, nenhum campo `p`, quadro dentro da página. O pipeline copia a imagem (`prepararFilme`, `ferramentas/sprites/executar.mjs:89`) e confere o tamanho declarado. Os dez lutadores têm o bloco no commit.
 
 ### C2: `InputFrame`
 
@@ -111,16 +128,16 @@ Exemplo de quadro com o especial segurado:
 
 ### C3: leitura da luta e eventos
 
-Tipo `LeituraLuta` (`src/core/contratos.ts:510`). Tipo `EventoLuta` (`src/core/contratos.ts:342`).
+Tipo `LeituraLuta` (`src/core/contratos.ts:572`). Tipo `EventoLuta` (`src/core/contratos.ts:377`).
 
-Regras de consumo (comentário de C3 em `src/core/contratos.ts`, ~linhas 118-126):
+Regras de consumo (comentário em `src/core/contratos.ts`, a partir de `:151`):
 
 1. `tick` só avança quando a luta anda. Durante o hitstop ele congela, junto com as partículas.
-2. `events` é esvaziado por `fight/` no início de cada tick. No tick congelado, fica vazio (`contratos.ts:122`).
-3. A luta não toca áudio nem cria partícula. Só emite evento (`contratos.ts:124`).
+2. `events` é esvaziado por `fight/` no início de cada tick. No tick congelado, fica vazio.
+3. A luta não toca áudio nem cria partícula. Só emite evento.
 4. Efeitos visuais usam um RNG separado do da lógica (`rngVisual`).
 
-Eventos da chefia: `fase-chefe`, com `etapa` `'troca'`, `'cena'` ou `'retomada'`. A etapa `'cena'` é emitida em `src/fight/game.ts:490`. Hit e block têm `dreno?: number`, só quando houve dreno.
+Eventos da chefia: `fase-chefe`, com `etapa` `'troca'`, `'cena'` ou `'retomada'`. A etapa `'cena'` é emitida em `src/fight/game.ts:599`. Hit e block têm `dreno?: number`, só quando houve dreno. O evento `filme` (motor v2) é descrito na seção 20.
 
 ### C4: armazenamento local
 
@@ -128,16 +145,16 @@ Implementação em `src/core/storage.ts`. Chaves em `src/core/contratos.ts`.
 
 | Chave | Formato | Papel |
 |---|---|---|
-| `inno-fighters-v1` (`CHAVE_STORAGE`, `contratos.ts:98`) | `{ v: 1, s, hi }` | formato anterior. Continua lido na migração |
-| `sakura-fighters-v4` (`CHAVE_STORAGE_LEGADA`, `contratos.ts:100`) | `{ s, hi }` (formato do protótipo) | legado. Migrado; removido só depois de a v2 ser gravada |
-| `inno-fighters-v2` (`CHAVE_STORAGE_V2`, `contratos.ts:107`) | `{ v: 2, s, hi, prog }` | chave atual |
+| `inno-fighters-v1` (`CHAVE_STORAGE`, `contratos.ts:133`) | `{ v: 1, s, hi }` | formato anterior. Continua lido na migração |
+| `sakura-fighters-v4` (`CHAVE_STORAGE_LEGADA`, `contratos.ts:135`) | `{ s, hi }` (formato do protótipo) | legado. Migrado; removido só depois de a v2 ser gravada |
+| `inno-fighters-v2` (`CHAVE_STORAGE_V2`, `contratos.ts:142`) | `{ v: 2, s, hi, prog }` | chave atual |
 | `inno-fighters-v2-quebrada` (`CHAVE_STORAGE_V2_QUEBRADA`, `storage.ts:168`) | texto cru | cópia de uma v2 ilegível, guardada antes de ser substituída |
 
-**Migração** (`carregarDadosV2`, `src/core/storage.ts:259`), nesta ordem: 1) se a v2 é válida, usa; 2) senão, se a v1 é válida, monta `{ s, hi }` com progresso vazio e grava a v2; 3) senão, se há legado, faz o mesmo com ele; 4) senão, usa os padrões e não grava nada. **a confirmar** o detalhe do recorde (`max(v2.hi, v1.hi)`) sem reler o corpo de `carregarDadosV2` inteiro nesta passada.
+**Migração** (`carregarDadosV2`, `src/core/storage.ts:259`), nesta ordem: 1) se a v2 é válida, usa; 2) senão, se a v1 é válida, monta `{ s, hi }` com progresso vazio e grava a v2; 3) senão, se há legado, faz o mesmo com ele; 4) senão, usa os padrões e não grava nada. O recorde: se o da v1 é maior, vence (`recordeV1 > atual.hi`, `src/core/storage.ts:281`), ou seja, `max(v2.hi, v1.hi)`.
 
 **v2 de build mais novo** (`v > 2`, `storage.ts:200`): é lida em memória, mas `salvarDadosV2` (`storage.ts:223`) recusa gravar e retorna `false`. A UI mostra o aviso de progresso não salvo (`src/ui/persistencia.ts`, `MSG_NAO_SALVO`).
 
-**Ids desconhecidos e saneamento do progresso** (`sanearProgresso`, `src/meta/progresso.ts`):
+**Ids desconhecidos e saneamento do progresso** (`sanearProgresso`, `src/meta/progresso.ts:150`):
 
 - Id fora do roster com forma de id vai para `prog.desconhecidos`, até `MAX_IDS_DESCONHECIDOS = 32` (`progresso.ts:130`). Não é usado, mas é regravado.
 - Id que passou a existir no roster é promovido a `desbloqueados`.
@@ -145,7 +162,7 @@ Implementação em `src/core/storage.ts`. Chaves em `src/core/contratos.ts`.
 - `chefesDerrotados` aceita só ids com forma de id, sem repetição, até `MAX_CHEFES_DERROTADOS = 16` (`progresso.ts:27`). Um guardião derrotado entra na lista; `CHEFOES_SO_POR_DERROTA = ['zenon']` (`progresso.ts:21`) são os que se liberam só por derrota.
 - Lixo (não é texto, forma inválida, excesso) é descartado.
 
-**Saneamento das configurações** (`sanearConfiguracoes`, `src/core/storage.ts:50`): `rounds`, `time` e `diff` aceitam só os valores que a UI oferece. `cinematica` e `provocacoes` são lidos (`storage.ts:60-67`), mas são **preferências aposentadas**: `PREFERENCIAS_APOSENTADAS` (`src/ui/persistencia.ts`) tira os dois da memória ao carregar e só os devolve ao gravar. Na prática, o jogo não usa esses valores (ver seção 13 e a seção 12).
+**Saneamento das configurações** (`sanearConfiguracoes`, `src/core/storage.ts:50`): `rounds`, `time` e `diff` aceitam só os valores que a UI oferece. `cinematica` e `provocacoes` são lidos (`storage.ts:60-67`), mas são **preferências aposentadas**: `PREFERENCIAS_APOSENTADAS` (`src/ui/persistencia.ts:14`) tira os dois da memória ao carregar e só os devolve ao gravar. Na prática, o jogo não usa esses valores (ver seções 12 e 13).
 
 **Recorde:** `sanearHi` (`storage.ts:86`) aceita inteiro maior que 0 e até `TETO_RECORDE = 99_999_999` (`storage.ts:37`). Fora disso vira 0.
 
@@ -153,120 +170,121 @@ Testes: `tests/unit/storage.test.ts`, `tests/unit/storage-v2.test.ts`, `tests/un
 
 ## 4. Carga sob demanda
 
-- **Boot:** lê o `atlas.json` de todos os ids de `IDS_LUTADORES` (`src/assets/elenco.ts:91`, que chama `carregarManifestos`, `src/assets/carregador.ts:248`). Se um falta, o boot falha (ver `docs/como-adicionar-um-lutador.md`).
-- **Retratos:** todos, no boot.
+- **Boot:** lê o `atlas.json` de todos os ids de `IDS_LUTADORES` (`src/assets/elenco.ts:94`, que chama `carregarManifestos`, `src/assets/carregador.ts:354`). Se um falta, o boot falha (ver `docs/como-adicionar-um-lutador.md`).
+- **Retratos:** todos, no boot (`src/assets/elenco.ts:91`, comentário de `iniciarArte`).
 - **Imagens fixas:** a vitrine `VITRINE` (`src/data/lutadores/index.ts:41`) e o cenário do título.
-- **`?precarga=minima`** (só em `npm run dev`, `src/main.ts:168`): não carrega atlas no boot.
-- **Demais:** `GerenciadorDeArte.garantir` (`src/assets/gerenciador.ts:129`). Limite de atlas não fixos na memória: `limiteResidentes`, com padrão 3 (`gerenciador.ts:48`). Sai o menos recente.
+- **`?precarga=minima`** (só em `npm run dev`, `src/main.ts:178`): não carrega atlas no boot.
+- **Demais:** `GerenciadorDeArte.garantir` (`src/assets/gerenciador.ts:316`). Na política de produção, `'por-peso'` (`POLITICA_PADRAO`, `src/assets/elenco.ts:87`): teto em bytes, despejo antes de decodificar e luta exclusiva. `?residencia=fixa` volta à política de antes (rollback em produção): no máximo `LIMITE_RESIDENTES_FIXA = 3` atlas não fixos (`gerenciador.ts:17`), com poda depois de carregar (`podar`, `gerenciador.ts:501`). Detalhes na seção 21.
 - **Atlas sem imagem ainda:** o lutador some do desenho até a arte chegar.
+- **Folha FILME:** não entra nesta carga. Só a luta pede (ver seção 20).
 
-O ZENON segue a mesma regra: nenhuma página `zenon/atlas-*.webp` é baixada no boot, na seleção nem antes da 5ª luta do Arcade, quando o Arcade as pré-busca. Teste: `tests/e2e/arte-sob-demanda.spec.ts`.
+O ZENON segue a mesma regra de carga sob demanda (teste: `tests/e2e/arte-sob-demanda.spec.ts`). O Arcade pré-busca o próximo da escada ao começar cada luta (`prebuscarProximoRival`, `src/ui/cenas/fight.ts:382`): a 5ª luta pré-busca o ZENON, que é o chefão.
 
 ## 5. Determinismo
 
 **Gerador:** mulberry32 (`src/core/rng.ts:22`, `criarRng`). Mesma semente, mesma sequência.
 
-**Semente:** `?seed=N` na URL (`lerSemente`, `src/main.ts:51-52`), ou valor de `crypto.getRandomValues` (`src/core/rng.ts:43`, `sementeAleatoria`). `?seed=N` vale também em produção.
+**Semente:** `?seed=N` na URL (`lerSemente`, `src/main.ts:52`), ou valor de `crypto.getRandomValues` (`src/core/rng.ts:43`, `sementeAleatoria`). `?seed=N` vale também em produção (não tem gancho de desenvolvimento).
 
 **Geradores separados** (todos a partir de `semente`, `src/main.ts`):
 
-- lógica (CPU, sorteios da luta): `semente` (`main.ts:74`)
-- visual (partículas, poeira, pétalas): `semente + 1` (`main.ts:76`)
-- UI (escada do Arcade): `semente + 2` (`main.ts:77`)
-- áudio: `semente + 3` (`main.ts:104`)
-- sorteio da seleção (casa aleatória e roleta): `semente + 4` (`main.ts:151`)
-- sorteio das falas das provocações: `semente + 5` (`main.ts:152`, `sorteioDeFalas`). Fora do RNG da luta: a sequência do motor não muda.
-- variação dos sons por lutador: `sementeVariacao = semente + 6` (`main.ts:104`).
+- lógica (CPU, sorteios da luta): `semente` (`main.ts:76`)
+- visual (partículas, poeira, pétalas): `semente + 1` (`main.ts:77`)
+- UI (escada do Arcade): `semente + 2` (`main.ts:78`)
+- áudio: `semente + 3` (`main.ts:106`)
+- sorteio da seleção (casa aleatória e roleta): `semente + 4` (`main.ts:153`)
+- sorteio das falas das provocações: `semente + 5` (`main.ts:154`, `sorteioDeFalas`). Fora do RNG da luta: a sequência do motor não muda.
+- variação dos sons por lutador: `sementeVariacao = semente + 6` (`main.ts:106`).
 
-A cinemática e a entrada do chefão não chamam `game.update`, então não consomem o RNG da luta (`fight.ts:434` e `:446`).
+A cinemática e a entrada do chefão não chamam `game.update`, então não consomem o RNG da luta (`src/ui/cenas/fight.ts:493` e `:527`).
 
-**Teste de regressão:** `tests/unit/fight.test.ts:199` (mesma semente, mesmo resultado).
+**Teste de regressão:** `tests/unit/fight.test.ts:181` (mesma semente, mesmo resultado).
 
-**Fidelidade ao protótipo:** referência `prototipo/inno-fighters-artefato.html` (`tests/unit/_prototipo.ts:9`). Testes: `tests/unit/luta-fidelidade.test.ts` e `tests/e2e/fidelidade-prototipo.spec.ts`. Oráculo do HAYATO e da MIN-JI: a arte original (v1), não a de produção. **a confirmar** o caminho exato dessa fixture nesta passada.
+**Fidelidade ao protótipo:** referência `prototipo/inno-fighters-artefato.html` (`tests/unit/_prototipo.ts:9`). Testes: `tests/unit/luta-fidelidade.test.ts` e `tests/e2e/fidelidade-prototipo.spec.ts`. Oráculo do HAYATO e da MIN-JI: a arte original (v1), não a de produção. O caminho é `tests/fixtures/atlas-prototipo/<id>/` (`tests/unit/_lutadores.ts:57`).
 
 ## 6. Luta de chefão
 
 O chefão do ARCADE tem duas formas, que convivem no código:
 
-- **ZENON (o Anfitrião):** `CHEFE = 'zenon'` (`src/meta/regras.ts:19`). Duas barras, cena da fase 2, entrada dramática. Fora da luta de chefe, é jogável comum.
-- **Guardiões (AMINU, CENTELLA, CAMILLE, NILA, BAATAR):** cada um tem um bloco `chefe` com duas barras, cena da fase 2, `bonusVitoria` e `danoRecebido`. Fora da luta de chefe, são lutadores comuns.
+- **ZENON (o Anfitrião):** `CHEFE = 'zenon'` (`src/meta/regras.ts:31`). Duas barras, cena da fase 2, entrada dramática. Fora da luta de chefe, é jogável comum.
+- **Guardiões (AMINU, CENTELLA, CAMILLE, NILA, BAATAR):** cada um tem um bloco `chefe` com duas barras, cena da fase 2, `bonusVitoria`, `danoRecebido` e `danoRecebidoDificil`. Fora da luta de chefe, são lutadores comuns.
 
-**Qual chefão aparece no ARCADE depende da chave `Regras.chefesDaFila`** (`src/meta/regras.ts:35`):
+**Qual chefão aparece no ARCADE depende da chave `Regras.chefesDaFila`** (`src/meta/regras.ts:47`):
 
 | Estado | `chefesDaFila` | Chefão do ARCADE |
 |---|---|---|
-| HEAD `f5b5fab` | `true` (commitado em `bb8dae2`) | o próximo guardião da fila (AMINU primeiro); o ZENON só com os 5 liberados |
+| `REGRAS_PADRAO` no commit `78de1be` | `true` | o próximo guardião da fila (AMINU primeiro); o ZENON só com os 5 liberados |
 | Chave `false` (rollback) | `false` | sempre o ZENON; a vitória usa o formato antigo `{ derrotouChefe }` |
 
 A escolha é feita por `chefeDoArcade` (`src/meta/chefes.ts:21`): com a chave `true`, devolve o primeiro guardião da fila ainda travado e diferente de `c1`; se a fila acabou, devolve o ZENON; se `c1` é o próprio ZENON e a fila está esgotada, devolve `null` (sem luta de chefe). A chave `false` é de rollback e de `?expansao=4`.
 
-Histórico relevante: o contrato (`chefeDoArcade`, `aplicarVitoriaArcade({ chefe })`, `danoRecebido`) entrou em `955e720`; a UI dos guardiões (entradas, véu de fase 2, textos, cartão de desbloqueio) entrou em `bb8dae2`.
+Histórico relevante: o contrato (`chefeDoArcade`, `aplicarVitoriaArcade({ chefe })`, `danoRecebido`) entrou em `955e720`; a UI dos guardiões (entradas, véu de fase 2, textos, cartão de desbloqueio) entrou em `bb8dae2`; os fatores por nível (`danoRecebidoDificil`) entraram em `41e1ffb`.
 
 ### 6.1 Dados
 
-- `ConfigChefe` (`src/data/tipos.ts`): `barras`, `hpPorBarra`, `fichaFase1?`, `fichaFase2?`, `cena: CenaDef`, `bonusVitoria`, `trilha?`, `danoRecebido?`. `fichaFase1` e `fichaFase2` são opcionais; o guardião não tem ficha de fase.
-- `danoRecebido` (`src/data/tipos.ts:119`): multiplicador do dano que a **vida** do chefe sofre. `montar` recusa valores fora de `0,60` a `1` (`DANO_RECEBIDO_MIN = 0.6`, `src/data/montar.ts:98`; validação em `montar.ts:101`). É a alavanca de dureza: não muda a ficha, o ataque nem a IA.
+- `ConfigChefe` (`src/data/tipos.ts:124`): `barras`, `hpPorBarra`, `fichaFase1?`, `fichaFase2?`, `cena: CenaDef`, `bonusVitoria`, `trilha?`, `danoRecebido?` (`:144`), `danoRecebidoDificil?` (`:149`). `fichaFase1` e `fichaFase2` são opcionais; o guardião não tem ficha de fase.
+- `danoRecebido` e `danoRecebidoDificil`: multiplicadores do dano que a **vida** do chefe sofre, um por nível da CPU. `montar` recusa valores fora de `0,60` a `1` (`DANO_RECEBIDO_MIN = 0.6`, `src/data/montar.ts:99`; validação em `montar.ts:102`). São a alavanca de dureza: não mudam a ficha, o ataque nem a IA. Seção 6.2.
 - `CenaDef` (`src/data/tipos.ts`): `{ duracao, poses }`. A pose do tick `t` é `poseDaCena(cena, t)` (`src/data/cena.ts:8`); a última segura até o fim.
-- `validarCena` (`src/data/cena.ts:15`), chamada em `src/data/montar.ts:117`: duração inteira de 1 a 600 e de 1 a 8 nomes de pose. Dado inválido falha no boot.
+- `validarCena` (`src/data/cena.ts:15`), chamada em `src/data/montar.ts:118` (dentro do bloco `if (def.chefe)`, `montar.ts:117`): duração inteira de 1 a 600 e de 1 a 8 nomes de pose. Dado inválido falha no boot.
 - `Golpe.drenaEnergia` (`{ acerto, defesa }`): validado em `src/data/montar.ts`. Recusa projétil, `hits > 1`, `throw`/`agarrao` e números fora de `0 <= defesa <= acerto <= 100`.
-- `LutadorDef.alturaEmPe`: altura da hurtbox em pé, em múltiplo da escala. No ZENON, `1,22` (`src/data/lutadores/zenon.ts:139`).
-- `LutadorDef.alturaDoProjetil`: altura, em px, de onde o projétil nasce. ZENON: `175` (`zenon.ts:141`).
+- `LutadorDef.alturaEmPe`: altura da hurtbox em pé, em múltiplo da escala. No ZENON, `1,22` (`src/data/lutadores/zenon.ts:144`).
+- `LutadorDef.alturaDoProjetil`: altura, em px, de onde o projétil nasce. ZENON: `175` (`zenon.ts:146`).
 - Ficha: `FichaDef` é parcial e sobrescreve a base. Atenção: `mods` é **raso por golpe** (armadilha descrita em `docs/como-adicionar-um-lutador.md`).
 
-Números do ZENON (`src/data/lutadores/zenon.ts`, HEAD):
+Números do ZENON (`src/data/lutadores/zenon.ts`, commit `78de1be`):
 
 | Campo | Valor | Linha |
 |---|---|---|
 | `scale` | 1,32 | `zenon.ts:133` |
 | `pow`, `hp` | 1,0; 100 | `zenon.ts:129` |
-| `alturaEmPe` | 1,22 | `zenon.ts:139` |
-| `alturaDoProjetil` | 175 | `zenon.ts:141` |
-| `chefe` | 2 barras de 50 (`hpPorBarra`, `:148`); bônus 5000 (`:153`); `danoRecebido: 0.8` (`:156`); bloco começa em `:146` | `zenon.ts:146-156` |
+| `alturaEmPe` | 1,22 | `zenon.ts:144` |
+| `alturaDoProjetil` | 175 | `zenon.ts:146` |
+| `chefe` | 2 barras de 50 (`hpPorBarra`, `:153`); bônus 5000 (`:158`); `danoRecebido: 0,75` (`:161`) e `danoRecebidoDificil: 0,73` (`:162`); bloco começa em `:151` | `zenon.ts:151-162` |
 | dreno do TRIBUTO | 12/6 no jogável | `zenon.ts:46` |
 | armadura da fase 2 | `armor: 1` em `hp`, `hk` e `chp` (ficha `chefe2`) | `zenon.ts:112` |
 
-Números dos guardiões (`src/data/lutadores/*.ts`, HEAD; cada um tem `chefe: { barras: 2, hpPorBarra, cena, bonusVitoria: 3000, danoRecebido }`):
+Números dos guardiões (`src/data/lutadores/*.ts`, commit `78de1be`; cada um tem `chefe: { barras: 2, hpPorBarra, cena, bonusVitoria, danoRecebido, danoRecebidoDificil }`):
 
-| Guardião | `hpPorBarra` | `danoRecebido` | Referência |
-|---|---|---|---|
-| AMINU | 56 | 0,925 | `aminu.ts:68`, `:71` |
-| CENTELLA | 48 | 0,875 | `centella.ts:62`, `:65` |
-| CAMILLE | 49 | 0,925 | `camille.ts:72`, `:75` |
-| NILA | 54 | 0,875 | `nila.ts:124`, `:127` |
-| BAATAR | 46 | 0,85 | `baatar.ts:82`, `:85` |
+| Guardião | `hpPorBarra` | `danoRecebido` (NORMAL) | `danoRecebidoDificil` (DIFÍCIL) | Referência (`chefe`, `hpPorBarra`, `danoRecebido`, `danoRecebidoDificil`) |
+|---|---|---|---|---|
+| AMINU | 54 | 0,85 | 0,92 | `aminu.ts:71`, `:73`, `:76`, `:77` |
+| CENTELLA | 50 | 0,86 | 0,74 | `centella.ts:66`, `:68`, `:71`, `:72` |
+| CAMILLE | 47 | 0,89 | 0,82 | `camille.ts:76`, `:78`, `:81`, `:82` |
+| NILA | 52 | 0,84 | 0,72 | `nila.ts:130`, `:132`, `:135`, `:136` |
+| BAATAR | 46 | 0,82 | 0,75 | `baatar.ts:85`, `:87`, `:90`, `:91` |
 
 ### 6.2 Motor
 
-- `danoNoDefensor` (`src/fight/game.ts:287`): multiplica o dano pelo `danoRecebido` do chefe (`game.ts:288`). Ausente ou `1` devolve o número sem multiplicar. O fator mora em `cfgChefe` do lutador, não na ficha: a NILA troca de postura e o fator fica (comentário em `game.ts:285`).
-- Dreno: `cobrarDreno` (`src/fight/game.ts:886`). `k = min(rival.en, valor)`, `rival.en -= k`, `atacante.en = min(100, atacante.en + k)`. Roda só nos ramos de acerto e de bloqueio. Armadura que absorve, PARADE, esquiva e `untouchable` retornam antes, então não drenam.
-- Fases: a troca de barra não é KO: `resolverVidaZerada` (`game.ts:903`) devolve `false` quando sobra barra. Cena da fase 2: `cenaPendente` (`game.ts:479`); a troca de ficha só acontece se o chefe tem `fichaFase2` (`game.ts:499`).
-- Alterações de `danoRecebido` e da ficha opcional: `955e720`. Nenhuma regra de luta dos lutadores comuns mudou desde 64f2647 (`git diff` de `src/fight`, `src/data/lutadores`, `src/render/mundo.ts` e `camera.ts` vazio nesse intervalo).
+- `danoNoDefensor` (`src/fight/game.ts:354`): multiplica o dano pelo fator do chefe. Com a CPU que controla o defensor em **DIFÍCIL** (`d.cpu === 2`, índice de `AI_LEVELS`, `src/fight/cpu.ts:10`), usa `danoRecebidoDificil` se existir; senão, `danoRecebido`. Ausente ou `1` devolve o número sem multiplicar (`game.ts:356`). O fator mora em `cfgChefe` do lutador, não na ficha: a NILA troca de postura e o fator fica (comentário em `game.ts:350`).
+- Dreno: `cobrarDreno` (`src/fight/game.ts:1210`). `k = min(rival.en, valor)`, `rival.en -= k`, `atacante.en = min(100, atacante.en + k)`. Roda só nos ramos de acerto e de bloqueio. Armadura que absorve, PARADE, esquiva e `untouchable` retornam antes, então não drenam.
+- Fases: a troca de barra não é KO: `resolverVidaZerada` (`src/fight/game.ts:1227`) devolve `false` quando sobra barra (e marca a troca e `cenaPendente`), e `true` quando é KO. Cena da fase 2: o chefe fica com `cenaPendente = true` (`game.ts:1238`), e a etapa `'cena'` do evento `fase-chefe` sai em `game.ts:599`. A troca de ficha só acontece se o chefe tem `fichaFase2` (ZENON).
+- Limite de combo (motor v2): com `motorV2.filmes`, um combo tira no máximo `TETO_COMBO = 0,4` (40%) da vida total do defensor (`src/fight/game.ts:66`, `limitarAoTetoDoCombo` em `game.ts:1106`). Seção 20.
 
 ### 6.3 Render
 
-- Rampa da fase 2: `rampaDaFase2` (`src/render/aura-chefe.ts:27`) vem do **estado da luta**, não de evento. Para os guardiões (sem `fichaFase2`), a rampa vale 1 (`aura-chefe.ts:32`); para o ZENON, vale quando a ficha é a da fase 2 (`aura-chefe.ts:34`). Chamada em `src/render/mundo.ts:72`.
+- Rampa da fase 2: `rampaDaFase2` (`src/render/aura-chefe.ts:27`) vem do **estado da luta**, não de evento. Para os guardiões (sem `fichaFase2`), a rampa vale 1 (`aura-chefe.ts:32`); para o ZENON, vale quando a ficha é a da fase 2 (`aura-chefe.ts:34`). Chamada em `src/render/mundo.ts:78`.
 - Aura: `desenharAuraChefe` (`src/render/aura-chefe.ts:47`).
 - Arena da fase 2: `SOBREPOSICOES_DE_CENARIO` (`src/render/cenario.ts:48`), com `gr` em `src/render/arena-gr.ts`. Usada por `desenharMundo` (`mundo.ts`). Véu do céu, braseiros em púrpura e raios ocasionais; não usa o RNG da luta.
 - Véu de fase 2 (`src/render/veu-de-fase2.ts`), roteiros de entrada por lutador (`src/render/roteiros-de-entrada.ts`, `ROTEIROS_DOS_GUARDIOES` em `:56`) e efeitos (`src/render/efeitos-de-entrada.ts`). Os 5 guardiões têm batidas de pose, zoom, deslocamento, efeito e som. O ZENON mantém o roteiro dele.
 - Apresentação: `APRESENTACAO` (`src/render/apresentacao-lutadores.ts:78`) reúne a pose de entrada e de vitória, as falas, o aviso do VS e o cartão da entrada. Só desenho: nada disso vai ao motor. A fala do chefão é `falaDoChefe` (`apresentacao-lutadores.ts:159`); ver 6.7.
-- Entrada dramática: `src/render/entrada-chefe.ts`. COMPLETA = 270 ticks (`DURACAO_ENTRADA_COMPLETA`, `:30`); CURTA = 60 ticks (`DURACAO_ENTRADA_CURTA`, `:31`). `PULO_VALE_A_PARTIR_DE = 10` (`:33`) e `SAIDA_AO_PULAR = 6` (`:35`). Linha do tempo pura: `linhaDaEntrada` (`:119`). Escolha do modo: `modoDaEntrada` (`src/ui/cenas/fight.ts:161-165`); ver 13.
-- Cinemática do especial: `src/render/cinematica.ts`. COMPLETA = 48 ticks (`DURACAO_COMPLETA`, `:27`), CURTA = 20 ticks (`DURACAO_CURTA`, `:28`), saída ao pular em `TICKS_DA_SAIDA_AO_PULAR = 6` (`:30`). `modoDaCinematica` (`:49`) devolve `null` para DESLIGADA ou com `Regras.cinematica` desligada. Tarja do especial: `pintarTarja` (`:175`), desenho em `desenharTarja` (`:492`) e tamanho do nome em `tamanhoDoNome` (`:568`). A fonte é a do especial (`FONTE_DO_ESPECIAL`, de `src/render/texto.ts`), com nome de até 48 px.
-- Escala na vitrine: `escalaDeVitrine` (`src/ui/personagens.ts:27`) encolhe só quem passa de `ESCALA_MAXIMA_DE_VITRINE = 1.1` (`personagens.ts:24`). O BAATAR (1,28) e o ZENON (1,32) são encolhidos na vitrine, não no dado.
+- Entrada dramática: `src/render/entrada-chefe.ts`. COMPLETA = 270 ticks (`DURACAO_ENTRADA_COMPLETA`, `:30`); CURTA = 60 ticks (`DURACAO_ENTRADA_CURTA`, `:31`). `PULO_VALE_A_PARTIR_DE = 10` (`:33`) e `SAIDA_AO_PULAR = 6` (`:35`). Linha do tempo pura: `linhaDaEntrada` (`:119`). Escolha do modo: `modoDaEntrada` (`src/ui/cenas/fight.ts:209`); ver 13.
+- Cinemática do especial: `src/render/cinematica.ts`. COMPLETA = 48 ticks (`DURACAO_COMPLETA`, `:27`), CURTA = 20 ticks (`DURACAO_CURTA`, `:28`), saída ao pular em `TICKS_DA_SAIDA_AO_PULAR = 6` (`:30`). `modoDaCinematica` (`:49`) devolve `null` para DESLIGADA ou com `Regras.cinematica` desligada. Tarja do especial: `pintarTarja` (`:175`); tamanho do nome em `tamanhoDoNome` (`:567`). A fonte é a do especial (`FONTE_DO_ESPECIAL`, `src/render/texto.ts:22`).
+- Escala na vitrine: `escalaDeVitrine` (`src/ui/personagens.ts:28`) encolhe só quem passa de `ESCALA_MAXIMA_DE_VITRINE = 1.1` (`personagens.ts:25`). O BAATAR (`scale` 1,28, `src/data/lutadores/baatar.ts:63`) e o ZENON (1,32, `zenon.ts:133`) são encolhidos na vitrine, não no dado.
 
 ### 6.4 Áudio
 
 - Trilhas fixas: `TRILHAS` (`src/audio/audio-sys.ts:125`). `fight`, `menu` e `chefe` (valsa em 3/4).
 - Trilha de chefe: `playChefe` (`audio-sys.ts:853`). Fase 2: `AudioSys.musicaDaFase(2)` (`audio-sys.ts:764`).
-- Gatilho da fase 2: o evento `fase-chefe` com `etapa === 'cena'` chama `introWhoosh` (`audio-sys.ts:657`) e `musicaDaFase(2)` (`src/audio/eventos.ts:70`).
-- `startMusic` (`audio-sys.ts:674`) recebe a trilha pedida. A luta escolhe a trilha com `trilhaDoJogo` (`src/audio/camadas.ts:171`), chamado em `src/ui/cenas/fight.ts:287`.
-- Eventos da luta: `reagirDoJogo` (`src/audio/camadas.ts:146`), chamado em `src/ui/cenas/fight.ts:457`. Antes de tocar, sincroniza as amostras dos dois lutadores (`banco.prepararLutadores` e `sincronizar`, `camadas.ts:147-160`). Com a identidade carregada e ligada, toca por `reagirComIdentidade` (`src/audio/camadas.ts:161`; implementação em `identidade-sonora.ts:391`); sem ela, `reagirAosEventos` (`camadas.ts:164`; `src/audio/eventos.ts:97`).
+- Gatilho da fase 2: o evento `fase-chefe` com `etapa === 'cena'` chama `introWhoosh` (`audio-sys.ts:657`) e `musicaDaFase(2)` (`src/audio/eventos.ts:75`).
+- `startMusic` (`audio-sys.ts:674`) recebe a trilha pedida. A luta escolhe a trilha com `trilhaDoJogo` (`src/audio/camadas.ts:171`), chamado em `src/ui/cenas/fight.ts:345`.
+- Eventos da luta: `reagirDoJogo` (`src/audio/camadas.ts:146`), chamado em `src/ui/cenas/fight.ts:594`. Antes de tocar, sincroniza as amostras dos dois lutadores. Com a identidade carregada e ligada, toca por `reagirComIdentidade` (`src/audio/camadas.ts:161`; implementação em `identidade-sonora.ts:391`); sem ela, `reagirAosEventos` (`camadas.ts:164`; `src/audio/eventos.ts:102`).
 - Estado: identidade sonora, temas e amostras reais **ligados** (ver 14, 14b e 14c).
 
 ### 6.5 Grade de 10 e casa de honra
 
 - `temCasaDeHonra(n)` (`src/ui/grade.ts:19`): verdadeiro só com 10 casas (9 regulares + o chefão).
 - `ordemDaGrade` (`src/ui/grade.ts:28`): os 9 regulares na ordem do roster; o chefão por último, no índice 9.
-- `CASA_DE_HONRA` (`grade.ts:56`): `{ x: 404, y: 356, w: 204, h: 44 }` (encolheu de 256 px para 204 px em `ac57a80`, para caber a casa aleatória). Oculta = "???" e "O ANFITRIÃO". Liberada = rosto, nome, título e "CHEFÃO".
+- `CASA_DE_HONRA` (`grade.ts:56`): `{ x: 404, y: 356, w: 204, h: 44 }`. Oculta = "???" e "O ANFITRIÃO". Liberada = rosto, nome, título e "CHEFÃO".
 - Casa aleatória (`CASA_ALEATORIA`, `grade.ts:54`): sorteio com RNG próprio (`semente + 4`), só entre liberados.
 - `moverNaGrade` (`grade.ts:103`): ↓ da 3ª linha vai para a honra; ↑ da honra vai para a casa 7; ↑ da 1ª linha vai para a honra; ↓ da honra vai para a casa 1; ←/→ na honra não mudam.
 - Área de toque: `retanguloDeToque` (`grade.ts:88`).
@@ -274,7 +292,7 @@ Números dos guardiões (`src/data/lutadores/*.ts`, HEAD; cada um tem `chefe: { 
 ### 6.6 Esquiva
 
 - Parâmetros de partida (`src/data/esquiva.ts`, `ESQUIVA_PADRAO`, `:28`): custo 20 de energia, buffer de 6 ticks para o botão. Ajuste pelo harness: `npm run balanco`.
-- Regra ligada em `src/meta/regras.ts:31` (`esquiva: true`). Quando desligada, `body.sem-esquiva` esconde o botão ESQ do toque (`src/input/toque.css:95`).
+- Regra ligada em `src/meta/regras.ts:43` (`esquiva: true`). Quando desligada, `body.sem-esquiva` esconde o botão ESQ do toque (`src/input/toque.css:95`).
 - Entradas: teclado P1 `n` e P2 `o` (`src/input/mapa.ts:22` e `:35`); gamepad L1/L2 (`mapa.ts:56` para o P1 e `:71` para o P2); toque, botão ESQ (`index.html:45`).
 - Apresentação: `src/render/esquiva.ts` (corpo fantasma e rastro só na janela invulnerável).
 
@@ -286,7 +304,7 @@ Números dos guardiões (`src/data/lutadores/*.ts`, HEAD; cada um tem `chefe: { 
 - **vitória** só no `matchend`, quando o chefão vence a luta (não no `roundend`);
 - **derrota** só no KO que fecha a luta, ou no `matchend` perdido por KO (vida zerada). Perder por tempo não fala. `roundend` nunca fala.
 
-Essa é a decisão 6 de `PROGRESSO.md` ("derrota do chefão só no KO final; vitória só no `matchend`"). O código do HEAD a segue.
+Essa é a decisão 6 de `PROGRESSO.md` ("derrota do chefão só no KO final; vitória só no `matchend`"). O código do commit `78de1be` a segue.
 
 ### 6.8 Como o chefão do ARCADE é escolhido
 
@@ -306,27 +324,30 @@ Ver o início da seção 6 e `chefeDoArcade` (`src/meta/chefes.ts:21`). Demais f
 
 ## 8. Balanceamento (harness)
 
-- Comando: `npm run balanco -- [--rapido | --completo] [opções]` (`ferramentas/balanco/cli.mjs`, ajuda com `--ajuda`).
-- `--completo --esquiva` (100 sementes por combinação, NORMAL e DIFÍCIL) grava a referência de PRODUÇÃO em `docs/balanco/`. `--completo` sem a flag grava a rodada sem esquiva em `docs/balanco/sem-esquiva/`. `docs/balanco/README.md` diz qual é qual.
-- **A referência versionada em `docs/balanco/` é a rodada COM esquiva** (`esquiva: true` em `src/meta/regras.ts`): versão de dados `f6b9952cee5e`, hash da rodada `957b8416d75bf060`, hash das lutas regulares `f420ce928e06b304` (tem de ser igual antes e depois de qualquer ajuste de chefão). 25 800 lutas, 0 travadas. Nenhum commit mexeu em `docs/balanco/` desde `64f2647`.
-- Metas dos chefões: rampa de NORMAL de AMINU (26-30%) a ZENON (15-19%), com os intermediários; DIFÍCIL = centro do NORMAL x 0,575, ± 3 pontos.
+- Comando: `npm run balanco -- [--rapido | --completo] [opções]` (`ferramentas/balanco/cli.mjs`; `--ajuda` lista tudo).
+- **Referência de PRODUÇÃO:** `npm run balanco -- --completo --esquiva` grava em `docs/balanco/`. Com o motor v2 ligado por padrão, a rodada de produção mede o jogo como ele é. `--completo --esquiva --sem-motor-v2` grava a referência "antes" em `docs/balanco/sem-motor-v2/`, e `--completo` sem `--esquiva` grava em `docs/balanco/sem-esquiva/`. `docs/balanco/README.md` diz qual é qual.
+- Flags do motor v2 no harness: `--sem-motor-v2` (desliga as três), `--motor-v2 entrada,filmes,combos` (liga só estas; sai em `relatorios/`, nunca em `docs/`), `--entrada-hitstop`, `--filmes`, `--dano-filme hoje|v2|forte` (A/B do dano; sai em `relatorios/`).
+- **A referência versionada em `docs/balanco/` é a rodada COM esquiva e com o motor v2 ligado** (`resultados.md`, cabeçalho "Entradas desta rodada"): versão de dados/motor `0a39396db39d`, 100 sementes por combinação, NORMAL e DIFÍCIL, 25 800 lutas (18 000 regulares e 7 800 contra os chefões), 0 travadas. Hash das lutas regulares desta rodada: `05bf1b64b46008a0`. Esse hash é a nova referência: a rodada anterior, sem motor v2, tinha outro (`f420ce928e06b304`).
+- Metas dos chefões: rampa de NORMAL de AMINU (26-30%) a ZENON (15-19%), com os intermediários; DIFÍCIL proporcionalmente menor, centro x 0,575, ± 3 pontos.
 
-Resultado da rodada de produção (valores transcritos de `docs/balanco/resultados.md`; "jogador vence" = a CPU do desafiante vence o chefão; aproximação CPU x CPU, não uma pessoa). Conferidos nesta passada contra `resultados.md`: AMINU (NORMAL e DIFÍCIL), CENTELLA, CAMILLE, NILA e BAATAR no DIFÍCIL, e ZENON 51,4%. Os demais valores da tabela **a confirmar** nesta passada.
+Resultado da rodada de produção (valores de `docs/balanco/resultados.md` no commit `78de1be`; "Jogador vence" = a CPU do desafiante vence o chefão; aproximação CPU x CPU, não uma pessoa):
 
-| Chefão | Desafiantes | `danoRecebido` | NORMAL (meta) | DIFÍCIL (meta) |
+| Chefão | Desafiantes | `danoRecebido` (NORMAL) / `danoRecebidoDificil` | Jogador vence NORMAL (meta) | Jogador vence DIFÍCIL (meta) |
 |---|---|---|---|---|
-| AMINU | 4 | 0,925 | 29,3% (26-30) ok | 10,0% (13-19) **fora** |
-| CENTELLA | 5 | 0,875 | 26,8% (24-28) ok | 25,8% (12-18) **fora** |
-| CAMILLE | 6 | 0,925 | 24,3% (22-26) ok | 16,3% (11-17) ok |
-| NILA | 7 | 0,875 | 20,7% (19-23) ok | 16,3% (9-15) **fora** |
-| BAATAR | 8 | 0,85 | 18,3% (17-21) ok | 19,0% (8-14) **fora** |
-| ZENON | 9 | 0,80 | 16,1% (15-19) ok | 11,4% (7-13) ok |
+| AMINU | 4 | 0,85 / 0,92 | 29,8% (26-30) ok | 15,8% (13-19) ok |
+| CENTELLA | 5 | 0,86 / 0,74 | 25,8% (24-28) ok | 16,8% (12-18) ok |
+| CAMILLE | 6 | 0,89 / 0,82 | 25,2% (22-26) ok | 12,8% (11-17) ok |
+| NILA | 7 | 0,84 / 0,72 | 22,1% (19-23) ok | 13,7% (9-15) ok |
+| BAATAR | 8 | 0,82 / 0,75 | 18,1% (17-21) ok | 11,5% (8-14) ok |
+| ZENON | 9 | 0,75 / 0,73 | 18,2% (15-19) ok | 9,7% (7-13) ok |
 
-O DIFÍCIL está fora da faixa em 4 de 6 chefões. Decisão de aceitar por enquanto: `PROGRESSO.md`, "Decisões em aberto".
+Os 12 de 12 chefões estão dentro da meta no commit `78de1be`. Na rodada anterior, o DIFÍCIL estava fora da faixa em 4 de 6 chefões; nesta, com os fatores por nível (`danoRecebidoDificil`), os 6 ficam dentro da meta.
 
-Sem esquiva (`docs/balanco/sem-esquiva/`, rodada anterior, só para comparação): o README da pasta diz que não foi regravada e que é de um chefão só.
+Taxa de vitória dos 10 lutadores nas lutas regulares (`resultados.md`, todas contra os outros 8, IC 95%): de 44,8% (MIN-JI) a 56,1% (BAATAR). Duração média de 93 s; nenhuma luta decidida por tempo; 0 travadas.
 
-- Harness: `ferramentas/balanco/` (cada luta monta a própria `Game` em memória; nada toca o estado do jogo). Meta por chefão: `metaDoChefe` (`ferramentas/balanco/chefoes.ts:47`), com `CENTRO_PRIMEIRO = 0.28` (`:41`) e `RAZAO_DIFICIL = 0.575` (`:43`).
+Sem esquiva (`docs/balanco/sem-esquiva/`): rodada anterior, só para comparação. O README da pasta diz que não foi regravada e que é de um chefão só.
+
+- Harness: `ferramentas/balanco/` (cada luta monta a própria `Game` em memória; nada toca o estado do jogo). Meta por chefão: `metaDoChefe` (`ferramentas/balanco/chefoes.ts:47`).
 
 ## 9. Política de segurança de conteúdo (CSP)
 
@@ -347,56 +368,57 @@ img-src 'self' data: blob:; connect-src 'self'; media-src 'self' blob:
 
 - `npm run build` = `tsc --noEmit && vite build` (`package.json`). Gera `dist/` com sourcemap (`vite.config.ts:77`, `sourcemap: true`). Também emite `version.json` (ver 19).
 - O mapa de código-fonte fica público no build. A decisão do dono é trocar para `sourcemap: 'hidden'` ao privar o repositório (`PROGRESSO.md`, seção do repositório público). Ainda não foi feito.
-- CI: `.github/workflows/ci.yml` roda typecheck, testes e build em todo push e PR, com Node 24 (`ci.yml:20`).
-- Pages: `.github/workflows/pages.yml`, temporário, dispara a cada push na `main` (`pages.yml`, bloco `on`). Ver `README.md`.
+- CI: `.github/workflows/ci.yml` roda typecheck, testes e build em todo push e PR, com Node 24 (`ci.yml:27` e `:50`). Há também `.github/workflows/e2e-completo.yml`. `engines` do `package.json` pede Node 20 ou mais novo.
+- Pages: `.github/workflows/pages.yml`, temporário, dispara a cada push na `main`. Ver `README.md`.
 
 ## 11. Ferramentas
 
 | Arquivo ou comando | Função | Estado |
 |---|---|---|
 | `ferramentas/extrair-prototipo.mjs` | tira atlas e cenários do protótipo para `public/assets` | usado na F1 |
-| `ferramentas/sprites/` (`npm run sprites -- <id>`) | pipeline de folhas para atlas C1 v2 | sem argumento, imprime o uso. Grava em `sprites-gerados/` e `arte-fonte/` |
-| `ferramentas/balanco/` (`npm run balanco`) | harness de simulação | commitado; `docs/balanco/` é a rodada de produção, com esquiva (seção 8) |
-| `ferramentas/converter-cenarios.mjs` | cenários da arte-fonte para WebP 1920x1080. `--so <sigla>` converte só alguns | fontes em `FONTES` (`converter-cenarios.mjs:13`) |
+| `ferramentas/sprites/` (`npm run sprites -- <id>`) | pipeline de folhas para atlas C1 v2, com o bloco `filme` (`prepararFilme`, `executar.mjs:89`) | sem argumento, imprime o uso. Grava em `sprites-gerados/` e `arte-fonte/` |
+| `ferramentas/balanco/` (`npm run balanco`) | harness de simulação (flags na seção 8) | commitado; `docs/balanco/` é a rodada de produção, com esquiva e motor v2 (seção 8) |
+| `ferramentas/orcamento/` (`npm run orcamento`) | portão de orçamento: lê `dist/` depois do build e compara com `orcamento.json` (JS gzip, atlas, FILME, cenários) | metas no `orcamento.json`; `bloqueantes` vazio, então hoje tudo é aviso. Precisa de `npm run build` antes (escreve `dist/`). Os números medidos: **a confirmar** |
+| `ferramentas/converter-cenarios.mjs` | cenários da arte-fonte para WebP 1920x1080. `--so <sigla>` converte só alguns | fontes em `FONTES` do próprio arquivo |
 | `ferramentas/gerar-retratos.mjs` | retrato de cada lutador a partir do atlas (`--so <id>`, `--verificar`) | existe; sem script npm |
 | `ferramentas/prompts/montar-prompts.mjs` | gera `docs/prompts/` a partir de `docs/prompts-arte.md` | não reconferido nesta passada |
-| `ferramentas/sons/gerar-pacote-teste.mjs` (`npm run sons:pacote-teste`) | gera um pacote de amostras de teste (MP3 e manifesto) em `tests/fixtures/sons-pacote/`, com ondas sintéticas e `ffmpeg` no PATH | commitado em `497cb33` |
-| `ferramentas/trailer/cli.mjs` (`npm run trailer:escalar`) | escalação do trailer de abertura (plano, sementes, níveis da CPU) | commitado em `f377da4` |
-| `ferramentas/trailer/medir.mjs` (`npm run trailer:medir`) | medição de desempenho do trailer no Chromium com CPU estrangulada; compara com a luta CPU x CPU | commitado em `f377da4` e `dcdfe0c` |
+| `ferramentas/sons/gerar-pacote-teste.mjs` (`npm run sons:pacote-teste`) | gera um pacote de amostras de teste em `tests/fixtures/sons-pacote/`, com ondas sintéticas e `ffmpeg` no PATH | commitado |
+| `ferramentas/trailer/cli.mjs` (`npm run trailer:escalar`) | escalação do trailer de abertura (plano, sementes, níveis da CPU) | commitado |
+| `ferramentas/trailer/medir.mjs` (`npm run trailer:medir`) | medição de desempenho do trailer no Chromium com CPU estrangulada; compara com a luta CPU x CPU | commitado |
 
-## 12. Pendências técnicas (verificadas em 2026-10-23)
+## 12. Pendências técnicas (verificadas no commit `78de1be`)
 
-- **`poseDaCena` existe em uma cópia só** (`src/data/cena.ts:8`), usada pelo motor (`src/fight/fighter.ts:1051`) e pela apresentação (`src/render/apresentacao-lutadores.ts:142`).
-- **Comentário velho:** `src/fight/game.ts:900` ainda diz "a Dança da Águia fica pendente". Hoje é a cena da fase 2.
-- **Preferências de cinemática e de provocação aposentadas.** O menu de Opções não tem mais as linhas CINEMÁTICA e PROVOCAÇÕES (`src/ui/cenas/options.ts`, lista em `:108-151`). `PREFERENCIAS_APOSENTADAS` (`src/ui/persistencia.ts`) descarta os valores salvos. Por isso a entrada do chefão é COMPLETA na primeira luta do Arcade e CURTA nas demais (`modoDaEntrada`, `src/ui/cenas/fight.ts:161-165`), e a provocação é sempre ligada. A regra de movimento reduzido continua valendo.
-- **Tecla H:** alterna `game.debug` (`src/ui/cenas/fight.ts:628`). O desenho das caixas de colisão nesse modo: **a confirmar**.
-- **Prompts de arte:** `docs/prompts-arte.md` ainda diz "Gemini" no corpo, mas a nota do topo manda ler "Runway" em todo lugar onde aparece "Gemini". **a confirmar** nesta passada.
+- **`poseDaCena` existe em uma cópia só** (`src/data/cena.ts:8`), usada pelo motor (`src/fight/fighter.ts:1102`) e pela apresentação (`src/render/apresentacao-lutadores.ts:142`).
+- **Comentário velho:** `src/fight/game.ts:1224` ainda diz "a Dança da Águia fica pendente". Hoje é a cena da fase 2 (ver `game.ts:580`).
+- **Preferências de cinemática e de provocação aposentadas.** O menu de Opções não tem mais as linhas CINEMÁTICA e PROVOCAÇÕES (`src/ui/cenas/options.ts`). `PREFERENCIAS_APOSENTADAS` (`src/ui/persistencia.ts:14`) descarta os valores salvos ao carregar. Por isso a entrada do chefão é COMPLETA na primeira vez de cada corrida do Arcade e CURTA nas demais (`modoDaEntrada`, `src/ui/cenas/fight.ts:209`, com o marco `entradaDoChefeVista` da corrida, `fight.ts:222`), e a provocação é sempre ligada. A regra de movimento reduzido continua valendo.
+- **Tecla H:** alterna `game.debug` (`src/ui/cenas/fight.ts:851`). As caixas de colisão só são desenhadas com `import.meta.env.DEV`, em TREINO e com `game.debug` ligado (`fight.ts:916`; desenho em `src/render/caixas.ts:30`). Fora do DEV, H não mostra caixa nenhuma.
+- **Prompts de arte:** `docs/prompts-arte.md` ainda diz "Gemini" no corpo (`:1` e `:28`), mas a nota do topo (`:9`) manda ler "Runway" em todo lugar onde aparece "Gemini". Corrigir o corpo do arquivo fica pendente.
 
 ## 13. Provocação (balão antes do round e na vitória)
 
-Spec: `docs/spec-provocacao-prerround-e-vitoria.md`. A seção "Decisões do dono" no topo da spec vale por cima do resto. Commit: `bfa3347`. A opção PROVOCAÇÕES foi retirada das Opções (ver 12): hoje ela é sempre ligada, salvo exclusões de regra abaixo.
+Spec: `docs/spec-provocacao-prerround-e-vitoria.md`. A seção "Decisões do dono" no topo da spec vale por cima do resto. A opção PROVOCAÇÕES foi retirada das Opções (ver 12): hoje ela é sempre ligada, salvo exclusões de regra abaixo.
 
 **Onde mora:**
 
-- `src/data/provocacoes.ts`: tipos, validação, escolha da fala (`sortearFala` em `:310`, `quemFalaNaRodada` em `:340`). Valida no import (`exigirFalasValidas`, `:197`). `src/main.ts:13` importa o módulo para isso.
-- `src/data/provocacoes.pt-BR.ts`: os textos (a contagem de 232, do registro de 2026-10-21, **a confirmar** nesta passada). `TEXTOS_PROVISORIOS = false` (`:14`). **É a fonte de verdade**; `docs/textos-provocacao.md` é só registro de autoria.
-- `src/render/provocacao.ts`: funções puras (`provocacaoLigada` em `:96`, `modoDaProvocacao` em `:112`) e a classe `Provocacao`, com a mesma API da entrada do chefão (`iniciar / ativa / avancar / pular / zerar / desenhar`).
-- `src/render/balao.ts`: desenho do balão (`desenharBalao`, `:865`), quebra por medida, escolha de plano (`LARGURAS_DA_LINHA`, `:179`: 372, 300 e 240 px).
-- `src/ui/cenas/fight.ts`: gatilhos (`comecarProvocacao`, `:190`, chamado em `:440` no round 1, `:477` na vitória e `:492` no round 2+), pular (ataque, ENTER ou toque; ENTER em `:620`).
+- `src/data/provocacoes.ts`: tipos, validação, escolha da fala (`sortearFala` em `:310`). Limites em `LIMITES_DE_FALA` (`:61`). Valida no import (`exigirFalasValidas`, `:197`, chamada em `:205`). `src/main.ts:13` importa o módulo para isso.
+- `src/data/provocacoes.pt-BR.ts`: os textos. `TEXTOS_PROVISORIOS = false` (`:14`). **É a fonte de verdade**; `docs/textos-provocacao.md` é só registro de autoria. A contagem de falas (232, do registro de 2026-10-21): **a confirmar** nesta passada.
+- `src/render/provocacao.ts`: funções puras (`provocacaoLigada` em `:96`, `modoDaProvocacao` em `:112`) e a classe `Provocacao`, com a mesma API da entrada do chefão (`iniciar / ativa / avancar / pular / zerar / desenhar`). Pulo: `puloAposDoRound` = 10 e `puloAposDaVitoria` = 24 (`:51-52`).
+- `src/render/balao.ts`: desenho do balão, quebra por medida, `BALAO` (`:19`) com `linhaMax` de 372 px (`:21`).
+- `src/ui/cenas/fight.ts`: gatilhos (`comecarProvocacao`, `:238`; chamado com `'abertura'` em `:533`, com `'rodada'` em `:711` para o round 2 em diante, e com `'vitoria'` em `:583`), pular (ataque, ENTER ou toque).
 
 **Regras (o que o código faz):**
 
-- **Ligada?** `provocacaoLigada` (`src/render/provocacao.ts:96`) exclui: `?expansao=4` (`regras.cinematica` falso), TREINO, CPU x CPU, e, **só no pré-round**, a luta de chefão (a entrada dramática do chefão é o round 1). VERSUS de 2 jogadores tem provocação. Na vitória, vale também no chefão.
+- **Ligada?** `provocacaoLigada` (`src/render/provocacao.ts:96`) exige `regras.cinematica` (por isso `?expansao=4` fica sem provocação), e exclui TREINO, CPU x CPU e, **só no pré-round**, a luta de chefão (a entrada dramática do chefão é o round 1). VERSUS de 2 jogadores tem provocação. Na vitória, vale também no chefão.
 - **Modo:** `modoDaProvocacao` (`provocacao.ts:112`). Com a preferência aposentada, a regra usa o padrão: round 1 COMPLETA na primeira vez do confronto e CURTA nas repetições (continue, reinício, revanche); round 2+ e vitória COMPLETA. Com movimento reduzido, CURTA.
 - **Movimento reduzido** vale por cima do modo: sem andada, sem zoom, sem pop. O texto entra inteiro com fade.
-- **Round 1 (COMPLETA):** o P1 fala primeiro e o P2 responde. A andada dura 40 ticks (`provocacao.ts:56`, `andadaTicks: 40`; dx de 260 px, `:57`). A duração total depende do texto: com textos curtos fica perto de 4,8 s (medido pela Íris em 2026-10-21; a spec estimava mais). Ver `PROGRESSO.md`, decisão em aberto 4.
+- **Round 1 (COMPLETA):** o P1 fala primeiro e o P2 responde. A andada dura 40 ticks (`provocacao.ts:56`, `andadaTicks: 40`). A duração total depende do texto: com textos curtos fica perto de 4,8 s (medido pela Íris em 2026-10-21; a spec estimava mais). Ver `PROGRESSO.md`, decisão em aberto 4.
 - **Round 2+:** um balão de 1 linha de quem perdeu o round (`quemFalaNaRodada`); em round decisivo, a fala é a de `decisivo`.
 - **Vitória:** balão do vencedor. O push-in vai a 1,08 (`provocacao.ts:74`, `zoomDaVitoria`).
 - **Pular:** ataque de um humano, ENTER ou toque. Antes do tick 10 (round) ou do 24 (vitória), o pulo não vale.
 
-**Sorteio das falas:** `Contexto.sorteioDeFalas` com semente + 5 (`src/main.ts:152`). Fora do RNG da luta. A memória de "última fala" é por sessão da cena (não repete a última do mesmo lutador quando a lista tem mais de uma).
+**Sorteio das falas:** `Contexto.sorteioDeFalas` com semente + 5 (`src/main.ts:154`). Fora do RNG da luta. A memória de "última fala" é por sessão da cena (não repete a última do mesmo lutador quando a lista tem mais de uma).
 
-**Prova do comportamento:** testes de unidade `p2-provocacao-*`, `p2-balao`, `provocacoes-*`, `baloes-premium` e os e2e `provocacao.spec.ts` e `provocacao-p4*.spec.ts` (em `tests/`). A medição em pixels (A/B com e sem balão, no handoff da Lyra): rosto coberto em 0 px² nos cenários de abertura e de vitória; na CURTA há cantos de balão de 10 a 44 px² (a Íris os tratou como informativos). Não medido em aparelho real.
+**Prova do comportamento:** testes de unidade `p2-provocacao-*`, `p2-balao`, `provocacoes-*`, `baloes-premium` e os e2e `tests/e2e/provocacao.spec.ts` e `provocacao-p4*.spec.ts`. A medição em pixels (A/B com e sem balão, no handoff da Lyra): rosto coberto em 0 px² nos cenários de abertura e de vitória; na CURTA há cantos de balão de 10 a 44 px² (a Íris os tratou como informativos). Não medido em aparelho real.
 
 **Não feito:** arte nova de `provoca0/1` (usa `win` como alias); escuta do som do balão; revisão de nativo dos termos estrangeiros (`docs/textos-provocacao.md` §3).
 
@@ -409,8 +431,8 @@ Spec: `docs/spec-sons-por-lutador.md`. Handoffs: `docs/handoff-vega-sons.md` e `
 **O que existe:**
 
 - Primitiva de voz: `vozFormante` (`src/audio/sintese-voz.ts`), com garganta por lutador (uma voz por lutador, KO não deixa entrar outra) e orçamento de fontes (`src/audio/orcamento-sonoro.ts`).
-- Dados: perfis vocais (`src/data/sons/perfis-vocais.ts`), gritos (`src/data/sons/gritos.ts`, `GRITOS_LEXICAIS = true` em `:130`: palavras reais marcadas "(rev.)" pedem revisão de nativo) e assinaturas dos especiais (`src/data/sons/assinaturas.ts`), uma por entrada da tabela de apresentação.
-- Validação: `exigirSonsValidos` (`src/data/sons/validar.ts:156`) é chamada no import de `src/data/sons/index.ts:14`. O módulo é carregado pela camada de identidade no boot (`src/audio/identidade-sonora.ts:2` importa `data/sons`). Um lutador sem voz derruba o boot, como diz `src/audio/camadas.ts` (carregamento: dados inválidos relançam).
+- Dados: perfis vocais (`PERFIS_VOCAIS`, `src/data/sons/perfis-vocais.ts:17`), gritos (`src/data/sons/gritos.ts`, `GRITOS_LEXICAIS = true` em `:130`: palavras reais marcadas "(rev.)" pedem revisão de nativo) e assinaturas dos especiais (`ASSINATURAS`, `src/data/sons/assinaturas.ts:276`), uma por entrada da tabela de apresentação.
+- Validação: `exigirSonsValidos` (`src/data/sons/validar.ts:156`) é chamada no carregamento do módulo (`src/data/sons/index.ts:14`). O módulo é carregado pela camada de identidade no boot (`src/audio/identidade-sonora.ts:2` importa `data/sons`). Um lutador sem voz derruba o boot, como diz `src/audio/camadas.ts` (carregamento: dados inválidos relançam).
 - Carga: `identidade-sonora` é um pedaço à parte, baixado no boot por `import()` (`src/audio/camadas.ts`, `carregarCamadasSonoras`, `:49`).
 
 **Régua (como provar que os sons são diferentes sem ouvir):** `tests/support/regua-sons.ts`, congelada. Limiares: `TAU = 1,5` entre lutadores, `TAU_INTRA = 1,0`, `TAU_FAMILIA = 0,6`, `TAU_VARIACAO = 0,4`, `POSITIVO_MIN = 2,15`, `F0_REFERENCIA_VOZ = 175`. Pisos de hoje (regressão R5): `hurt 0,67`, `special 0,96`, `ko 0,83`.
@@ -423,13 +445,13 @@ Spec: `docs/spec-sons-por-lutador.md`. Handoffs: `docs/handoff-vega-sons.md` e `
 
 Spec: `docs/spec-chefoes-progressivos-temas-e-dificuldade.md` §3. Handoff: `docs/handoff-vega-temas.md`. Commits: `73f0074` (temas) e `1aa7cac` (ligação).
 
-**Estado: LIGADO.** `TEMAS_POR_LUTADOR = true` (`src/audio/chaves.ts:16`). Decisão do dono: sempre ligado. `Regras.temasMusicais` (`src/meta/regras.ts:36`) é `true`; a fidelidade com o protótipo desliga a música por lutador só em `?expansao=4` (`src/ui/dev-expansao.ts`).
+**Estado: LIGADO.** `TEMAS_POR_LUTADOR = true` (`src/audio/chaves.ts:16`). Decisão do dono: sempre ligado. `Regras.temasMusicais` (`src/meta/regras.ts:48`) é `true`; a fidelidade com o protótipo desliga a música por lutador só em `?expansao=4` (`src/ui/dev-expansao.ts`).
 
 **O que existe:**
 
 - Dados: 9 temas em `src/data/musica/temas/<id>.ts`, um por lutador jogável. O ZENON é `'chefe'` (a valsa de hoje). `TEMAS` (`src/data/musica/temas.ts:16`) tem `Record<IdLutador, TemaDef | 'chefe'>`: lutador sem entrada não compila.
 - Validação no boot: `exigirTemasValidos` (`src/data/musica/validar.ts:225`), chamada em `src/data/musica/index.ts:10`. Limites em `LIMITES_MUSICA` (`validar.ts:12`).
-- Escolha da trilha: `trilhaDoJogo` (`src/audio/camadas.ts:171`), chamado em `src/ui/cenas/fight.ts:287`. Com temas ligados e carregados, usa `trilhaDaLuta` (`src/audio/temas.ts:43`) com o tema do **adversário** (`c2`) em todos os modos; o ZENON toca a valsa (comentário em `camadas.ts`).
+- Escolha da trilha: `trilhaDoJogo` (`src/audio/camadas.ts:171`), chamado em `src/ui/cenas/fight.ts:345`. Com temas ligados e carregados, usa `trilhaDaLuta` (`src/audio/temas.ts:43`) com o tema do **adversário** (`c2`) em todos os modos; o ZENON toca a valsa (comentário em `camadas.ts`).
 - Orçamento de fontes: `validarOrcamentoDosTemas` (`src/audio/temas.ts:62`). Teto de 8 fontes novas por passo (`FONTES_NOVAS_POR_PASSO_MAX`, `:55`) e 15 fontes ativas (`FONTES_ATIVAS_MAX`, `:56`).
 - Sequenciador: `partituraDoPasso` e `partituraDaTroca` (`src/audio/partitura.ts`), `AudioSys.playTema` (`src/audio/audio-sys.ts:811`), com a fase 2 que só vira no início do compasso seguinte.
 - Régua musical: `tests/support/regua-musica.ts` (congelada). Distinção medida em 65 pares de temas no handoff da Vega (não reconferido nesta passada).
@@ -440,7 +462,7 @@ Spec: `docs/spec-chefoes-progressivos-temas-e-dificuldade.md` §3. Handoff: `doc
 
 Spec: `docs/plano-sons-realistas.md`. Pesquisa e curadoria: `docs/pesquisa-sons-cc0.md`, `docs/relatorio-curadoria-sons.md`, `docs/relatorio-lote0-sons.md`, `docs/handoff-vega-amostras.md`. Commit: `497cb33`.
 
-**Estado: LIGADO.** `AMOSTRAS_REALISTAS = true` (`src/audio/chaves.ts:23`). Sem a identidade não há amostra. Sem os arquivos (ou com falha de rede), o jogo toca a síntese, folha por folha, sem calar nada (comentário em `src/audio/chaves.ts:19-21`).
+**Estado: LIGADO.** `AMOSTRAS_REALISTAS = true` (`src/audio/chaves.ts:23`). Sem a identidade não há amostra. Sem os arquivos (ou com falha de rede), o jogo toca a síntese, folha por folha, sem calar nada (comentário em `src/audio/chaves.ts`).
 
 **O que existe:**
 
@@ -452,7 +474,7 @@ Spec: `docs/plano-sons-realistas.md`. Pesquisa e curadoria: `docs/pesquisa-sons-
 
 ## 14d. Painel de escuta (`?escuta=1`)
 
-- `?escuta=1` (`src/audio/chaves.ts:34`, lido em `src/main.ts:101`) abre o painel `abrirEscuta` (`src/ui/escuta.ts:66`) **sem jogo**: toca cada som, cada voz e cada tema.
+- `?escuta=1` (`src/audio/chaves.ts:33-35`, lido em `src/main.ts:103`) abre o painel `abrirEscuta` (`src/ui/escuta.ts:66`) **sem jogo**: toca cada som, cada voz e cada tema. Só o valor exato `1` liga.
 - Vale também no build de produção (não depende de `npm run dev`).
 - Não persiste nada e não mexe no save. Não liga nem desliga as chaves.
 
@@ -463,64 +485,135 @@ Spec: `docs/plano-sons-realistas.md`. Pesquisa e curadoria: `docs/pesquisa-sons-
 - `tests/unit/l1e1-chefoes.test.ts` e `tests/e2e/chefoes-l1e1.spec.ts`: UI dos guardiões.
 - `tests/unit/provocacoes-*.test.ts`: falas, limites, validação do boot, sorteio.
 - `tests/unit/musica-*.test.ts`: temas, sequenciador, orçamento, mix.
-- Varredura de texto: `tests/unit/audio-chefe.test.ts:230` impede `Math.random` em `src/audio`. A varredura de `provoca` em `src/fight/` **a confirmar** nesta passada.
+- Varredura de texto: `tests/unit/audio-chefe.test.ts:230` impede `Math.random` em `src/audio`. Em `src/fight/` não há ocorrência de `provoca` (grep no commit `78de1be`).
 
 ## 16. Trailer de abertura
 
-Spec: `docs/spec-trailer-abertura.md` (o cabeçalho da spec ainda diz "nada implementado"; está desatualizado, **a confirmar** a revisão do cabeçalho). Direção de arte: `docs/direcao-arte-trailer.md`. Commits: `f377da4` (fase 1, inerte), `dcdfe0c` (cena, câmera, modo atrair, versão estática) e `0b288ca` (docs).
+Spec: `docs/spec-trailer-abertura.md` (o cabeçalho da spec, no commit `78de1be`, ainda diz "proposta, nada implementado"; o trailer está no commit, então o cabeçalho está desatualizado). Direção de arte: `docs/direcao-arte-trailer.md`. Commits: `f377da4` (fase 1, inerte), `dcdfe0c` (cena, câmera, modo atrair, versão estática), `0b288ca` (docs) e `41e1ffb` (filme no trailer).
 
-**Estado: LIGADO.** `Regras.trailer = true` (`src/meta/regras.ts:38`).
+**Estado: LIGADO.** `Regras.trailer = true` (`src/meta/regras.ts:50`).
 
 **Fluxo:**
 
 - No boot, o trailer abre se `disponivel()` (regra ligada + pedaço carregado + roteiro válido): `src/ui/cenas/boot.ts:52`. Senão, cai na abertura de hoje (`CenaIntro`).
-- O pedaço é lazy: `import('../trailer')` em `src/ui/cenas/trailer.ts:65`. Começa a baixar no `Navegador.pronto()` (`precarregar`, `src/ui/cenas/trailer.ts:57-59`).
-- **Modo atrair:** título parado por 30 s abre o trailer (`src/ui/cenas/title.ts:33-36`), só com o pedaço carregado; senão, espera mais 30 s. A música toca só na primeira repetição depois do último gesto do jogador.
-- **Pular:** a partir do tick 10 (`PULO_VALE_A_PARTIR_DE = 10`, `src/ui/trailer/trailer.ts:69`; verificação em `:286`).
-- **Parâmetros:** `?trailer=0` e `?trailer=P5` valem **só em desenvolvimento** (`parametroDoTrailer`, `src/ui/cenas/trailer.ts:17-20`, retorna `null` fora do DEV). Em produção, `?trailer=0` não desliga o trailer. `?trailer=0` existe para os e2e antigos que esperam `boot -> intro`.
+- O pedaço é lazy: `import('../trailer')` em `src/ui/cenas/trailer.ts:65`. Começa a baixar no `Navegador.pronto()` (`precarregar`, `src/ui/cenas/trailer.ts`).
+- **Modo atrair:** título parado por 30 s abre o trailer (`src/ui/cenas/title.ts:37-41`), só com o pedaço carregado; senão, espera mais 30 s. A música toca só na primeira repetição depois do último gesto do jogador.
+- **Pular:** a partir do tick 10 (`PULO_VALE_A_PARTIR_DE = 10`, `src/ui/trailer/trailer.ts:73`; verificação em `:316`).
+- **Parâmetros:** `?trailer=0` e `?trailer=P5` valem **só em desenvolvimento** (`parametroDoTrailer`, `src/ui/cenas/trailer.ts:17`, retorna `null` fora do DEV). Em produção, `?trailer=0` não desliga o trailer. `?trailer=0` existe para os e2e antigos que esperam `boot -> intro`.
+- **Filme do especial no trailer:** o motor emite o evento `filme` no contato, e o diretor segura o motor pelos ticks do filme no modo CURTA (`MODO_DO_FILME_NO_TRAILER = 'curta'`, `src/trailer/filme.ts:14`). Um filme completo (58 a 66 ticks, segundo o comentário do próprio arquivo) comeria um terço de um plano de luta, por isso o trailer usa a versão curta de 30 ticks. O diretor cria o filme em `src/trailer/diretor.ts:302`.
 
 **Onde mora:**
 
-- `src/trailer/` (sem DOM): diretor `DiretorDoTrailer` (`src/trailer/diretor.ts:101`), música (`src/trailer/musica.ts`), quadros estáticos (`src/trailer/estatica.ts`), marca (`src/trailer/marca.ts`).
-- `src/data/trailer/`: roteiro (`ROTEIRO` em `roteiro.ts:36`; destaque por lutador em `:210`), abertura, textos, validação (`validar.ts`).
+- `src/trailer/` (sem DOM): diretor `DiretorDoTrailer` (`src/trailer/diretor.ts:104`), música (`src/trailer/musica.ts`), quadros estáticos (`src/trailer/estatica.ts`), marca (`src/trailer/marca.ts`), filme (`src/trailer/filme.ts`).
+- `src/data/trailer/`: roteiro (`ROTEIRO` em `roteiro.ts:36`), abertura, textos, tomadas (`tomadas.ts`, gerado por `npm run trailer:escalar`), validação (`validar.ts`).
 - `src/render/trailer/`: contraluz, estática, frio, grade, letterbox, revelação da logo, reserva, retratos e títulos.
-- `src/ui/trailer/`: controlador em cena (`TrailerEmCena`, `src/ui/trailer/trailer.ts:106`), ambiente, aquecimento e arte sob demanda.
+- `src/ui/trailer/`: controlador em cena (`TrailerEmCena`, `src/ui/trailer/trailer.ts:110`), ambiente, aquecimento e arte sob demanda.
 
-**Testes:** `tests/e2e/trailer.spec.ts`, `tests/e2e-build/trailer-csp.spec.ts`, `tests/unit/trailer-cena.test.ts`, `tests/unit/trailer-navegacao.test.ts`, `tests/unit/trailer-diretor.test.ts`, `tests/unit/trailer-musica.test.ts`. Os números de execução estão nos handoffs (`docs/handoff-lyra-trailer.md`, `docs/handoff-vega-trailer.md`); **não reconferidos nesta passada**.
+**Testes:** `tests/e2e/trailer.spec.ts`, `tests/e2e/trailer-filme.spec.ts`, `tests/e2e-build/trailer-csp.spec.ts`, `tests/unit/trailer-cena.test.ts`, `tests/unit/trailer-navegacao.test.ts`, `tests/unit/trailer-diretor.test.ts`, `tests/unit/trailer-musica.test.ts`. Os números de execução estão nos handoffs (`docs/handoff-lyra-trailer.md`, `docs/handoff-vega-trailer.md`); **não reconferidos nesta passada**.
 
 ## 17. Logo oficial
 
 Spec e decisão: `docs/logo-oficial.md`. Handoff: `docs/handoff-lyra-logo.md`. Commit: `1aa7cac`.
 
-- Arte: `public/assets/ui/logo/` (`logo-v1-1600.webp`, `logo-v1-720.webp`, `logo-horizontal-v1-600.webp`, `splash-v1-1920x1080.webp`, e `icones/`). O splash é pré-carregado em `index.html:19`.
+- Arte: `public/assets/ui/logo/` (`logo-v1-1600.webp`, `logo-v1-720.webp`, `logo-horizontal-v1-600.webp`, `splash-v1-1920x1080.webp`, e `icones/`). O splash é pré-carregado em `index.html`.
 - Código: `src/ui/logo.ts`. `GAME_NAME` (`:12`), `LOGO_ALTURA = 330` (`:22`), `LOGO_MENU` (`:31`), `PALETA_MARCA` (`:37`), `prepararImagemDaMarca` (`:62`), `iniciarMarca` (`:127`), `marcaPronta` (`:140`). A logo é imagem, não desenho.
 - Ícones e metadados do site: `index.html`, `public/manifest.webmanifest`, `favicon.ico`.
 - Testes: `tests/unit/logo.test.ts`, `tests/unit/marca-no-html.test.ts`, `tests/e2e/logo.spec.ts`.
 
 ## 18. Balões premium, botões de toque e tela cheia
 
-**Balões** (`src/render/balao.ts`, reescrito em `1aa7cac`): `BALAO` (`:19`), `linhaMax` de 372 px (`:21`). Tinta opaca, aro claro, plaquinha com o nome na cor do lutador e rabicho no mesmo traço (cabeçalho do módulo, `:8`). Direção de arte: `docs/direcao-arte-baloes.md`. Handoff: `docs/handoff-lyra-baloes.md`.
+**Balões** (`src/render/balao.ts`, reescrito em `1aa7cac`): `BALAO` (`:19`), `linhaMax` de 372 px (`:21`). Tinta opaca, aro claro, plaquinha com o nome na cor do lutador e rabicho no mesmo traço. Direção de arte: `docs/direcao-arte-baloes.md`. Handoff: `docs/handoff-lyra-baloes.md`.
 
 **Botões de toque** (`1aa7cac`):
 
 - Detecção: `temToque` (`src/input/toque.ts:33`) checa `ontouchstart` ou `maxTouchPoints > 0`. Sem toque, `ligarToque` (`:75`) não liga nada.
 - Ligação: `src/input/entrada.ts:48`. Pré-carga da arte: `precarregarDesenhosDoToque` (`toque.ts:65`).
-- Layout e estilo: `src/input/toque.css`. Decisões do dono no cabeçalho do arquivo (`:6`): modo NORMAL com rótulos (LEVE, FORTE, ESQUIVA, ESPECIAL), opacidade 90% fixa, sem opção de tamanho, mão ou opacidade no menu.
-- Marcação: `index.html`, `#touch`, com `#esq` (`:45`), `#r1` ESPECIAL (`:46`), `#bp` pausa (`:52`).
+- Layout e estilo: `src/input/toque.css`. Decisões do dono no cabeçalho do arquivo: modo NORMAL com rótulos (LEVE, FORTE, ESQUIVA, ESPECIAL), opacidade 90% fixa, sem opção de tamanho, mão ou opacidade no menu.
+- Marcação: `index.html`, `#touch`, com `#esq` (`:45`), `#r1` ESPECIAL e `#bp` pausa.
 - Arte: `public/assets/ui/toque/*.svg` (estados normal, pressionado e desabilitado). Direção: `docs/direcao-arte-controles-toque.md`.
 
 **Tela cheia** (`src/platform/tela-cheia.ts`):
 
-- Tecla F fora da seleção (`src/main.ts:128`). Linha TELA CHEIA nas Opções (`src/ui/cenas/options.ts:125-138`), que liga e desliga onde a plataforma permite; onde não, abre um cartão com a explicação.
+- Tecla F fora da seleção (`src/main.ts:130`). Linha TELA CHEIA nas Opções (`src/ui/cenas/options.ts`, linhas `TELA CHEIA`, `TELA CHEIA BLOQUEADA`, `TELA CHEIA INDISPONÍVEL`), que liga e desliga onde a plataforma permite; onde não, abre um cartão com a explicação.
 - Situação da plataforma: `situacaoDaTelaCheia` (`tela-cheia.ts:76`), com os casos `disponivel`, `bloqueada`, `instalado`, `ios` e `indisponivel`.
-- iPhone: a Fullscreen API não existe no WebKit do iOS. O caminho é "Adicionar à Tela de Início" (cabeçalho de `tela-cheia.ts`, `:6-8`).
-- Android: o pedido precisa de um gesto de ativação. O toque do jogo age no `touchstart`, que não conta como gesto em alguns navegadores; o pedido recusado é refeito no `touchend` seguinte (`observarGesto`, `:118`, janela de 1500 ms em `:175`).
-- Entrada e saída: `alternarTelaCheia` (`tela-cheia.ts:164`).
+- iPhone: a Fullscreen API não existe no WebKit do iOS. O caminho é "Adicionar à Tela de Início" (cabeçalho de `tela-cheia.ts`). **Não testado em aparelho real** (ver T13 em `docs/orcamentos-2026-10-23.md`).
+- Android: o pedido precisa de um gesto de ativação. O toque do jogo age no `touchstart`, que não conta como gesto em alguns navegadores; o pedido recusado é refeito no `touchend` seguinte (`observarGesto`, janela de 1500 ms em `tela-cheia.ts:175`).
+- Entrada e saída: `alternarTelaCheia` (`tela-cheia.ts`).
 
 ## 19. Versão do build e atualização
 
 - Identidade do build: `src/versao.ts` (`VERSAO`, `:17`; `rotuloDaVersao`, `:20`).
 - `vite.config.ts` gera `version.json` só no build (`versaoJson`, `:62`, `apply: 'build'`), com o commit e a data.
-- `verificarVersao` (`src/versao.ts:37`) busca `version.json?t=...` sem cache e compara com a versão rodando. Se há versão nova, aparece o aviso (`src/ui/cenas/options.ts:213`: "NOVA VERSÃO NO AR · TOQUE AQUI PARA ATUALIZAR") e o título (`src/main.ts:95`). Tocar em atualizar chama `recarregarSemCache` (`src/versao.ts:55`).
+- `verificarVersao` (`src/versao.ts:37`) busca `version.json?t=...` sem cache e compara com a versão rodando. Se há versão nova, aparece o aviso (`src/ui/cenas/options.ts:213`: "NOVA VERSÃO NO AR · TOQUE AQUI PARA ATUALIZAR") e o título (`src/main.ts:96`). Tocar em atualizar chama `recarregarSemCache` (`src/versao.ts:55`).
 - Não há service worker: `src/` e `vite.config.ts` não registram um. O PWA é só o manifesto (`public/manifest.webmanifest`).
 - Testes: `tests/unit/versao.test.ts`, `tests/e2e-build/pwa-versao.spec.ts`.
+
+## 20. Motor de luta v2 (ligado por padrão)
+
+Spec: `docs/spec-revisao-motor-luta-v2.md`. Dados e fichas-técnicas: `docs/roteiros-filme-especiais.md`, `docs/combos-proprios.md`, `docs/balanco-motor-v2.md`. Fatias: V2-1 (entrada no hitstop), V2-2 (render v2), V2-3 (filme), V2-4 (combos), V2-6 (ligação). Commits: `d1cad33`, `8a992c4`, `81e24e1`, `bd14dbc`, `41e1ffb` (ligação).
+
+**Estado: LIGADO.** As três mecânicas valem por padrão, em qualquer modo de elenco (inclusive `?expansao=4`), e a referência de balanço já as mede (seção 8).
+
+### 20.1 Flags e como desligar
+
+- `MOTOR_V2_PADRAO` (`src/meta/regras.ts:11`): `{ entradaNoHitstop: true, filmes: true, combos: true }`. É o que `REGRAS_PADRAO` carrega (`regras.ts:52`).
+- Tipo `MotorV2` (`src/core/contratos.ts:39`): `entradaNoHitstop` (`:44`), `filmes` (`:51`), `combos` (`:58`) e `danoFilme` (`:63`, só A/B de ferramenta).
+- Kill switch pela URL, que vale em produção: `motorV2DaUrl` (`src/meta/regras.ts:71`).
+  - sem o parâmetro, ou `1`, `on`, `true`, `sim` ou vazio: tudo ligado;
+  - `0`, `off`, `false`, `nao`: tudo desligado (o motor de antes, bit a bit);
+  - lista (`entrada,filmes,combos`, em qualquer ordem): só essas ligadas (A/B de uma mecânica);
+  - valor desconhecido (`?motorv2=xyz`) cai no padrão e não desliga nada por engano.
+- `regrasComMotorV2` (`src/meta/regras.ts:88`) aplica a flag a qualquer base. `main.ts` chama isso em `src/main.ts:87`.
+- Ligação na luta: `cfgMotorV2` (`src/meta/regras.ts`) leva as flags à `ConfigPartida` das lutas montadas pela UI. Sem flag nenhuma, a configuração sai idêntica à de antes.
+- A/B do dano do filme: `?dano-filme=hoje|v2|forte` (`danoFilmeDaUrl`, `src/meta/regras.ts:98`). **Só em desenvolvimento**: `main.ts` passa `import.meta.env.DEV` como `dev`.
+
+Exemplos de URL (produção):
+
+```
+https://<host>/InnoFighters/              motor v2 completo (padrão)
+https://<host>/InnoFighters/?motorv2=0    o motor de antes (rollback sem deploy)
+https://<host>/InnoFighters/?motorv2=filmes,combos   sem a entrada no hitstop
+```
+
+### 20.2 Entrada no hitstop (V2-1)
+
+Com `entradaNoHitstop`, o botão e as direções apertados durante o hitstop não se perdem: a entrada humana é guardada nos ticks congelados e entregue ao primeiro tick acionável (`src/fight/game.ts:514`, `:526`; funções `guardarEntradaDoCongelamento`, `:468`, e `entregarEntradaDoCongelamento`, `:486`). A CPU não entra nessa guarda.
+
+### 20.3 Filme do especial (V2-3)
+
+- **Dados.** `src/data/filmes.ts` tem 33 entradas de dano e recuperação (tabela `T`, `:59`): 30 golpes dos 10 lutadores (NILA com 4, incluindo as duas variantes da SARPA; ZENON com 3), a resposta da PARADE da CAMILLE (`sResp`) e as 2 variantes de chefão do ZENON (`chefe2`). `dano` é a base; `hoje` é o dano de antes do filme, usado só pelo A/B. `FRAME_DATA_VERSAO` (`:33`) diz de qual `frame-data.json` vieram as recuperações. Acesso: `filmeDoGolpe` (`:143`), `todosOsFilmes` (`:154`) e `danoBaseDaVariante` (`:131`).
+- **Roteiros (só UI).** `src/data/roteiros-filme.ts` monta o roteiro de cada golpe (tabela `LINHAS`, `:212`; `roteiroDoFilme`, `:323`; modelo genérico por tipo, `roteiroGenerico`, `:312`). O motor não lê esse arquivo. Pose `'$motor'` (`POSE_DO_MOTOR`, `:16`) é a pose que a leitura do motor dá no fim.
+- **Folhas FILME na memória.** A folha de cada lutador só é carregada pela luta (`carregarFilme`, `src/assets/carregador.ts:265`; `carregarFilme` do gerenciador, `src/assets/gerenciador.ts:458`), no máximo `MAX_FOLHAS_FILME = 2` por vez (`gerenciador.ts:5`), e só se a flag `filmes` estiver ligada ou o gancho DEV estiver ativo (`src/ui/cenas/fight.ts:356`, chamado em `:310`, e a chamada em `:358`). Fora da luta, `soltarFilme` solta a folha.
+- **Motor.** O primeiro contato limpo de um especial com filme resolve tudo no tick do acerto (dano, energia de um acerto, KO, troca de barra, queda): `src/fight/game.ts:1023` e `:1188` emitem o evento `filme`. Defendido, esquivado ou absorvido por armadura não abre filme. Uma execução de especial só dá um contato (`execConsumidas`, `game.ts:406`, `:685`).
+- **UI.** `src/render/filme.ts`: linha do tempo pura (`batidasEfetivas`, `:65`), CURTA e pulo (`TICKS_PARA_PULAR = 10`, `:28`; `ZOOM_PADRAO = 1.3`, `:41`), HUD do rival que desce por batida (`hudDoRival`, `:149`). Enquanto o filme roda, a cena não chama `game.update` (`src/ui/cenas/fight.ts:539`).
+- **Gancho DEV.** `?filme=<lutador>:<golpe>` abre um filme falso no primeiro tick da luta (`lerFilmeDev`, `src/ui/cenas/fight.ts:1010`; `import.meta.env.DEV` em `:309`).
+- **Teto de combo.** Com `filmes`, `limitarAoTetoDoCombo` (`src/fight/game.ts:1106`) limita o dano total de um combo a 40% da vida total do defensor, sempre deixando passar o piso `PISO_ACERTO_NO_TETO = 0,5` (`game.ts:68`).
+## 21. Residência de memória da arte (`?residencia=`)
+
+Spec: `docs/spec-residencia-de-memoria.md` (fatias L1 a L7; §3, item 5, registra o `decode()` não feito). Parte de `docs/orcamentos-2026-10-23.md`, §2.3 e §2.4.
+
+**Estado no commit `78de1be` (origin/main):**
+
+| Fatia | Conteúdo | Estado |
+|---|---|---|
+| L1 | `memoria()` (`src/assets/gerenciador.ts:218`), peso do atlas pelo manifesto, cache de silhuetas compartilhado | feito (`4bf908a`) |
+| L2 | gerenciador por peso (`politica`, `teto`, `preferidos`); `main.ts` lê `?residencia=` | feito (`4bf908a`) |
+| L3 | luta exclusiva (`arteDaCena`, `src/ui/residencia.ts:38`), `EsperaDeArte` (`src/ui/espera-de-arte.ts:12`), soltar o filme ao sair da luta (`src/ui/navegador.ts:96`) | feito (`41e1ffb`) |
+| L4 | volta sem piscar: segura no preto (`TETO_DO_PRETO = 45`, `src/ui/navegador.ts:14`); no fim da luta, o fundo `jp` volta em segundo plano (`aoFimDaLuta`, `src/ui/cenas/fight.ts:366`: `preferir({ cenarios: [CENARIO_PADRAO] })`, uma vez por luta, só em `'por-peso'`) | feito (`41e1ffb`, `78de1be`) |
+| L5 | chegada suave: `ChegadaDeArte` (`src/ui/chegada-de-arte.ts`, rampa de `TICKS_DA_CHEGADA = 12` ticks), usada pelo título, pelo menu e pela seleção | feito (`78de1be`) |
+| L6 | aba oculta alivia e volta reaplica a tabela (ver seção 2); `POLITICA_PADRAO = 'por-peso'` (`src/assets/elenco.ts:87`) | feito (`78de1be`) |
+| L7 | `createImageBitmap` + `close()`, opcional | não feito; só se a T13 pedir (D-R6) |
+
+**`decode()` antecipado: não feito.** O comentário de `src/assets/carregador.ts` (commit `78de1be`) registra a medição: decodificar antes muda o pixel (1 px de diferença, até 9 níveis, em 4 cenas do `fidelidade-prototipo`). Por isso o carregador segue decodificando no primeiro desenho. A chegada suave não depende de `decode()`.
+
+**Políticas** (`PoliticaDeResidencia`, `src/assets/gerenciador.ts:23`):
+
+- `'por-peso'` (padrão de produção desde `78de1be`, `POLITICA_PADRAO` em `src/assets/elenco.ts:87`): teto em bytes (`TETO_FORA_DA_LUTA`, 136 MiB, `gerenciador.ts:11`), despejo antes de decodificar (`abrirEspaco`, `gerenciador.ts:394`), luta exclusiva, e aba oculta que alivia (`aliviar`, `gerenciador.ts:146`).
+- `'fixa'` (rollback em produção, `?residencia=fixa`): o comportamento de antes, byte a byte. Preferidos ficam fixos; no máximo `LIMITE_RESIDENTES_FIXA = 3` atlas não fixos (`gerenciador.ts:17`); a poda acontece depois de carregar (`gerenciador.ts:334`, `podar` em `:501`). `aliviar` não faz nada (`gerenciador.ts:147`).
+- Escolha (`src/main.ts:180-181`): `?residencia=peso` pede `'por-peso'` explicitamente; `?residencia=fixa` pede `'fixa'`; sem o parâmetro vale `POLITICA_PADRAO`. Vale em produção (é o A/B no aparelho e o rollback sem deploy, D-R5).
+
+**Aba oculta e volta** (ver seção 2): `aoOcultar` alivia; `aoVoltar` reaplica a tabela da cena atual. A luta (exclusiva) não precisa, porque o que ela usa nunca sai.
+
+**Medição:** `memoria()` é a leitura de bytes vivos do gerenciador. Os números de partida (vitrine de 102,0 MiB e cenários de 31,6 MiB antes da residência) estão na spec, seções 0 e 0.1, medidos antes da residência e não reconferidos nesta passada.
+
+**Testes:** `tests/unit/residencia-memoria.test.ts`, `residencia-gerenciador.test.ts`, `residencia-tabela.test.ts`, `residencia-navegador.test.ts`, `residencia-fim-da-luta.test.ts`, `chegada-de-arte.test.ts`, `foco.test.ts`; e2e `tests/e2e/residencia-luta.spec.ts`, `residencia-volta.spec.ts`, `residencia-aba.spec.ts`, `chegada-de-arte.spec.ts`, `memoria-por-luta.spec.ts`.

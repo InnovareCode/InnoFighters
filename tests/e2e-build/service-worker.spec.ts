@@ -193,8 +193,20 @@ test.describe('service worker no build', () => {
       await expect.poll(async () => (await estado(page)).waiting, { timeout: 30_000 }).toBe(true);
       expect(await versaoDoSw(page)).toBe(v2.versao);
       expect((await estado(page)).caches.filter((n) => n.startsWith('inno-shell-'))).toHaveLength(2);
+      // A promessa do SW é "assume no boot SEGUINTE", não "no primeiro". Medido (Íris, 2026-10-24): em parte dos boots o Chromium deixa o skipWaiting() da versão em
+      // espera pendente (a promessa nunca resolve, v2 ativa e sem evento pendente, v3 viva e `installed` por mais de 80 s); a taxa vai de ~4% a ~58% conforme a carga
+      // (o trace do Playwright piora). Reenviar o 'ativar' no mesmo documento não destrava; o boot seguinte assume. Por isso: 1 boot de tolerância, e o 2º tem de assumir.
+      const assumiu = (ms: number): Promise<boolean> =>
+        expect
+          .poll(() => seguro(() => versaoDoSw(page)), { timeout: ms })
+          .toBe(v3.versao)
+          .then(() => true, () => false);
       await page.reload();
-      await expect.poll(() => seguro(() => versaoDoSw(page)), { timeout: 45_000 }).toBe(v3.versao);
+      if (!(await assumiu(12_000))) {
+        console.log('[service-worker.spec] a v3 não assumiu no 1º boot (skipWaiting pendente no Chromium); boot seguinte');
+        await page.reload();
+        await expect.poll(() => seguro(() => versaoDoSw(page)), { timeout: 45_000 }).toBe(v3.versao);
+      }
       await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
       expect((await estado(page)).waiting).toBe(false);
     } finally {

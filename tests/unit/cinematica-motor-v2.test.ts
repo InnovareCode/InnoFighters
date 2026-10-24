@@ -25,7 +25,9 @@ const arte = { pronta: true, imagemDe: () => IMG, silhuetaDe: () => IMG, retrato
 const elenco = Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { ch, arte }])) as unknown as Elenco;
 
 function montar(opts: { c1?: IdLutador; c2?: IdLutador; mode?: 'versus' | 'training' | 'cpu'; regras?: Regras } = {}) {
-  const regras = opts.regras ?? REGRAS_PADRAO;
+  // R-9: esta suíte testa a Cinematica (que CONGELA) de verdade; `ritmo.tarja` (ligado por padrão em REGRAS_PADRAO desde a aprovação do
+  // dono) trocaria a tarja pela FaixaRitmo (que NÃO congela) — fora do escopo deste arquivo (ver cinematica-motor-v2 vs faixa-ritmo).
+  const regras = opts.regras ?? { ...REGRAS_PADRAO, ritmo: {} };
   const n = navegadorFalso({ provocacoes: 'desligadas' } as Partial<Configuracoes>, regras);
   const frames: { p1: InputFrame; p2: InputFrame } = { p1: { ...INPUT_VAZIO }, p2: { ...INPUT_VAZIO } };
   (n.c as { entrada: unknown }).entrada = {

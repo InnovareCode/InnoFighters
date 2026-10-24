@@ -26,6 +26,8 @@ export type ModoFilme = 'completa' | 'curta';
 
 /** Qualquer ataque de um humano só pula a partir deste tick (a regra da entrada do chefão: `tick < 10` recusa). */
 export const TICKS_PARA_PULAR = 10;
+/** R-9 (`Regras.ritmo.super`, §3.3): com a flag ligada, o pulo vale a partir daqui em vez de `TICKS_PARA_PULAR`. */
+export const TICKS_PARA_PULAR_RITMO = 6;
 /** Ao pular, o filme fecha em até este tanto de ticks. */
 export const TICKS_DA_SAIDA_AO_PULAR = 6;
 /** Duração (ticks) em que uma batida com dano desce a barra do HUD. */
@@ -315,6 +317,11 @@ export interface OpcoesFilme {
   readonly aoMoedas?: () => void;
   /** O rival chegou ao chão (`dust` do motor, adiado). */
   readonly aoQueda?: () => void;
+  /**
+   * R-9 (`Regras.ritmo.super`, §3.3): qualquer botão pula a partir deste tick, em vez do `TICKS_PARA_PULAR` (10) de hoje. A cena passa 6
+   * com a flag ligada; ausente/`undefined` = `TICKS_PARA_PULAR`, bit a bit como antes (nenhum teste de hoje muda).
+   */
+  readonly ticksParaPular?: number;
 }
 
 export interface IniciarFilme {
@@ -368,8 +375,11 @@ export class FilmeDoEspecial {
   danosMostrados = 0;
   somaMostrada = 0;
 
+  private readonly ticksParaPular: number;
+
   constructor(private readonly op: OpcoesFilme = {}) {
     this.rng = op.rng ?? criarRng(1);
+    this.ticksParaPular = op.ticksParaPular ?? TICKS_PARA_PULAR;
   }
 
   get ativo(): boolean {
@@ -416,9 +426,9 @@ export class FilmeDoEspecial {
     this.disparar(0);
   }
 
-  /** Pula (só a partir do tick `TICKS_PARA_PULAR`, uma vez). Devolve se pulou. */
+  /** Pula (só a partir do tick `TICKS_PARA_PULAR`, ou `op.ticksParaPular` com a flag `ritmo.super`, uma vez). Devolve se pulou. */
   pular(): boolean {
-    if (!this.cur || this.pulouEm !== null || this.t < TICKS_PARA_PULAR) return false;
+    if (!this.cur || this.pulouEm !== null || this.t < this.ticksParaPular) return false;
     this.pulouEm = this.t;
     return true;
   }

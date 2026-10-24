@@ -28,8 +28,15 @@ export function atlasDeProducao(id: string): string {
 export function montarElenco(): Elenco {
   const r = {} as Elenco;
   for (const id of ROSTER) {
-    const manifesto = paraManifestoV1(validarManifesto(JSON.parse(readFileSync(atlasDeProducao(id), 'utf8')), `${id}/atlas.json`));
-    r[id] = montarLutador(LUTADORES[id], manifestoParaPoses(manifesto));
+    const c1 = validarManifesto(JSON.parse(readFileSync(atlasDeProducao(id), 'utf8')), `${id}/atlas.json`);
+    const poses = manifestoParaPoses(paraManifestoV1(c1));
+    // o bloco `filme` (f0..f5, "painel": true) é uma página À PARTE (AtlasLutador.poses() faz o mesmo merge, carregador.ts):
+    // sem isto, `ch.pd` nunca tem f0..f5 e `rostoDoGolpe`/`resolverPoseDoFilme` (faixa-rosto.ts, R-9) sempre caem no "sem rosto".
+    if (c1.filme) {
+      const doFilme = manifestoParaPoses(paraManifestoV1({ ...c1, imagens: [c1.filme.imagem], tamanho: c1.filme.tamanho, quadros: c1.filme.quadros }));
+      Object.assign(poses, doFilme);
+    }
+    r[id] = montarLutador(LUTADORES[id], poses);
   }
   return r;
 }

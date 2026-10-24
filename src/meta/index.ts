@@ -6,6 +6,7 @@ export {
   MOTOR_V2_PADRAO,
   NOMES_MOTOR_V2,
   NOMES_RITMO,
+  RITMO_PADRAO,
   RITMO_TUDO_LIGADO,
   cfgMotorV2,
   cfgRitmo,

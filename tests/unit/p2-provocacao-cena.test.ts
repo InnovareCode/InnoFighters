@@ -7,6 +7,7 @@ import { falaDaRodada } from '../../src/render/provocacao';
 import { Game } from '../../src/fight/game';
 import { TeclasVirtuais } from '../../src/input/teclas';
 import { REGRAS_PADRAO, type Regras } from '../../src/meta';
+const REGRAS: Regras = { ...REGRAS_PADRAO, ritmo: {} }; // R-9: estas suites testam a Cinematica/Provocacao bloqueando de sempre (ritmo.tarja/provocacao agora vem ligado por padrao)
 import { Efeitos, CampoDePetalas } from '../../src/render/efeitos';
 import { desenharMundo } from '../../src/render/mundo';
 import type { CenaFight } from '../../src/ui/cenas/fight';
@@ -26,7 +27,7 @@ const elenco = Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { 
 type Cfg = { mode: 'arcade' | 'cpu' | 'versus' | 'training'; c1: IdLutador; c2: IdLutador; cpu: number | null; p1cpu?: number | null; chefe?: boolean };
 const CPU_DIFICIL: Cfg = { mode: 'cpu', c1: 'hayato', c2: 'caio', cpu: 2 };
 
-function montar(cfg: Cfg = CPU_DIFICIL, set: Partial<Configuracoes> = {}, regras: Regras = REGRAS_PADRAO, opcoes: { teclasReais?: boolean; sorteio?: boolean; reduz?: boolean } = {}) {
+function montar(cfg: Cfg = CPU_DIFICIL, set: Partial<Configuracoes> = {}, regras: Regras = REGRAS, opcoes: { teclasReais?: boolean; sorteio?: boolean; reduz?: boolean } = {}) {
   const n = navegadorFalso(set, regras);
   const frames: { p1: InputFrame; p2: InputFrame } = { p1: { ...INPUT_VAZIO }, p2: { ...INPUT_VAZIO } };
   const teclas = new TeclasVirtuais();
@@ -159,11 +160,11 @@ describe('round 1: antes do 1º game.update, o motor fica parado pelo roteiro in
   });
 
   it('movimento reduzido SEM preferência de cinemática: CURTA; com COMPLETA explícita: COMPLETA sem andada, sem zoom e sem pop', () => {
-    const sem = montar(CPU_DIFICIL, {}, REGRAS_PADRAO, { reduz: true });
+    const sem = montar(CPU_DIFICIL, {}, REGRAS, { reduz: true });
     sem.update();
     expect(sem.cena.provocacao.roteiro!.modo).toBe('curta');
 
-    const com = montar(CPU_DIFICIL, { cinematica: 'completa' }, REGRAS_PADRAO, { reduz: true });
+    const com = montar(CPU_DIFICIL, { cinematica: 'completa' }, REGRAS, { reduz: true });
     com.update();
     const r = com.cena.provocacao.roteiro!;
     expect(r.modo).toBe('completa');
@@ -287,7 +288,7 @@ describe('round 2 em diante: um balão curto, com o motor parado em intro t 0', 
   });
 
   it('movimento reduzido no round 2+ (COMPLETA explícita): durações iguais, texto inteiro, sem pop', () => {
-    const t = montar(CPU_DIFICIL, { cinematica: 'completa' }, REGRAS_PADRAO, { reduz: true });
+    const t = montar(CPU_DIFICIL, { cinematica: 'completa' }, REGRAS, { reduz: true });
     t.ate(() => t.game.round === 2);
     const r = t.cena.provocacao.roteiro!;
     expect(r.modo).toBe('completa');
@@ -451,7 +452,7 @@ describe('pular: ataque de um humano, ENTER ou toque, só depois do tick 10 (pr�
   });
 
   it('uma tecla SEGURADA desde antes da provocação não pula (é borda); apertar de novo pula', () => {
-    const t = montar(CPU_DIFICIL, {}, REGRAS_PADRAO, { teclasReais: true });
+    const t = montar(CPU_DIFICIL, {}, REGRAS, { teclasReais: true });
     t.teclas.definir('z', true); // P1: soco fraco, apertado ANTES e mantido
     t.update(); // a borda é consumida no 1º tick (a provocação ainda está nos primeiros ticks)
     t.update(40);
@@ -464,7 +465,7 @@ describe('pular: ataque de um humano, ENTER ou toque, só depois do tick 10 (pr�
   });
 
   it('SEM ECO: o golpe que pulou a provocação não vira ataque no 1º tick de luta (o fimDoTick consome a borda)', () => {
-    const t = montar(CPU_DIFICIL, {}, REGRAS_PADRAO, { teclasReais: true });
+    const t = montar(CPU_DIFICIL, {}, REGRAS, { teclasReais: true });
     t.update(30);
     t.teclas.definir('z', true);
     t.update(); // pulou
@@ -570,7 +571,7 @@ describe('onde a provocação NÃO roda', () => {
   it('TREINO, CPU×CPU e ?expansao=4 (regras sem cinemática)', () => {
     nuncaIniciou(montar({ mode: 'training', c1: 'hayato', c2: 'caio', cpu: null }));
     nuncaIniciou(montar({ mode: 'versus', c1: 'hayato', c2: 'caio', cpu: 1, p1cpu: 1 }));
-    nuncaIniciou(montar(CPU_DIFICIL, {}, { ...REGRAS_PADRAO, cinematica: false }));
+    nuncaIniciou(montar(CPU_DIFICIL, {}, { ...REGRAS, cinematica: false }));
   });
 
   it('a opção PROVOCAÇÕES desligada e o gancho SEM_PROVOCACAO (pelo resto da luta: round 1, round 2+ e vitória)', () => {
@@ -608,7 +609,7 @@ describe('onde a provocação NÃO roda', () => {
 describe('FOTO DO MOTOR: a luta com provocação é idêntica à luta sem ela, tick a tick', () => {
   /** Roda a luta inteira (CPU vence o jogador parado) e devolve a foto de cada (tick, t, fase). */
   const fotos = (set: Partial<Configuracoes>, sorteio = false): Map<string, string> => {
-    const t = montar(CPU_DIFICIL, set, REGRAS_PADRAO, { sorteio });
+    const t = montar(CPU_DIFICIL, set, REGRAS, { sorteio });
     const m = new Map<string, string>();
     let ultimo = 0;
     for (let i = 0; i < 60000 && !t.game.matchDone; i++) {

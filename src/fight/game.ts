@@ -22,6 +22,7 @@ import { PROJ_BASE } from '../data/base-moves';
 import { comboReconhecido } from '../data/combos-proprios';
 import { danoBaseDaVariante, filmeDoGolpe, type FilmeDoGolpe, type VarianteDoDano } from '../data/filmes';
 import type { LutadorMontado } from '../data/montar';
+import { superDoLutador, type SuperDoGolpe } from '../data/supers';
 import type { ContraDef, DrenaEnergiaDef, FinalDoCombo, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, NomeGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
 import { NO_INPUT, cpuInput, perfilChefe } from './cpu';
@@ -65,6 +66,8 @@ const entradaGuardadaVazia = (): EntradaGuardada => ({ botao: null, dirs: [], es
 
 /** V2-3c (spec §4.1): nenhum golpe isolado, filme incluído, passa de 26 (28% da menor vida comum, 92). */
 export const TETO_GOLPE = 26;
+/** R-7 (`ritmo.super`, spec §3.4): teto PRÓPRIO do super (substitui `TETO_GOLPE` no golpe dele, não soma). */
+export const TETO_SUPER = 32;
 /** V2-3c (spec §4.1, H2): fração da vida TOTAL do defensor (todas as barras do chefão) que um combo tira, no máximo. */
 export const TETO_COMBO = 0.4;
 /** Piso do teto de combo: o teste CPU x CPU proíbe acerto de dano zero. */
@@ -184,6 +187,36 @@ const noAtaque = (mv: GolpeMontado, atacante: Fighter): AtaqueAcerto => {
   };
 };
 
+/**
+ * R-7b (`ritmo.super`, spec §3.4 — referência do dono, vídeo X-Men vs Street Fighter): a sequência de N acertos
+ * presos de um super em andamento. `iniciarSuperPreso` monta este estado (dano TOTAL já cortado pelo teto);
+ * `avancarSuperPreso` consome 1 acerto por chamada (1x por tick, em `passo()`), sem depender de geometria de
+ * hitbox — por isso o mesmo mecanismo serve para golpe corpo a corpo, agarrão (BAATAR) e projétil (WEI, ZENON).
+ */
+type SuperPreso = {
+  atacante: IndiceLutador;
+  defensor: IndiceLutador;
+  /** Chave do golpe de origem (evento + `FilmeDoGolpe`/`snd` de origem). */
+  golpe: string;
+  ficha: string | null;
+  projetil: boolean;
+  snd: SomGolpe;
+  /** Fração de `totalFinal` de cada acerto (supers.ts `acertos`; soma 1). */
+  fracoes: readonly number[];
+  proximo: number;
+  /** Dano TOTAL da sequência, já com TETO_SUPER e o teto de combo aplicados (spec §4.1) — dividido pelas frações acima. */
+  totalFinal: number;
+  /** Ticks até o próximo acerto (0 = este tick). */
+  esperaTicks: number;
+  intervalo: number;
+  /** `kb` do golpe de origem: derruba com ele se o acerto final NÃO matar. */
+  kb: number;
+  /** Filme do golpe de origem (ou undefined, `motorV2.filmes` desligada/sem filme) — só abre se o acerto final matar (spec R-7b item 3). */
+  filmeCandidato: FilmeDoGolpe | undefined;
+  /** Só no agarrão-super (BAATAR): a derrubada final usa a direção/popup do ARREMESSO (`-a.facing`, `vy`), não a de `derrubar`. */
+  grab?: { vy: number };
+};
+
 export type Dependencias = {
   /** Os 4 lutadores já montados (data/montar). */
   lutadores: Readonly<Record<IdLutador, LutadorMontado>>;
@@ -243,8 +276,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private ritmoIntervalos = false;
   /** R-6 (`ConfigPartida.ritmo.filmeRestrito`): o filme só abre no super (R-7) ou no especial comum que dá KO. Desligada, qualquer acerto limpo de especial abre (V2-3c de hoje). */
   private ritmoFilmeRestrito = false;
+  /** R-7 (`ConfigPartida.ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Público: `Fighter` (`PartidaParaLutador`) e `cpuInput` (`VistaParaCpu`) leem. */
+  ritmoSuperLigado = false;
   /** Já houve um filme neste tick? O 2º contato de especial do mesmo tick resolve como acerto comum (spec §3.1). Zera em `update`. */
   private filmeNoTick = false;
+  /** R-7b: a sequência presa do super em andamento, ou null fora de um super. Só uma por vez (o atacante tem que estar livre para começar outra). */
+  private superPreso: SuperPreso | null = null;
   /** Execuções de especial que já tiveram o seu contato (filme, bloqueio, esquiva ou armadura): chave `atk * 2 + indice`. Zera por round. */
   private execConsumidas = new Set<number>();
   /** De qual execução (e ficha) cada projétil veio, para os tiros restantes de um especial já consumido deixarem de existir. */
@@ -290,6 +327,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.trocaDeBarraNoTick = false; // não vaza para o round/luta seguinte se `resolverVidaZerada` foi chamada sem `applyHit`/`arremessar`
     this.execConsumidas.clear(); // `atkId` recomeça em 0 a cada round: a chave de uma execução não vale no round seguinte
     this.filmeNoTick = false;
+    this.superPreso = null; // R-7b: um super preso não atravessa o fim do round (o round seguinte não tem nada para avançar)
   }
 
   setup(cfg: ConfigPartida, ajustes: AjustesLuta): void {
@@ -310,6 +348,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.combosLigados = cfg.motorV2?.combos === true;
     this.ritmoIntervalos = cfg.ritmo?.intervalos === true;
     this.ritmoFilmeRestrito = cfg.ritmo?.filmeRestrito === true;
+    this.ritmoSuperLigado = cfg.ritmo?.super === true;
     this.combosPropriosFeitos[0] = 0;
     this.combosPropriosFeitos[1] = 0;
     this.winsNeeded = cfgChefe ? 1 : ajustes.rounds;
@@ -382,9 +421,17 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   /** Arremesso: joga o rival por cima do ombro. */
   arremessar(a: Fighter, d: Fighter, golpe?: GolpeMontado): void {
     const filmeCandidato = golpe && this.filmesLigados && !this.filmeNoTick && golpe.id[0] === 's' ? filmeDoGolpe(a.ch.id, a.ficha, golpe.id) : undefined;
+    // R-7b (`ritmo.super`): o agarrão em curso É o super (BAATAR PESO DA ESTEPE) — mesmo modelo de `applyHit`: sai do
+    // atômico e agenda a sequência presa (`iniciarArremessoSuperPreso`/`avancarSuperPreso`, spec item 4).
+    if (golpe && a.superAtivo === true) {
+      const superDados = superDoLutador(a.ch.id, a.ficha);
+      if (superDados) {
+        this.iniciarArremessoSuperPreso(a, d, golpe, superDados, filmeCandidato);
+        return;
+      }
+    }
     // R-6 (`ritmo.filmeRestrito`): o agarrão de especial (BAATAR, CENTELLA) é "especial comum" como qualquer outro — só
-    // vira filme se o acerto der KO (sem super ainda, R-7). Igual a `applyHit`: o candidato fica pendente até o dano
-    // NORMAL (abaixo, o mesmo de sempre) decidir.
+    // vira filme se o acerto der KO. Igual a `applyHit`: o candidato fica pendente até o dano NORMAL (abaixo) decidir.
     const restringir = this.ritmoFilmeRestrito && filmeCandidato !== undefined;
     if (golpe && filmeCandidato && !restringir) {
       this.arremessarComFilme(a, d, golpe, filmeCandidato);
@@ -408,8 +455,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     const barrasAntes = d.barras;
     const diferidos: EventoLuta[] = [];
     const kill = this.resolverVidaZerada(d, a, restringir ? diferidos : undefined);
-    if (restringir && kill) {
-      // Confirma o filme (motivo 'ko') por cima do dano NORMAL já aplicado acima: o estado final de queda do filme
+    const confirmaFilme = filmeCandidato !== undefined && restringir && kill;
+    if (confirmaFilme) {
+      // Confirma o filme (por cima do dano já aplicado acima, no KO do R-6) — o estado final de queda do filme
       // (§3.3) substitui o knockdown comum.
       this.filmeNoTick = true;
       this.estadoFinalDoFilme(a, d, filmeCandidato as FilmeDoGolpe, false, kill);
@@ -434,7 +482,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         projetil: false,
         dano,
         contragolpe: false,
-        ko: true,
+        ko: kill,
         trocaDeBarra: d.barras < barrasAntes,
         final: (filmeCandidato as FilmeDoGolpe).final ?? 'derruba',
         antes: antes as { atacante: PosFilme; defensor: PosFilme },
@@ -464,6 +512,97 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       ...(golpe ? { golpe: golpe.id } : {}),
       ...(golpe && golpe.id[0] === 's' ? { especial: true as const } : {}),
     });
+  }
+
+  /**
+   * R-7b: 1º contato do agarrão-super (BAATAR PESO DA ESTEPE) — como `iniciarSuperPreso`, mas este 1º acerto sai no
+   * evento `throw` de sempre (preserva o som/vfx do agarrão, que não é bloqueável nem fecha combo); os demais (spec
+   * item 4, "mesmo modelo") saem por `avancarSuperPreso` como `hit` comum, igual a qualquer outro super.
+   */
+  private iniciarArremessoSuperPreso(a: Fighter, d: Fighter, golpe: GolpeMontado, s: SuperDoGolpe, filmeCandidato: FilmeDoGolpe | undefined): void {
+    const totalBase = this.danoNoDefensor(d, this.danoDoSuper(s, a, false, d.gotHits, false, undefined));
+    const totalFinal = this.limitarAoTetoDoCombo(d, totalBase);
+    const dmg = totalFinal * (s.acertos[0] ?? 0);
+    const antes = filmeCandidato ? this.posicoesDoFilme(a, d) : undefined;
+    const hpAntes = d.hp;
+    d.hp = Math.max(this.training ? 1 : 0, d.hp - dmg);
+    const dano = hpAntes - d.hp;
+    d.dmgTaken += dmg;
+    a.score += Math.round(dmg * 100);
+    d.move = null;
+    d.flash = 8;
+    d.gotHits = 1;
+    d.comboDmg = dmg;
+    a.connected = true;
+    a.en = Math.min(MAX_EN, a.en + 8);
+    const noAr = !d.grounded; // mesma leitura do arremesso comum, antes de reposicionar
+    d.x = clamp(a.x + a.facing * 30, 70, LARGURA - 70);
+    const barrasAntes = d.barras;
+    const diferidos: EventoLuta[] = [];
+    const kill = this.resolverVidaZerada(d, a, diferidos);
+    const ultimo = kill || s.acertos.length <= 1;
+    this.shake = 8;
+    this.hitstop = 6;
+    this.reforcarTrocaDeBarra();
+    this.emitir({
+      tipo: 'throw',
+      atacante: a.indice,
+      defensor: d.indice,
+      pitch: d.ch.pitch,
+      texto: textoFlutuante(a.x, a.y - SH, 'ARREMESSO!', '#ffd23f', 22),
+      dano,
+      golpe: golpe.id,
+      especial: true as const,
+    });
+    if (!ultimo) {
+      // agenda o resto da sequência (a partir do 2º acerto) — segue por `avancarSuperPreso`, como qualquer super.
+      this.superPreso = {
+        atacante: a.indice,
+        defensor: d.indice,
+        golpe: golpe.id,
+        ficha: a.ficha,
+        projetil: false,
+        snd: 'punch',
+        fracoes: s.acertos,
+        proximo: 1,
+        totalFinal,
+        esperaTicks: s.intervalo,
+        intervalo: s.intervalo,
+        kb: 6,
+        grab: { vy: noAr ? 9 : -12 },
+        filmeCandidato,
+      };
+      for (const ev of diferidos) this.emitir(ev);
+      return;
+    }
+    // só 1 fração (a tabela de hoje nunca tem) ou já matou de primeira: resolve igual ao resto da sequência faria.
+    const confirmaFilme = kill && filmeCandidato !== undefined;
+    if (confirmaFilme) {
+      this.filmeNoTick = true;
+      this.estadoFinalDoFilme(a, d, filmeCandidato as FilmeDoGolpe, false, kill);
+      this.emitir({
+        tipo: 'filme',
+        atacante: a.indice,
+        defensor: d.indice,
+        golpe: golpe.id,
+        ficha: a.ficha,
+        projetil: false,
+        dano,
+        contragolpe: false,
+        ko: true,
+        trocaDeBarra: d.barras < barrasAntes,
+        final: (filmeCandidato as FilmeDoGolpe).final ?? 'derruba',
+        antes: antes as { atacante: PosFilme; defensor: PosFilme },
+        depois: this.posicoesDoFilme(a, d),
+        motivo: 'ko',
+      });
+    } else if (!kill) {
+      d.knockdown(-a.facing, 6);
+      d.vy = noAr ? 9 : -12;
+    } else {
+      d.vx = -a.facing * 7; // matou sem filme de origem: empurrão comum, igual ao arremesso de hoje
+    }
+    for (const ev of diferidos) this.emitir(ev);
   }
 
   lancarProjetil(f: Fighter, mv: GolpeMontado, i: number, n: number): void {
@@ -609,6 +748,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       pr.frame++;
     }
     if (fighting) this.resolveHits();
+    if (fighting) this.avancarSuperPreso(); // R-7b: 1 acerto da sequência presa do super por tick, depois do contato normal deste mesmo tick
     this.projectiles = this.projectiles.filter((p) => p.life > 0 && p.x > -140 && p.x < LARGURA + 140);
     for (const p of [this.p1, this.p2]) {
       if (p.hpShown > p.hp) p.hpShown = Math.max(p.hp, p.hpShown - 0.5);
@@ -915,8 +1055,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       return;
     }
     // V2-3c: todo contato (bloqueio, armadura ou acerto) de um especial com filme consome a execução; só o acerto limpo abre o filme.
+    // R-7: o super (`a.superAtivo`) consome a execução mesmo se `motorV2.filmes` estiver desligada (dado/teto próprios, supers.ts).
     const doFilme = this.filmeDaExecucao(a, mv.golpe ?? '', mv.ficha);
-    if (doFilme) this.consumirExecucao(a.indice, mv.atk);
+    if (doFilme || a.superAtivo) this.consumirExecucao(a.indice, mv.atk);
     const blocked = d.canBlock(mv.lvl);
     const hb = d.hurtbox();
     const ox = (Math.max(box.x, hb.x) + Math.min(box.x + box.w, hb.x + hb.w)) / 2;
@@ -931,7 +1072,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       a.score += Math.round(chip * 50);
       // E3: golpe com `quebraGuarda` (MASHI nível 3) atravessa o bloqueio: o raspão é o mesmo, mas o defensor fica
       // atordoado (`hit`) pelos ticks do golpe em vez de em `block`. Sem o campo, o bloqueio é o de sempre.
-      const quebrou = mv.quebraGuarda !== undefined && mv.quebraGuarda > 0;
+      // R-7 (docs/supers-e-combos-v2.md §3.2 item 2): o super NUNCA quebra guarda — resolve como bloqueio comum, raspão e
+      // barra perdida (o risco já é dela ficar sem energia); senão o AMINU bloqueado viraria um golpe imbloqueável.
+      const quebrou = !a.superAtivo && mv.quebraGuarda !== undefined && mv.quebraGuarda > 0;
       if (quebrou) {
         d.hitKind = mv.kind === 'punch' || mv.lvl === 'over' || mv.proj ? 'H' : 'B';
         d.setState('hit');
@@ -1009,9 +1152,20 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     const passoDoCombo = this.combosLigados ? this.registrarAcertoDoCombo(a, d, mv) : null;
     // V2-3c: o 2º contato de especial do MESMO tick resolve como acerto comum (spec §3.1); o 1º leva o filme.
     const filmeCandidato = this.filmeNoTick ? undefined : doFilme;
-    // R-6 (`ritmo.filmeRestrito`): sem super ainda (R-7, sempre "não é super" por ora), um especial comum só vira filme
-    // SE o acerto der KO — e isso só se sabe depois do dano (abaixo). Até lá o candidato fica pendente, não confirmado:
-    // `filme` nasce `undefined` e a conta do dano cai no caminho normal (`danoDoGolpe`), como a tabela do §3.3 manda.
+    // R-7b (`ritmo.super`): o golpe em curso É o super deste lutador/ficha — sai do modelo atômico do filme: agenda a
+    // sequência presa (`iniciarSuperPreso`/`avancarSuperPreso`, chamado logo depois em `passo()`) e devolve; o resto
+    // desta função (filme comum, `restringir`, derrubada) é só para golpe que NÃO é super.
+    if (a.superAtivo === true) {
+      const superDados = superDoLutador(a.ch.id, a.ficha);
+      if (superDados) {
+        const multContraSuper = emPreparo ? mv.contra?.mult : undefined;
+        this.iniciarSuperPreso(a, d, superDados, mv.golpe ?? superDados.golpe, mv.ficha, mv.proj, mv.snd, mv.proj ? mv.kb : Math.max(mv.kb, 7), filmeCandidato, d.gotHits, counter, multContraSuper);
+        d.move = null;
+        return;
+      }
+    }
+    // R-6 (`ritmo.filmeRestrito`): um especial comum só vira filme SE o acerto der KO — e isso só se sabe depois do dano
+    // (abaixo); até lá o candidato fica pendente.
     const restringir = this.ritmoFilmeRestrito && filmeCandidato !== undefined;
     let filme = restringir ? undefined : filmeCandidato;
     const antes = filmeCandidato ? this.posicoesDoFilme(a, d) : undefined;
@@ -1108,8 +1262,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         final: filme.final ?? 'derruba',
         antes,
         depois: this.posicoesDoFilme(a, d),
-        // R-6: só com `ritmo.filmeRestrito` (sem super ainda, R-7: todo filme confirmado aqui é por KO).
-        ...(this.ritmoFilmeRestrito ? ({ motivo: kill ? 'ko' : 'super' } as const) : {}),
+        // R-6 (`ritmo.filmeRestrito`): o filme comum só chega aqui se matou (`restringir`) — nunca sai `motivo:'super'`
+        // por este caminho, R-7b: o super passou a ter a sua PRÓPRIA sequência em `avancarSuperPreso`.
+        ...(this.ritmoFilmeRestrito ? ({ motivo: 'ko' } as const) : {}),
       });
       for (const ev of diferidos) this.emitir(ev);
     }
@@ -1172,6 +1327,160 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     // A/B do dano (`motorV2.danoFilme`): ausente ou `v2` = a tabela decidida, igual a antes de existir a opção
     const base = danoBaseDaVariante(filme, this.variantePadraoDoFilme, nivelCarga, projetil, a.ch.pow, a.ch.moves.hk?.dmg ?? 0);
     return Math.min(TETO_GOLPE, danoDoGolpe(base, a.ch.pow, projetil, gotHits, contragolpe, multContra));
+  }
+
+  /** R-7: dano do SUPER (`src/data/supers.ts`), teto PRÓPRIO de 32 (não o `TETO_GOLPE` de 26 do filme comum). */
+  private danoDoSuper(s: SuperDoGolpe, a: Fighter, projetil: boolean, gotHits: number, contragolpe: boolean, multContra: number | undefined): number {
+    return Math.min(TETO_SUPER, danoDoGolpe(s.dano, a.ch.pow, projetil, gotHits, contragolpe, multContra));
+  }
+
+  // ----- R-7b: sequência presa do super (spec §3.4) -----
+
+  /**
+   * 1º contato confirmado de um super (acerto limpo em `applyHit`, ou o próprio arremesso em `arremessar`): calcula o
+   * dano TOTAL da sequência (teto de 32 + teto de combo, igual ao R-7 atômico) e AGENDA os N acertos em `superPreso` —
+   * não aplica nada aqui. `avancarSuperPreso` (chamado logo depois, ainda neste tick) resolve o 1º acerto na hora.
+   */
+  private iniciarSuperPreso(
+    a: Fighter,
+    d: Fighter,
+    s: SuperDoGolpe,
+    golpe: string,
+    ficha: string | null,
+    projetil: boolean,
+    snd: SomGolpe,
+    kb: number,
+    filmeCandidato: FilmeDoGolpe | undefined,
+    gotHits: number,
+    contragolpe: boolean,
+    multContra: number | undefined,
+  ): void {
+    const totalBase = this.danoNoDefensor(d, this.danoDoSuper(s, a, projetil, gotHits, contragolpe, multContra));
+    const totalFinal = this.limitarAoTetoDoCombo(d, totalBase);
+    this.superPreso = {
+      atacante: a.indice,
+      defensor: d.indice,
+      golpe,
+      ficha,
+      projetil,
+      snd,
+      fracoes: s.acertos,
+      proximo: 0,
+      totalFinal,
+      esperaTicks: 0,
+      intervalo: s.intervalo,
+      kb,
+      filmeCandidato,
+    };
+  }
+
+  /**
+   * Avança 1 acerto da sequência presa do super (nenhum efeito se não há nenhuma em andamento, ou se ainda não chegou
+   * a vez — `esperaTicks`). Cada acerto: aplica a fração do dano total, incrementa o combo (`hit` normal, `super:true`),
+   * segura o defensor (sem escapar entre os acertos). O ÚLTIMO (ou o que mata antes do fim) sempre derruba; só abre
+   * FILME se matou (spec R-7b item 3: super que não mata nunca abre filme).
+   */
+  private avancarSuperPreso(): void {
+    const sp = this.superPreso;
+    if (!sp) return;
+    if (sp.esperaTicks > 0) {
+      sp.esperaTicks--;
+      return;
+    }
+    const a = this.fighters[sp.atacante];
+    const d = this.fighters[sp.defensor];
+    const fracao = sp.fracoes[sp.proximo] ?? 0;
+    let dmg = sp.totalFinal * fracao;
+    if (this.training) dmg = Math.min(dmg, d.hp - 1 > 0 ? dmg : 0);
+    const hpAntes = d.hp;
+    d.hp = Math.max(this.training ? 1 : 0, d.hp - dmg);
+    const danoCausado = hpAntes - d.hp;
+    d.gotHits++;
+    d.comboDmg += dmg;
+    d.dmgTaken += dmg;
+    a.score += Math.round(dmg * 100);
+    a.maxCombo = Math.max(a.maxCombo, d.gotHits);
+    this.trainInfo = { hits: d.gotHits, dmg: d.comboDmg };
+    a.en = Math.min(MAX_EN, a.en + (sp.projetil ? 4 : 8));
+    d.en = Math.min(MAX_EN, d.en + 5);
+    d.flash = 8;
+    d.move = null;
+    const barrasAntes = d.barras;
+    const diferidos: EventoLuta[] = []; // o `ko` sai depois do `hit` e (se confirmar) do `filme`, igual ao filme comum
+    const antesDoFilme = sp.filmeCandidato ? this.posicoesDoFilme(a, d) : undefined;
+    const kill = this.resolverVidaZerada(d, a, diferidos);
+    const ultimoDaSequencia = sp.proximo >= sp.fracoes.length - 1;
+    const ultimo = kill || ultimoDaSequencia;
+    const confirmaFilme = kill && sp.filmeCandidato !== undefined;
+    const ox = d.x;
+    const oy = d.y - SH * 0.6;
+    if (ultimo) {
+      this.superPreso = null;
+      if (confirmaFilme) {
+        this.filmeNoTick = true;
+        this.estadoFinalDoFilme(a, d, sp.filmeCandidato as FilmeDoGolpe, sp.projetil, kill);
+      } else if (!kill) {
+        // BAATAR (agarrão-super): derrubada no estilo do ARREMESSO (`-a.facing`, popup próprio), não a de `derrubar`.
+        if (sp.grab) {
+          d.knockdown(-a.facing, sp.kb);
+          d.vy = sp.grab.vy;
+        } else {
+          this.derrubar(a, d, sp.projetil ? sp.kb : Math.max(sp.kb, 7), undefined);
+        }
+      } else if (sp.grab) {
+        d.vx = -a.facing * 7; // matou sem filme de origem (sem registro em filmes.ts): empurrão comum, igual ao arremesso de hoje
+      }
+      // kill && !confirmaFilme && !grab: `ko()` já deixou `d` no estado certo, nada mais a fazer.
+    } else {
+      sp.proximo++;
+      sp.esperaTicks = sp.intervalo;
+      d.setState('hit');
+      d.stun = sp.intervalo + 4; // cobre até o próximo acerto agendado, com folga
+      d.vx = 0;
+      if (!d.grounded) d.vy = Math.min(a.vy, -2); // mantém no ar se já estava (não cai entre acertos)
+    }
+    this.shake = this.ajustes.shake ? (ultimo ? 9 : 4) : 0;
+    this.hitstop = ultimo ? 6 : 3;
+    this.reforcarTrocaDeBarra();
+    this.emitir({
+      tipo: 'hit',
+      atacante: a.indice,
+      defensor: d.indice,
+      x: ox,
+      y: oy,
+      cor: sp.projetil ? a.ch.fire[0] : '#ffd84a',
+      grande: ultimo,
+      snd: sp.snd,
+      pitch: d.ch.pitch,
+      contragolpe: false,
+      projetil: sp.projetil,
+      acertos: d.gotHits,
+      texto: null,
+      dano: danoCausado,
+      golpe: sp.golpe,
+      especial: true,
+      super: true,
+      ...(confirmaFilme ? { filme: true as const } : {}),
+    });
+    if (confirmaFilme && antesDoFilme) {
+      this.emitir({
+        tipo: 'filme',
+        atacante: a.indice,
+        defensor: d.indice,
+        golpe: sp.golpe,
+        ficha: sp.ficha,
+        projetil: sp.projetil,
+        dano: danoCausado,
+        contragolpe: false,
+        ko: true,
+        trocaDeBarra: d.barras < barrasAntes,
+        final: (sp.filmeCandidato as FilmeDoGolpe).final ?? 'derruba',
+        antes: antesDoFilme,
+        depois: this.posicoesDoFilme(a, d),
+        motivo: 'ko',
+      });
+    }
+    for (const ev of diferidos) this.emitir(ev);
   }
 
   /**

@@ -23,6 +23,7 @@
  *   --motor-v2 a,b  liga SÓ estas (A/B de uma mecânica; sai em relatorios/, nunca em docs/): entrada (V2-1), filmes (V2-3c: coluna "Filme" na frame data) e combos (V2-4: a CPU DIFÍCIL os usa e o verificador roda), ex.: --motor-v2 entrada
  *   --entrada-hitstop / --filmes  o mesmo que `--motor-v2 entrada` / `--motor-v2 filmes` (somam-se entre si); PROVA da V2-1: `--sem-motor-v2` x `--motor-v2 entrada` tem de dar o mesmo hash
  *   --ajustes <json> "e se...": ajustes em memória, ex. '{"wei-long":{"hp":100,"pow":1.08}}' (não grava dados; saída em relatorios/)
+ *   --ritmo a,b     liga SÓ estas flags do redesenho de ritmo (R-6/R-7b, `ConfigPartida.ritmo`), nunca em docs/: intervalos, filmeRestrito, super; ex.: --ritmo super
  *   --verificar     antes de tudo, joga uma amostra duas vezes e exige resultado idêntico (determinismo)
  *
  * Nada aqui toca no estado do jogo: cada luta/ensaio monta a PRÓPRIA `Game` em memória e não escreve em disco, exceto os
@@ -42,6 +43,7 @@ function lerArgumentos(argv, env) {
   const a = {
     modo: 'rapido', sementes: null, niveis: null, pares: env.BALANCO_PARES ?? null, base: 1, chefe: true, so: null, jobs: null, saida: null,
     verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: true, filmes: true, combos: true, danoFilme: null, motorV2Explicito: false, chefes: null, semRegulares: false, varrerDano: null,
+    ritmoIntervalos: false, ritmoFilmeRestrito: false, ritmoSuper: false,
   };
   // as flags do motor v2 nascem TODAS ligadas; a primeira opção que as escolhe (`--sem-motor-v2`, `--motor-v2`, `--filmes`, `--entrada-hitstop`) zera e liga só as pedidas
   const escolherMotorV2 = () => {
@@ -89,6 +91,14 @@ function lerArgumentos(argv, env) {
         else throw new Error(`--motor-v2: flag desconhecida '${f}' (use entrada, filmes e/ou combos)`);
       }
     }
+    else if (t === '--ritmo') {
+      for (const f of valor().split(',').map((x) => x.trim()).filter(Boolean)) {
+        if (f === 'intervalos') a.ritmoIntervalos = true;
+        else if (f === 'filmeRestrito') a.ritmoFilmeRestrito = true;
+        else if (f === 'super') a.ritmoSuper = true;
+        else throw new Error(`--ritmo: flag desconhecida '${f}' (use intervalos, filmeRestrito e/ou super)`);
+      }
+    }
     else if (t === '--chefes') a.chefes = valor().split(',').map((x) => x.trim()).filter(Boolean);
     else if (t === '--sem-regulares') a.semRegulares = true;
     else if (t === '--varrer-dano') a.varrerDano = valor().split(',').map(Number);
@@ -117,9 +127,13 @@ function lerArgumentos(argv, env) {
   const todasV2 = a.entradaHitstop && a.filmes && a.combos;
   const nenhumaV2 = !a.entradaHitstop && !a.filmes && !a.combos;
   const rotuloV2 = todasV2 ? 'v2' : nenhumaV2 ? 'sem-v2' : ['entrada', 'filmes', 'combos'].filter((_, i) => [a.entradaHitstop, a.filmes, a.combos][i]).join('-');
+  // R-6/R-7b: `--ritmo` nunca vira referência versionada (docs/balanco) — o redesenho ainda não foi aceito como o jogo de produção.
+  const temRitmo = a.ritmoIntervalos || a.ritmoFilmeRestrito || a.ritmoSuper;
+  const sufixoRitmo = temRitmo ? `-ritmo-${['intervalos', 'filmeRestrito', 'super'].filter((_, i) => [a.ritmoIntervalos, a.ritmoFilmeRestrito, a.ritmoSuper][i]).join('-')}` : '';
   a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
     : parcial ? join(RAIZ, 'relatorios', 'balanco-chefes')
     : a.danoFilme && a.danoFilme !== 'v2' ? join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-dano-${a.danoFilme}`)
+    : temRitmo ? join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-${rotuloV2}${sufixoRitmo}`)
     : a.modo === 'completo' && a.esquiva && todasV2 ? join(RAIZ, 'docs', 'balanco')
     : a.modo === 'completo' && a.esquiva && nenhumaV2 ? join(RAIZ, 'docs', 'balanco', 'sem-motor-v2')
     : a.modo === 'completo' && !a.esquiva && nenhumaV2 ? join(RAIZ, 'docs', 'balanco', 'sem-esquiva')
@@ -174,6 +188,9 @@ function paramsDe(a) {
     ...(a.filmes ? { filmes: true } : {}),
     ...(a.combos ? { combos: true } : {}),
     ...(a.danoFilme && a.danoFilme !== 'v2' ? { danoFilme: a.danoFilme } : {}),
+    ...(a.ritmoIntervalos ? { ritmoIntervalos: true } : {}),
+    ...(a.ritmoFilmeRestrito ? { ritmoFilmeRestrito: true } : {}),
+    ...(a.ritmoSuper ? { ritmoSuper: true } : {}),
   };
 }
 
@@ -232,7 +249,7 @@ async function principal() {
   if (a.worker) {
     // os parâmetros chegam do processo principal, já validados (a linha de comando do worker só leva o --worker)
     const p = JSON.parse(process.env.BALANCO_PARAMS ?? '{}');
-    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, danoFilme: p.danoFilme ?? null, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
+    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, danoFilme: p.danoFilme ?? null, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true, ritmoIntervalos: p.ritmoIntervalos === true, ritmoFilmeRestrito: p.ritmoFilmeRestrito === true, ritmoSuper: p.ritmoSuper === true });
     return modoWorker(a);
   }
 
@@ -319,7 +336,7 @@ async function principal() {
         dif = null;
       }
     }
-    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.entradaHitstop ? " + ENTRADA NO HITSTOP (motorV2.entradaNoHitstop)" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : "") + (a.danoFilme && a.danoFilme !== 'v2' ? ` + A/B do dano do filme: ${a.danoFilme}` : "") + (!a.entradaHitstop && !a.filmes && !a.combos ? " + motor v2 DESLIGADO (o motor de antes)" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
+    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.entradaHitstop ? " + ENTRADA NO HITSTOP (motorV2.entradaNoHitstop)" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : "") + (a.danoFilme && a.danoFilme !== 'v2' ? ` + A/B do dano do filme: ${a.danoFilme}` : "") + (!a.entradaHitstop && !a.filmes && !a.combos ? " + motor v2 DESLIGADO (o motor de antes)" : "") + (a.ritmoIntervalos || a.ritmoFilmeRestrito || a.ritmoSuper ? ` + RITMO: ${[a.ritmoIntervalos && 'intervalos', a.ritmoFilmeRestrito && 'filmeRestrito', a.ritmoSuper && 'super'].filter(Boolean).join('+')}` : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
     writeFileSync(join(a.saida, 'resultados.md'), m.rel.resultadosMd(agr, ids, achados, dif, cab));
     writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, hashRegulares, hashChefes, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
     resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, { hashRegulares, hashChefes, semRegulares: a.semRegulares });

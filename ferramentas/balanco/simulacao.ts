@@ -45,6 +45,12 @@ export type Tarefa = {
   combos?: true;
   /** A/B do dano do filme (`--dano-filme hoje|forte`); ausente = a tabela decidida (`v2`). Só tem efeito com `filmes`. */
   danoFilme?: VarianteDoDano;
+  /** `ritmo.intervalos` ligada nesta luta (`--ritmo intervalos`, R-6). A semente não muda: referência própria (nunca em docs/balanco). */
+  ritmoIntervalos?: true;
+  /** `ritmo.filmeRestrito` ligada nesta luta (`--ritmo filmeRestrito`, R-6). */
+  ritmoFilmeRestrito?: true;
+  /** `ritmo.super` ligada nesta luta (`--ritmo super`, R-7/R-7b): SOCO FORTE + CHUTE FORTE com a barra cheia. */
+  ritmoSuper?: true;
 };
 
 export type ParametrosSim = {
@@ -69,6 +75,12 @@ export type ParametrosSim = {
   combos?: boolean;
   /** A/B do dano do filme (`--dano-filme`): `hoje`, `v2` (o padrão) ou `forte`. */
   danoFilme?: VarianteDoDano;
+  /** Liga `ritmo.intervalos` (R-6) em todas as lutas. */
+  ritmoIntervalos?: boolean;
+  /** Liga `ritmo.filmeRestrito` (R-6) em todas as lutas. */
+  ritmoFilmeRestrito?: boolean;
+  /** Liga `ritmo.super` (R-7/R-7b) em todas as lutas: a CPU usa SOCO FORTE + CHUTE FORTE com a barra cheia (`cpuInput`/`VistaParaCpu`). */
+  ritmoSuper?: boolean;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
   ajustes?: Record<string, unknown>;
 };
@@ -162,6 +174,9 @@ export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | nul
       ...(p.filmes ? { filmes: true as const } : {}),
       ...(p.combos ? { combos: true as const } : {}),
       ...(p.danoFilme && p.danoFilme !== 'v2' ? { danoFilme: p.danoFilme } : {}),
+      ...(p.ritmoIntervalos ? { ritmoIntervalos: true as const } : {}),
+      ...(p.ritmoFilmeRestrito ? { ritmoFilmeRestrito: true as const } : {}),
+      ...(p.ritmoSuper ? { ritmoSuper: true as const } : {}),
     });
   };
   if (p.semRegulares !== true) {
@@ -234,11 +249,23 @@ function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; film
   };
 }
 
+/** As flags de `ritmo` desta tarefa (R-6/R-7b), `{}` quando nenhuma: igual a `motorV2DaTarefa`. */
+function ritmoDaTarefa(t: Tarefa): { ritmo?: { intervalos?: true; filmeRestrito?: true; super?: true } } {
+  if (!t.ritmoIntervalos && !t.ritmoFilmeRestrito && !t.ritmoSuper) return {};
+  return {
+    ritmo: {
+      ...(t.ritmoIntervalos ? { intervalos: true as const } : {}),
+      ...(t.ritmoFilmeRestrito ? { filmeRestrito: true as const } : {}),
+      ...(t.ritmoSuper ? { super: true as const } : {}),
+    },
+  };
+}
+
 /** Joga UMA luta CPU x CPU até o fim (ou o teto) e devolve tudo o que o relatório precisa. */
 export function lutar(elenco: Elenco, t: Tarefa): Registro {
   const g = new Game({ lutadores: elenco, rng: criarRng(t.semente) });
   g.setup(
-    { mode: 'cpu', c1: t.a, c2: t.b, cpu: t.nivel, p1cpu: t.nivel, ...(t.tipo === 'chefe' ? { chefe: true } : {}), ...(t.esquiva ? { esquiva: true } : {}), ...motorV2DaTarefa(t) },
+    { mode: 'cpu', c1: t.a, c2: t.b, cpu: t.nivel, p1cpu: t.nivel, ...(t.tipo === 'chefe' ? { chefe: true } : {}), ...(t.esquiva ? { esquiva: true } : {}), ...motorV2DaTarefa(t), ...ritmoDaTarefa(t) },
     { ...AJUSTES_SIM },
   );
   const [f0, f1] = g.fighters;

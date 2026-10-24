@@ -1,32 +1,28 @@
 import type { Elenco } from '../assets/elenco';
-import { ALTURA_DA_TARJA, pintarTarja, type CanvasLike, type Cinematica } from './cinematica';
 import { LARGURA } from '../core/constantes';
 import type { IndiceLutador, LeituraLuta } from '../core/contratos';
 import { identidadeDe, identidadePadrao } from './identidade-especiais';
+import { desenharFaixaComRosto, rostoDoGolpe } from './faixa-rosto';
 import { chDaFicha } from './lutador';
 import type { Ctx } from './tela';
-import { FONTE_DO_ESPECIAL, textoArcade } from './texto';
 
 /*
  * FAIXA DO RITMO (docs/spec-redesenho-jogabilidade.md §3.2, R-2, flag `Regras.ritmo.tarja`): o aviso do especial comum SEM
- * congelar a luta. Ao contrário da `Cinematica` (que faz a cena deixar de chamar `game.update` para mostrar a tarja cheia, 48/20
- * ticks parados), esta faixa é só um elemento de HUD por cima do jogo: `fight.ts` continua chamando `game.update` em TODO tick
- * enquanto ela aparece — por isso não tem veú de tela cheia, destaque do atacante nem pose: o lutador já está visível jogando.
+ * congelar a luta. Ao contrário da tarja do SUPER (`TarjaDoSuper`, que faz a cena deixar de chamar `game.update`), esta faixa é
+ * só um elemento de HUD por cima do jogo: `fight.ts` continua chamando `game.update` em TODO tick enquanto ela aparece.
  *
- * Reaproveita a MESMA pintura de fundo da tarja cheia (`pintarTarja`/o cache de `Cinematica.fundoDaTarja`, as mesmas
- * `MAX_TARJAS_NO_CACHE` entradas aquecidas na abertura da luta), só menor (0,55 × `ALTURA_DA_TARJA`) e numa posição FIXA no alto da
- * tela (entre o placar do HUD, que termina por volta de y=86, e a cabeça dos lutadores em pé, que começa por volta de y=200): a
- * geometria exata (não cobrir HUD nem lutador) é medida no navegador (skill `medir-antes-de-afirmar`), não deduzida aqui.
+ * Direção de arte (decisão do dono, 24/10/2026, estilo X-Men vs Street Fighter): banda horizontal larga e listrada, laranja/
+ * amarela, no terço de cima da tela, com o rosto do lutador em close (gritando) entrando pela esquerda — a pintura é
+ * `desenharFaixaComRosto` (`faixa-rosto.ts`), compartilhada com `TarjaDoSuper`. Aqui: só o relógio (entra/fica/sai) e a fila.
  *
  * Primeira vez de um golpe na luta: 40 ticks (entra 6, fica 28, sai 6). Repetido (2ª vez em diante do MESMO golpe, do MESMO
  * lutador/ficha, nesta luta): 24 ticks (entra 4, fica 16, sai 4) — a marca "já vi isso" do §3.2. Dois especiais quase juntos (os dois
  * lados, ou um combo rápido): o 2º entra na fila e espera o 1º acabar; nunca acumula motor parado, porque nada bloqueia o motor.
  */
 
-export const ALTURA_FAIXA_RITMO = Math.round(ALTURA_DA_TARJA * 0.55); // ~72 px (§3.2)
-export const LARGURA_FAIXA_RITMO = 640;
+export const ALTURA_FAIXA_RITMO = 170;
 /** Topo fixo da faixa (px lógicos): abaixo do placar do HUD (`hud.ts`, nome/placar terminam perto de y=86). */
-export const Y_TOPO_FAIXA_RITMO = 90;
+export const Y_TOPO_FAIXA_RITMO = 86;
 export const DURACAO_FAIXA_1A_VEZ = 40;
 export const DURACAO_FAIXA_REPETIDA = 24;
 const ENTRA_1A_VEZ = 6;
@@ -51,7 +47,7 @@ interface Ativa {
   t: number;
 }
 
-/** Fila e desenho da faixa SEM CONGELAR de um especial por vez (como `Cinematica`, mas sem pausar a cena). */
+/** Fila e desenho da faixa SEM CONGELAR de um especial por vez (como `TarjaDoSuper`, mas sem pausar a cena). */
 export class FaixaRitmo {
   private atual: Ativa | null = null;
   private readonly fila: Ativa[] = [];
@@ -93,14 +89,14 @@ export class FaixaRitmo {
     if (a.t >= a.duracao) this.atual = this.fila.shift() ?? null;
   }
 
-  /** Zera a fila e o que já foi visto; chamar ao começar e ao acabar a luta (como `Cinematica.zerarLuta`). */
+  /** Zera a fila e o que já foi visto; chamar ao começar e ao acabar a luta (como `TarjaDoSuper.zerarLuta`). */
   zerarLuta(): void {
     this.atual = null;
     this.fila.length = 0;
     this.vistos.clear();
   }
 
-  desenhar(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, cine: Cinematica): void {
+  desenhar(ctx: Ctx, luta: LeituraLuta, elenco: Elenco): void {
     const a = this.atual;
     if (!a) return;
     const f = luta.fighters[a.ev.lutador];
@@ -114,42 +110,23 @@ export class FaixaRitmo {
     const entraK = a.entra > 0 ? Math.min(1, a.t / a.entra) : 1;
     const saiIni = a.duracao - a.sai;
     const saiK = a.t <= saiIni || a.sai <= 0 ? 0 : Math.min(1, (a.t - saiIni) / a.sai);
-    const alfa = entraK * (1 - saiK);
-    // entra deslizando de cima (como a faixa cheia); sai pelo mesmo lado — nunca os dois ao mesmo tempo (entraK já é 1 quando saiK começa)
-    const deslocaY = -Math.max(1 - entraK, saiK) * (ALTURA_FAIXA_RITMO + 16);
+    // a faixa entra/sai pela ESQUERDA (posição, não alfa — como a referência): nunca os dois ao mesmo tempo (entraK já é 1 quando saiK começa)
+    const deslocaX = -Math.max(1 - entraK, saiK) * LARGURA;
 
-    const W = LARGURA_FAIXA_RITMO;
-    const H = ALTURA_FAIXA_RITMO;
-    const x = (LARGURA - W) / 2;
-    const y = Y_TOPO_FAIXA_RITMO + deslocaY;
-    const chave = chaveDoGolpe(a.ev);
-    const fundo = cine.fundoDaTarja(chave, id);
-
-    ctx.save();
-    ctx.globalAlpha = alfa;
-    if (fundo) ctx.drawImage(fundo as unknown as CanvasImageSource, 0, 0, fundo.width, fundo.height, x, y, W, H);
-    else {
-      ctx.save();
-      ctx.translate(x, y);
-      pintarTarja(ctx, id, W, H);
-      ctx.restore();
-    }
-    const tamanho = tamanhoDoNomeNaFaixa(ctx, nome, W);
-    textoArcade(ctx, nome, x + W / 2, y + H / 2, tamanho, id.paleta.nucleo, id.paleta.sombra, 'center', 1, 1, FONTE_DO_ESPECIAL(tamanho));
-    ctx.restore();
+    desenharFaixaComRosto({
+      ctx,
+      x: 0,
+      y: Y_TOPO_FAIXA_RITMO,
+      w: LARGURA,
+      h: ALTURA_FAIXA_RITMO,
+      alfa: 1,
+      deslocaX,
+      corDestaque: id.paleta.brilho,
+      nome,
+      corNome: [id.paleta.nucleo, id.paleta.sombra],
+      rosto: rostoDoGolpe(elenco, f.id, ficha, a.ev.golpe),
+    });
   }
 }
 
 const chaveDoGolpe = (ev: EventoFaixa): string => `${ev.lutador}.${ev.ficha ?? 'base'}.${ev.golpe}`;
-
-/** Nome em até 30 px; encolhe se não couber nos 70% centrais da faixa (a mesma ideia de `Cinematica`, escala menor). */
-function tamanhoDoNomeNaFaixa(ctx: Ctx, nome: string, larguraDaFaixa: number): number {
-  ctx.save();
-  ctx.font = FONTE_DO_ESPECIAL(30);
-  const w = ctx.measureText(nome).width;
-  ctx.restore();
-  const livre = larguraDaFaixa * 0.7;
-  return w > livre ? Math.max(16, Math.floor((30 * livre) / w)) : 30;
-}
-
-export type { CanvasLike };

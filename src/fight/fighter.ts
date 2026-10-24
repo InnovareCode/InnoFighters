@@ -17,6 +17,7 @@ import { comboAbreCancelamento, golpesQueContinuam } from '../data/combos-propri
 import { ESQUIVA_PADRAO, type TrechoEsquiva } from '../data/esquiva';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
+import { superDoLutador } from '../data/supers';
 import type { CargaDef, ConfigChefe, GolpeMontado, NomeGolpe, ReboteDef } from '../data/tipos';
 import type { PerfilCpu } from './cpu';
 import { attackBox, hurtbox, podeBloquear } from './colisao';
@@ -67,6 +68,8 @@ export interface PartidaParaLutador {
   readonly esquivaLigada?: boolean;
   /** V2-4 (`motorV2.combos`): o combo próprio abre cancelamentos. Opcional: dublê de teste sem o campo = desligado (nenhuma conta nova). */
   readonly combosLigados?: boolean;
+  /** R-7 (`ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Opcional: dublê de teste sem o campo = desligado. */
+  readonly ritmoSuperLigado?: boolean;
 }
 
 const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0, proprioAtk: -1 });
@@ -177,6 +180,13 @@ export class Fighter {
   crouching = false;
   holdBack = false;
   buf: { k: ChaveAtaque; t: number } | null = null;
+  /** R-7: o golpe em curso (`move`/`atkId` atual) é o SUPER (dano/filme/custo próprios). Ligado em `startMove`, nunca fora dele. */
+  superAtivo = false;
+  /** R-7: `age` do último `hp`/`hk` apertado (borda), para achar o par "as duas bordas no mesmo tick ou até 2 ticks de distância". */
+  private hpApertadoEm = -99;
+  private hkApertadoEm = -99;
+  /** R-7: o golpe do super achado NESTE tick (`superNaBorda`, chamado 1x em `corpoDoUpdate`), ou null. Lido pelas duas entradas (estado livre e cancelamento). */
+  private golpeSuperNoTick: NomeGolpe | null = null;
   flash = 0;
   invuln = 0;
   phase: 'air' | 'lie' | 'rise' = 'air';
@@ -355,6 +365,9 @@ export class Fighter {
     this.crouching = false;
     this.holdBack = false;
     this.buf = null;
+    this.superAtivo = false;
+    this.hpApertadoEm = -99;
+    this.hkApertadoEm = -99;
     this.flash = 0;
     this.invuln = 0;
     this.phase = 'air';
@@ -422,6 +435,34 @@ export class Fighter {
   }
 
   /**
+   * R-7 (D-R1, `ritmo.super`): registra as bordas de `hp`/`hk` deste tick e devolve o golpe do SUPER se as duas
+   * acabaram de casar (a mais recente, achando a outra a até 2 ticks de distância) e a barra está cheia. Chamar
+   * UMA vez por tick (`InputFrame` não muda: a detecção é toda daqui). Sem super para este lutador/ficha, ou com a
+   * barra não cheia: `null` — "sai o golpe de hoje" (`resolveAttack` resolve o botão único como sempre).
+   */
+  private superNaBorda(inp: InputFrame): NomeGolpe | null {
+    if (inp.hp) this.hpApertadoEm = this.age;
+    if (inp.hk) this.hkApertadoEm = this.age;
+    if (!inp.hp && !inp.hk) return null; // só dispara no tick de uma borda nova (evita repetir por até 2 ticks)
+    if (this.en < MAX_EN) return null;
+    if (Math.abs(this.hpApertadoEm - this.hkApertadoEm) > 2) return null;
+    return superDoLutador(this.ch.id, this.ficha)?.golpe ?? null;
+  }
+
+  /**
+   * R-7: a borda guardada (`this.buf`) é hp OU hk sozinho, mas ainda cabe no par (apertado há <= 2 ticks, barra cheia,
+   * há super para este lutador/ficha)? Se sim, quem chama NÃO resolve o `buf` agora — espera mais 1-2 ticks pelo par
+   * (sem isso, o 1º botão sempre venceria como golpe comum antes de o 2º chegar, e "até 2 ticks de distância" nunca
+   * disparava: só o mesmo tick funcionava).
+   */
+  private aguardandoParDoSuper(jogo: PartidaParaLutador): boolean {
+    if (jogo.ritmoSuperLigado !== true || !this.buf || (this.buf.k !== 'hp' && this.buf.k !== 'hk')) return false;
+    if (this.en < MAX_EN || !superDoLutador(this.ch.id, this.ficha)) return false;
+    const apertadoEm = this.buf.k === 'hp' ? this.hpApertadoEm : this.hkApertadoEm;
+    return this.age - apertadoEm <= 2;
+  }
+
+  /**
    * Dá para agarrar o rival agora? Sem `golpe` (ou sem `agarrao`) é o arremesso de sempre: alcance 108, rival no chão.
    * `golpe.agarrao.alcance` troca o alcance (E3: ARREMESSO 162, ABRAÇO < 108) e `alvo` escolhe quem pode ser agarrado:
    * 'chao' (padrão), 'ar' (rival fora do chão, a menos de 120 px de altura de diferença, pulando ou atacando no ar:
@@ -443,7 +484,8 @@ export class Fighter {
     return !mv.cost || this.en >= mv.cost;
   }
 
-  startMove(name: NomeGolpe, jogo: PartidaParaLutador): void {
+  /** `superExec`: R-7 — este golpe é o SUPER (a MESMA pose/golpe de `name`, custo a barra inteira, `special.super: true`). */
+  startMove(name: NomeGolpe, jogo: PartidaParaLutador, superExec = false): void {
     const mv = this.ch.moves[name];
     this.move = name;
     this.mt = 0;
@@ -452,9 +494,25 @@ export class Fighter {
     this.shots = 0;
     this.atkId++;
     this.rep = 0;
+    this.superAtivo = superExec;
     this.setState('move');
     if (this.grounded) this.vx = 0;
-    if (mv.cost) {
+    if (superExec) {
+      // R-7 (§3.4): custo = a barra INTEIRA, não `mv.cost` do especial de origem.
+      this.en = 0;
+      const ap = apresentacaoDoEspecial(this.ch.id, this.ficha, name);
+      jogo.emitir({
+        tipo: 'special',
+        lutador: this.indice,
+        pitch: this.ch.pitch,
+        golpe: name,
+        ficha: this.ficha,
+        momento: ap?.momento ?? 'inicio',
+        super: true,
+        ...(ap ? { quadro: ap.quadro } : {}),
+        ...(ap?.entrada ? { entrada: ap.entrada } : {}),
+      });
+    } else if (mv.cost) {
       this.en -= mv.cost;
       // V1 (cinemática): o evento leva o golpe, a ficha e a apresentação (quadro/entrada/momento); o som continua o de sempre.
       const ap = apresentacaoDoEspecial(this.ch.id, this.ficha, name);
@@ -473,6 +531,7 @@ export class Fighter {
     }
     if (mv.air) this.airUsed = true;
     this.armor = mv.armor ? mv.S + mv.A : 0;
+    // O super reaproveita o `inv` do golpe de origem (HAYATO/MIN-JI já sobem invulneráveis; ver src/data/supers.ts).
     if (mv.inv) this.invuln = Math.max(this.invuln, mv.S + mv.inv);
     this.hitCount = 0;
     this.lastHitMt = 0;
@@ -537,6 +596,9 @@ export class Fighter {
         break;
       }
     }
+    // R-7: UMA chamada por tick, ANTES de qualquer estado (como o `buf` acima). Com a flag desligada, nada roda: nenhuma
+    // borda é guardada e nenhum estado novo aparece (igual ao motor de antes, bit a bit).
+    this.golpeSuperNoTick = jogo.ritmoSuperLigado === true ? this.superNaBorda(inp) : null;
     if (this.armor > 0) this.armor--;
     // ESQUIVA: o botão fica guardado `buffer` ticks. Com a flag desligada nada disto roda (ignorado antes de qualquer conta).
     if (jogo.esquivaLigada === true) {
@@ -617,6 +679,18 @@ export class Fighter {
       this.crouching = !!inp.down;
       // ESQUIVA vem ANTES do buffer de ataque: se as duas coisas saem no mesmo tick, a esquiva vence e zera `buf`.
       if (jogo.esquivaLigada === true && this.bufEsq > 0 && this.tentarEsquivar(inp, jogo)) return;
+      // R-7: o super vence o `buf` de um botão só (hp OU hk sozinho continuaria no buf e viraria o golpe de hoje).
+      if (this.golpeSuperNoTick) {
+        this.buf = null;
+        this.startMove(this.golpeSuperNoTick, jogo, true);
+        this.physics(jogo);
+        return;
+      }
+      // R-7: hp OU hk sozinho ainda pode virar par (até 2 ticks) — espera antes de resolver como golpe comum.
+      if (this.aguardandoParDoSuper(jogo)) {
+        this.physics(jogo);
+        return;
+      }
       if (this.buf) {
         const nm = this.resolveAttack(this.buf.k, inp);
         this.buf = null;
@@ -791,6 +865,18 @@ export class Fighter {
       // (tempos iguais), então o golpe segue de onde estava.
       this.trocarFicha(mv.troca.ficha);
       jogo.emitir({ tipo: 'troca-ficha', lutador: this.indice, ficha: mv.troca.ficha });
+    } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.golpeSuperNoTick) {
+      // R-7: "entra a partir de qualquer normal que conectou" (§3.4) — o mesmo cancelamento de rank maior, mas achado
+      // pelo PAR hp+hk (não pelo `buf` de um botão só). golpe especial (rank 9) não cancela para o super (MVP, §3.4):
+      // `mv.rank < 9` já garante isso, igual ao cancelamento comum.
+      const nm = this.golpeSuperNoTick;
+      this.buf = null;
+      this.startMove(nm, jogo, true);
+      this.rep = 0;
+      this.physics(jogo);
+      return;
+    } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.aguardandoParDoSuper(jogo)) {
+      // R-7: hp OU hk sozinho ainda pode virar par (até 2 ticks) — espera antes de resolver `buf` como cancelamento comum.
     } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.buf) {
       // combo: cancela em golpe de rank maior
       const nm = this.resolveAttack(this.buf.k, inp);

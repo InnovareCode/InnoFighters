@@ -1,8 +1,9 @@
-import { GROUND, LARGURA } from '../core/constantes';
+import { GROUND, LARGURA, MAX_EN } from '../core/constantes';
 import type { InputFrame } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import type { NomeGolpe, PapelIa } from '../data/tipos';
 import { ESQUIVA_PADRAO } from '../data/esquiva';
+import { superDoLutador } from '../data/supers';
 import type { Fighter, PlanoIa } from './fighter';
 import type { ProjetilLuta } from './projetil';
 
@@ -28,6 +29,17 @@ export type PerfilCpu = {
   /** COMBOS PRÓPRIOS (V2-4): chance de, depois de um acerto que continua algum combo próprio do lutador, apertar o próximo golpe dele. Só conta com `combosLigados`. */
   proprio: number;
 };
+
+/**
+ * R-7 (`ritmo.super`): quando a CPU decide usar o golpe que É o super do lutador (`src/data/supers.ts`) e a barra está
+ * cheia, aperta SOCO FORTE + CHUTE FORTE em vez do botão único — a MESMA decisão de hoje (nenhum `rnd()` novo), só a
+ * SAÍDA muda. Desligada (ou sem super para este lutador/ficha, ou barra não cheia): `null`, sem mudar nada.
+ */
+function botoesDoSuper(me: Fighter, superLigado: boolean | undefined, name: NomeGolpe): PlanoIa | null {
+  if (!superLigado || name[0] !== 's' || me.en < MAX_EN) return null;
+  const s = superDoLutador(me.ch.id, me.ficha);
+  return s && s.golpe === name ? { hp: true, hk: true } : null;
+}
 
 /**
  * IA do CHEFE (docs/mecanicas-e3.md §3.5). Fica FORA de `AI_LEVELS` porque essa lista é o menu de dificuldade
@@ -72,12 +84,21 @@ export interface VistaParaCpu {
   readonly esquivaLigada?: boolean;
   /** COMBOS PRÓPRIOS ligados na partida (V2-4). Desligada, a CPU não olha os combos nem sorteia nada por causa deles (o RNG fica idêntico ao de antes). */
   readonly combosLigados?: boolean;
+  /** R-7 (`ritmo.super`): a CPU upgrada o botão único para hp+hk quando o golpe escolhido é o super dela e a barra está cheia. Sem `rnd()` novo. */
+  readonly ritmoSuperLigado?: boolean;
 }
 
 type TeclaIa = 'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp';
 
-/** Entradas que produzem um golpe (dir = lado do oponente: +1 direita, -1 esquerda). */
-export function moveInput(name: NomeGolpe, dir: number): PlanoIa {
+/**
+ * Entradas que produzem um golpe (dir = lado do oponente: +1 direita, -1 esquerda). `me`/`superLigado` são opcionais
+ * (R-7): sem eles (ou com a flag desligada), o comportamento é o de sempre, bit a bit.
+ */
+export function moveInput(name: NomeGolpe, dir: number, me?: Fighter, superLigado?: boolean): PlanoIa {
+  if (me) {
+    const s = botoesDoSuper(me, superLigado, name);
+    if (s) return s;
+  }
   const o: PlanoIa = {};
   if (name === 'throw') {
     o.hp = true;
@@ -122,6 +143,7 @@ function planoPorDica(
   dir: number,
   L: PerfilCpu,
   rnd: () => number,
+  superLigado?: boolean,
 ): { plano: PlanoIa; segurar: number } | null {
   for (const { golpe, dica } of me.ch.dicasIa) {
     if (dica.papel === 'troca') {
@@ -130,7 +152,7 @@ function planoPorDica(
       const desejada = distancia >= (dica.limite ?? 200) ? pref.distancia : pref.perto;
       if (desejada === me.ficha) continue; // já está na ficha certa para esta distância: nenhum rnd
       if (rnd() >= CHANCE_TROCA * L.aggr) continue;
-      return { plano: moveInput(golpe, dir), segurar: 0 };
+      return { plano: moveInput(golpe, dir, me, superLigado), segurar: 0 };
     }
     if (dica.papel !== 'pressao' && dica.papel !== 'aproximar') continue;
     const [min, max] = dica.alcance ?? [0, Infinity];
@@ -145,7 +167,7 @@ function planoPorDica(
       const n = a + Math.floor(rnd() * (b - a + 1));
       segurar = Math.max(1, mv.S - 2 + n); // o 1º tick já vai no plano; mt = S−1 é o 1º tick de carga
     }
-    return { plano: moveInput(golpe, dir), segurar };
+    return { plano: moveInput(golpe, dir, me, superLigado), segurar };
   }
   return null;
 }
@@ -195,6 +217,8 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   const nivel = me.cpu ?? 0;
   // `perfilIa` só existe no chefe (Game.setup); qualquer outro lutador usa a tabela de sempre, sem nenhuma conta nova.
   const L: PerfilCpu = me.perfilIa ?? AI_LEVELS[nivel] ?? AI_LEVELS[0];
+  // R-7: upgrade mecânico do botão único para hp+hk (ver `botoesDoSuper`); não sorteia nada, não muda QUANDO a CPU ataca.
+  const superLigado = game.ritmoSuperLigado === true;
   const ai = me.ai;
   const inp = NO_INPUT();
   const M = me.ch.moves;
@@ -296,7 +320,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
         else inp.left = true;
       } else if (dir > 0) inp.left = true;
       else inp.right = true;
-    } else Object.assign(inp, moveInput(ai.reacao.golpe, dir));
+    } else Object.assign(inp, moveInput(ai.reacao.golpe, dir, me, superLigado));
     ai.reacao = null;
     ai.plan = null;
     ai.t = 0;
@@ -311,7 +335,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
       if (rnd() < L.proprio) {
         const nm = continuam.length === 1 ? continuam[0] : continuam[Math.floor(rnd() * continuam.length)];
         if (nm) {
-          Object.assign(inp, moveInput(nm, dir));
+          Object.assign(inp, moveInput(nm, dir, me, superLigado));
           return inp;
         }
       }
@@ -334,7 +358,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
         nm = rnd() < 0.65 ? (normals[0] ?? null) : (normals[Math.floor(rnd() * normals.length)] ?? null);
       }
       if (nm) {
-        Object.assign(inp, moveInput(nm, dir));
+        Object.assign(inp, moveInput(nm, dir, me, superLigado));
         return inp;
       }
     }
@@ -365,7 +389,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     // Quem tem golpe `antiaereo` (HURACANRANA) usa o dele no lugar do ↓+ESP genérico, sorteando o mesmo `rnd() < 0.5`.
     const aereo = me.ch.dicasIa.length > 0 ? golpeComPapel(me, 'antiaereo', ad) : null;
     if (aereo !== null && rnd() < 0.5) {
-      Object.assign(inp, moveInput(aereo, dir));
+      Object.assign(inp, moveInput(aereo, dir, me, superLigado));
     } else if (aereo === null && livre('sDown') && rnd() < 0.5) {
       inp.down = true;
       inp.sp = true;
@@ -391,13 +415,13 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   const r = rnd();
   const pick = <T>(a: readonly T[]): T => a[Math.floor(rnd() * a.length)] as T;
   const doMove = (n: NomeGolpe): void => {
-    Object.assign(plan, moveInput(n, dir));
+    Object.assign(plan, moveInput(n, dir, me, superLigado));
   };
   if (!me.grounded) return inp;
   // Dicas de CPU (E3): REGRA — só quem declara `ia` num golpe entra aqui; lutador sem dica não chama nada e não gasta
   // RNG. Hoje nenhum papel está implementado (entram em S1b..S5), então isto é só o ponto de plug.
   if (me.ch.dicasIa.length > 0) {
-    const porDica = planoPorDica(me, ad, dir, L, rnd);
+    const porDica = planoPorDica(me, ad, dir, L, rnd, superLigado);
     if (porDica) {
       // Um tick só: o golpe começa agora, o resto é do estado `move` (e do `segurar`); depois disso, plano novo.
       ai.plan = null;

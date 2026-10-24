@@ -13,8 +13,9 @@ import { chefeDaLeitura } from '../../render/aura-chefe';
 import { APRESENTACAO, falaDoChefe, roteiroDe } from '../../render/apresentacao-lutadores';
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
 import { FaixaRitmo } from '../../render/faixa-ritmo';
+import { TarjaDoSuper } from '../../render/tarja-super';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
-import { alturaDoLutador, FilmeDoEspecial, type EventoFilme, type HudDoRival, type ModoFilme } from '../../render/filme';
+import { alturaDoLutador, FilmeDoEspecial, TICKS_PARA_PULAR_RITMO, type EventoFilme, type HudDoRival, type ModoFilme } from '../../render/filme';
 import { Fluidez } from '../../render/fluidez';
 import { desenharLegenda } from '../../render/legenda';
 import { MoedasDeDreno } from '../../render/moedas-dreno';
@@ -44,9 +45,10 @@ import { cfgDaEtapa } from '../campanha';
 import { EsperaDeArte } from '../espera-de-arte';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
-import { alturaDosCombos, combosDoLutador, desenharCombos, DICA_DOS_COMBOS } from '../combos-tela';
+import { alturaDosCombos, ALTURA_DA_CAIXA_DE_COMBO, combosDoLutador, desenharCombos, desenharLinhaDoSuper, DICA_DOS_COMBOS } from '../combos-tela';
 import { desenharLinhasDeGolpes, P_COL } from '../personagens';
 import { NAV, type ArgsFight, type Cena } from '../tipos';
+import { superDoLutador } from '../../data/supers';
 import { criarContadorRitmo, motivoDoTick, registrarTickDeRitmo, type ContadorRitmo, type MotivoRitmo } from './ritmo-contador';
 
 type Vista = 'main' | 'moves' | 'audio' | 'confirm';
@@ -65,10 +67,15 @@ export class CenaFight implements Cena {
   private botaoEspSem: boolean | null = null;
   /** Fim do estalo `.acendeu` do ESPECIAL (220 ms), para limpar ao sair da luta ou reacender. */
   private fimDoAcendeu: ReturnType<typeof setTimeout> | null = null;
+  /** R-9 (`ritmo.super`): idem para o botão SUPER (#sup) — "pronto" só com a barra CHEIA (D-R1, `en === 100`). */
+  private botaoSupSem: boolean | null = null;
+  private fimDoAcendeuSup: ReturnType<typeof setTimeout> | null = null;
   /** CINEMÁTICA do especial (apresentação pura: enquanto roda a cena não chama `game.update`, como a pausa) e a sessão dos acertos dele. */
   readonly cine: Cinematica;
   /** FAIXA DO RITMO (R-2, `Regras.ritmo.tarja`): o mesmo aviso do especial, SEM pausar a cena — usada no lugar de `cine` quando a flag está ligada (§3.2). */
   readonly faixaRitmo = new FaixaRitmo();
+  /** TARJA DO SUPER (R-9, `Regras.ritmo.super`): congela 30 ticks — usada no lugar de `cine`/`faixaRitmo` quando `ev.super === true` (§3.2/§3.4). */
+  readonly tarjaDoSuper: TarjaDoSuper;
   readonly sessao: SessaoEspecial;
   /** ENTRADA DRAMÁTICA do chefão (apresentação pura, antes do 1º `game.update`: o motor e o lock-step não a veem). */
   readonly entrada: EntradaDoChefe;
@@ -111,8 +118,10 @@ export class CenaFight implements Cena {
   /** Eventos do tick do contato que esperam o filme: o pó da queda (na batida da queda) e o resto (KO, troca de barra, fim de round) para o fim. */
   private adiadosNaQueda: EventoLuta[] = [];
   private adiadosNoFim: EventoLuta[] = [];
-  /** GANCHO DE DESENVOLVIMENTO (`?filme=<lutador>:<golpe>`): injeta um evento `filme` falso no 1º tick da fase `fight`. Só no servidor de desenvolvimento. */
-  private filmeDev: { lutador: string; golpe: string } | null = null;
+  /** GANCHO DE DESENVOLVIMENTO (`?filme=<lutador>:<golpe>[:motivo[:luta]]`): injeta um evento `filme` falso no 1º tick da fase `fight`. Só no servidor de desenvolvimento. */
+  private filmeDev: ReturnType<typeof lerFilmeDev> = null;
+  /** GANCHO DE DESENVOLVIMENTO (`?super=<lutador>`): simula o `special` do super (`ev.super`) no 1º tick da fase `fight` — abre a tarja de 30 ticks. Só DEV. */
+  private superDev: { lutador: string } | null = null;
   /** A entrada ainda não começou nesta luta (espera a arte ficar pronta)? */
   private entradaPendente = false;
   /** A música está a 50% por causa da cinemática? */
@@ -141,6 +150,7 @@ export class CenaFight implements Cena {
         tocarReceita(sintetizador(), momento === 'abertura' ? id.abertura : id.batida);
       },
     });
+    this.tarjaDoSuper = new TarjaDoSuper({ rng: ui.c.rngVisual });
     this.entrada = new EntradaDoChefe({
       aoSom: (som) =>
         tocarReceita(sintetizador(), som === 'faixas' ? SOM_DAS_FAIXAS : som === 'cartao' ? SOM_DO_CARTAO : som === 'assinatura' ? this.entrada.assinatura : somDoBraseiro(som.braseiro)),
@@ -175,6 +185,8 @@ export class CenaFight implements Cena {
         this.adiadosNaQueda = [];
         this.reagirAosEventos(lista);
       },
+      // R-9 (`ritmo.super`, §3.3): pular a partir do tick 6 em vez do 10 de hoje. `Regras.ritmo` não muda durante a luta.
+      ...(ui.c.regras.ritmo?.super === true ? { ticksParaPular: TICKS_PARA_PULAR_RITMO } : {}),
     });
     this.sessao = new SessaoEspecial({
       rng: ui.c.rngVisual,
@@ -317,6 +329,7 @@ export class CenaFight implements Cena {
     this.espera.iniciar(this.ui.m, a.cfg);
     this.prebuscarProximoRival(a);
     this.filmeDev = import.meta.env.DEV && typeof window !== 'undefined' ? lerFilmeDev(window.location.search) : null;
+    this.superDev = import.meta.env.DEV && typeof window !== 'undefined' ? lerSuperDev(window.location.search) : null;
     this.carregarFolhasDoFilme(a);
     game.setup(a.cfg, persist.settings);
     if (a.cfg.keepScore && a.run) game.p1.score = a.run.score;
@@ -325,6 +338,7 @@ export class CenaFight implements Cena {
     this.ultimoTick = game.tick;
     this.cine.zerarLuta();
     this.faixaRitmo.zerarLuta();
+    this.tarjaDoSuper.zerarLuta();
     this.sessao.zerarLuta();
     if (this.ritmo) {
       for (const motivo of Object.keys(this.ritmo.porMotivo) as (keyof typeof this.ritmo.porMotivo)[]) this.ritmo.porMotivo[motivo] = 0;
@@ -336,6 +350,7 @@ export class CenaFight implements Cena {
     this.baixarMusica(false);
     this.botaoEsqSem = null;
     this.botaoEspSem = null;
+    this.botaoSupSem = null;
     this.atualizarBotaoEsquiva();
     this.entrada.zerar();
     this.provocacao.zerar();
@@ -519,6 +534,7 @@ export class CenaFight implements Cena {
 
   /** Os eventos do tick: a sessão dos acertos e a abertura da cinemática (no início do golpe, ou no SUCESSO da PARADE/GARKUWA). */
   private reagirAoEspecial(ev: EventoLuta): void {
+    if (this.reagirAoSuper(ev)) return;
     const modo = this.modoDaCine();
     if (modo === null) return;
     const { game, elenco } = this.ui.m;
@@ -532,14 +548,32 @@ export class CenaFight implements Cena {
       abrir = { lutador: ev.lutador, golpe: ev.golpe, ficha: game.fighters[ev.lutador].ficha ?? null, ...(ev.quadro ? { quadro: ev.quadro } : {}), ...(ev.entrada ? { entrada: ev.entrada } : {}) };
     }
     if (!abrir) return;
-    // R-2 (`Regras.ritmo.tarja`): o especial comum deixa de congelar — a MESMA faixa, sem pausar a cena (nenhum `super` existe ainda no
-    // motor, então todo especial cai aqui enquanto a flag estiver ligada; o `cine` congelante fica de reserva para o rollback).
+    // R-2 (`Regras.ritmo.tarja`): o especial comum deixa de congelar — a MESMA faixa, sem pausar a cena (o super, acima, nunca cai aqui:
+    // `reagirAoSuper` já tratou e voltou antes de chegar neste ponto).
     if (this.ui.c.regras.ritmo?.tarja === true) {
       this.faixaRitmo.iniciar({ lutador: abrir.lutador, golpe: abrir.golpe, ficha: abrir.ficha ?? null });
       return;
     }
     this.cine.iniciar(abrir, modo);
     this.baixarMusica(true);
+  }
+
+  /**
+   * R-9 (`Regras.ritmo.super`, §3.2/§3.4): o `special` do super (os dois botões juntos, barra cheia) abre a `TarjaDoSuper` —
+   * congela 30 ticks fixos, SEMPRE, mesmo com a cinemática do jogador desligada (K3: a tensão do super é aceita, não é
+   * cosmética). Devolve se tratou o evento (a cinemática/faixa comuns ficam de fora dele).
+   */
+  private reagirAoSuper(ev: EventoLuta): boolean {
+    if (this.ui.c.regras.ritmo?.super !== true) return false;
+    if (ev.tipo !== 'special' || ev.golpe === undefined) return false;
+    if (ev.super !== true) return false;
+    const { game } = this.ui.m;
+    const f = game.fighters[ev.lutador];
+    const ficha = ev.ficha ?? f.ficha ?? null;
+    const nome = superDoLutador(f.id, ficha)?.nome ?? ev.golpe;
+    this.tarjaDoSuper.iniciar({ lutador: ev.lutador, golpe: ev.golpe, ficha, nome });
+    this.baixarMusica(true);
+    return true;
   }
 
   update(): void {
@@ -576,14 +610,25 @@ export class CenaFight implements Cena {
       this.passoDoFilme();
       return;
     }
+    // TARJA DO SUPER (R-9, `ritmo.super`): congela, como a cinemática — mas é uma classe à parte (visual diferente, §3.2/§3.4).
+    // Não pula: 30 ticks já é o orçamento curto do §5.1 G3 (ao contrário do FILME, que vem depois e É pulável).
+    if (this.tarjaDoSuper.ativa) {
+      this.registrarRitmo('flash-super');
+      this.tarjaDoSuper.avancar();
+      return;
+    }
     if (this.cine.ativa) {
-      this.registrarRitmo('tarja'); // flash-super entra com o R-7 (motor): ainda não existe super
+      this.registrarRitmo('tarja');
       this.passoDaCinematica();
       return;
     }
     const { game, efeitos, petalasLuta } = this.ui.m;
     // abertura da luta: pinta as tarjas dos especiais (uma por tick), fora do caminho do primeiro especial
     if (this.aquecendo && this.modoDaCine() !== null) this.aquecendo = this.cine.aquecer(game, this.ui.m.elenco);
+    if (this.superDev && game.phase === 'fight') {
+      this.dispararSuperDev();
+      return;
+    }
     if (this.filmeDev && game.phase === 'fight') {
       this.dispararFilmeDev();
       return;
@@ -644,11 +689,22 @@ export class CenaFight implements Cena {
     }
   }
 
-  /** O modo do filme: COMPLETA, ou CURTA na repetição do mesmo especial na luta (D-V4), no TREINO (D-V5) e com a cinemática CURTA, DESLIGADA ou movimento reduzido. */
-  private modoDoFilme(chave: string): ModoFilme {
+  /**
+   * O modo do filme: COMPLETA, ou CURTA na repetição do mesmo especial na luta (D-V4), no TREINO (D-V5) e com a cinemática CURTA, DESLIGADA
+   * ou movimento reduzido. R-9 (§3.3): quando o evento traz `motivo` (Vega, `ritmo.filmeRestrito`/`ritmo.super`), a tabela do §3.3 manda em
+   * vez da heurística de hoje — 'super': COMPLETO na 1ª vez DAQUELE super na luta, CURTO depois (mesma marca de "visto", por motivo: um super
+   * reaproveita o golpe de um especial que já tenha aberto filme de KO, e as duas primeiras vezes não podem se confundir); 'ko': COMPLETO só
+   * se este acerto decidiu a LUTA (`game.matchWinner` já sai setado de `resolverVidaZerada`, antes do evento `filme`), CURTO no KO de um round
+   * só. TREINO continua sempre CURTO (D-V5; em treino o motor nunca mata, então 'ko' nem chega aqui — só 'super' pode, e cai nesta regra).
+   */
+  private modoDoFilme(chave: string, ev: EventoFilme): ModoFilme {
     const repetido = this.filmesVistos.has(chave);
     this.filmesVistos.add(chave);
-    return this.modoDaCine() === 'completa' && !repetido && !this.ui.m.game.training ? 'completa' : 'curta';
+    const { game } = this.ui.m;
+    if (this.modoDaCine() !== 'completa' || game.training) return 'curta';
+    if (ev.motivo === 'super') return repetido ? 'curta' : 'completa';
+    if (ev.motivo === 'ko') return game.matchWinner !== null ? 'completa' : 'curta';
+    return repetido ? 'curta' : 'completa';
   }
 
   /** Abre o filme de um evento `filme` do motor (ou do gancho de desenvolvimento). A luta já está no estado final; a cena só deixa de chamar `game.update`. */
@@ -662,7 +718,7 @@ export class CenaFight implements Cena {
     this.filme.iniciar({
       ev,
       roteiro,
-      modo: this.modoDoFilme(`${fa.id}|${ev.ficha ?? ''}|${ev.golpe}`),
+      modo: this.modoDoFilme(`${fa.id}|${ev.ficha ?? ''}|${ev.golpe}|${ev.motivo ?? ''}`, ev),
       rivalAntes: antes ?? this.antesDoTick?.[ev.defensor] ?? { hp: rival.hp, hpShown: rival.hpShown, barras: rival.barras },
       cor: identidadeDe(fa.id, ev.ficha, ev.golpe)?.paleta.brilho ?? ch.fire[0],
       alturaDoAtacante: alturaDoLutador(ch),
@@ -723,6 +779,8 @@ export class CenaFight implements Cena {
     d.x = clamp(a.x + a.facing * (def.distancia ?? 150), 150, 810);
     if (!projetil) a.x = clamp(d.x - a.facing * (def.distancia ?? 150), 60, 900);
     const depois = { atacante: pos(a), defensor: pos(d) };
+    // R-9 (DEV): `?filme=lutador:golpe:super` ou `:ko[:luta]` simula o `motivo` do R-6/R-7 (ainda sem o motor real) para provar `modoDoFilme`.
+    if (alvo.motivo === 'ko' && alvo.decideALuta) game.matchWinner = a.indice;
     const ev: EventoFilme = {
       tipo: 'filme',
       atacante: a.indice,
@@ -732,13 +790,32 @@ export class CenaFight implements Cena {
       projetil,
       dano,
       contragolpe: false,
-      ko: false,
+      ko: alvo.motivo === 'ko',
       trocaDeBarra: false,
       final: def.final ?? 'derruba',
       antes,
       depois,
+      ...(alvo.motivo ? { motivo: alvo.motivo } : {}),
     };
     this.comecarFilme(ev, hpAntes);
+  }
+
+  /**
+   * GANCHO DE DESENVOLVIMENTO (`?super=<lutador>`): simula o `special` do super (barra cheia, os dois botões) e entrega a `reagirAoSuper` —
+   * a MESMA tarja que o jogo real abriria quando `ev.super === true` chegar (R-7). Não toca o `hp`/`en` do motor: só a tarja, para medir e
+   * capturar a geometria/tempo dela sem depender do motor real. Precisa de `Regras.ritmo.super` (`?ritmo=super` ou `?ritmo=1`) para aparecer.
+   */
+  private dispararSuperDev(): void {
+    if (!import.meta.env.DEV) return; // o corpo inteiro sai do bundle de produção
+    const alvo = this.superDev;
+    this.superDev = null;
+    if (!alvo) return;
+    const { game } = this.ui.m;
+    const indice: IndiceLutador = game.p2.id === alvo.lutador && game.p1.id !== alvo.lutador ? 1 : 0;
+    const a = game.fighters[indice];
+    const golpe = superDoLutador(a.id, a.ficha ?? null)?.golpe;
+    if (!golpe) return;
+    this.reagirAoSuper({ tipo: 'special', lutador: indice, pitch: 0, golpe, ficha: a.ficha ?? null, super: true });
   }
 
   /** Guarda o que a provocação precisa dos eventos: quem ganhou o round, se foi por tempo e a abertura do round 2+ (abre no mesmo tick, com o motor parado). */
@@ -772,23 +849,37 @@ export class CenaFight implements Cena {
     }
     const custo = chDaFicha(this.ui.m.elenco[p1.id].ch, p1.ficha).proj.cost;
     const semEsp = p1.en < custo;
-    if (semEsp === this.botaoEspSem) return;
-    const acendeu = this.botaoEspSem === true && !semEsp;
-    this.botaoEspSem = semEsp;
-    const r1 = document.getElementById('r1');
-    r1?.classList.toggle('sem', semEsp);
-    if (this.fimDoAcendeu !== null) clearTimeout(this.fimDoAcendeu);
-    this.fimDoAcendeu = null;
-    r1?.classList.remove('acendeu');
-    if (acendeu && r1) {
-      // reinicia a animação mesmo se a classe já tivesse estado ligada (força o recálculo de estilo antes de pô-la de volta)
-      void r1.offsetWidth;
-      r1.classList.add('acendeu');
-      this.fimDoAcendeu = setTimeout(() => {
-        this.fimDoAcendeu = null;
-        r1.classList.remove('acendeu');
-      }, 220);
+    if (semEsp !== this.botaoEspSem) {
+      const acendeu = this.botaoEspSem === true && !semEsp;
+      this.botaoEspSem = semEsp;
+      this.fimDoAcendeu = this.atualizarBotaoComAcendeu('r1', semEsp, acendeu, this.fimDoAcendeu);
     }
+    // R-9 (`ritmo.super`): o SUPER só "pronto" com a barra CHEIA (D-R1, `en === 100` — o custo do super inteiro, não o do especial).
+    if (this.ui.c.regras.ritmo?.super === true) {
+      const semSup = p1.en < 100;
+      if (semSup !== this.botaoSupSem) {
+        const acendeu = this.botaoSupSem === true && !semSup;
+        this.botaoSupSem = semSup;
+        this.fimDoAcendeuSup = this.atualizarBotaoComAcendeu('sup', semSup, acendeu, this.fimDoAcendeuSup);
+      }
+    }
+  }
+
+  /** `#r1`/`#sup`: alterna `.sem` e, ao ficar pronto (`acendeu`), reinicia o estalo `.acendeu` (220 ms). Devolve o novo timer (para o campo do chamador). */
+  private atualizarBotaoComAcendeu(id: string, sem: boolean, acendeu: boolean, timerAtual: ReturnType<typeof setTimeout> | null): ReturnType<typeof setTimeout> | null {
+    const el = document.getElementById(id);
+    el?.classList.toggle('sem', sem);
+    if (timerAtual !== null) clearTimeout(timerAtual);
+    el?.classList.remove('acendeu');
+    if (!acendeu || !el) return null;
+    // reinicia a animação mesmo se a classe já tivesse estado ligada (força o recálculo de estilo antes de pô-la de volta)
+    void el.offsetWidth;
+    el.classList.add('acendeu');
+    return setTimeout(() => {
+      if (id === 'r1') this.fimDoAcendeu = null;
+      else this.fimDoAcendeuSup = null;
+      el.classList.remove('acendeu');
+    }, 220);
   }
 
   /**
@@ -975,6 +1066,7 @@ export class CenaFight implements Cena {
     // a cinemática por cima do mundo; fora dela, a sessão dos acertos (números, "N HITS" e a vinheta de 20%)
     if (vistaDoFilme) this.filme.desenhar(ctx, vistaDoFilme, m.elenco);
     else if (pv) this.provocacao.desenhar(ctx, game, m.elenco, pv, this.limiteDireitoDosBaloes());
+    else if (this.tarjaDoSuper.ativa) this.tarjaDoSuper.desenhar(ctx, game, m.elenco);
     else if (this.cine.ativa) this.cine.desenhar(ctx, game, m.elenco);
     else if (!q) {
       this.sessao.desenhar(ctx, game, m.elenco);
@@ -985,9 +1077,9 @@ export class CenaFight implements Cena {
       if (fala && c && game.phase === 'matchend' && game.matchWinner === c.indice && !game.matchDone && this.queroProvocar('vitoria')) fala = null;
       if (fala) desenharLegenda(ctx, fala, Math.min(1, game.t / 12));
     }
-    // FAIXA DO RITMO (R-2): por cima de tudo, independente do resto (a luta continua jogável enquanto ela aparece; `cine` e `pv` nunca
-    // coexistem com ela, porque `reagirAoEspecial` escolhe um ou outro pela flag).
-    this.faixaRitmo.desenhar(ctx, game, m.elenco, this.cine);
+    // FAIXA DO RITMO (R-2): por cima de tudo, independente do resto (a luta continua jogável enquanto ela aparece; `cine`, `tarjaDoSuper`
+    // e `pv` nunca coexistem com ela, porque `reagirAoEspecial`/`reagirAoSuper` escolhem um só pela flag).
+    this.faixaRitmo.desenhar(ctx, game, m.elenco);
     if (!this.paused) {
       if (game.training && game.phase === 'fight' && game.t < 400) {
         f.T('ESC pausa  •  R reposiciona  •  T troca o alvo', W / 2, H - 56, 13, '#cfd6f5', 'center', { alpha: 1 - game.t / 400 });
@@ -1037,11 +1129,19 @@ export class CenaFight implements Cena {
       f.A(game.p1.ch.name, W / 2, 80, 24, P_COL[0], '#000');
       // V2-4 (§6.2): no TREINO com a regra dos combos próprios ligada, a lista dos combos do lutador ocupa o lugar da dica genérica
       const combos = game.training && game.combosLigados ? combosDoLutador(m.elenco[game.p1.ch.id].ch) : [];
-      const rowH = combos.length > 0 ? Math.min(50, Math.floor((500 - alturaDosCombos(combos.length) - 6 - 100 + 5) / 7)) : 50;
+      // R-9 (`ritmo.super`, §3.3 "TREINO: só o super"): a linha "SUPER · <nome>" soma à altura dos combos (nome vem de `src/data/supers.ts` (Vega, R-7)).
+      const superNome = game.training && this.ui.c.regras.ritmo?.super === true ? superDoLutador(game.p1.ch.id, game.p1.ficha ?? null)?.nome ?? null : null;
+      const alturaExtra = alturaDosCombos(combos.length) + (combos.length > 0 && superNome ? 6 : 0) + (superNome ? ALTURA_DA_CAIXA_DE_COMBO : 0);
+      const rowH = alturaExtra > 0 ? Math.min(50, Math.floor((500 - alturaExtra - 6 - 100 + 5) / 7)) : 50;
       desenharLinhasDeGolpes(f, m, game.p1.ch.id, 60, 100, W - 120, 1, rowH);
-      if (combos.length > 0) {
-        desenharCombos(f, combos, game.p1.ch.accent, 60, 100 + 7 * rowH - 5 + 6, W - 120, 1);
-        f.hint(DICA_DOS_COMBOS + '     ESC voltar');
+      if (alturaExtra > 0) {
+        let y = 100 + 7 * rowH - 5 + 6;
+        if (combos.length > 0) {
+          desenharCombos(f, combos, game.p1.ch.accent, 60, y, W - 120, 1);
+          y += alturaDosCombos(combos.length) + 6;
+        }
+        if (superNome) desenharLinhaDoSuper(f, superNome, 60, y, W - 120, 1);
+        f.hint((combos.length > 0 ? DICA_DOS_COMBOS : 'COMBO: soco fraco → chute fraco → soco forte → chute forte → especial (aperte o próximo botão ao acertar)') + '     ESC voltar');
         return;
       }
     }
@@ -1049,10 +1149,22 @@ export class CenaFight implements Cena {
   }
 }
 
-/** `?filme=<lutador>:<golpe>` (ex.: `?filme=hayato:sFire`) -> o alvo do gancho de desenvolvimento, ou null. */
-export function lerFilmeDev(busca: string): { lutador: string; golpe: string } | null {
+/**
+ * `?filme=<lutador>:<golpe>` (ex.: `?filme=hayato:sFire`) -> o alvo do gancho de desenvolvimento, ou null. R-9 (DEV, enquanto `src/data/supers.ts`
+ * não existe): dois segmentos extras simulam o `motivo` do evento `filme` (R-6/R-7) sem precisar do motor real — `:super` (ex.
+ * `?filme=hayato:sDown:super`) ou `:ko` (KO de round) / `:ko:luta` (KO que decide a partida, `ex. ?filme=hayato:sDown:ko:luta`).
+ */
+export function lerFilmeDev(busca: string): { lutador: string; golpe: string; motivo?: 'super' | 'ko'; decideALuta?: boolean } | null {
   const bruto = new URLSearchParams(busca).get('filme');
   if (!bruto) return null;
-  const [lutador, golpe] = bruto.split(':');
-  return lutador && golpe ? { lutador, golpe } : null;
+  const [lutador, golpe, motivoBruto, luta] = bruto.split(':');
+  if (!lutador || !golpe) return null;
+  const motivo = motivoBruto === 'super' || motivoBruto === 'ko' ? motivoBruto : undefined;
+  return { lutador, golpe, ...(motivo ? { motivo } : {}), ...(motivo === 'ko' && luta === 'luta' ? { decideALuta: true } : {}) };
+}
+
+/** `?super=<lutador>` (ex.: `?super=hayato`) -> o alvo do gancho de desenvolvimento do super (R-9), ou null. */
+export function lerSuperDev(busca: string): { lutador: string } | null {
+  const lutador = new URLSearchParams(busca).get('super');
+  return lutador ? { lutador } : null;
 }

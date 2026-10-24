@@ -84,25 +84,28 @@ export function ligarToque(op: OpcoesToque): (() => void) | null {
     desfazer.push(() => el.removeEventListener(tipo, ouvinte));
   };
 
-  // botões: cada um aperta a tecla do seu data-k
+  // botões: cada um aperta a(s) tecla(s) do seu data-k (R-9: o SUPER tem duas, "x,v" = SFT+CFT juntas)
   doc.querySelectorAll<HTMLElement>('#touch .b').forEach((el) => {
-    const tecla = el.getAttribute('data-k');
-    if (!tecla) return;
+    const bruto = el.getAttribute('data-k');
+    if (!bruto) return;
+    const teclas = bruto.split(',');
     let preso = false;
     const descer = (e: TouchEvent): void => {
       e.preventDefault();
       if (preso) return;
       preso = true;
       el.classList.add('on');
-      op.teclas.definir(tecla, true);
-      op.aoTecla(tecla);
+      for (const tecla of teclas) {
+        op.teclas.definir(tecla, true);
+        op.aoTecla(tecla);
+      }
     };
     const subir = (e: TouchEvent): void => {
       e.preventDefault();
       if (!preso) return;
       preso = false;
       el.classList.remove('on');
-      op.teclas.definir(tecla, false);
+      for (const tecla of teclas) op.teclas.definir(tecla, false);
     };
     ouvir(el, 'touchstart', descer);
     ouvir(el, 'touchend', subir);

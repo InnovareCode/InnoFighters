@@ -97,6 +97,8 @@ async function iniciar(): Promise<void> {
   );
   // sem a mecânica da ESQUIVA (?expansao=4) o botão ESQ do toque some (a casa fica; ver toque.css)
   document.body.classList.toggle('sem-esquiva', !regras.esquiva);
+  // R-9: sem `Regras.ritmo.super` o botão SUPER do toque some (a casa fica, como a ESQUIVA acima; ver toque.css)
+  document.body.classList.toggle('sem-super', regras.ritmo?.super !== true);
 
   // ---- configurações, recorde e progresso (C4 v2, com a migração da v1 e da chave antiga) ----
   const armazenamento = obterArmazenamento();

@@ -6,8 +6,9 @@ import { desenharFundoMenu } from '../../render/cenario';
 import { desenharRetrato } from '../../render/retrato';
 import { FH } from '../../render/texto';
 import type { Navegador } from '../navegador';
-import { alturaDosCombos, combosDoLutador, combosLigados, desenharCombos } from '../combos-tela';
+import { alturaDosCombos, ALTURA_DA_CAIXA_DE_COMBO, combosDoLutador, combosLigados, desenharCombos, desenharLinhaDoSuper } from '../combos-tela';
 import { barrasDeStatus, desenharLinhasDeGolpes, P_COL, SCHEME } from '../personagens';
+import { superDoLutador } from '../../data/supers';
 import { NAV, type ArgsComo, type Cena } from '../tipos';
 
 /** A aba LUTADORES mostra o elenco em 2 colunas (cabe 4; para mais, a E4 reorganiza junto com a grade 3x3 da seleção). */
@@ -163,10 +164,18 @@ export class CenaHow implements Cena {
       f.T('↑ ↓ trocar de lutador', 920, y0 + 8, 13, '#cfd6f5', 'right');
       // V2-4 (§6.2): com a regra dos combos próprios ligada, a lista dos combos do lutador entra embaixo dos golpes (a legenda das teclas sobe)
       const combos = combosLigados(this.ui.c.regras) ? combosDoLutador(m.elenco[id].ch) : [];
-      if (combos.length > 0) {
-        const rowH = Math.min(49, Math.floor((500 - alturaDosCombos(combos.length) - 6 - (y0 + 26) + 5) / 7));
+      // R-9 (`ritmo.super`, §3.4): a linha "SUPER · <nome>" soma à altura dos combos (nome vem de `src/data/supers.ts` (Vega, R-7)).
+      const superNome = this.ui.c.regras.ritmo?.super === true ? superDoLutador(id, null)?.nome ?? null : null;
+      const alturaExtra = alturaDosCombos(combos.length) + (combos.length > 0 && superNome ? 6 : 0) + (superNome ? ALTURA_DA_CAIXA_DE_COMBO : 0);
+      if (alturaExtra > 0) {
+        const rowH = Math.min(49, Math.floor((500 - alturaExtra - 6 - (y0 + 26) + 5) / 7));
         desenharLinhasDeGolpes(f, m, id, 40, y0 + 26, 880, 1, rowH);
-        desenharCombos(f, combos, ch.accent, 40, y0 + 26 + 7 * rowH - 5 + 6, 880, 1);
+        let y = y0 + 26 + 7 * rowH - 5 + 6;
+        if (combos.length > 0) {
+          desenharCombos(f, combos, ch.accent, 40, y, 880, 1);
+          y += alturaDosCombos(combos.length) + 6;
+        }
+        if (superNome) desenharLinhaDoSuper(f, superNome, 40, y, 880, 1);
         f.T('Teclas do Jogador 1 (J2: W A S D + J K U I L)', 40, y0 + 8, 12, '#9fa6c9', 'left');
       } else {
         desenharLinhasDeGolpes(f, m, id, 40, y0 + 26, 880, 1, 49);

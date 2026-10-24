@@ -4,6 +4,7 @@ import { INPUT_VAZIO, type Configuracoes, type EventoLuta, type IdLutador, type 
 import { criarRng } from '../../src/core/rng';
 import { Game } from '../../src/fight/game';
 import { REGRAS_PADRAO, type Regras } from '../../src/meta';
+const REGRAS: Regras = { ...REGRAS_PADRAO, ritmo: {} }; // R-9: estas suites testam a Cinematica/Provocacao bloqueando de sempre (ritmo.tarja/provocacao agora vem ligado por padrao)
 import { Efeitos, CampoDePetalas } from '../../src/render/efeitos';
 import { DURACAO_COMPLETA, DURACAO_CURTA, TICKS_DA_SAIDA_AO_PULAR } from '../../src/render/cinematica';
 import type { Mundo } from '../../src/ui/contexto';
@@ -20,7 +21,7 @@ const IMG = { tag: 'atlas' } as unknown as CanvasImageSource;
 const arte = { pronta: true, imagemDe: () => IMG, silhuetaDe: () => IMG, retrato: () => null };
 const elenco = Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { ch, arte }])) as unknown as Elenco;
 
-function montar(settings: Partial<Configuracoes> = {}, regras: Regras = REGRAS_PADRAO, c1: IdLutador = 'hayato', c2: IdLutador = 'caio', mode: 'versus' | 'training' = 'versus') {
+function montar(settings: Partial<Configuracoes> = {}, regras: Regras = REGRAS, c1: IdLutador = 'hayato', c2: IdLutador = 'caio', mode: 'versus' | 'training' = 'versus') {
   // a cinemática do ESPECIAL é o assunto aqui: a PROVOCAÇÃO (balões do round 1, que levariam ~300 ticks antes da luta) fica desligada pela opção
   const n = navegadorFalso({ provocacoes: 'desligadas', ...settings }, regras);
   const frames: { p1: InputFrame; p2: InputFrame } = { p1: { ...INPUT_VAZIO }, p2: { ...INPUT_VAZIO } };
@@ -105,7 +106,7 @@ describe('cena da luta: a cinemática congela a CENA, não o motor', () => {
   });
 
   it('regras sem cinemática (?expansao=4): nenhuma, mesmo com a preferência COMPLETA salva', () => {
-    const t = montar({ cinematica: 'completa' }, { ...REGRAS_PADRAO, cinematica: false });
+    const t = montar({ cinematica: 'completa' }, { ...REGRAS, cinematica: false });
     t.ateLutar();
     t.soltarEspecial();
     expect(t.cena.cine.ativa).toBe(false);
@@ -159,7 +160,7 @@ describe('cena da luta: a cinemática congela a CENA, não o motor', () => {
   });
 
   it('dois especiais no mesmo tick: o 2º entra na fila, sai CURTO, e o motor segue parado até os dois acabarem', () => {
-    const t = montar({}, REGRAS_PADRAO, 'hayato', 'caio');
+    const t = montar({}, REGRAS, 'hayato', 'caio');
     t.ateLutar();
     t.game.p2.en = 100;
     t.game.p2.startMove('sFire', t.game);
@@ -177,7 +178,7 @@ describe('cena da luta: a cinemática congela a CENA, não o motor', () => {
   });
 
   it('o treino também tem cinemática (a preferência vale em todo modo)', () => {
-    const t = montar({}, REGRAS_PADRAO, 'hayato', 'caio', 'training');
+    const t = montar({}, REGRAS, 'hayato', 'caio', 'training');
     t.ateLutar();
     t.soltarEspecial();
     expect(t.cena.cine.ativa).toBe(true);
@@ -185,7 +186,7 @@ describe('cena da luta: a cinemática congela a CENA, não o motor', () => {
 
   it('o ConfigPartida da cena liga a esquiva a partir das regras', () => {
     expect(montar().game.esquivaLigada).toBe(true);
-    expect(montar({}, { ...REGRAS_PADRAO, esquiva: false }).game.esquivaLigada).toBe(false);
+    expect(montar({}, { ...REGRAS, esquiva: false }).game.esquivaLigada).toBe(false);
   });
 
   it('desenhar durante a cinemática e depois dela não quebra, e a cinemática desenha por cima do mundo', () => {

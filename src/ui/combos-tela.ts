@@ -171,3 +171,34 @@ export function desenharCombos(f: Ferramentas, combos: readonly ComboDaTela[], c
   });
   return alturaDosCombos(combos.length);
 }
+
+/** As duas teclas do SUPER (D-R1): SOCO FORTE + CHUTE FORTE juntas, com a barra cheia. */
+export const TECLAS_DO_SUPER: readonly TeclaLogica[] = ['hp', 'hk'];
+const COR_DO_SUPER = '#ff6ad5';
+
+/**
+ * A linha "SUPER · <nome>" (R-9, docs/spec-redesenho-jogabilidade.md §3.4): uma caixa do tamanho de uma caixa de combo, abaixo da lista deles,
+ * no TREINO e na aba GOLPES do "Como jogar" — mesma fonte/tamanho (Barlow 600, 15 px) e larguras medidas no navegador por Apolo
+ * (docs/supers-e-combos-v2.md §2: o maior nome, 20 caracteres, mede 164 px; sobra mais de 100 px para as duas teclas). Só aparece com
+ * `Regras.ritmo.super` (quem chama decide). Devolve a altura usada (igual a uma caixa de combo, para somar com `alturaDosCombos`).
+ */
+export function desenharLinhaDoSuper(f: Ferramentas, nome: string, x: number, y: number, largura: number, esquema: EsquemaTeclas = 1): number {
+  const altura = ALTURA_DA_CAIXA_DE_COMBO;
+  f.panel(x, y, largura, altura, { r: 6, c0: 'rgba(48,10,40,.9)', c1: 'rgba(20,4,18,.9)', stroke: COR_DO_SUPER, lw: 1 });
+  f.T(`SUPER · ${nome}`, x + 10, y + 13, 15, COR_DO_SUPER, 'left');
+  f.T('barra cheia', x + 10, y + 27, 10, '#cfd6f5', 'left', { shadow: false });
+  const rotulos = TECLAS_DO_SUPER.map((t) => rotuloDaTecla(t, 'teclado', esquema));
+  const total = rotulos.length * TECLA + Math.max(0, rotulos.length - 1) * 10;
+  let tx = x + largura - 10 - total;
+  rotulos.forEach((r, j) => {
+    f.keycap(r, tx, y + 4, TECLA, TECLA, true);
+    tx += TECLA;
+    if (j < rotulos.length - 1) {
+      f.T('+', tx + 5, y + 4 + TECLA / 2, 11, '#fff', 'center');
+      tx += 10;
+    }
+  });
+  const toque = TECLAS_DO_SUPER.map((t) => rotuloDaTecla(t, 'toque', esquema)).join(' + ');
+  f.T(`TOQUE: ${toque}`, x + 10, y + 39, 10, '#7fe3ff', 'left', { shadow: false });
+  return altura;
+}

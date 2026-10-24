@@ -33,3 +33,4 @@
 - [CAIO capoeira v1](project_caio_capoeira_v1.md) — alturaDoProjetil vazando pro oráculo, centro da caixa fixo (só bh espalha), harness filtrado enviesado
 - [R-3 filme não dispara](project_r3_filme_nao_dispara.md) — cfgMotorV2/engine/CenaFight provados corretos (teste permanente), causa fora do alcance de vitest
 - [R-6 intervalos + filme restrito](project_r6_intervalos_filme_restrito.md) — RitmoMotor em core (não meta), filme pendente até saber o kill, agarrão duplicado à mão, matchend não troca de fase
+- [R-7/R-7b super](project_r7_super.md) — super reusa o NomeGolpe de origem, superPreso agendado (N acertos, teto no total), filme só se matar, BAATAR/projétil mesmo modelo, --ritmo no harness

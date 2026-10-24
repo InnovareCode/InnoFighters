@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Elenco } from '../../src/assets/elenco';
+import { LARGURA } from '../../src/core/constantes';
 import type { IdLutador, LeituraLuta, LutadorLeitura } from '../../src/core/contratos';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { Cinematica } from '../../src/render/cinematica';
-import { ALTURA_FAIXA_RITMO, DURACAO_FAIXA_1A_VEZ, DURACAO_FAIXA_REPETIDA, FaixaRitmo, LARGURA_FAIXA_RITMO, Y_TOPO_FAIXA_RITMO } from '../../src/render/faixa-ritmo';
+import { ALTURA_FAIXA_RITMO, DURACAO_FAIXA_1A_VEZ, DURACAO_FAIXA_REPETIDA, FaixaRitmo, Y_TOPO_FAIXA_RITMO } from '../../src/render/faixa-ritmo';
 import type { Ctx } from '../../src/render/tela';
 
 const prod = montarElenco();
@@ -99,35 +99,62 @@ describe('FaixaRitmo (R-2, §3.2): o aviso do especial SEM congelar a luta', () 
   it('desenhar sem nada ativo não lança e não desenha nada', () => {
     const f = new FaixaRitmo();
     const g = gravador();
-    expect(() => f.desenhar(g.ctx, luta(), elenco, new Cinematica())).not.toThrow();
+    expect(() => f.desenhar(g.ctx, luta(), elenco)).not.toThrow();
     expect(g.chamadas.length).toBe(0);
   });
 
-  it('desenhar com algo ativo, já na "fica" (depois da entrada): pinta na faixa fixa (x centrado, y = topo, sem deslize)', () => {
-    const f = new FaixaRitmo();
-    f.iniciar({ lutador: 0, golpe: 'sFire' });
-    for (let i = 0; i < 10; i++) f.avancar(); // passa da janela de entrada (6 ticks): fica parada em y = Y_TOPO_FAIXA_RITMO
-    const g = gravador();
-    f.desenhar(g.ctx, luta(), elenco, new Cinematica());
-    expect(g.chamadas.length).toBeGreaterThan(0);
-    // translate(x, y): a 1ª chamada do fallback de pintarTarja (sem canvas, `fundo` é null em Node)
-    const translateCalls = g.chamadas.filter(([n]) => n === 'translate');
-    expect(translateCalls.length).toBeGreaterThan(0);
-    const [, x, y] = translateCalls[0] as [string, number, number];
-    expect(x).toBeCloseTo((960 - LARGURA_FAIXA_RITMO) / 2, 5);
-    expect(y).toBeCloseTo(Y_TOPO_FAIXA_RITMO, 5);
-  });
-
-  it('no 1º tick (t=0) a faixa ainda está entrando: bem mais acima do que na "fica" (desliza de cima para baixo)', () => {
+  it('a faixa (clip) cobre a LARGURA inteira, logo abaixo do HUD — a mesma área, entrando ou saindo', () => {
     const f = new FaixaRitmo();
     f.iniciar({ lutador: 0, golpe: 'sFire' });
     const g = gravador();
-    f.desenhar(g.ctx, luta(), elenco, new Cinematica());
-    const [, , y] = g.chamadas.find(([n]) => n === 'translate') as [string, number, number];
-    expect(y).toBeLessThan(Y_TOPO_FAIXA_RITMO - 50); // bem acima do repouso (90): ainda deslizando, não "parado"
+    f.desenhar(g.ctx, luta(), elenco);
+    const [, x, y, w, h] = g.chamadas.find(([n]) => n === 'rect') as [string, number, number, number, number];
+    expect(x).toBe(0);
+    expect(y).toBe(Y_TOPO_FAIXA_RITMO);
+    expect(w).toBe(LARGURA);
+    expect(h).toBe(ALTURA_FAIXA_RITMO);
   });
 
-  it('as constantes da geometria batem com a spec (§3.2: ~72 px de altura, a 0,55 de ALTURA_DA_TARJA)', () => {
-    expect(ALTURA_FAIXA_RITMO).toBe(73); // Math.round(132 * 0.55)
+  it('no 1º tick (t=0) a faixa ainda está ENTRANDO pela esquerda: o fundo nasce fora da tela (x bem negativo)', () => {
+    const f = new FaixaRitmo();
+    f.iniciar({ lutador: 0, golpe: 'sFire' });
+    const g = gravador();
+    f.desenhar(g.ctx, luta(), elenco);
+    const fundo = g.chamadas.find(([n, , y]) => n === 'fillRect' && y === Y_TOPO_FAIXA_RITMO) as [string, number, number, number, number];
+    expect(fundo[1]).toBeLessThan(-LARGURA * 0.5); // bem fora da tela à esquerda
+  });
+
+  it('depois da entrada (passado o 6º tick), a faixa está no lugar (x = 0, sem deslize)', () => {
+    const f = new FaixaRitmo();
+    f.iniciar({ lutador: 0, golpe: 'sFire' });
+    for (let i = 0; i < 10; i++) f.avancar(); // passa da janela de entrada (6 ticks)
+    const g = gravador();
+    f.desenhar(g.ctx, luta(), elenco);
+    const fundo = g.chamadas.find(([n, , y]) => n === 'fillRect' && y === Y_TOPO_FAIXA_RITMO) as [string, number, number, number, number];
+    expect(fundo[1]).toBe(0);
+  });
+
+  it('nos últimos ticks (saindo), volta a deslizar para a esquerda', () => {
+    const f = new FaixaRitmo();
+    f.iniciar({ lutador: 0, golpe: 'sFire' });
+    for (let i = 0; i < DURACAO_FAIXA_1A_VEZ - 1; i++) f.avancar(); // o último tick antes de fechar
+    const g = gravador();
+    f.desenhar(g.ctx, luta(), elenco);
+    const fundo = g.chamadas.find(([n, , y]) => n === 'fillRect' && y === Y_TOPO_FAIXA_RITMO) as [string, number, number, number, number];
+    expect(fundo[1]).toBeLessThan(0);
+  });
+
+  it('sempre desenha o nome do golpe (com ou sem rosto disponível)', () => {
+    const f = new FaixaRitmo();
+    f.iniciar({ lutador: 0, golpe: 'sDown' });
+    for (let i = 0; i < 10; i++) f.avancar();
+    const g = gravador();
+    f.desenhar(g.ctx, luta(), elenco);
+    expect(g.chamadas.some(([n]) => n === 'fillText')).toBe(true);
+  });
+
+  it('geometria: a faixa é alta o bastante para caber o rosto (§3.2, terço de cima) e começa logo abaixo do HUD', () => {
+    expect(ALTURA_FAIXA_RITMO).toBeGreaterThanOrEqual(120);
+    expect(Y_TOPO_FAIXA_RITMO).toBeGreaterThanOrEqual(80);
   });
 });

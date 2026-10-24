@@ -479,6 +479,8 @@ export type EventoLuta =
       nivelCarga?: 1 | 2 | 3;
       /** V2-3c: este acerto é o contato que abriu um FILME (vem sempre acompanhado do evento `filme`, logo depois). Ausente = acerto comum. */
       filme?: true;
+      /** R-7b (`ritmo.super`): este acerto é um dos N da sequência presa do super (`acertos` cresce a cada um; o último derruba). Ausente = fora de um super. */
+      super?: true;
     }
   | {
       /**
@@ -588,6 +590,8 @@ export type EventoSpecial = {
   momento?: MomentoCinematica;
   quadro?: string;
   entrada?: EntradaTarja;
+  /** R-7 (`ritmo.super`): este golpe é o SUPER do lutador (SOCO FORTE + CHUTE FORTE, barra cheia). Ausente = especial comum. */
+  super?: true;
 };
 
 /** Tudo o que render/ui/audio podem ler de uma luta em andamento. */

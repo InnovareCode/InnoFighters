@@ -6,6 +6,7 @@ import { INPUT_VAZIO, type IdLutador, type InputFrame } from '../../src/core/con
 import { criarRng } from '../../src/core/rng';
 import { Game } from '../../src/fight/game';
 import { REGRAS_PADRAO, type Regras } from '../../src/meta';
+const REGRAS: Regras = { ...REGRAS_PADRAO, ritmo: {} }; // R-9: estas suites testam a Cinematica/Provocacao bloqueando de sempre (ritmo.tarja/provocacao agora vem ligado por padrao)
 import { CampoDePetalas, Efeitos } from '../../src/render/efeitos';
 import type { Mundo } from '../../src/ui/contexto';
 import type { CenaFight } from '../../src/ui/cenas/fight';
@@ -21,7 +22,7 @@ const IMG = { tag: 'atlas' } as unknown as CanvasImageSource;
 const arte = { pronta: true, imagemDe: () => IMG, silhuetaDe: () => IMG, retrato: () => null };
 const elenco = Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { ch, arte }])) as unknown as Elenco;
 
-function montar(c1: IdLutador = 'hayato', c2: IdLutador = 'caio', regras: Regras = REGRAS_PADRAO, extra: { chefe?: boolean } = {}) {
+function montar(c1: IdLutador = 'hayato', c2: IdLutador = 'caio', regras: Regras = REGRAS, extra: { chefe?: boolean } = {}) {
   const n = navegadorFalso({ provocacoes: 'desligadas' }, regras);
   const frames: { p1: InputFrame; p2: InputFrame } = { p1: { ...INPUT_VAZIO }, p2: { ...INPUT_VAZIO } };
   (n.c as { entrada: unknown }).entrada = { lerP1: () => ({ ...frames.p1 }), lerP2: () => ({ ...frames.p2 }), lerMesclado: () => ({ ...frames.p1 }), fimDoTick: () => undefined };
@@ -91,11 +92,11 @@ describe('temas ligados (o padrão): o tema do ADVERSÁRIO', () => {
     expect(montar('caio', 'hayato').musicas()).toEqual(['tema:hayato']);
     expect(montar('hayato', 'hayato').musicas()).toEqual(['tema:hayato']); // espelho: o tema do lutador
     expect(montar('hayato', 'zenon').musicas()).toEqual(['chefe']);
-    expect(montar('hayato', 'caio', { ...REGRAS_PADRAO, temasMusicais: false }).musicas()).toEqual(['fight']);
+    expect(montar('hayato', 'caio', { ...REGRAS, temasMusicais: false }).musicas()).toEqual(['fight']);
   });
 
   it('o chefão ZENON continua com a valsa (e a troca de fase segue pelo evento `fase-chefe`, que já chama `musicaDaFase(2)`)', () => {
-    expect(montar('hayato', 'zenon', REGRAS_PADRAO, { chefe: true }).musicas()).toEqual(['chefe']);
+    expect(montar('hayato', 'zenon', REGRAS, { chefe: true }).musicas()).toEqual(['chefe']);
   });
 });
 

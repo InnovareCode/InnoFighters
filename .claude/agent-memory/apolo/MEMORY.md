@@ -15,5 +15,6 @@
 - [Roteiros do filme (V2-3b)](project_roteiros_filme.md) — 4 modelos; f0-f2 = sFire/sDown/sFwd; FILME 2048x1280 = 10 MiB; B sem guarda (eco)
 - [Curadoria FILME](project_curadoria_filme.md) — HAYATO + grupos A, B, C ok; AMINU/ZENON/BAATAR v2 curadas; painel 643x778 px (WC); f4 à direita = espelhar; regerar célula = folha inteira + WRONG, colar por máscara
 - [Nomes dos combos próprios](project_nomes_combos.md) — 20 nomes V2-4; nome e efeito dividem o vão até as teclas (416 px); campo efeito pendente
-- [CAIO capoeira (auditoria 24/10)](project_caio_capoeira.md) — mestra/BLOCO B em boxe = causa; mãos abertas; ref = idle0 f1 v2; f3 + CR2
+- [CAIO capoeira (auditoria 24/10)](project_caio_capoeira.md) — f3 v2 + CR2 curadas (§8); L1C1 ecoa a ref; compasso espelhar = dono
+- [Supers e partitura (R-5/R-13)](project_supers_partitura.md) — 12 supers; 20→17 combos; super aceito no 3º passo do BÁSICO; trailer: ninguém parado > 30 ticks
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

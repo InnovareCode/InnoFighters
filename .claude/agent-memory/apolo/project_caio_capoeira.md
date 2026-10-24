@@ -19,6 +19,13 @@ Dono reprovou o CAIO em 24/10/2026 ("nada a ver com capoeira"). Auditoria entreg
 - **Armadilhas para a Vega:** sa1 vira chute -> ponta `direita` e fixar `alturaDoProjetil` (spawn vem do tipY, montar.ts:215);
   recalibrar `caio-arte-calibrada.test.ts`.
 
+- **Curadoria f3 v2 + CR2 (24/10, relatório do CAIO §8):** as duas folhas aprovadas, 0 crédito. Mapa completo f1-f4 + cr2 no
+  §8.5 (provado com o `gerarLutador` e as exceções em memória, sem tocar no lutadores.json). **A célula L1C1 das DUAS folhas
+  voltou como eco da referência de ginga (5,5%)**: com a ref anexada, a 1ª célula de pose parecida com a ginga ecoa; descartar
+  e usar apelido. Punho do clp trocado por mão aberta (transplante do sa2 f4 v2, `caio-f3-mao-aberta.py`). Compasso saiu como aú
+  com pernas à esquerda: espelhado recomendado, mas é decisão do dono (ele vetou espelhar o sb2). `lp1` em base larga exige
+  ponta `mao:0.5` (a canela ganhava da palma).
+
 **Why:** a mesma mestra/BLOCO B contaminaria qualquer folha futura do CAIO (f5, vitória, provocação).
 **How to apply:** ao curar a f3 v2/CR2, reprovar qualquer punho fechado; jogo tem 4 botões (sem mp/mk). Ver
 [[project-curadoria-sprites]], [[project-curadoria-filme]], [[project-nomes-combos]].

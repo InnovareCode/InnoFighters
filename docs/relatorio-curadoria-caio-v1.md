@@ -495,3 +495,125 @@ Edit this exact image. Keep the pose, the body, the face, the hands, the white c
 | `arte-fonte/lutadores/caio/folhas/caio-f1-base-v2.png` | **novo**, f1 ginga sem a linha de chão (promoção) |
 | `arte-fonte/ferramentas-curadoria/caio-f1-tirar-linha.py` | **novo**, a limpeza da seção 7.2 |
 | `ferramentas/sprites/lutadores.json` | `celulas.f1` e `_nota` do `caio` |
+
+---
+
+## 8. Capoeira: f3 v2 e CR2 (24/10/2026)
+
+O dono aprovou as duas folhas geradas com o BLOCO B-capoeira (`docs/caio-capoeira-auditoria.md` §5.3). Curadoria **sem
+crédito**: um transplante de mão, troca de mapa e um espelho opcional. Nada foi gerado.
+
+### 8.1 f3 capoeira (`_candidatas/caio-f3-golpes-capoeira-v1.png` → `folhas/caio-f3-golpes-v2.png`)
+
+| Célula | Pedido | Veredito | Decisão |
+|---|---|---|---|
+| L1C1 | preparo da galopante | **eco** da referência de ginga (5,5% de máscara contra o `idle0`; a menor respiração é 32,6%) | descartada (`null`) |
+| L1C2 | galopante | guarda de mãos abertas, sem o arco do tapa | **vira `lp0`** (preparo: mãos abertas no alto) |
+| L1C3 | preparo da cabeçada | ok | `hp0` |
+| L1C4 | cabeçada | corpo a ~35° (o pedido era quase horizontal), mas a cabeça é o ponto mais à frente e os braços vão para trás | **aproveitada** (`hp1`; a ponta `mao` cai na cabeça, medido) |
+| L2C1 / L2C2 | bênção | ok, sola de frente | `lk0` / `lk1` |
+| L2C3 / L2C4 | armada | ok, de costas, perna reta na altura da cabeça | `hk0` / `hk1` |
+| L3C1 | cotovelada baixa | **punho fechado** na mão de trás; e não é cotovelada (braço estendido) nem agachada (515 px contra 450 do `crouch`) | **corrigida por código**: mão aberta (palma, dedos para cima) transplantada do `sa2` da f4 v2 (escala 1,05, giro 18°, cor ajustada a 70%, rampa de 8 px no pulso). Fica `clp` como **palmada baixa** |
+| L3C2 | chapa baixa | ok | `clk` |
+| L3C3 | rasteira | ok, perna esticada à **direita** | `sweep` (`chk`) |
+| L3C4 | queixada | ok, perna reta acima da cabeça, à direita | `upper` (`chp`) |
+
+O `lp1` (galopante ativa) sai da CR2 L3C1 (8.2): braço estendido, palma aberta na altura do rosto, a outra mão atrás.
+
+### 8.2 CR2 (`_candidatas/caio-cr2-capoeira-v1.png` → `folhas/caio-cr2-capoeira-v1.png`, cópia idêntica)
+
+| Célula | Pedido | Veredito | Decisão |
+|---|---|---|---|
+| L1C1 | início da meia-lua (`sa0`) | **eco** da referência (5,5%) | descartada. `sa0` = **apelido do `sa2`** (joelho alto: o mesmo desenho serve à subida e à descida da perna) |
+| L1C2 | meia-lua no topo (`sa1`) | ok, perna à direita, sola de frente | `sa1`, ponta `direita` (o pé) |
+| L1C3 | depois da meia-lua (`sa2`) | ok | `sa2` (+ apelido `sa0`) |
+| L1C4 | vitória | ok, palma para cima e sorriso (42% contra a referência) | `win` |
+| L2C1 / L2C2 | compasso | os dois saíram como **aú**: mão no chão à direita, pernas passando no alto **à esquerda** | **L2C2** (perna mais alta, mais "por cima"). Ver 8.3 |
+| L2C3 / L2C4 | voo do morcego (2 pés) | saiu com **uma perna só**, esticada para cima e à direita | **L2C3** (`jkick`). Voadora de uma perna serve ao `jkick`; "voo do morcego" deixa de valer para a arte |
+| L3C1 / L3C2 | esquiva | L3C1: palma à frente, tronco ereto (33,5% contra a referência, no limite do eco). L3C2: antebraço diante do rosto, tronco desviando (44,9%) | **L3C2 = `block`**; **L3C1 = `lp1`** |
+| L3C3 | `jtop` | ok | `jtop` |
+| L3C4 | `jup` | ok. Os dedos do pé param a 3 px da base, com contorno fechado (não está cortado) | `jup`. O aviso "encosta na borda" some com `acolchoar.cr2.base 6` |
+
+### 8.3 Compasso (`sc1`): fase do giro ou espelho?
+
+- **Como está:** serve como fase do giro (o aú passando por cima). Mas o `sc1` é o **primeiro quadro ativo** do `sFwd`, e a
+  caixa nasce da ponta dele (`montar.ts:166-167`). Com a ponta `direita`, a ponta cai nos dreads, a 62% da altura
+  (`[355, 228.7]` de 366): a caixa desce para a altura da cabeça dele, de ponta-cabeça. Espelhar só a perna não dá, porque o
+  quadril e o tronco giram junto.
+- **Espelhado (0 crédito):** a perna reta passa por cima e o calcanhar desce à **direita**: é o compasso batendo. A ponta
+  `direita` cai no calcanhar, no alto (`[355, 17.9]`). O rosto fica de frente para a câmera nas duas versões. Arquivo
+  pronto em `_candidatas/caio-cr2-capoeira-v2-sc1-espelhado.png` (só a célula L2C2 espelhada).
+- **Recomendo o espelhado**, mas a decisão é do dono: ele vetou espelhar o `sb2`. Se aprovar, copiar para
+  `folhas/caio-cr2-capoeira-v2.png` (o `acharFolha` pega o maior -vN) ou fixar em `arquivos.cr2`.
+
+### 8.4 C1 e C2 (só mapa, sem pixel novo)
+
+- **C1:** `cblock` = apelido do `crouch` (`["crouch", "cblock"]` na f2).
+- **C2:** `sb3` = apelido do `idle0` e `sa3` = apelido do `idle1`, na f1. O apelido usa o mesmo retângulo e, com ele, a
+  âncora `pes` do idle: a volta para a ginga não pula. Não é preciso uma `f4 v3`.
+
+### 8.5 Mapa completo para a Vega (`ferramentas/sprites/lutadores.json`, entrada `caio`)
+
+```json
+"celulas": {
+  "f1": [["idle0", "sb3"], ["idle1", "sa3"], "idle2", "idle3", "walk0", "walk1", "walk2", "walk4", "walk3", "walk7", "walk6", "walk5"],
+  "f2": [["crouch", "cblock"], null, null, "jsquat", null, null, "jfall", "land", "hitH", "hitB", "kdAir", "koFloor"],
+  "f3": [null, "lp0", "hp0", "hp1", "lk0", "lk1", "hk0", "hk1", "clp", "clk", "sweep", "upper"],
+  "f4": [null, null, null, null, "sb0", "sb1", "sb2", null, "sc0", null, null, null]
+},
+"folhasExtras": {
+  "cr2": { "grade": [4, 3], "celulas": [null, "sa1", ["sa2", "sa0"], "win", null, "sc1", "jkick", null, "lp1", "block", "jtop", "jup"] }
+},
+"acolchoar": { "f2": { "topo": 6 }, "cr2": { "base": 6 } },
+"ponta": { "sb1": "direita", "sb2": "nenhuma", "sc1": "direita", "sa1": "direita", "lp1": "mao:0.5" }
+```
+
+- Nomes do motor: `clp1` = `clp`, `clk1` = `clk`, `chp1` = `upper`, `chk1` = `sweep` (`anim.ts:14-17`).
+- **`lp1: "mao:0.5"` é obrigatório:** no modo `mao`, a canela da frente passa da palma e a ponta caía a 69% da altura
+  (`[332, 258]`). Com `mao:0.5`, a ponta vai para a palma (`[324, 52]`).
+- O `acharFolha` pega sozinho `caio-f3-golpes-v2.png` (v2 > v1) e `caio-cr2-capoeira-v1.png`. f1, f2 e f4 seguem na v2.
+
+### 8.6 Checklist §5.3 (medido)
+
+| Item | f3 v2 | CR2 |
+|---|---|---|
+| 12 componentes, nenhum pequeno (linha de chão, rastro) | 12, 0 | 12, 0 |
+| Linha de chão | não há | não há |
+| Escala | o L1C1 (eco) contra o `idle0` da f1 v2: altura 98,4%, pé de trás 68/69, pé da frente 100/102 → ~98%. Pé de trás de perfil: 55–60 px | pé de trás 66–70, da frente 97–102, igual à f1. **Sem `fatorFolha`** |
+| Eco contra `caio-ref-ginga-v1` | L1C1 é eco (descartada); as demais vão de 38,6% a 76% | L1C1 é eco (descartada); L3C1 dá 33,5% (no limite, usada como `lp1`: o braço é outro); as demais vão de 42% a 73% |
+| Perna da rasteira e da queixada à direita | sim (L3C3, L3C4) | `sa1` à direita: sim |
+| Nenhum punho fechado no resultado final | **sim**, depois do transplante no L3C1. No L2C1, a mão de trás está curvada segurando o cotovelo (não é punho) | sim |
+
+### 8.7 Prova no pipeline real
+
+`gerarLutador` com o mapa de 8.5 e as exceções passadas em memória, saída só no scratchpad. O `lutadores.json` não foi
+tocado. Resultado: 12 componentes em cada uma das 4 folhas e na cr2, e todas as poses presentes. O único aviso novo é o do
+`jup`, que o `acolchoar` resolve.
+
+| Pose | Ponta (atlas) | Comentário |
+|---|---|---|
+| `lp1` | `[324, 52]` de 377 | palma na altura do rosto (com `mao:0.5`) |
+| `hp1` | `[410, 68]` de 355 | topo da cabeça |
+| `clp` | `[300, 117]` de 370 | palma na altura do peito |
+| `sa1` | `[299, 61]` de 407 | pé no alto: **fixar `alturaDoProjetil`** (auditoria §6.2) |
+| `sc1` | `[355, 229]`; espelhado `[355, 18]` | ver 8.3 |
+| `jkick` | `[417, 51]` de 305 (antes `[332, 237]` de 428) | a caixa **sobe**, porque o pé está no alto do quadro. Conferir no harness se o pulo ainda acerta quem está agachado |
+| `sweep` | `[417, 234]` de 306 | pé rente ao chão |
+
+### 8.8 Resíduos conhecidos (sem crédito, não bloqueiam)
+
+- **`clp` em pé:** 370 px no atlas, contra 324 do `crouch`. Do agachado, ele "sobe" para dar a palmada. A cotovelada
+  agachada de verdade fica para a f5 do CAIO, junto com a banda e o aú (auditoria §5.4).
+- **`lp0`/`lp1` sem o arco do tapa:** a galopante lê como palmada de frente (mãos abertas no alto, depois o braço estendido).
+- **`jkick` de uma perna, apontando para cima:** a arte não tem mais o "voo do morcego" com os dois pés.
+- **Calibração:** o `caio-arte-calibrada.test.ts` vai acusar, porque `lp1`, `clp`, `sc1`, `jkick` e `block` mudaram de
+  largura. Recalibrar `rm`/`bh` para a largura de hoje e rodar o harness (auditoria §6.3).
+
+### 8.9 Arquivos
+
+| Arquivo | O quê |
+|---|---|
+| `arte-fonte/lutadores/caio/folhas/caio-f3-golpes-v2.png` | **novo**: f3 capoeira com a mão aberta no L3C1 |
+| `arte-fonte/lutadores/caio/folhas/caio-cr2-capoeira-v1.png` | **novo**: cópia idêntica da CR2 aprovada (md5 `e440fe9e…`) |
+| `arte-fonte/lutadores/caio/folhas/_candidatas/caio-cr2-capoeira-v2-sc1-espelhado.png` | **novo, opcional**: CR2 com o compasso espelhado (decisão do dono) |
+| `arte-fonte/ferramentas-curadoria/caio-f3-mao-aberta.py` | **novo**: o transplante (`python -P caio-f3-mao-aberta.py <f3> <f4v2> <saida> 1.05 18 2 0.7`) |

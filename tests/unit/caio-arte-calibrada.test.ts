@@ -59,11 +59,14 @@ describe('CAIO: altura da caixa', () => {
 
   it('desvios de altura que os dados NÃO corrigem (a arte é que mudou o ponto de contato): ficam registrados', () => {
     const desvio = (n: string): number => base(caixa(depois, n))[1] - base(caixa(antes, n))[1];
-    expect(desvio('clp')).toBeLessThan(-50); // soco agachado: agora ao nível do peito, a caixa desce
-    expect(desvio('jlp')).toBeLessThan(-50); // soco aéreo = ponte do jkick
-    expect(desvio('jhp')).toBeLessThan(-50);
-    expect(desvio('chk')).toBeGreaterThan(30);
-    expect(Math.abs(desvio('lk'))).toBeLessThan(20);
+    // CAPOEIRA (2026-10-24): f3 v2 (hp1, clp) e a CR2 (jkick, alias de jpunch) trocaram o desenho; os desvios de hoje são
+    // bem menores que os da f3 v1 (boxe). Medido: clp -13,1, jlp/jhp -13,2, chk -37,4 (virou negativo: a rasteira
+    // giratória nova fica mais baixa, não mais alta, que o chute lateral antigo), lk +52,0 (o chute baixo novo sobe).
+    expect(desvio('clp')).toBeLessThan(-5); // soco agachado: a palmada nova fica um pouco acima do peito
+    expect(desvio('jlp')).toBeLessThan(-5); // soco aéreo = ponte do jkick
+    expect(desvio('jhp')).toBeLessThan(-5);
+    expect(desvio('chk')).toBeLessThan(-20); // rasteira giratória nova: mais baixa que o chute lateral antigo
+    expect(desvio('lk')).toBeGreaterThan(30); // chute baixo novo: ponto de contato mais alto
     expect(Math.abs(desvio('sDown'))).toBeLessThan(20);
   });
 });
@@ -86,6 +89,6 @@ describe('CAIO: dados de produção x oráculo', () => {
     for (const g of ['sFire', 'sDown', 'sFwd']) expect(sem(prod[g]!), g).toEqual(sem(orig[g]!));
     expect(prod['sDown']!['rm']).toBe(2.8);
     expect(prod['sFwd']!['rm']).toBe(0.76);
-    expect(prod['sFwd']!['bh']).toBe(160);
+    expect(prod['sFwd']!['bh']).toBe(188);
   });
 });

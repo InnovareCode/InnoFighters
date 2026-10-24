@@ -48,8 +48,15 @@ export const DADOS_ORIGINAIS: DadosOriginais = JSON.parse(readFileSync(caminho('
 /** A definição do lutador com os números do protótipo por cima (se ele tem oráculo); senão, a de produção. */
 export function defDoOraculo(id: IdLutador): LutadorDef {
   const o = DADOS_ORIGINAIS[id];
+  if (!o) return LUTADORES[id];
   // `especiais` só vem da fixture para quem teve o alcance recalibrado pela arte nova (CAIO: rm/bh de sDown e sFwd na produção).
-  return o ? { ...LUTADORES[id], hp: o.hp, pow: o.pow, mods: o.mods, ...(o.especiais ? { especiais: o.especiais } : {}) } : LUTADORES[id];
+  const def: LutadorDef = { ...LUTADORES[id], hp: o.hp, pow: o.pow, mods: o.mods, ...(o.especiais ? { especiais: o.especiais } : {}) };
+  // `alturaDoProjetil` é um ajuste só de PRODUÇÃO (compensa a arte nova mudando o sentido da pose do spawn, ex.: CAIO sa1
+  // virou chute). O oráculo monta sobre o atlas ORIGINAL do protótipo (`ORIGINAIS_COM_ATLAS_DE_PROTOTIPO`), cuja pose de
+  // spawn nunca mudou de sentido: sem isso, o spawn.y do oráculo teria que bater com um número de produção que não existe
+  // no protótipo. Removido aqui para o spawn.y voltar a vir da `ponta.tipY` do fixture, como o protótipo sempre fez.
+  delete def.alturaDoProjetil;
+  return def;
 }
 
 function manifestoParaMontar(id: IdLutador, arteReal: boolean): ManifestoAtlas {

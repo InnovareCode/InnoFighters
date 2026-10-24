@@ -42,7 +42,7 @@ describe('peso do atlas lido do MANIFESTO (antes de baixar nada)', () => {
   });
 
   it('os 10 atlas reais, lidos do disco, batem com a tabela da spec (MiB)', () => {
-    const esperado: Record<string, number> = { aminu: 30, baatar: 42, caio: 28, camille: 23, centella: 26, hayato: 24, 'min-ji': 24, nila: 37.5, 'wei-long': 26, zenon: 46.5 };
+    const esperado: Record<string, number> = { aminu: 30, baatar: 42, caio: 26, camille: 23, centella: 26, hayato: 24, 'min-ji': 24, nila: 37.5, 'wei-long': 26, zenon: 46.5 };
     expect(Object.keys(esperado).sort()).toEqual([...IDS_LUTADORES].sort());
     for (const id of IDS_LUTADORES) {
       const m = validarManifesto(JSON.parse(readFileSync(`public/assets/lutadores/${id}/atlas.json`, 'utf8')), id);

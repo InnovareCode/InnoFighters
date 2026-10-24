@@ -7,19 +7,28 @@
     "filme": { "imagem": "filme.webp", "tamanho": [1920, 1280], "quadros": { "f0": { "x": 4, "y": 4, "w": 664, "h": 631, "ax": 332, "painel": true }, "f1": { "x": 672, "y": 5, "w": 377, "h": 630, "ax": 189, "painel": true }, "f2": { "x": 1053, "y": 5, "w": 802, "h": 630, "ax": 401, "painel": true }, "f3": { "x": 4, "y": 640, "w": 636, "h": 630, "ax": 318, "painel": true }, "f4": { "x": 644, "y": 640, "w": 597, "h": 630, "ax": 299, "painel": true }, "f5": { "x": 1245, "y": 639, "w": 670, "h": 631, "ax": 335, "painel": true } } }
   },
   "caio": {
-    "_nota": "Arte nova (mestra + f1..f4, curadoria do Apolo: docs/relatorio-curadoria-caio-v1.md). f1 v2 = GINGA (aprovada pelo dono 23/10; linha de chao tirada por codigo; relatorio §7): idle0..3 = L1C1..L1C4 sem apelido (4 desenhos distintos, 33-52% entre si); walk REORDENADO para fechar o ciclo com o menor salto (pior vizinho 44,8% contra 56,2% na ordem da grade): L2C1 walk0, L2C2 walk1, L2C3 walk2, L2C4 walk4, L3C1 walk3, L3C2 walk7, L3C3 walk6, L3C4 walk5. f2 v2 (sem os tracinhos do hitH) e f4 v2 (sem o risco do sb1): o acharFolha pega o maior -vN. acolchoar f2 topo 6: o cabelo do block encosta no topo. ponta direita: sb1 (rasteira) e sc1 (chute em salto) sao pe, o modo mao (padrao) mede a mao. alturaRef 396 (= 410 x 553/573: o idle agachado da ginga) deixa o atlas na escala de antes (f2..f4 com os mesmos px), MAS o K do jogo e scale x 255 / idle0.h e sobe 410/396 (+3,5%): nenhuma alavanca do pipeline tira isso (so `scale` em src/data/lutadores/caio.ts). ancora idle* = pes: o vao dos pes e estavel nos 4 idles (+-1,5 px) e a massa deslizava ate 18 px. Sem fatorFolha (pe rigido varia <=2% em f2/f3; f4 so em 2 poses). sb2 SEM ponta ('nenhuma': a perna aponta para tras e o ponto mais a direita seria a cabeca; so o rastro dependia dele, a caixa da rasteira sai do sb1); sem espelhar o sb2 (decisao do dono).",
+    "_nota": "Arte nova (mestra + f1..f4, curadoria do Apolo: docs/relatorio-curadoria-caio-v1.md). f1 v2 = GINGA (aprovada pelo dono 23/10; linha de chao tirada por codigo; relatorio §7): idle0..3 = L1C1..L1C4 sem apelido (4 desenhos distintos, 33-52% entre si); walk REORDENADO para fechar o ciclo com o menor salto (pior vizinho 44,8% contra 56,2% na ordem da grade): L2C1 walk0, L2C2 walk1, L2C3 walk2, L2C4 walk4, L3C1 walk3, L3C2 walk7, L3C3 walk6, L3C4 walk5. f2 v2 (sem os tracinhos do hitH) e f4 v2 (sem o risco do sb1): o acharFolha pega o maior -vN. acolchoar f2 topo 6: o cabelo do block encosta no topo. alturaRef 396 (= 410 x 553/573: o idle agachado da ginga) deixa o atlas na escala de antes (f2..f4 com os mesmos px), MAS o K do jogo e scale x 255 / idle0.h e sobe 410/396 (+3,5%): nenhuma alavanca do pipeline tira isso (so `scale` em src/data/lutadores/caio.ts). ancora idle* = pes: o vao dos pes e estavel nos 4 idles (+-1,5 px) e a massa deslizava ate 18 px. Sem fatorFolha (pe rigido varia <=2% em f2/f3; f4 so em 2 poses). sb2 SEM ponta ('nenhuma': a perna aponta para tras e o ponto mais a direita seria a cabeca; so o rastro dependia dele, a caixa da rasteira sai do sb1); sem espelhar o sb2 (decisao do dono). CAPOEIRA (2026-10-24, curadoria §8/§8.5 + auditoria §6, dono aprovou f3 v2 e CR2 sem credito): f3 v2 substitui os golpes normais (boxe/karate/taekwondo) por capoeira; CR2 (folha extra, grade 4x3) traz sa1 (meia-lua em pe, chute), sa0/sa2 apelidos (joelho alto, preparo e descida do RABO-DE-ARRAIA), lp1 (galopante, mao), block/jtop/jup (guarda aberta) e win. sc1 (compasso) usa a CELULA ESPELHADA (decisao do dono via Atlas, 24/10): caio-cr2-capoeira-v2.png (copia de _candidatas/caio-cr2-capoeira-v2-sc1-espelhado.png) ganha do v1 pelo acharFolha (v2 > v1), sem tocar em 'arquivos'. sb3/sa3 (f1) = apelidos de idle0/idle1 (C2 do §8.4): a volta da galopante/RABO para a ginga nao pula (mesma ancora 'pes'). cblock (f2) = apelido do crouch (C1 do §8.4). lp1 com ponta 'mao:0.5' (obrigatorio): no modo 'mao' pleno a canela da frente passa da palma (ponta a 69% da altura); com a janela da metade de cima a ponta vai para a palma. sa1 com ponta 'direita' (e' chute, nao soco): fixar ANTES alturaDoProjetil em src/data/lutadores/caio.ts com o tipY de hoje (feito; auditoria §6.2), senao a ONDA VERDE nasce na cabeca.",
     "alturaRef": 396,
     "ancora": { "idle*": "pes" },
     "celulas": {
-      "f1": ["idle0", "idle1", "idle2", "idle3", "walk0", "walk1", "walk2", "walk4", "walk3", "walk7", "walk6", "walk5"]
+      "f1": [["idle0", "sb3"], ["idle1", "sa3"], "idle2", "idle3", "walk0", "walk1", "walk2", "walk4", "walk3", "walk7", "walk6", "walk5"],
+      "f2": [["crouch", "cblock"], null, null, "jsquat", null, null, "jfall", "land", "hitH", "hitB", "kdAir", "koFloor"],
+      "f3": [null, "lp0", "hp0", "hp1", "lk0", "lk1", "hk0", "hk1", "clp", "clk", "sweep", "upper"],
+      "f4": [null, null, null, null, "sb0", "sb1", "sb2", null, "sc0", null, null, null]
+    },
+    "folhasExtras": {
+      "cr2": { "grade": [4, 3], "celulas": [null, "sa1", ["sa2", "sa0"], "win", null, "sc1", "jkick", null, "lp1", "block", "jtop", "jup"] }
     },
     "acolchoar": {
-      "f2": { "topo": 6 }
+      "f2": { "topo": 6 },
+      "cr2": { "base": 6 }
     },
     "ponta": {
       "sb1": "direita",
       "sb2": "nenhuma",
-      "sc1": "direita"
+      "sc1": "direita",
+      "sa1": "direita",
+      "lp1": "mao:0.5"
     },
     "filme": { "imagem": "filme.webp", "tamanho": [1888, 1280], "quadros": { "f0": { "x": 4, "y": 5, "w": 564, "h": 630, "ax": 282, "painel": true }, "f1": { "x": 572, "y": 4, "w": 721, "h": 631, "ax": 361, "painel": true }, "f2": { "x": 4, "y": 639, "w": 479, "h": 630, "ax": 240, "painel": true }, "f3": { "x": 487, "y": 639, "w": 541, "h": 630, "ax": 271, "painel": true }, "f4": { "x": 1297, "y": 4, "w": 583, "h": 631, "ax": 292, "painel": true }, "f5": { "x": 1032, "y": 639, "w": 827, "h": 630, "ax": 414, "painel": true } } }
   },

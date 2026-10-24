@@ -1,25 +1,25 @@
 {
- "versaoDados": "0b5ad77394bb",
+ "versaoDados": "75764f4439da",
  "geradoEm": "2026-10-24",
  "portoes": {
   "medidas": [
    {
     "nivel": 1,
     "lutas": 9000,
-    "ticksPorRound": 1882.260974196711,
-    "fatiaEspecial": 0.4371373877662062,
-    "paradoFracao": 0.4367254100016067,
-    "especiaisPorLuta": 27.176444444444446,
-    "filmesPorLuta": 11.442777777777778
+    "ticksPorRound": 1883.993719376392,
+    "fatiaEspecial": 0.4365257656033085,
+    "paradoFracao": 0.4362326166853199,
+    "especiaisPorLuta": 27.202111111111112,
+    "filmesPorLuta": 11.432777777777778
    },
    {
     "nivel": 2,
     "lutas": 9000,
-    "ticksPorRound": 2600.54634976053,
-    "fatiaEspecial": 0.4258333649769087,
-    "paradoFracao": 0.3809116834518079,
-    "especiaisPorLuta": 35.84777777777778,
-    "filmesPorLuta": 11.317666666666666
+    "ticksPorRound": 2602.7993026998033,
+    "fatiaEspecial": 0.42441412844728443,
+    "paradoFracao": 0.38036311494387776,
+    "especiaisPorLuta": 35.91388888888889,
+    "filmesPorLuta": 11.299222222222221
    }
   ]
  }

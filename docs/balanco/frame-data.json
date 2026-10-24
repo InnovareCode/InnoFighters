@@ -1,5 +1,5 @@
 {
- "versaoDados": "0b5ad77394bb",
+ "versaoDados": "75764f4439da",
  "linhas": [
   {
    "lutador": "hayato",
@@ -2372,10 +2372,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 93.08201036363639,
-    "fy": 232.2359772727273,
+    "w": 96.65527541818183,
+    "fy": 240.22945454545453,
     "h": 54,
-    "alcanceEstatico": 113.08201036363639
+    "alcanceEstatico": 116.65527541818183
    },
    "inicio": 3,
    "ativos": 3,
@@ -2383,7 +2383,7 @@
    "total": 13,
    "alcance": {
     "min": 78,
-    "max": 151,
+    "max": 154,
     "noTeto": false,
     "furos": 0
    },
@@ -2422,10 +2422,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 162.12729639999998,
-    "fy": 211.1060909090909,
-    "h": 70,
-    "alcanceEstatico": 182.12729639999998
+    "w": 169.28026065454551,
+    "fy": 297.22779545454546,
+    "h": 174,
+    "alcanceEstatico": 189.28026065454551
    },
    "inicio": 5,
    "ativos": 4,
@@ -2433,7 +2433,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 220,
+    "max": 227,
     "noTeto": false,
     "furos": 0
    },
@@ -2470,10 +2470,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 112.81829527272728,
-    "fy": 228.1915909090909,
+    "w": 112.97219854545457,
+    "fy": 220.44113636363633,
     "h": 64,
-    "alcanceEstatico": 132.81829527272728
+    "alcanceEstatico": 132.97219854545457
    },
    "inicio": 8,
    "ativos": 4,
@@ -2520,10 +2520,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 213.51642465454546,
-    "fy": 342.0441136363636,
-    "h": 184,
-    "alcanceEstatico": 233.51642465454546
+    "w": 227.13860054545455,
+    "fy": 311.8781818181818,
+    "h": 154,
+    "alcanceEstatico": 247.13860054545455
    },
    "inicio": 10,
    "ativos": 5,
@@ -2531,7 +2531,7 @@
    "total": 33,
    "alcance": {
     "min": 78,
-    "max": 289,
+    "max": 303,
     "noTeto": false,
     "furos": 0
    },
@@ -2570,10 +2570,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 141.39579400000002,
-    "fy": 145.802,
+    "w": 128.5,
+    "fy": 191.35234090909088,
     "h": 50,
-    "alcanceEstatico": 161.39579400000002
+    "alcanceEstatico": 148.5
    },
    "inicio": 4,
    "ativos": 3,
@@ -2581,7 +2581,7 @@
    "total": 15,
    "alcance": {
     "min": 78,
-    "max": 199,
+    "max": 186,
     "noTeto": false,
     "furos": 0
    },
@@ -2618,10 +2618,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 177.21198000000004,
-    "fy": 115.05143181818181,
+    "w": 180.33942154545457,
+    "fy": 103.9709090909091,
     "h": 44,
-    "alcanceEstatico": 197.21198000000004
+    "alcanceEstatico": 200.33942154545457
    },
    "inicio": 6,
    "ativos": 3,
@@ -2629,7 +2629,7 @@
    "total": 19,
    "alcance": {
     "min": 78,
-    "max": 235,
+    "max": 238,
     "noTeto": false,
     "furos": 0
    },
@@ -2714,10 +2714,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 198.07145309090907,
-    "fy": 152.50645454545455,
+    "w": 207.6229393454546,
+    "fy": 75.35002272727273,
     "h": 56,
-    "alcanceEstatico": 218.07145309090907
+    "alcanceEstatico": 227.6229393454546
    },
    "inicio": 8,
    "ativos": 6,
@@ -2725,7 +2725,7 @@
    "total": 34,
    "alcance": {
     "min": 78,
-    "max": 256,
+    "max": 265,
     "noTeto": false,
     "furos": 0
    },
@@ -2762,10 +2762,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 110.41871665454548,
-    "fy": 158.18297727272727,
+    "w": 116.25577687272727,
+    "fy": 199.72015909090908,
     "h": 66,
-    "alcanceEstatico": 130.41871665454548
+    "alcanceEstatico": 136.25577687272727
    },
    "inicio": 2,
    "ativos": 16,
@@ -2773,7 +2773,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 168,
+    "max": 174,
     "noTeto": false,
     "furos": 0
    },
@@ -2782,9 +2782,9 @@
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
-   "vantagemAcerto": 2,
+   "vantagemAcerto": 7,
    "blockstun": 10,
-   "vantagemBloqueio": -3,
+   "vantagemBloqueio": 2,
    "raspao": 0.5819999999999936,
    "bloqueioMedido": "over",
    "filme": false,
@@ -2812,10 +2812,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 117.28285963636367,
-    "fy": 162.18297727272727,
+    "w": 123.82554225454547,
+    "fy": 203.72015909090908,
     "h": 74,
-    "alcanceEstatico": 137.28285963636367
+    "alcanceEstatico": 143.82554225454547
    },
    "inicio": 4,
    "ativos": 14,
@@ -2823,7 +2823,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 175,
+    "max": 181,
     "noTeto": false,
     "furos": 0
    },
@@ -2832,9 +2832,9 @@
    "acertos": 1,
    "hitstun": 20,
    "derruba": false,
-   "vantagemAcerto": 7,
+   "vantagemAcerto": 11,
    "blockstun": 12,
-   "vantagemBloqueio": -1,
+   "vantagemBloqueio": 3,
    "raspao": 0.931200000000004,
    "bloqueioMedido": "over",
    "filme": false,
@@ -2862,10 +2862,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 106.98664516363638,
-    "fy": 163.18297727272727,
+    "w": 112.47089418181818,
+    "fy": 204.72015909090908,
     "h": 76,
-    "alcanceEstatico": 126.98664516363638
+    "alcanceEstatico": 132.47089418181818
    },
    "inicio": 3,
    "ativos": 15,
@@ -2873,7 +2873,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 164,
+    "max": 170,
     "noTeto": false,
     "furos": 0
    },
@@ -2882,9 +2882,9 @@
    "acertos": 1,
    "hitstun": 17,
    "derruba": false,
-   "vantagemAcerto": 3,
+   "vantagemAcerto": 8,
    "blockstun": 11,
-   "vantagemBloqueio": -3,
+   "vantagemBloqueio": 2,
    "raspao": 0.6984000000000066,
    "bloqueioMedido": "over",
    "filme": false,
@@ -2912,10 +2912,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 117.28285963636367,
-    "fy": 168.18297727272727,
+    "w": 123.82554225454547,
+    "fy": 209.72015909090908,
     "h": 86,
-    "alcanceEstatico": 137.28285963636367
+    "alcanceEstatico": 143.82554225454547
    },
    "inicio": 5,
    "ativos": 13,
@@ -2923,7 +2923,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 175,
+    "max": 181,
     "noTeto": false,
     "furos": 0
    },
@@ -2932,9 +2932,9 @@
    "acertos": 1,
    "hitstun": 22,
    "derruba": false,
-   "vantagemAcerto": 9,
+   "vantagemAcerto": 13,
    "blockstun": 13,
-   "vantagemBloqueio": 0,
+   "vantagemBloqueio": 4,
    "raspao": 1.1640000000000015,
    "bloqueioMedido": "over",
    "filme": false,
@@ -2962,10 +2962,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 90.68191272727275,
-    "fy": 226.1915909090909,
+    "w": 90,
+    "fy": 218.44113636363633,
     "h": 60,
-    "alcanceEstatico": 110.68191272727275
+    "alcanceEstatico": 110
    },
    "inicio": 3,
    "ativos": 1,
@@ -3018,7 +3018,7 @@
    "total": 32,
    "alcance": {
     "min": 78,
-    "max": 385,
+    "max": 371,
     "noTeto": false,
     "furos": 0
    },
@@ -3106,10 +3106,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 115.67410283636366,
-    "fy": 286.75322727272726,
-    "h": 160,
-    "alcanceEstatico": 135.67410283636366
+    "w": 107.92520363636365,
+    "fy": 322.65154545454544,
+    "h": 188,
+    "alcanceEstatico": 127.92520363636365
    },
    "inicio": 6,
    "ativos": 24,
@@ -3117,7 +3117,7 @@
    "total": 42,
    "alcance": {
     "min": 78,
-    "max": 375,
+    "max": 367,
     "noTeto": false,
     "furos": 0
    },

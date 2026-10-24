@@ -2,7 +2,7 @@
 
 > Arquivo GERADO por `npm run balanco`. Não edite à mão: rode o comando de novo.
 
-Gerado em 2026-10-24 · versão dos dados/motor `0b5ad77394bb` · arte de PRODUÇÃO (`public/assets/lutadores`).
+Gerado em 2026-10-24 · versão dos dados/motor `75764f4439da` · arte de PRODUÇÃO (`public/assets/lutadores`).
 
 Como ler (todos os tempos em ticks de jogo, 60 por segundo; cada número foi medido numa `Game` em modo treino, não lido da tabela):
 
@@ -88,22 +88,22 @@ _pow 0.97_
 
 | Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Filme | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 3.9 | – | 14 | +4 | 8 | -2 | 113 | 78–151 |  |
-| lk |  | mid | 5/4/9 | 5/4/9 | 4.8 | – | 16 | +3 | 9 | -4 | 182 | 78–220 |  |
+| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 3.9 | – | 14 | +4 | 8 | -2 | 117 | 78–154 |  |
+| lk |  | mid | 5/4/9 | 5/4/9 | 4.8 | – | 16 | +3 | 9 | -4 | 189 | 78–227 |  |
 | hp |  | mid (alto) | 8/4/14 | 8/4/14 | 8.2 | – | 24 | +6 | 12 | -6 | 133 | 78–184 |  |
-| hk |  | mid (alto) | 10/5/18 | 10/5/18 | 12.1 | – | – | KD +48 | 14 | -9 | 234 | 78–289 |  |
-| clp |  | mid | 4/3/8 | 4/3/8 | 3.9 | – | 15 | +4 | 8 | -3 | 161 | 78–199 |  |
-| clk |  | low | 6/3/10 | 6/3/10 | 4.8 | – | 15 | +2 | 9 | -4 | 197 | 78–235 |  |
+| hk |  | mid (alto) | 10/5/18 | 10/5/18 | 12.1 | – | – | KD +48 | 14 | -9 | 247 | 78–303 |  |
+| clp |  | mid | 4/3/8 | 4/3/8 | 3.9 | – | 15 | +4 | 8 | -3 | 149 | 78–186 |  |
+| clk |  | low | 6/3/10 | 6/3/10 | 4.8 | – | 15 | +2 | 9 | -4 | 200 | 78–238 |  |
 | chp |  | mid | 6/4/17 | 6/4/17 | 9.7 | – | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
-| chk |  | low | 8/6/20 | 8/6/20 | 8.7 | – | – | KD +45 | 14 | -12 | 218 | 78–256 |  |
-| jlp |  | over | 2/80/0 | 2/16/0 | 4.8 | – | 15 | +2 | 10 | -3 | 130 | 78–168 | aéreo: ativos até pousar |
-| jhp |  | over | 4/80/0 | 4/14/0 | 7.8 | – | 20 | +7 | 12 | -1 | 137 | 78–175 | aéreo: ativos até pousar |
-| jlk |  | over | 3/80/0 | 3/15/0 | 5.8 | – | 17 | +3 | 11 | -3 | 127 | 78–164 | aéreo: ativos até pousar |
-| jhk |  | over | 5/80/0 | 5/13/0 | 9.7 | – | 22 | +9 | 13 | 0 | 137 | 78–175 | aéreo: ativos até pousar |
-| throw |  | throw→– | 3/3/22 | 3/1/24 | 11.6 | – | – | KD +52 | – | – | 111 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
-| sFire | ONDA VERDE | mid (alto) | 12/3/17 | 12/1/19 | 16.0 | ✓ | – | KD +30 | 17 | -3 | – | 78–385 | projétil: início = tick do 1º tiro |
+| chk |  | low | 8/6/20 | 8/6/20 | 8.7 | – | – | KD +45 | 14 | -12 | 228 | 78–265 |  |
+| jlp |  | over | 2/80/0 | 2/16/0 | 4.8 | – | 15 | +7 | 10 | +2 | 136 | 78–174 | aéreo: ativos até pousar |
+| jhp |  | over | 4/80/0 | 4/14/0 | 7.8 | – | 20 | +11 | 12 | +3 | 144 | 78–181 | aéreo: ativos até pousar |
+| jlk |  | over | 3/80/0 | 3/15/0 | 5.8 | – | 17 | +8 | 11 | +2 | 132 | 78–170 | aéreo: ativos até pousar |
+| jhk |  | over | 5/80/0 | 5/13/0 | 9.7 | – | 22 | +13 | 13 | +4 | 144 | 78–181 | aéreo: ativos até pousar |
+| throw |  | throw→– | 3/3/22 | 3/1/24 | 11.6 | – | – | KD +52 | – | – | 110 | 78–107 | agarrão: ativos = janela de teste; agarrão: não bloqueável |
+| sFire | ONDA VERDE | mid (alto) | 12/3/17 | 12/1/19 | 16.0 | ✓ | – | KD +30 | 17 | -3 | – | 78–371 | projétil: início = tick do 1º tiro |
 | sDown | RABO-DE-ARRAIA | low | 9/7/22 | 9/7/22 | 16.0 | ✓ | – | KD +42 | 15 | -14 | 420 | 78–458 |  |
-| sFwd | MEIA-LUA | over | 6/80/0 | 6/24/12 | 17.0 | ✓ | – | KD +18 | 13 | -23 | 136 | 78–375 | aéreo: ativos até pousar |
+| sFwd | MEIA-LUA | over | 6/80/0 | 6/24/12 | 17.0 | ✓ | – | KD +18 | 13 | -23 | 128 | 78–367 | aéreo: ativos até pousar |
 
 ## AMINU
 

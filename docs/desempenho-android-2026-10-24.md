@@ -326,3 +326,92 @@ gravação de 1 minuto com o contador de FPS do Chrome (chrome://inspect, ou a s
 
 - Scripts e dados brutos em `<scratchpad da sessão>/` (`lib.mjs`, `bot.mjs`, `fases.mjs`, `latencia.mjs`, `entrada.mjs`, `custo.mjs`, `memoria.mjs`, `res/*.json`). Nada disso é versionado.
 - Servidores `vite preview` (portas 5390-5394) e Chromium encerrados por PID ao final; nenhum `taskkill /IM`; nenhuma junction de `node_modules`; nenhum arquivo de `src/`, `tests/` ou `docs/` alterado além deste.
+
+---
+
+## 11. Prova do lote `c4139cb` (fluidez + joystick + desenho leve) — 2026-10-24, Íris
+
+Mesma metodologia das seções 1 a 7, agora num `git archive c4139cb` com `npm ci` real (bundle de produção e bundle com ganchos), portas 5395/5396, CPU 4x e 6x sem limite de vsync. "Antes" = `d350d27` (seções 2 a 4). Dados brutos no scratchpad (`res/c41-*.json`, `latencia-c41-*`, `entrada-c41-*`, `rs-prova.json`, `memoria4-c41-gpu-4x.json`).
+
+### 11.1 Portões
+
+| Portão | Resultado |
+|---|---|
+| `tsc --noEmit` | limpo |
+| `npm test` (unit) | 3366 passaram, 36 puladas (o `git archive` não leva `arte-fonte/`; a Atlas contou 3385 na árvore) |
+| e2e COMPLETO, desktop + celular (726 casos, 4 workers) | **434 passaram, 289 puladas (casos de um só projeto), 3 falharam**; nenhuma é defeito do lote (abaixo) |
+| `test:e2e:build` (config oficial, inclui `pwa-versao`) | **24/24** |
+| Oráculo de pixel / fidelidade no desktop (`RS=2`, 'high') | `fidelidade-prototipo` e `fidelidade-ui` verdes no desktop; no desktop a política é fixa em 2/'high' (prova na 11.3) |
+
+As 3 falhas do e2e completo:
+1. `baloes-premium` (2 casos, "custo por quadro A/B"): `git show HEAD:src/render/balao.ts` falha porque o `git archive` não tem `.git`. **Defeito do ambiente de prova, não do código.** Com um `git init` na cópia isolada os 4 casos passam (2 puladas).
+2. `trailer.spec.ts:273` ("1º quadro <= 150 ms com CPU 4x"): 185 ms na rodada com 4 workers. Sozinho, 6 execuções no `c4139cb` deram 72 a 125 ms e 6 no `d350d27` deram 72 a 125 ms (mesma distribuição). **Spec sensível a carga, sem relação com o lote; nenhum spec foi alterado por mim.**
+
+### 11.2 Antes × depois (CPU 4x e 6x; % de quadros acima de 16,7 ms; p99 em ms)
+
+| Fase | 4x antes (A / B) | 4x **depois** | 6x antes | 6x **depois** |
+|---|---|---|---|---|
+| Luta normal | 11,9 / 12,4 (p99 52/46) | **7,4** (p99 34; >33 ms: 0,9%) | 77,3 | 85,3 (p99 172) |
+| Seleção | 28,5 / 25,3 | 30,0 (p99 67) | 100 | 100 (p50 37 ms) |
+| Especial comum | 29,5 / 44,6 (p99 294/370) | **24,7** (p99 61) | 95,5 | 99 |
+| SUPER (tarja) | 11,1 / 13,8 (p99 38/378) | **3,7** (p99 31) | 100 | 96 |
+| Filme de KO | 34,6 / 30,4 (p99 444/390) | 39,1 (p99 33; n=92) | 100 | 96 |
+| Título / Trailer | 1,0-2,4 / 3,9-5,6 | 1,2 / 4,1 (p99 215) | 18 / 18 | 30 / - |
+| JS de desenho p50 (luta) | 4,8-5,3 ms | 5,6 ms | 12,3 ms | 12,4 ms |
+
+Leitura honesta:
+- **Ganho real**: a 4x, luta normal com -38% de quadros lentos (de ~12% para 7,4%) e p99 de ~50 para 34 ms; faixa fina e tarja do SUPER melhoram e perdem os picos de 290-440 ms (p99 61 e 31 ms). Uma rodada só do "depois": repetir antes de citar o número exato.
+- **Sem ganho** em seleção (30%), trailer e **tudo a 6x** (luta 77% -> 85% é ruído de rodada, não regressão comprovada). A seleção continua com ~9,6 ms de desenho a 4x: o lote não tocou nela.
+- **O "desenho mais leve" não baixou o JS por quadro** (5,6 ms contra 4,8-5,3) nem o GC (11.5). O ganho de 4x vem do degrau de resolução, não de menos trabalho de JS. Num aparelho limitado por preenchimento é o esperado, mas não medi GPU móvel.
+- Com `RS` caindo para 1 a 6x, o desenho vai de 19,1 para 13,8 ms e o intervalo de 30,9 para 24 ms (ensaio `desktop-auto-6x`, 11.3).
+
+### 11.3 Resolução adaptativa — 9 cenários de ~50 s de luta real
+
+| Cenário | RS final | Trocas | Canvas | Brancos após troca |
+|---|--:|--|--:|--|
+| desktop 1x | 2 'high' | nenhuma | 1920 | 0/2 |
+| **desktop 6x (98% dos quadros lentos)** | 2 'high' | **nenhuma** (governador desligado no desktop) | 1920 | 0/2 |
+| desktop `?rs=auto` 6x | 1 | 1 descida (aos 1,6 s) | 960 | 0/4 |
+| desktop `?rs=1` | 1, fixo | nenhuma | 960 | 0/2 |
+| toque 1x (começa em 1,5) | 2 | 1 subida por folga | 1920 | 0/4 |
+| toque 4x | 1 | 1 descida | 960 | 0/4 |
+| toque 6x | 1 | 1 descida | 960 | 0/4 |
+| toque `?rs=2` 6x | 2, fixo | nenhuma | 1920 | 0/2 |
+| toque `?rs=1` 4x | 1, fixo | nenhuma | 960 | 0/2 |
+
+- Não pisca: depois de cada troca o centro do canvas está desenhado (alfa != 0) nos 2 quadros seguintes, em todos os casos (0 brancos em 22 verificações). Não faz vai-e-vem: no máximo 1 troca por cenário.
+- Não desce à toa: no desktop (qualquer carga) e no toque a 1x não há descida; `?rs=` força (e desliga o governador); `?rs=auto` liga no desktop.
+- Limite: no desktop lento o jogo NÃO se adapta (6x: 98% dos quadros lentos com RS=2). Decisão do lote, registrada aqui.
+- No toque o jogo COMEÇA em RS 1,5/'medium' (não mais 2/'high'); o oráculo de pixel só cobre o desktop. Os specs do projeto `celular` passaram.
+
+### 11.4 Latência e entrada (toque real, `c4139cb` × `d350d27`)
+
+| Item | d350d27 | c4139cb |
+|---|---|---|
+| Soco/chute FORTE com barra cheia, ticks de espera no motor | **3** (toque e teclado) | **0** (hp e hk, toque e teclado) |
+| Soco forte, barra cheia, evento -> desenho (4x, toque) | 86,4 ms | 52,6 ms |
+| Chute forte, barra cheia (4x) | 89,1 | 79,4 (p95 449: rodada ruidosa) |
+| Botão SUPER (4x) | 42,1 | 61,4 (p95 140) |
+| Soco leve (4x, toque) | 41,9 | 60,6 (A 31 ms igual; C tick->desenho 14,4 contra 7,1 ms) |
+| Joystick a 25° e 30° acima da horizontal | PULA | **anda** (só pula a 35°) |
+| Joystick a 22° a 30° abaixo | AGACHA e para | **anda**; baixo reto agacha 20/20 |
+| Oscilar 35-70 ms em torno do limiar | DASH 10/10 (1x) | **0/10** (1x e 4x) |
+| Duplo toque + golpe 40-100 ms depois | golpe PERDIDO 8/8 | **sem dash por toque** (M5); 0 perdidos |
+
+- Corrigido e provado no navegador: hp/hk com barra cheia, pulo/agachar por deriva, dash por oscilação, dash engolindo o golpe.
+- **Onde ainda dói**: (a) evento -> desenho de toque segue em ~40-60 ms a 4x (≈ 19 ms só do caminho de toque do Chromium); (b) o tempo tick -> desenho p50 subiu nesta rodada (7 -> 9-14 ms a 4x nos golpes leves), pode ser ruído (p95 com picos de 200+ ms), **não repetido**, vale nova medição a 1x; (c) o dash do teclado (M2) não foi testado no navegador; (d) a fila de 2 botões (M3) e o agarrão por par (M6) só têm prova unitária.
+
+### 11.5 Coleta maior de GC a cada 3-4 s: causa
+
+Medida nos eventos do V8 (`V8.GCIncrementalMarkingStart`): `gc_reason: "global allocation limit"`, com `global_consumed_bytes` ≈ `global_allocation_limit` (80-98 MB) e o heap de JS (`old_gen`) em apenas 9,8 de 20 MB. **Não é o heap de JS que enche: é o limite GLOBAL do V8 (JS + memória externa do navegador) que está sempre colado no consumo.** A memória externa é, por inferência, a arte decodificada (~78 MiB em `arte.memoria()`, igual ao consumo global observado): cada 0,5-1,8 MiB de lixo JS cruza o limite e dispara uma marcação completa, a cada 3-4 s, com pausa de 20-76 ms a 4x.
+- Não é áudio (seção 7, sem `AudioContext`), nem criação de canvas (7 em 30 s), nem `createImageBitmap` (0), nem `getImageData` (0).
+- **O lote não mudou isso**: luta normal 4x, 8 coletas maiores em 30 s (antes 7), menores 24 (antes 18), main thread 94% (antes 93%). A "menos alocação por quadro" não aparece nas contagens.
+- Para atacar a causa: baixar a taxa de lixo por quadro de verdade (pools para a vista da fluidez, textos, caminhos) ou encolher a memória externa residente (política por peso) para dar folga ao limite global. A razão do V8 é PROVADA; a ligação com a arte decodificada é INFERÊNCIA (não variei a residência).
+
+### 11.6 Veredito
+
+**APROVADO para publicar.** Nenhum defeito do lote: tsc limpo, 3366 unit verdes, e2e completo sem falha atribuível (2 de ambiente `.git`, 1 de tempo sem relação), `test:e2e:build` 24/24, desktop idêntico (RS 2, 'high', governador desligado), troca sem piscar e sem vai-e-vem, `?rs=` força, as quatro queixas de entrada corrigidas e medidas.
+Expectativa a comunicar ao dono: o lote corrige ENTRADA e adapta a resolução; o FPS em aparelho médio melhora em parte (4x: -38% de quadros lentos na luta) e **não** em 6x, na seleção nem no GC.
+
+### 11.7 Ainda por medir
+Latência a 1x e 6x do `c4139cb`; canvas em CPU (proxy de GPU fraca) com o governador; `ablacao.mjs`; `toque-curto.mjs` (hipótese 2 da Vega); boot em 4G; dash do teclado; causa do custo da seleção; aparelho real.

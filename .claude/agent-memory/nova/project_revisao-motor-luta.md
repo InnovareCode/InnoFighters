@@ -5,7 +5,9 @@ metadata:
   type: project
 ---
 
-v2 = `docs/spec-revisao-motor-luta-v2.md` (2026-10-23, HEAD f5b5fab). A v1 ganhou banner "SUBSTITUÍDA". Nada implementado ainda.
+v2 = `docs/spec-revisao-motor-luta-v2.md` (2026-10-23, HEAD f5b5fab). A v1 ganhou banner "SUBSTITUÍDA". A v2 foi implementada e
+publicada (V2-6, `41e1ffb`). Em 24/10 o dono reprovou a sensação: "filme em todo especial", "tarja nada muda", a cadeia por rank
+e a escalação do trailer foram substituídos por [[project-redesenho-jogabilidade]]. O resto da v2 continua valendo.
 
 Decisões do dono (23/10) que a v2 segue, e que derrubaram recomendações minhas: filme em TODOS os 33 (eu queria 1 por lutador, R-2);
 tarja fica no INÍCIO (eu queria no acerto, R-3; risco A7 continua). 33 = 10×3 + SARPA 3; 31 acertam, os 2 VADIVU não (D-V1).

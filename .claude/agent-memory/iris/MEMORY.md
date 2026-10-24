@@ -15,3 +15,4 @@
 - [Paginas FILME v2 AMINU/ZENON/BAATAR](project_qa-paginas-filme-v2-aminu-zenon-baatar.md) — APROVADO; ampliacao 1,019/1,019/1,054 no drawImage; memoria-filme (processos) vermelho por ruido, ajuste proposto
 - [Validacao final d48cf1e](project_validacao-final-d48cf1e.md) — 3 specs velhos pos-commit, SW x page.route, ARCADE flaky sob carga, memoria por luta final, JPGs removidos
 - [SW skipWaiting pendente + boot lento (5080310)](project_sw-skipwaiting-pendente-e-boot-lento.md) — flake do spec 'versão nova' (Chromium), trailer Fast 3G, 0,913 / 145,3 MiB
+- [Jogar de verdade contra CPU (209ecd8)](reference_jogar-de-verdade-contra-cpu.md) — rAF estrangulado headless, worktree isolado de HMR, tarja 100% exceto reduced-motion, filme nunca dispara, tempo parado 44,6%

@@ -8,6 +8,7 @@
 - [Chefões progressivos, temas e dificuldade](project_chefoes-progressivos.md) — chefão derivado do progresso (sem migração), danoRecebido fora da ficha (NILA), D-A1..D-D5
 - [Trailer de abertura](project_trailer-abertura.md) — Games próprios c/ semente constante, escalação M2, relógio do áudio, ≤2 atlas não fixos, D-T1..D-T8
 - [Revisão do motor de luta](project_revisao-motor-luta.md) — v2 escrita 23/10: filme nos 33 (opção A, todo filme derruba), piso 1,10×hk, teto 26/40%, flags motorV2, D-V1..D-V9
+- [Redesenho da jogabilidade](project_redesenho-jogabilidade.md) — 24/10: dono reprovou a sensação; sem controle 44,6%; tarja sem congelar, filme só super/KO, cadeia por força, R-1..R-17
 - [Estado em 2026-10-23](project_estado-2026-10-23.md) — CAIO/WEI LONG e cn/kr/br ainda do protótipo, orçamentos estourados, PROGRESSO atrasado
 - [Orçamentos revisados (R-8)](project_orcamentos.md) — MiB, título/VS bloqueante, vitrine "preferida", residência por peso, canvas iOS, OR-1..OR-9
 - [Residência de memória na luta](project_residencia-memoria.md) — tabela por cena, luta exclusiva, jp sai da luta, teto 136, 'fixa' x 'por-peso', L1-L7

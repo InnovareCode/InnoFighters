@@ -4,8 +4,13 @@ import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
 import { roteiroDoFilme } from '../data/roteiros-filme';
 import { resolverPoseDoFilme } from './filme';
+import type { PaletaFaixa } from './paleta-lutador';
 import type { Ctx } from './tela';
 import { FONTE_DO_ESPECIAL, textoArcade } from './texto';
+
+/** Branco com contorno quase preto: contraste alto contra QUALQUER paleta de lutador (medido em paleta-lutador.test.ts). */
+export const NUCLEO_DO_NOME = '#ffffff';
+export const SOMBRA_DO_NOME = '#0a0604';
 
 /*
  * FAIXA COM ROSTO (estilo X-Men vs Street Fighter, decisão do dono 24/10/2026, docs/spec-redesenho-jogabilidade.md §3.2/§3.4):
@@ -14,12 +19,17 @@ import { FONTE_DO_ESPECIAL, textoArcade } from './texto';
  * embaixo. Usada em DOIS lugares com a MESMA pintura: `FaixaRitmo` (especial comum, não congela) e `TarjaDoSuper` (super,
  * congela 30 ticks + linhas de velocidade). Este módulo é só a pintura PURA e a busca do rosto; nenhum dos dois estados mora aqui.
  *
- * O rosto vem da MESMA célula de "close"/grito que o filme do especial já usa (`roteiroDoFilme(...).batidas[0]`, a 1ª batida,
- * sempre o grito, t0-t12): se essa pose for uma célula da página FILME (`f0..f5`, `resolverPoseDoFilme(...).painel`), recortamos
- * dela; a página só existe depois que a luta carrega (`CenaFight.carregarFolhasDoFilme`, já chamado no início). Lutadores cujo
- * grito NÃO é uma célula de painel (NILA: `sa0`/`sc0`; ZENON: `cena1` — poses do MUNDO, não da folha FILME) não têm rosto: a
- * faixa cai para nome só, nunca fica vazia. `pd.rosto` (quando o manifesto traz, "centro do retrato") afina o recorte para a
- * cabeça; sem ele, usamos o quadro de painel inteiro.
+ * TODO lutador precisa aparecer na faixa (pedido do dono, 24/10/2026 — "nunca vazio" não bastava): 3 níveis de busca, nessa ordem.
+ * 1) A célula de "close"/grito que o filme do especial já usa (`roteiroDoFilme(...).batidas[0]`, a 1ª batida, sempre o grito,
+ *    t0-t12): se essa pose for uma célula da página FILME (`f0..f5`, `resolverPoseDoFilme(...).painel`), recorta dela.
+ * 2) NILA e ZENON têm o grito apontando para uma pose do MUNDO (`sa0`/`cena1`, não painel) — mas a página FILME deles TEM
+ *    células de busto gritando/esforço em outro slot (`POSE_DE_ROSTO_ALTERNATIVA`, escolhida olhando `filme.webp` dos dois:
+ *    NILA `f4` — busto, olhos fechados, boca aberta; ZENON `f4` — busto, careta de esforço). Mesmo enquadramento dos outros.
+ * 3) Sem página FILME pronta (ainda carregando) ou sem nenhuma das duas acima: cai no `retrato.webp` do lutador (o mesmo
+ *    enquadramento do HUD/seleção, `r.arte.retrato(ch.head)`) — todo lutador tem retrato, então este nível NUNCA falha.
+ * `pd.rosto` (quando o manifesto traz, "centro do retrato") afina o recorte de uma célula de painel para a cabeça; sem ele,
+ * usa o quadro inteiro. A página FILME só existe depois que a luta carrega (`CenaFight.carregarFolhasDoFilme`, já chamado no
+ * início) — antes disso (ou se a rede falhar), os níveis 1/2 caem no retrato também.
  */
 
 export interface RostoDaFaixa {
@@ -30,27 +40,52 @@ export interface RostoDaFaixa {
   readonly sh: number;
 }
 
-/** O recorte do rosto (gritando) de `lutador/ficha/golpe`, ou `null` se não há célula de painel para ele (cai no nome só). */
+/** Nível 2: lutadores cujo grito do roteiro não é célula de painel, com a célula f0..f5 escolhida na curadoria (ver comentário acima). */
+const POSE_DE_ROSTO_ALTERNATIVA: Readonly<Partial<Record<IdLutador, string>>> = Object.freeze({
+  nila: 'f4',
+  zenon: 'f4',
+});
+
+/** O recorte de uma célula `nome` (`f0..f5`) da página FILME, já cortado para a cabeça via `pd.rosto` quando o manifesto traz. Null se a célula não existe/não é painel/a imagem ainda não carregou. */
+function celulaDoPainel(ch: LutadorMontado, arte: Elenco[IdLutador]['arte'], nome: string): RostoDaFaixa | null {
+  const pd = (ch.pd as Record<string, { painel?: boolean } | undefined>)[nome];
+  if (!pd?.painel) return null;
+  const cheia = getPD(ch, nome);
+  const img = arte.imagemDe(cheia);
+  if (!img) return null;
+  if (!cheia.rosto) return { img, sx: cheia.x, sy: cheia.y, sw: cheia.w, sh: cheia.h };
+  // recorte mais justo (cabeça), centrado em `pd.rosto`, dentro dos limites do quadro inteiro
+  const lado = Math.min(cheia.w, cheia.h) * 0.62;
+  const cx = cheia.x + cheia.rosto[0];
+  const cy = cheia.y + cheia.rosto[1];
+  const sx = Math.max(cheia.x, Math.min(cheia.x + cheia.w - lado, cx - lado / 2));
+  const sy = Math.max(cheia.y, Math.min(cheia.y + cheia.h - lado, cy - lado / 2));
+  return { img, sx, sy, sw: lado, sh: lado };
+}
+
+/** O recorte do rosto (gritando) de `lutador/ficha/golpe` — NUNCA null com a arte pronta (nível 3, retrato, sempre existe). Só é null sem a arte (`elenco[lutador]` ausente, dublê de teste). */
 export function rostoDoGolpe(elenco: Elenco, lutador: IdLutador, ficha: string | null, golpe: string): RostoDaFaixa | null {
   const r = elenco[lutador];
   if (!r) return null;
   const ch = r.ch as unknown as LutadorMontado;
   const roteiro = roteiroDoFilme(lutador, ficha, golpe, false);
   const b0 = roteiro.batidas[0];
-  if (!b0) return null;
-  const resolvido = resolverPoseDoFilme(ch, b0.atacante, b0.atacanteAlt, 'idle0');
-  if (!resolvido.painel) return null;
-  const pd = getPD(ch, resolvido.painel);
-  const img = r.arte.imagemDe(pd);
-  if (!img) return null;
-  if (!pd.rosto) return { img, sx: pd.x, sy: pd.y, sw: pd.w, sh: pd.h };
-  // recorte mais justo (cabeça), centrado em `pd.rosto`, dentro dos limites do quadro inteiro
-  const lado = Math.min(pd.w, pd.h) * 0.62;
-  const cx = pd.x + pd.rosto[0];
-  const cy = pd.y + pd.rosto[1];
-  const sx = Math.max(pd.x, Math.min(pd.x + pd.w - lado, cx - lado / 2));
-  const sy = Math.max(pd.y, Math.min(pd.y + pd.h - lado, cy - lado / 2));
-  return { img, sx, sy, sw: lado, sh: lado };
+  if (b0) {
+    const resolvido = resolverPoseDoFilme(ch, b0.atacante, b0.atacanteAlt, 'idle0');
+    if (resolvido.painel) {
+      const nivel1 = celulaDoPainel(ch, r.arte, resolvido.painel);
+      if (nivel1) return nivel1;
+    }
+  }
+  const alternativa = POSE_DE_ROSTO_ALTERNATIVA[lutador];
+  if (alternativa) {
+    const nivel2 = celulaDoPainel(ch, r.arte, alternativa);
+    if (nivel2) return nivel2;
+  }
+  const retrato = r.arte.retrato(ch.head);
+  if (!retrato) return null;
+  const [sx, sy, sw, sh] = retrato.recorte;
+  return { img: retrato.imagem, sx, sy, sw, sh };
 }
 
 export interface OpcoesFaixaRosto {
@@ -63,29 +98,28 @@ export interface OpcoesFaixaRosto {
   readonly alfa: number;
   /** -w..0: desloca a faixa para a esquerda (entra/sai pelo lado esquerdo); 0 = no lugar. */
   readonly deslocaX: number;
-  /** Cor de destaque do lutador (uma listra). */
-  readonly corDestaque: string;
+  /** A paleta (3 tons) do LUTADOR que ataca — não do golpe (`paleta-lutador.ts`, pedido do dono: autêntica de cada um). */
+  readonly paleta: PaletaFaixa;
   readonly nome: string;
-  readonly corNome: readonly [nucleo: string, sombra: string];
   readonly rosto: RostoDaFaixa | null;
 }
 
-/** A pintura da faixa (fundo listrado laranja/amarelo, o rosto à esquerda com o brilho de impacto, o nome). Pura: não muda estado. */
+/** A pintura da faixa (fundo listrado na paleta do LUTADOR, o rosto à esquerda com o brilho de impacto, o nome). Pura: não muda estado. */
 export function desenharFaixaComRosto(o: OpcoesFaixaRosto): void {
-  const { ctx } = o;
+  const { ctx, paleta: p } = o;
   const x = o.x + o.deslocaX;
   ctx.save();
   ctx.globalAlpha = o.alfa;
   ctx.beginPath();
   ctx.rect(o.x, o.y, o.w, o.h); // o clip fica na posição FIXA (a faixa desliza por dentro dele, sem vazar)
   ctx.clip();
-  // fundo: gradiente vertical escuro -> laranja -> amarelo -> laranja -> escuro (o "miolo" claro da referência)
+  // fundo: gradiente vertical escuro -> médio -> claro (o "miolo" vivo) -> médio -> escuro, nos 3 tons do LUTADOR
   const g = ctx.createLinearGradient(0, o.y, 0, o.y + o.h);
-  g.addColorStop(0, '#5a1f00');
-  g.addColorStop(0.16, '#d95f0e');
-  g.addColorStop(0.5, '#ffd34d');
-  g.addColorStop(0.84, '#d95f0e');
-  g.addColorStop(1, '#5a1f00');
+  g.addColorStop(0, p.escuro);
+  g.addColorStop(0.16, p.medio);
+  g.addColorStop(0.5, p.claro);
+  g.addColorStop(0.84, p.medio);
+  g.addColorStop(1, p.escuro);
   ctx.fillStyle = g;
   ctx.fillRect(x, o.y, o.w, o.h);
   // listras horizontais escuras, finas (a textura "arranhada" da referência)
@@ -95,11 +129,6 @@ export function desenharFaixaComRosto(o: OpcoesFaixaRosto): void {
     const ly = o.y + (o.h * i) / faixas;
     ctx.fillRect(x, ly - 1, o.w, 2);
   }
-  // 1 listra na cor do lutador, perto do topo (a "identidade" de quem ataca)
-  ctx.globalAlpha = o.alfa * 0.5;
-  ctx.fillStyle = o.corDestaque;
-  ctx.fillRect(x, o.y + o.h * 0.1, o.w, Math.max(3, o.h * 0.045));
-  ctx.globalAlpha = o.alfa;
   // o rosto, encostado na borda de baixo, à esquerda
   let xRosto = x + o.w * 0.12;
   if (o.rosto) {
@@ -123,8 +152,8 @@ export function desenharFaixaComRosto(o: OpcoesFaixaRosto): void {
   }
   // o nome: à direita do rosto (ou centralizado na faixa, sem rosto)
   const nx = o.rosto ? xRosto : x + o.w / 2;
-  const tamanho = tamanhoDoNomeNaFaixaRosto(ctx, o.nome, o.rosto ? x + o.w - nx - 10 : o.w * 0.7);
-  textoArcade(ctx, o.nome, nx, o.y + o.h / 2, tamanho, o.corNome[0], o.corNome[1], o.rosto ? 'left' : 'center', 1, 1, FONTE_DO_ESPECIAL(tamanho));
+  const tamanho = tamanhoDoNomeNaFaixaRosto(ctx, o.nome, o.rosto ? x + o.w - nx - 10 : o.w * 0.7, Math.min(34, Math.round(o.h * 0.26)));
+  textoArcade(ctx, o.nome, nx, o.y + o.h / 2, tamanho, NUCLEO_DO_NOME, SOMBRA_DO_NOME, o.rosto ? 'left' : 'center', 1, 1, FONTE_DO_ESPECIAL(tamanho));
   ctx.restore();
 }
 

@@ -45,7 +45,7 @@ const PERFIS = {
 
 async function abrirJogo(page: Page, perfil: keyof typeof PERFIS, query = ''): Promise<void> {
   await page.setViewportSize(PERFIS[perfil]);
-  await page.goto(`/?seed=3&manual=1&expansao=1${query}`);
+  await page.goto(`/?seed=3&manual=1&expansao=1&ritmo=0${query}`); // ritmo=0: provocação que para o motor (antigo)
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 }
 

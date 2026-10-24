@@ -51,6 +51,8 @@ export type Tarefa = {
   ritmoFilmeRestrito?: true;
   /** `ritmo.super` ligada nesta luta (`--ritmo super`, R-7/R-7b): SOCO FORTE + CHUTE FORTE com a barra cheia. */
   ritmoSuper?: true;
+  /** `ritmo.cpu` ligada nesta tarefa (`--ritmo cpu`, R-10): a CPU reserva a barra e confirma o super (precisa de `ritmoSuper`). */
+  ritmoCpu?: true;
 };
 
 export type ParametrosSim = {
@@ -81,6 +83,8 @@ export type ParametrosSim = {
   ritmoFilmeRestrito?: boolean;
   /** Liga `ritmo.super` (R-7/R-7b) em todas as lutas: a CPU usa SOCO FORTE + CHUTE FORTE com a barra cheia (`cpuInput`/`VistaParaCpu`). */
   ritmoSuper?: boolean;
+  /** Liga `ritmo.cpu` (R-10) em todas as lutas. */
+  ritmoCpu?: boolean;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
   ajustes?: Record<string, unknown>;
 };
@@ -132,7 +136,7 @@ export type Registro = {
    * `especiais` = golpes especiais iniciados (a tarja), `filmes` = filmes abertos, `danoEspecial` = vida tirada em ticks de acerto de especial (de cada lado),
    * `paradoTicks` = estimativa de tempo parado: especiais x 48 + soma da duração do roteiro de cada filme.
    */
-  medidas?: { especiais: [number, number]; filmes: [number, number]; danoEspecial: [number, number]; paradoTicks: number };
+  medidas?: { especiais: [number, number]; filmes: [number, number]; danoEspecial: [number, number]; paradoTicks: number; /** R-10: supers disparados (`special.super`) por lado. */ supers?: [number, number] };
 };
 
 /** Duração (ticks) da tarja completa que congela o motor em todo especial (a cinemática da esquiva/especial). */
@@ -177,6 +181,7 @@ export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | nul
       ...(p.ritmoIntervalos ? { ritmoIntervalos: true as const } : {}),
       ...(p.ritmoFilmeRestrito ? { ritmoFilmeRestrito: true as const } : {}),
       ...(p.ritmoSuper ? { ritmoSuper: true as const } : {}),
+      ...(p.ritmoCpu ? { ritmoCpu: true as const } : {}),
     });
   };
   if (p.semRegulares !== true) {
@@ -250,13 +255,14 @@ function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; film
 }
 
 /** As flags de `ritmo` desta tarefa (R-6/R-7b), `{}` quando nenhuma: igual a `motorV2DaTarefa`. */
-function ritmoDaTarefa(t: Tarefa): { ritmo?: { intervalos?: true; filmeRestrito?: true; super?: true } } {
-  if (!t.ritmoIntervalos && !t.ritmoFilmeRestrito && !t.ritmoSuper) return {};
+function ritmoDaTarefa(t: Tarefa): { ritmo?: { intervalos?: true; filmeRestrito?: true; super?: true; cpu?: true } } {
+  if (!t.ritmoIntervalos && !t.ritmoFilmeRestrito && !t.ritmoSuper && !t.ritmoCpu) return {};
   return {
     ritmo: {
       ...(t.ritmoIntervalos ? { intervalos: true as const } : {}),
       ...(t.ritmoFilmeRestrito ? { filmeRestrito: true as const } : {}),
       ...(t.ritmoSuper ? { super: true as const } : {}),
+      ...(t.ritmoCpu ? { cpu: true as const } : {}),
     },
   };
 }
@@ -305,7 +311,7 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
       [0, 0, 0, 0],
     ],
   };
-  const medidas = { especiais: [0, 0] as [number, number], filmes: [0, 0] as [number, number], danoEspecial: [0, 0] as [number, number], paradoTicks: 0 };
+  const medidas = { especiais: [0, 0] as [number, number], filmes: [0, 0] as [number, number], danoEspecial: [0, 0] as [number, number], paradoTicks: 0, supers: [0, 0] as [number, number] };
   const ultimoAtk: [number, number] = [f0.atkId, f1.atkId];
   const vida: [number, number] = [f0.vidaTotal, f1.vidaTotal];
   let faseAnterior = g.phase;
@@ -357,6 +363,7 @@ function medirPortoes(m: NonNullable<Registro['medidas']>, eventos: readonly Eve
   for (const e of eventos) {
     if (e.tipo === 'special') {
       m.especiais[e.lutador]++;
+      if (e.super === true && m.supers) m.supers[e.lutador]++;
       m.paradoTicks += TICKS_DA_TARJA;
     }
     else if (e.tipo === 'filme') {

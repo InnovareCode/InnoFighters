@@ -52,7 +52,7 @@ async function espiarCanvas(page: Page): Promise<void> {
 
 async function abrir(page: Page, query = '', viewport?: { width: number; height: number }): Promise<void> {
   if (viewport) await page.setViewportSize(viewport);
-  await page.goto(`/?seed=7&manual=1&expansao=1${query}`);
+  await page.goto(`/?seed=7&manual=1&expansao=1&ritmo=0${query}`); // ritmo=0: congela 48 ticks (comportamento antigo; ver ritmo-r1-r2 para o padrão)
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 }
 
@@ -319,7 +319,7 @@ test.describe('cinemática do especial: parte do jogo, sem chave nas Opções (d
     const r = await rotulos(page);
     expect(r).toHaveLength(9);
     expect(r).not.toContain('CINEMÁTICA DO ESPECIAL');
-    await page.goto('/?seed=7&manual=1&expansao=4');
+    await page.goto('/?seed=7&manual=1&expansao=4&ritmo=0');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await irParaAsOpcoes(page);
     expect(await rotulos(page)).toHaveLength(9);
@@ -372,7 +372,7 @@ test.describe('cinemática do especial: parte do jogo, sem chave nas Opções (d
   });
 
   test('?expansao=4 (fidelidade dos 4 originais): sem cinemática, qualquer que seja a preferência', async ({ page }) => {
-    await page.goto('/?seed=7&manual=1&expansao=4');
+    await page.goto('/?seed=7&manual=1&expansao=4&ritmo=0');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     await hook(page, `(h) => { h.persist.settings.cinematica = 'completa'; }`);
     await abrirLuta(page, { mode: 'versus', c1: 'hayato', c2: 'caio', cpu: null });

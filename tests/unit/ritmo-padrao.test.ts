@@ -2,20 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { NOMES_RITMO, REGRAS_PADRAO, regrasComRitmo, RITMO_PADRAO, RITMO_TUDO_LIGADO, ritmoDaUrl } from '../../src/meta';
 
 /*
- * R-1/R-2/R-6 (docs/spec-redesenho-jogabilidade.md §4): o dono jogou com `?ritmo=1`, aprovou as 4 ondas já entregues e provadas
- * (tarja, provocação, intervalos, filmeRestrito), e elas viraram PADRÃO (24/10/2026) — molde igual a `Regras.motorV2`
- * (V2-6, sempre ligado), com uma diferença: as 4 que ainda não têm prova (super, cadeia, cpu, impacto) continuam desligadas,
- * tanto em `RITMO_PADRAO` quanto no padrão de `ritmoDaUrl`. Só entram por `?ritmo=1` (prévia completa) ou por nome explícito
- * (`?ritmo=super`), e aí sim são caso de teste próprio quando cada uma for provada. `?ritmo=0` continua o rollback TOTAL,
- * inclusive das 4 já aprovadas.
+ * R-1/R-2/R-6/R-7/R-10 (docs/spec-redesenho-jogabilidade.md §4): o dono jogou com `?ritmo=1`, aprovou, e tarja, provocação, intervalos e
+ * filmeRestrito viraram PADRÃO (24/10/2026); no mesmo dia, por ordem dele, super e cpu entraram também (sob a prova final da Íris). Molde igual a
+ * `Regras.motorV2` (V2-6, sempre ligado). cadeia e impacto ainda não existem no motor e seguem fora do padrão. `?ritmo=0` é o rollback TOTAL.
  */
 
 const TUDO = { tarja: true, provocacao: true, intervalos: true, filmeRestrito: true, super: true, cadeia: true, cpu: true, impacto: true };
-const PADRAO = { tarja: true, provocacao: true, intervalos: true, filmeRestrito: true };
+const PADRAO = { tarja: true, provocacao: true, intervalos: true, filmeRestrito: true, super: true, cpu: true };
 
-describe('ritmo: as 4 ondas provadas ligadas por padrão (ao contrário de super/cadeia/cpu/impacto, ainda sem prova)', () => {
-  it('RITMO_PADRAO tem só as 4 provadas e está congelado', () => {
+describe('ritmo: 6 flags ligadas por padrão (tarja, provocação, intervalos, filmeRestrito, super, cpu); cadeia/impacto ainda não existem no motor', () => {
+  it('RITMO_PADRAO tem só as 6 e está congelado (sem cadeia/impacto)', () => {
     expect(RITMO_PADRAO).toEqual(PADRAO);
+    expect(RITMO_PADRAO.cadeia).toBeUndefined();
+    expect(RITMO_PADRAO.impacto).toBeUndefined();
     expect(Object.isFrozen(RITMO_PADRAO)).toBe(true);
   });
 
@@ -36,7 +35,7 @@ describe('ritmo: as 4 ondas provadas ligadas por padrão (ao contrário de super
 });
 
 describe('ritmoDaUrl: o kill switch e o A/B (?ritmo=)', () => {
-  it('ausente = RITMO_PADRAO (as 4 provadas) — ao contrário de "nada ligado"', () => {
+  it('ausente = RITMO_PADRAO (as 6) — ao contrário de "nada ligado"', () => {
     for (const busca of ['', '?x=1', '?expansao=4']) expect(ritmoDaUrl(busca)).toEqual(PADRAO);
   });
 

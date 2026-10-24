@@ -52,7 +52,7 @@ const PERTO = `(h, alvo, tol) => {
 
 /** Boot -> intro -> title -> menu, pelo teclado de verdade (como o dono joga). */
 async function irAoMenu(page: Page, url: string): Promise<void> {
-  await page.goto(url);
+  await page.goto(url + (url.includes("?") ? "&" : "?") + "ritmo=0"); // ritmo=0: tarja que congela (comportamento antigo); padrão novo = ritmo-r1-r2
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   await esperarCena(page, 'boot');
   await page.keyboard.press('Enter');

@@ -17,4 +17,5 @@
 - [Nomes dos combos próprios](project_nomes_combos.md) — 20 nomes V2-4; nome e efeito dividem o vão até as teclas (416 px); campo efeito pendente
 - [CAIO capoeira (auditoria 24/10)](project_caio_capoeira.md) — f3 v2 + CR2 curadas (§8); L1C1 ecoa a ref; compasso espelhar = dono
 - [Supers e partitura (R-5/R-13)](project_supers_partitura.md) — 12 supers; 20→17 combos; super aceito no 3º passo do BÁSICO; trailer: ninguém parado > 30 ticks
+- [Capa YouTube v1](project_capa_youtube.md) — canvas no Playwright (woff2); logo sem fita; teto 5 palavras; "N HITS" plural; A recomendada
 - [Proposta de expansão](project_proposta_expansao.md) — logo Ouro Forjado recomendado; 4 lutadores + BAATAR; roda de cores; como capturar o título

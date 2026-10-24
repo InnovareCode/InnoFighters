@@ -49,6 +49,12 @@ export type EstadoIa = {
   puniuEsquiva: number;
   /** (V2-4, combos próprios) `atkId` do golpe cujo acerto a CPU já considerou continuar num combo próprio (um sorteio por golpe). */
   proprioAtk: number;
+  /** R-10 (`ritmo.cpu`): a CPU deste round RESERVA a barra para o super? Sorteado uma vez por round (null = ainda não sorteado). */
+  reservaSuper: boolean | null;
+  /** R-10: ticks seguidos com a barra cheia (para o super sair mesmo sem confirmação se a janela demora). */
+  superCheio: number;
+  /** R-10: `atkId` do golpe cujo acerto a CPU já considerou fechar com o super (um sorteio por golpe). */
+  superAtk: number;
 };
 export type PlanoIa = Partial<Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp', boolean>> & { dur?: number };
 
@@ -70,9 +76,11 @@ export interface PartidaParaLutador {
   readonly combosLigados?: boolean;
   /** R-7 (`ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Opcional: dublê de teste sem o campo = desligado. */
   readonly ritmoSuperLigado?: boolean;
+  /** R-10 (D-R4): regen da barra por tick. Ausente = 0,04 de sempre (só `ritmo.super` + `ritmo.cpu` sobem, para a CPU juntar barra sem deixar de usar especiais). */
+  readonly regenDeBarra?: number;
 }
 
-const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0, proprioAtk: -1 });
+const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0, proprioAtk: -1, reservaSuper: null, superCheio: 0, superAtk: -1 });
 
 /** Nível (1..3) de uma carga com `carga` ticks segurados: o maior i+1 tal que carga >= niveis[i]. */
 function nivelDaCarga(def: CargaDef, carga: number): 1 | 2 | 3 {
@@ -667,7 +675,7 @@ export class Fighter {
         return;
       case 'move':
         this.updateMove(inp, opp, jogo);
-        this.regen();
+        this.regen(jogo.regenDeBarra);
         return;
       default:
         break;
@@ -750,7 +758,7 @@ export class Fighter {
       }
     }
     this.physics(jogo);
-    this.regen();
+    this.regen(jogo.regenDeBarra);
   }
 
   /** A esquiva está na RECUPERAÇÃO (já sem invulnerabilidade; punível por golpe, arremesso e contragolpe)? Para a CPU. */
@@ -818,8 +826,8 @@ export class Fighter {
     return true;
   }
 
-  regen(): void {
-    this.en = Math.min(MAX_EN, this.en + 0.04);
+  regen(taxa = 0.04): void {
+    this.en = Math.min(MAX_EN, this.en + taxa);
   }
 
   private updateMove(inp: InputFrame, opp: Fighter, jogo: PartidaParaLutador): void {

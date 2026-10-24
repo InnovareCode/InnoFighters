@@ -17,3 +17,4 @@
 - [SW skipWaiting pendente + boot lento (5080310)](project_sw-skipwaiting-pendente-e-boot-lento.md) — flake do spec 'versão nova' (Chromium), trailer Fast 3G, 0,913 / 145,3 MiB
 - [Jogar de verdade contra CPU (209ecd8)](reference_jogar-de-verdade-contra-cpu.md) — rAF estrangulado headless, worktree isolado de HMR, tarja 100% exceto reduced-motion, filme nunca dispara, tempo parado 44,6%; + vite build não da DEV hooks, h.ui.go so comeca fade, causa raiz do R-3
 - [R-4: prova da onda 1 (f92bbcf)](project_r4-onda1-ritmo-prova.md) — G1/G2 medidos (45,0%→31,9%), tarja 0 em 100% das 11 partidas, causa raiz do filme (atalho sem cfgMotorV2), fixture do CAIO corrigida (16 testes)
+- [QA super + ritmo padrao (7f62baf)](project_qa-super-ritmo-padrao-7f62baf.md) — teclado real do super (dispatch na mesma evaluate), specs velhos com ritmo=0, 4 achados, G1/G2/G10

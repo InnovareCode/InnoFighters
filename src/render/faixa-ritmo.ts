@@ -1,9 +1,9 @@
 import type { Elenco } from '../assets/elenco';
 import { LARGURA } from '../core/constantes';
 import type { IndiceLutador, LeituraLuta } from '../core/contratos';
-import { identidadeDe, identidadePadrao } from './identidade-especiais';
 import { desenharFaixaComRosto, rostoDoGolpe } from './faixa-rosto';
 import { chDaFicha } from './lutador';
+import { paletaFaixaDe } from './paleta-lutador';
 import type { Ctx } from './tela';
 
 /*
@@ -20,9 +20,16 @@ import type { Ctx } from './tela';
  * lados, ou um combo rápido): o 2º entra na fila e espera o 1º acabar; nunca acumula motor parado, porque nada bloqueia o motor.
  */
 
-export const ALTURA_FAIXA_RITMO = 170;
+/**
+ * Especial comum: a luta CONTINUA rodando com a faixa na tela, então ela NÃO pode cobrir a zona das cabeças (topo por volta de y=205):
+ * <= 105 px de altura, de y=86 a y=191 (decisão do Atlas, 24/10/2026; limite de 195 do e2e ritmo-r1-r2.spec.ts, que não foi afrouxado).
+ * A faixa GRANDE de 170 px é só do super (`TarjaDoSuper`, `ALTURA_TARJA_SUPER`), que congela a cena.
+ */
+export const ALTURA_FAIXA_RITMO = 105;
 /** Topo fixo da faixa (px lógicos): abaixo do placar do HUD (`hud.ts`, nome/placar terminam perto de y=86). */
 export const Y_TOPO_FAIXA_RITMO = 86;
+/** Até onde a faixa do especial comum pode chegar (a cabeça do lutador em pé começa em ~205). */
+export const Y_FUNDO_MAXIMO_FAIXA_RITMO = 195;
 export const DURACAO_FAIXA_1A_VEZ = 40;
 export const DURACAO_FAIXA_REPETIDA = 24;
 const ENTRA_1A_VEZ = 6;
@@ -103,9 +110,7 @@ export class FaixaRitmo {
     const ficha = a.ev.ficha === undefined ? (f.ficha ?? null) : a.ev.ficha;
     const r = elenco[f.id];
     const ch = chDaFicha(r.ch, ficha);
-    const feita = identidadeDe(f.id, ficha, a.ev.golpe);
     const nome = (ch.moves as Record<string, { name?: string } | undefined>)[a.ev.golpe]?.name ?? a.ev.golpe;
-    const id = feita ?? identidadePadrao(nome, ch.fire);
 
     const entraK = a.entra > 0 ? Math.min(1, a.t / a.entra) : 1;
     const saiIni = a.duracao - a.sai;
@@ -121,9 +126,8 @@ export class FaixaRitmo {
       h: ALTURA_FAIXA_RITMO,
       alfa: 1,
       deslocaX,
-      corDestaque: id.paleta.brilho,
+      paleta: paletaFaixaDe(f.id, ficha),
       nome,
-      corNome: [id.paleta.nucleo, id.paleta.sombra],
       rosto: rostoDoGolpe(elenco, f.id, ficha, a.ev.golpe),
     });
   }

@@ -3,7 +3,7 @@ import type { Elenco } from '../../src/assets/elenco';
 import { LARGURA } from '../../src/core/constantes';
 import type { IdLutador, LeituraLuta, LutadorLeitura } from '../../src/core/contratos';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { ALTURA_FAIXA_RITMO, DURACAO_FAIXA_1A_VEZ, DURACAO_FAIXA_REPETIDA, FaixaRitmo, Y_TOPO_FAIXA_RITMO } from '../../src/render/faixa-ritmo';
+import { ALTURA_FAIXA_RITMO, DURACAO_FAIXA_1A_VEZ, DURACAO_FAIXA_REPETIDA, FaixaRitmo, Y_FUNDO_MAXIMO_FAIXA_RITMO, Y_TOPO_FAIXA_RITMO } from '../../src/render/faixa-ritmo';
 import type { Ctx } from '../../src/render/tela';
 
 const prod = montarElenco();
@@ -153,8 +153,10 @@ describe('FaixaRitmo (R-2, §3.2): o aviso do especial SEM congelar a luta', () 
     expect(g.chamadas.some(([n]) => n === 'fillText')).toBe(true);
   });
 
-  it('geometria: a faixa é alta o bastante para caber o rosto (§3.2, terço de cima) e começa logo abaixo do HUD', () => {
-    expect(ALTURA_FAIXA_RITMO).toBeGreaterThanOrEqual(120);
-    expect(Y_TOPO_FAIXA_RITMO).toBeGreaterThanOrEqual(80);
+  it('geometria: a faixa do especial COMUM (a luta continua rodando) tem <= 105 px e termina em y <= 195, acima das cabeças (~205); começa logo abaixo do HUD', () => {
+    expect(ALTURA_FAIXA_RITMO).toBeLessThanOrEqual(105);
+    expect(Y_TOPO_FAIXA_RITMO).toBeGreaterThanOrEqual(84);
+    expect(Y_TOPO_FAIXA_RITMO + ALTURA_FAIXA_RITMO).toBeLessThanOrEqual(Y_FUNDO_MAXIMO_FAIXA_RITMO);
+    expect(Y_FUNDO_MAXIMO_FAIXA_RITMO).toBe(195); // o limite do e2e (ritmo-r1-r2.spec.ts) não foi afrouxado
   });
 });

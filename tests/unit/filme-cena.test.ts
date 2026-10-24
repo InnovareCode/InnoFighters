@@ -154,7 +154,8 @@ describe('V2-3d cena: o filme congela a CENA, não o motor', () => {
   });
 
   it('antes do tick 10 a borda não pula; segurar direção/botão sem borda também não', () => {
-    const t = montar();
+    // o limiar de 10 é o de SEM `ritmo.super` (com ele o pulo vale a partir do 6: filme-cena-ritmo-super.test.ts)
+    const t = montar({ regras: { ...REGRAS_PADRAO, ritmo: { ...REGRAS_PADRAO.ritmo, super: false } } });
     t.ateLutar();
     t.bater('sFwd');
     t.frames.p1 = { ...INPUT_VAZIO, hp: true };

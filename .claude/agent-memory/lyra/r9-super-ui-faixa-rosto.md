@@ -47,4 +47,28 @@ cada tecla); sem SVG do Apolo ainda — anel CSS magenta/rosa (`#touch #sup`, `t
 (centro entre as colunas de soco/chute, acima do aglomerado). `body.sem-super` esconde (main.ts, mesma convenção do
 `sem-esquiva`). Medido em 844×390: encaixa sem sobrepor pausa nem o resto — ver captura do handoff da sessão.
 
+**Paleta por lutador (pedido do dono, mesma sessão, depois de ver a 1ª versão):** a cor da faixa deixou de ser a identidade do
+GOLPE e virou a cor PREDOMINANTE de cada lutador — `src/render/paleta-lutador.ts` (novo, só UI, `src/data/lutadores` intocado),
+3 tons por lutador tirados do `retrato.webp` de cada um (NÃO do `fire`/`accent`: esses são a cor do EFEITO, ex. HAYATO é ciano
+no raio mas preto+limão na roupa). `desenharFaixaComRosto` recebe `paleta: PaletaFaixa` em vez de `corDestaque`; o nome agora é
+SEMPRE branco+contorno quase-preto (`NUCLEO_DO_NOME`/`SOMBRA_DO_NOME`), contraste medido (WCAG) contra as 12 paletas (10 + NILA/
+SARPA + ZENON/chefe2) em `paleta-lutador.test.ts` — prova inclusive que o contorno sozinho não bastaria sem o branco por trás.
+
+**"Nunca vazio" não bastava — todo lutador precisa de rosto (2º pedido, mesma sessão):** `rostoDoGolpe` agora tem 3 níveis:
+(1) a célula de painel do grito do roteiro (a maioria); (2) para quem o grito NÃO é painel (NILA `sa0`, ZENON `cena1` — poses
+do MUNDO), uma célula f0..f5 ALTERNATIVA escolhida olhando o `filme.webp` de cada um à mão (`POSE_DE_ROSTO_ALTERNATIVA`: NILA
+`f4`, ZENON `f4` — os dois são bustos com cara de esforço/grito, mesmo enquadramento dos outros); (3) sem NENHUMA célula do
+FILME na memória (rede ainda não trouxe, ou falhou), cai no `retrato.webp` (`r.arte.retrato(ch.head)`, o MESMO que HUD/seleção
+usam) — todo lutador tem retrato.webp, então este nível NUNCA devolve null com a arte pronta. **Lição:** "não tem painel no
+grito" não quer dizer "não tem rosto nenhum" — a página FILME pode ter outras células boas; vale abrir o atlas.json/a imagem e
+olhar antes de desistir e cair no fallback mais pobre.
+
 [[armadilhas-ui-innofighters]] [[ritmo-r1-r2-tarja-sem-congelar]] [[qa-reprovado-filme-flag-balao-deslize]]
+
+**Geometria (Atlas, após a Íris): faixa do ESPECIAL COMUM <= 105 px (y 86-191, limite do e2e 195 NÃO afrouxado: ela roda com a luta
+andando e a cabeça começa em ~205); a de 170 px é só da `TarjaDoSuper` (cena congelada, `ALTURA_TARJA_SUPER`).** O tamanho do nome
+escala com a altura (`min(34, h*0.26)`). Lição: faixa que fica sobre o jogo rodando precisa de teto de y medido por pixel-diff, não de gosto.
+
+**`modoDoFilme` usa `ev.decideALuta` (campo do motor, Vega), NUNCA `game.matchWinner`** — esse só sai em `endRound`, ~100 ticks depois do
+acerto, então o KO que fecha a luta abria CURTO. Teste de caminho real (motor com `ritmo.filmeRestrito` + `wins = winsNeeded-1`) em
+`filme-cena-ritmo-super.test.ts`. e2e isolado: `vite --config` com `hmr:false, watch:null` em porta própria (5393), config apagada depois.

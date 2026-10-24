@@ -39,7 +39,7 @@ const PERFIS = { desktop: { width: 1280, height: 720 }, celular: { width: 844, h
 
 async function abrirJogo(page: Page, perfil: keyof typeof PERFIS, query = '', manual = true, seed = 3): Promise<void> {
   await page.setViewportSize(PERFIS[perfil]);
-  await page.goto(`/?seed=${seed}${manual ? '&manual=1' : ''}&expansao=1${query}`);
+  await page.goto(`/?seed=${seed}${manual ? '&manual=1' : ''}&expansao=1&ritmo=0${query}`); // ritmo=0: provocação que para o motor (antigo)
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   // espia o texto desenhado no canvas: o que o jogador LÊ na tela, quadro a quadro
   await page.evaluate(() => {
@@ -409,7 +409,7 @@ test.describe('P4: onde a provocação roda (e onde nunca abre)', () => {
     expect(r.abriu, 'CPU×CPU').toBe(0);
     // ?expansao=4: regras sem cinemática (o jogo de 4)
     await abrirJogo(page, 'desktop', '', true);
-    await page.goto('/?seed=3&manual=1&expansao=4');
+    await page.goto('/?seed=3&manual=1&expansao=4&ritmo=0');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
     expect(await hook(page, '(h) => h.ui.c.regras.cinematica')).toBe(false);
     await abrirLuta(page, { mode: 'cpu', c1: 'hayato', c2: 'caio', cpu: 2 });

@@ -690,20 +690,21 @@ export class CenaFight implements Cena {
   }
 
   /**
-   * O modo do filme: COMPLETA, ou CURTA na repetição do mesmo especial na luta (D-V4), no TREINO (D-V5) e com a cinemática CURTA, DESLIGADA
+   * O modo do filme: COMPLETA, ou CURTA na repetição do mesmo especial na luta (D-V4), no TREINO (D-R5/D-V5) e com a cinemática CURTA, DESLIGADA
    * ou movimento reduzido. R-9 (§3.3): quando o evento traz `motivo` (Vega, `ritmo.filmeRestrito`/`ritmo.super`), a tabela do §3.3 manda em
-   * vez da heurística de hoje — 'super': COMPLETO na 1ª vez DAQUELE super na luta, CURTO depois (mesma marca de "visto", por motivo: um super
-   * reaproveita o golpe de um especial que já tenha aberto filme de KO, e as duas primeiras vezes não podem se confundir); 'ko': COMPLETO só
-   * se este acerto decidiu a LUTA (`game.matchWinner` já sai setado de `resolverVidaZerada`, antes do evento `filme`), CURTO no KO de um round
-   * só. TREINO continua sempre CURTO (D-V5; em treino o motor nunca mata, então 'ko' nem chega aqui — só 'super' pode, e cai nesta regra).
+   * vez da heurística de hoje — KO que DECIDE A LUTA (`ev.decideALuta`, calculado pelo motor no tick do KO: `game.matchWinner` só é
+   * preenchido em `endRound`, ~100 ticks DEPOIS do acerto, então não serve) = COMPLETO; 'super': COMPLETO na 1ª vez DAQUELE super na luta,
+   * CURTO depois (marca de "visto" por motivo: um super reaproveita o golpe de um especial que já tenha aberto filme de KO); 'ko' de
+   * round = CURTO. TREINO é sempre CURTO (o motor nunca mata em treino; só o 'super' chega, e cai nesta regra).
    */
   private modoDoFilme(chave: string, ev: EventoFilme): ModoFilme {
     const repetido = this.filmesVistos.has(chave);
     this.filmesVistos.add(chave);
     const { game } = this.ui.m;
     if (this.modoDaCine() !== 'completa' || game.training) return 'curta';
+    if (ev.decideALuta === true) return 'completa';
     if (ev.motivo === 'super') return repetido ? 'curta' : 'completa';
-    if (ev.motivo === 'ko') return game.matchWinner !== null ? 'completa' : 'curta';
+    if (ev.motivo === 'ko') return 'curta';
     return repetido ? 'curta' : 'completa';
   }
 
@@ -780,7 +781,6 @@ export class CenaFight implements Cena {
     if (!projetil) a.x = clamp(d.x - a.facing * (def.distancia ?? 150), 60, 900);
     const depois = { atacante: pos(a), defensor: pos(d) };
     // R-9 (DEV): `?filme=lutador:golpe:super` ou `:ko[:luta]` simula o `motivo` do R-6/R-7 (ainda sem o motor real) para provar `modoDoFilme`.
-    if (alvo.motivo === 'ko' && alvo.decideALuta) game.matchWinner = a.indice;
     const ev: EventoFilme = {
       tipo: 'filme',
       atacante: a.indice,
@@ -791,6 +791,7 @@ export class CenaFight implements Cena {
       dano,
       contragolpe: false,
       ko: alvo.motivo === 'ko',
+      ...(alvo.decideALuta ? { decideALuta: true } : {}),
       trocaDeBarra: false,
       final: def.final ?? 'derruba',
       antes,

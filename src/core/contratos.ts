@@ -506,6 +506,8 @@ export type EventoLuta =
       depois: { atacante: PosFilme; defensor: PosFilme };
       /** R-6 (`ritmo.filmeRestrito`): por que este filme abriu (super do R-7, ou o especial comum que deu KO). Ausente = flag desligada. */
       motivo?: 'super' | 'ko';
+      /** O KO deste filme decide a LUTA (só verdadeiro com `ko: true` e o vencedor fechando `winsNeeded`); o motor sempre preenche. Ausente = não decide. */
+      decideALuta?: boolean;
     }
   | {
       tipo: 'throw';
@@ -521,7 +523,13 @@ export type EventoLuta =
       /** V2-3c: este agarrão abriu um FILME (o evento `filme` vem logo depois). Ausente = arremesso comum. */
       filme?: true;
     }
-  | { tipo: 'ko'; defensor: IndiceLutador; pitch: number }
+  | {
+      tipo: 'ko';
+      defensor: IndiceLutador;
+      pitch: number;
+      /** R-9/Íris: este KO encerra a LUTA (o vencedor do round fecha `winsNeeded`), calculado no tick do KO — `matchWinner` só sai em `endRound`, ~100 ticks depois. O motor sempre preenche; ausente = não decide. */
+      decideALuta?: boolean;
+    }
   | {
       tipo: 'round';
       fase: 'start' | 'fight' | 'timeover' | 'end';

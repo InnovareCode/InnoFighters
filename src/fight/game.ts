@@ -68,6 +68,8 @@ const entradaGuardadaVazia = (): EntradaGuardada => ({ botao: null, dirs: [], es
 export const TETO_GOLPE = 26;
 /** R-7 (`ritmo.super`, spec §3.4): teto PRÓPRIO do super (substitui `TETO_GOLPE` no golpe dele, não soma). */
 export const TETO_SUPER = 32;
+/** R-10 (D-R4, liberada pelo dono para o G10): regen da barra por tick quando o super e a CPU do ritmo estão ligados (padrão do jogo: 0,04). */
+export const REGEN_DE_BARRA_RITMO = 0.07;
 /** V2-3c (spec §4.1, H2): fração da vida TOTAL do defensor (todas as barras do chefão) que um combo tira, no máximo. */
 export const TETO_COMBO = 0.4;
 /** Piso do teto de combo: o teste CPU x CPU proíbe acerto de dano zero. */
@@ -278,6 +280,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private ritmoFilmeRestrito = false;
   /** R-7 (`ConfigPartida.ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Público: `Fighter` (`PartidaParaLutador`) e `cpuInput` (`VistaParaCpu`) leem. */
   ritmoSuperLigado = false;
+  /** R-10 (`ConfigPartida.ritmo.cpu`): a CPU reserva a barra para o super e o confirma (`cpuInput`/`VistaParaCpu`). Só tem efeito junto de `ritmo.super`. */
+  ritmoCpuLigado = false;
+  /** R-10 (D-R4): regen da barra por tick. 0,04 de sempre; `REGEN_DE_BARRA_RITMO` com `ritmo.super` + `ritmo.cpu` (a CPU junta a barra do super sem cortar os especiais). Lido pelo `Fighter`. */
+  regenDeBarra = 0.04;
   /** Já houve um filme neste tick? O 2º contato de especial do mesmo tick resolve como acerto comum (spec §3.1). Zera em `update`. */
   private filmeNoTick = false;
   /** R-7b: a sequência presa do super em andamento, ou null fora de um super. Só uma por vez (o atacante tem que estar livre para começar outra). */
@@ -349,6 +355,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.ritmoIntervalos = cfg.ritmo?.intervalos === true;
     this.ritmoFilmeRestrito = cfg.ritmo?.filmeRestrito === true;
     this.ritmoSuperLigado = cfg.ritmo?.super === true;
+    this.ritmoCpuLigado = cfg.ritmo?.cpu === true;
+    this.regenDeBarra = this.ritmoSuperLigado && this.ritmoCpuLigado && !cfgChefe ? REGEN_DE_BARRA_RITMO : 0.04;
     this.combosPropriosFeitos[0] = 0;
     this.combosPropriosFeitos[1] = 0;
     this.winsNeeded = cfgChefe ? 1 : ajustes.rounds;
@@ -487,6 +495,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         final: (filmeCandidato as FilmeDoGolpe).final ?? 'derruba',
         antes: antes as { atacante: PosFilme; defensor: PosFilme },
         depois: this.posicoesDoFilme(a, d),
+        decideALuta: kill && this.decideALuta(a),
         motivo: 'ko',
       });
       for (const ev of diferidos) this.emitir(ev);
@@ -556,6 +565,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     });
     if (!ultimo) {
       // agenda o resto da sequência (a partir do 2º acerto) — segue por `avancarSuperPreso`, como qualquer super.
+      // O rival fica PRESO entre o 1º acerto e o 2º (sem isto ele ficava com o estado que tinha, livre ou até `move` sem golpe, por `intervalo` ticks).
+      d.setState('hit');
+      d.stun = s.intervalo + 4;
+      d.vx = 0;
       this.superPreso = {
         atacante: a.indice,
         defensor: d.indice,
@@ -594,6 +607,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         final: (filmeCandidato as FilmeDoGolpe).final ?? 'derruba',
         antes: antes as { atacante: PosFilme; defensor: PosFilme },
         depois: this.posicoesDoFilme(a, d),
+        decideALuta: kill && this.decideALuta(a),
         motivo: 'ko',
       });
     } else if (!kill) {
@@ -1160,7 +1174,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       if (superDados) {
         const multContraSuper = emPreparo ? mv.contra?.mult : undefined;
         this.iniciarSuperPreso(a, d, superDados, mv.golpe ?? superDados.golpe, mv.ficha, mv.proj, mv.snd, mv.proj ? mv.kb : Math.max(mv.kb, 7), filmeCandidato, d.gotHits, counter, multContraSuper);
+        // O rival sai do golpe JÁ (como em todo acerto): `avancarSuperPreso` só roda depois de `resolveHits`, e no mesmo tick o rival pode ser
+        // o próximo `a` do laço (golpe trocado) — com `state:'move'` e `move:null` o `activeMove` dele estoura.
         d.move = null;
+        d.setState('hit');
+        d.stun = superDados.intervalo + 4;
+        d.vx = 0;
         return;
       }
     }
@@ -1262,6 +1281,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         final: filme.final ?? 'derruba',
         antes,
         depois: this.posicoesDoFilme(a, d),
+        decideALuta: kill && this.decideALuta(a),
         // R-6 (`ritmo.filmeRestrito`): o filme comum só chega aqui se matou (`restringir`) — nunca sai `motivo:'super'`
         // por este caminho, R-7b: o super passou a ter a sua PRÓPRIA sequência em `avancarSuperPreso`.
         ...(this.ritmoFilmeRestrito ? ({ motivo: 'ko' } as const) : {}),
@@ -1477,6 +1497,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         final: (sp.filmeCandidato as FilmeDoGolpe).final ?? 'derruba',
         antes: antesDoFilme,
         depois: this.posicoesDoFilme(a, d),
+        decideALuta: kill && this.decideALuta(a),
         motivo: 'ko',
       });
     }
@@ -1583,6 +1604,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
       final: filme.final ?? 'derruba',
       antes,
       depois: this.posicoesDoFilme(a, d),
+      decideALuta: kill && this.decideALuta(a),
     });
     for (const ev of diferidos) this.emitir(ev);
   }
@@ -1641,6 +1663,15 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.shake = this.ajustes.shake ? 14 : 0;
   }
 
+  /**
+   * R-9/Íris: o KO de `d` por `a` encerra a LUTA? Calculado NO TICK do KO (o `matchWinner` só nasce em `endRound`, ~100 ticks depois, e o filme/
+   * cena precisa saber agora para ser COMPLETO). Mesma conta de `endRound`: o vencedor do round fecha `winsNeeded`. `d` já está sem vida (0 em
+   * todas as barras), então o vencedor do round é sempre `a`.
+   */
+  private decideALuta(a: Fighter): boolean {
+    return a.wins + 1 >= this.winsNeeded;
+  }
+
   private ko(d: Fighter, a: Fighter, diferidos?: EventoLuta[]): void {
     d.hp = 0;
     d.stun = 0;
@@ -1653,7 +1684,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.t = 0;
     this.shake = 14;
     this.hitstop = 14;
-    const ev: EventoLuta = { tipo: 'ko', defensor: d.indice, pitch: d.ch.pitch };
+    const ev: EventoLuta = { tipo: 'ko', defensor: d.indice, pitch: d.ch.pitch, decideALuta: this.decideALuta(a) };
     if (diferidos) diferidos.push(ev); // V2-3c: o `ko` de um filme sai depois do `hit` e do `filme`
     else this.emitir(ev);
   }

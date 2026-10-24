@@ -76,7 +76,7 @@ async function semear(page: Page, prog: Record<string, unknown> = {}): Promise<v
 
 async function abrirJogo(page: Page, query = '', viewport?: { width: number; height: number }): Promise<void> {
   if (viewport) await page.setViewportSize(viewport);
-  await page.goto(`/?seed=3&manual=1${query}`);
+  await page.goto(`/?seed=3&manual=1&ritmo=0${query}`); // ritmo=0: cinemática que congela (antigo)
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 }
 

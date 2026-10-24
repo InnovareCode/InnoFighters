@@ -75,6 +75,25 @@ export function perfilChefe(nivel: number, fase2: boolean): PerfilCpu {
   return p;
 }
 
+/**
+ * R-10 (`ritmo.cpu` + `ritmo.super`, spec G10: 1 a 4 supers por luta): quanto a CPU de cada nível PROTEGE a barra para o super. Só em lutas
+ * comuns (chefão fica de fora até o R-12 reajustar `danoRecebido`). `reserva` = chance, sorteada uma vez por CICLO (cada vez que a barra
+ * passa de `ENTRADA_NA_RESERVA` depois de ter caído abaixo de `SAIDA_DA_RESERVA`), de a CPU parar de gastar especiais comuns até a barra
+ * encher (FÁCIL baixa, NORMAL média, DIFÍCIL sempre); `confirma` = chance de fechar com o super, com a barra cheia, num acerto que
+ * conectou (finalizador) ou num rival punível ao alcance. Indexado por `me.cpu` (0 FÁCIL, 1 NORMAL, 2 DIFÍCIL).
+ * Medido no harness (20 sementes x 90 pares x 2 níveis, esquiva ligada): ver o handoff do R-10.
+ */
+export const CPU_SUPER = [
+  { reserva: 0.5, confirma: 0.5 },
+  { reserva: 0.8, confirma: 0.75 },
+  { reserva: 1, confirma: 0.95 },
+] as const;
+/** Barra cheia há tanto tempo (ticks) sem janela de confirmação: o super sai assim que o rival estiver ao alcance (evita barra cheia parada). */
+const ESPERA_MAXIMA_DO_SUPER = 300;
+/** Barra a partir da qual a CPU decide (um sorteio por ciclo) juntar o resto para o super; abaixo de `SAIDA_DA_RESERVA` o ciclo recomeça. */
+const ENTRADA_NA_RESERVA = 60;
+const SAIDA_DA_RESERVA = 35;
+
 export const NO_INPUT = (): InputFrame => ({ left: false, right: false, up: false, down: false, lp: false, lk: false, hp: false, hk: false, sp: false });
 
 /** O que a CPU precisa enxergar da partida. */
@@ -86,6 +105,8 @@ export interface VistaParaCpu {
   readonly combosLigados?: boolean;
   /** R-7 (`ritmo.super`): a CPU upgrada o botão único para hp+hk quando o golpe escolhido é o super dela e a barra está cheia. Sem `rnd()` novo. */
   readonly ritmoSuperLigado?: boolean;
+  /** R-10 (`ritmo.cpu`): a CPU reserva a barra para o super e o confirma. Só vale com `ritmoSuperLigado`. Sorteia só com a flag ligada. */
+  readonly ritmoCpuLigado?: boolean;
 }
 
 type TeclaIa = 'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp';
@@ -144,8 +165,10 @@ function planoPorDica(
   L: PerfilCpu,
   rnd: () => number,
   superLigado?: boolean,
+  bloqueia?: (n: NomeGolpe) => boolean,
 ): { plano: PlanoIa; segurar: number } | null {
   for (const { golpe, dica } of me.ch.dicasIa) {
+    if (bloqueia?.(golpe)) continue; // R-10: golpe especial que a CPU está guardando a barra para não gastar (nenhum rnd)
     if (dica.papel === 'troca') {
       const pref = dica.preferir;
       if (!pref || !me.canAfford(golpe)) continue;
@@ -235,6 +258,33 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     else p.right = true;
   };
   if (me.state !== 'idle' && me.state !== 'walk' && me.state !== 'crouch' && me.state !== 'jump' && me.state !== 'move' && me.state !== 'block' && me.state !== 'hit') return inp;
+  // R-10 (`ritmo.cpu`): reserva da barra para o super. Sem a flag (ou sem super para este lutador/ficha) nada abaixo roda: nenhum rnd, nenhum filtro.
+  const sup = game.ritmoCpuLigado === true && superLigado && me.perfilIa === null && opp.perfilIa === null ? superDoLutador(me.ch.id, me.ficha) : undefined;
+  const cfgSup = CPU_SUPER[Math.min(nivel, CPU_SUPER.length - 1)] ?? CPU_SUPER[0];
+  const alcanceDoSuper = (): boolean => {
+    if (!sup) return false;
+    const tipo = M[sup.golpe].type;
+    return tipo === 'fire' ? ad > 130 && ad <= 340 : ad <= 190;
+  };
+  let janelaSuper = false;
+  if (sup) {
+    // Ciclo de reserva: com a barra no começo (< SAIDA_DA_RESERVA, depois de gastar) o sorteio zera; ao passar de ENTRADA_NA_RESERVA a CPU sorteia
+    // UMA vez se vai juntar a barra para o super neste ciclo (os especiais comuns seguem normais até lá: a economia do lutador quase não muda).
+    if (ai.reservaSuper !== null && me.en < SAIDA_DA_RESERVA) ai.reservaSuper = null;
+    if (ai.reservaSuper === null && me.en >= ENTRADA_NA_RESERVA) ai.reservaSuper = rnd() < cfgSup.reserva;
+    ai.superCheio = me.en >= MAX_EN ? ai.superCheio + 1 : 0;
+    // rival punível: em hit stun ou na recuperação de um golpe dele (o super vai conectar)
+    const oppMvAgora = opp.state === 'move' ? opp.golpeAtual() : null;
+    const recuperando = oppMvAgora !== null && opp.mt >= oppMvAgora.S + oppMvAgora.A;
+    janelaSuper = alcanceDoSuper() && (opp.state === 'hit' || recuperando || ai.superCheio > ESPERA_MAXIMA_DO_SUPER);
+  }
+  // Especial comum que a CPU guarda para não gastar a barra do super: com a barra incompleta, TODO especial; com ela cheia, todo especial menos o super
+  // (e o super só nas janelas de confirmação). Só quem sorteou "reserva" no round.
+  const bloqueia = (n: NomeGolpe): boolean => {
+    if (!sup || ai.reservaSuper !== true || n[0] !== 's') return false;
+    if (me.en < MAX_EN) return true;
+    return n !== sup.golpe;
+  };
   // 1) reação a ataques do oponente (uma decisão por golpe)
   const oppMv = opp.state === 'move' ? opp.golpeAtual() : null;
   if (oppMv && oppMv.type !== 'fire' && oppMv.kind !== 'lag' && opp.atkId !== ai.seen && ad < 330) {
@@ -329,7 +379,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   // 2a) COMBO PRÓPRIO (V2-4): depois de um acerto que continua uma sequência do lutador, um sorteio por golpe decide se a CPU a segue. O `rnd()`
   // só existe com a flag ligada, com `proprio` > 0 e com ao menos um golpe pagável que continue a sequência (2 ou mais: mais um para escolher qual).
   if (game.combosLigados === true && L.proprio > 0 && me.state === 'move' && me.connected && !me.buf && ai.proprioAtk !== me.atkId) {
-    const continuam = me.continuacoesDoComboProprio().filter((n) => me.canAfford(n) && serveParaCombo(me, n, dir));
+    const continuam = me.continuacoesDoComboProprio().filter((n) => me.canAfford(n) && !bloqueia(n) && serveParaCombo(me, n, dir));
     if (continuam.length > 0) {
       ai.proprioAtk = me.atkId;
       if (rnd() < L.proprio) {
@@ -344,10 +394,18 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   // 2) encadear combos: soco fraco → chute fraco → soco forte → chute forte → especial
   if (me.state === 'move' && me.connected && !me.buf) {
     const cur = me.golpeAtual();
+    // R-10: finalizador. Barra cheia + acerto que CONECTOU (o rival está preso): um sorteio por golpe decide fechar com o super (3º passo do combo).
+    if (sup && me.en >= MAX_EN && !cur.air && cur.rank < 9 && ai.superAtk !== me.atkId && serveParaCombo(me, sup.golpe, dir)) {
+      ai.superAtk = me.atkId;
+      if (rnd() < cfgSup.confirma) {
+        Object.assign(inp, moveInput(sup.golpe, dir, me, superLigado));
+        return inp;
+      }
+    }
     if (!cur.air && cur.rank < 9 && rnd() < L.combo * 0.09) {
       const candidatos: readonly NomeGolpe[] = ['lp', 'lk', 'hp', 'hk', 'chk', 'sFire', 'sFwd', 'sDown'];
       const pool = candidatos.filter(
-        (n) => (M[n].rank > cur.rank || (!!cur.rep && n === me.move && me.rep < 2)) && me.canAfford(n) && serveParaCombo(me, n, dir),
+        (n) => (M[n].rank > cur.rank || (!!cur.rep && n === me.move && me.rep < 2)) && me.canAfford(n) && !bloqueia(n) && serveParaCombo(me, n, dir),
       );
       const specials = pool.filter((n) => n[0] === 's');
       const normals = pool.filter((n) => n[0] !== 's');
@@ -374,7 +432,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   ai.segurar = 0;
   // Golpe com dica (`ia`) só entra pelo plug de dicas; os ramos de sempre o tratam como "sem energia". Sem dica, `livre`
   // é exatamente `canAfford` (nenhuma conta nova, nenhum rnd).
-  const livre = (n: NomeGolpe): boolean => me.canAfford(n) && !M[n].ia;
+  const livre = (n: NomeGolpe): boolean => me.canAfford(n) && !M[n].ia && !bloqueia(n);
   // ESQUIVA (V2): punir a recuperação da esquiva do rival (arremesso se der, senão o soco forte). Um sorteio por esquiva do rival.
   if (game.esquivaLigada === true && L.punir > 0 && me.grounded && ad < 110 && opp.esquivaPunivel && ai.puniuEsquiva !== opp.esquivaId) {
     ai.puniuEsquiva = opp.esquivaId;
@@ -418,10 +476,17 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     Object.assign(plan, moveInput(n, dir, me, superLigado));
   };
   if (!me.grounded) return inp;
+  // R-10: barra cheia + rival punível ao alcance (ou espera esgotada): o super, com a chance de confirmar do nível (um sorteio por tick de decisão).
+  if (sup && me.en >= MAX_EN && janelaSuper && rnd() < cfgSup.confirma) {
+    Object.assign(inp, moveInput(sup.golpe, dir, me, superLigado));
+    ai.plan = null;
+    ai.t = 0;
+    return inp;
+  }
   // Dicas de CPU (E3): REGRA — só quem declara `ia` num golpe entra aqui; lutador sem dica não chama nada e não gasta
   // RNG. Hoje nenhum papel está implementado (entram em S1b..S5), então isto é só o ponto de plug.
   if (me.ch.dicasIa.length > 0) {
-    const porDica = planoPorDica(me, ad, dir, L, rnd, superLigado);
+    const porDica = planoPorDica(me, ad, dir, L, rnd, superLigado, sup ? bloqueia : undefined);
     if (porDica) {
       // Um tick só: o golpe começa agora, o resto é do estado `move` (e do `segurar`); depois disso, plano novo.
       ai.plan = null;

@@ -22,7 +22,7 @@ const IMG = { tag: 'atlas' } as unknown as CanvasImageSource;
 const arte = { pronta: true, imagemDe: () => IMG, silhuetaDe: () => IMG, retrato: () => null };
 const elenco = Object.fromEntries(Object.entries(PROD).map(([id, ch]) => [id, { ch, arte }])) as unknown as Elenco;
 
-type Opcoes = { settings?: Partial<Configuracoes>; regras?: Regras; c1?: IdLutador; c2?: IdLutador; mode?: 'versus' | 'training'; filmes?: boolean };
+type Opcoes = { settings?: Partial<Configuracoes>; regras?: Regras; c1?: IdLutador; c2?: IdLutador; mode?: 'versus' | 'training'; filmes?: boolean; ritmoMotor?: { filmeRestrito?: boolean; intervalos?: boolean } };
 
 const RITMO_SUPER: Regras = { ...REGRAS_PADRAO, ritmo: { ...REGRAS_PADRAO.ritmo, super: true } };
 
@@ -47,7 +47,7 @@ function montar(o: Opcoes = {}) {
     petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),
   } as unknown as Mundo;
   n.ui.pronto(mundo);
-  n.ui.set('fight', { cfg: { mode: o.mode ?? 'versus', c1: o.c1 ?? 'hayato', c2: o.c2 ?? 'caio', cpu: null, esquiva: regras.esquiva, ...(o.filmes === false ? {} : { motorV2: { filmes: true } }) } });
+  n.ui.set('fight', { cfg: { mode: o.mode ?? 'versus', c1: o.c1 ?? 'hayato', c2: o.c2 ?? 'caio', cpu: null, esquiva: regras.esquiva, ...(o.filmes === false ? {} : { motorV2: { filmes: true } }), ...(o.ritmoMotor ? { ritmo: o.ritmoMotor } : {}) } });
   const cena = n.ui.scene as unknown as CenaFight;
   const update = (k = 1): void => {
     for (let i = 0; i < k; i++) cena.update();
@@ -117,17 +117,54 @@ describe('modoDoFilme por `motivo` (§3.3): super 1ª vez COMPLETO depois CURTO;
     t.update(2);
     expect(t.cena.filme.ativo).toBe(true);
     expect(t.cena.filme.estado?.modo).toBe('curta');
-    expect(t.game.matchWinner).toBeNull();
   });
 
-  it('motivo "ko" que decide a luta (`game.matchWinner` já setado antes do evento `filme`, como `resolverVidaZerada`): COMPLETO', () => {
+  it('motivo "ko" que decide a luta (`ev.decideALuta`, do motor; `game.matchWinner` só sai ~100 ticks depois): COMPLETO', () => {
     const t = montar({ regras: RITMO_SUPER });
     t.ateLutar();
     (t.cena as unknown as { filmeDev: unknown }).filmeDev = { lutador: 'hayato', golpe: 'sDown', motivo: 'ko', decideALuta: true };
     t.update(2);
     expect(t.cena.filme.ativo).toBe(true);
     expect(t.cena.filme.estado?.modo).toBe('completa');
-    expect(t.game.matchWinner).toBe(0);
+    expect(t.game.matchWinner, 'o dado NÃO vem de matchWinner (ainda nulo no tick do acerto)').toBeNull();
+  });
+
+  it('KO que decide a luta COMPLETO mesmo repetindo o golpe (decideALuta vence a marca de "visto"); TREINO continua CURTO (D-R5)', () => {
+    const t = montar({ regras: RITMO_SUPER });
+    t.ateLutar();
+    (t.cena as unknown as { filmeDev: unknown }).filmeDev = { lutador: 'hayato', golpe: 'sDown', motivo: 'ko' };
+    t.update(2);
+    expect(t.cena.filme.estado?.modo).toBe('curta');
+    while (t.cena.filme.ativo) t.update();
+    t.update(70);
+    t.game.p2.hp = t.game.p2.maxHp;
+    (t.cena as unknown as { filmeDev: unknown }).filmeDev = { lutador: 'hayato', golpe: 'sDown', motivo: 'ko', decideALuta: true };
+    t.update(2);
+    expect(t.cena.filme.estado?.modo).toBe('completa');
+    const tr = montar({ regras: RITMO_SUPER, mode: 'training' });
+    tr.ateLutar();
+    (tr.cena as unknown as { filmeDev: unknown }).filmeDev = { lutador: 'hayato', golpe: 'sDown', motivo: 'ko', decideALuta: true };
+    tr.update(2);
+    expect(tr.cena.filme.estado?.modo).toBe('curta');
+  });
+
+  it('CAMINHO REAL (motor com ritmo.filmeRestrito): o KO que fecha a luta abre COMPLETO; o KO de round abre CURTO', () => {
+    const ko = (venceLuta: boolean) => {
+      const t = montar({ regras: RITMO_SUPER, ritmoMotor: { filmeRestrito: true } });
+      t.ateLutar();
+      if (venceLuta) t.game.p1.wins = t.game.winsNeeded - 1;
+      t.game.p2.hp = 1;
+      t.bater('sFwd');
+      const ev = t.game.events.find((e) => e.tipo === 'filme');
+      return { modo: t.cena.filme.estado?.modo, decide: ev && ev.tipo === 'filme' ? ev.decideALuta : undefined, ativo: t.cena.filme.ativo };
+    };
+    const luta = ko(true);
+    expect(luta.ativo).toBe(true);
+    expect(luta.decide).toBe(true);
+    expect(luta.modo).toBe('completa');
+    const round = ko(false);
+    expect(round.ativo).toBe(true);
+    expect(round.modo).toBe('curta');
   });
 
   it('super na 1ª vez é COMPLETO mesmo que o MESMO golpe já tenha aberto um filme "ko" de round antes (motivo entra na marca de "visto")', () => {
@@ -197,7 +234,7 @@ describe('Pulo do filme a partir do tick 6 com `ritmo.super` (10 sem a flag — 
 
 describe('`?super=<lutador>` (DEV): abre a tarja de 30 ticks via `reagirAoSuper` — a MESMA que `ev.super===true` abriria no jogo real', () => {
   it('só com `Regras.ritmo.super`; sem ela o gancho dispara mas `reagirAoSuper` devolve false e nada abre', () => {
-    const t = montar(); // regras padrão, SEM ritmo.super
+    const t = montar({ regras: { ...REGRAS_PADRAO, ritmo: {} } }); // SEM ritmo.super (o padrão do jogo agora o liga)
     t.ateLutar();
     (t.cena as unknown as { superDev: unknown }).superDev = { lutador: 'hayato' };
     t.update(2);

@@ -4,9 +4,8 @@ import type { IndiceLutador, LeituraLuta } from '../core/contratos';
 import { criarRng, type Rng } from '../core/rng';
 import { aplicarCamera } from './camera';
 import { desenharFaixaComRosto, rostoDoGolpe } from './faixa-rosto';
-import { ALTURA_FAIXA_RITMO, Y_TOPO_FAIXA_RITMO } from './faixa-ritmo';
-import { identidadeDe, identidadePadrao } from './identidade-especiais';
-import { chDaFicha } from './lutador';
+import { Y_TOPO_FAIXA_RITMO } from './faixa-ritmo';
+import { paletaFaixaDe } from './paleta-lutador';
 import type { Ctx } from './tela';
 
 /*
@@ -21,6 +20,8 @@ import type { Ctx } from './tela';
  */
 
 export const DURACAO_TARJA_SUPER = 30;
+/** A faixa GRANDE (170 px, y 86-256): pode cobrir as cabeças porque a cena está congelada. O especial comum usa a de 105 px (`ALTURA_FAIXA_RITMO`). */
+export const ALTURA_TARJA_SUPER = 170;
 const ENTRA = 6;
 const SAI = 6;
 
@@ -82,10 +83,6 @@ export class TarjaDoSuper {
     const a = this.atual;
     if (!a) return;
     const f = luta.fighters[a.ev.lutador];
-    const r = elenco[f.id];
-    const ch = chDaFicha(r.ch, a.ev.ficha);
-    const feita = identidadeDe(f.id, a.ev.ficha, a.ev.golpe);
-    const id = feita ?? identidadePadrao(a.ev.nome, ch.fire);
 
     const entraK = Math.min(1, a.t / ENTRA);
     const saiIni = DURACAO_TARJA_SUPER - SAI;
@@ -100,12 +97,11 @@ export class TarjaDoSuper {
       x: 0,
       y: Y_TOPO_FAIXA_RITMO,
       w: LARGURA,
-      h: ALTURA_FAIXA_RITMO,
+      h: ALTURA_TARJA_SUPER,
       alfa: 1,
       deslocaX,
-      corDestaque: id.paleta.brilho,
+      paleta: paletaFaixaDe(f.id, a.ev.ficha),
       nome: a.ev.nome,
-      corNome: [id.paleta.nucleo, id.paleta.sombra],
       rosto: rostoDoGolpe(elenco, f.id, a.ev.ficha, a.ev.golpe),
     });
   }

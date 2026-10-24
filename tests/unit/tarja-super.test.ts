@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Elenco } from '../../src/assets/elenco';
 import type { IdLutador, LeituraLuta, LutadorLeitura } from '../../src/core/contratos';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { DURACAO_TARJA_SUPER, TarjaDoSuper } from '../../src/render/tarja-super';
+import { ALTURA_TARJA_SUPER, DURACAO_TARJA_SUPER, TarjaDoSuper } from '../../src/render/tarja-super';
 import type { Ctx } from '../../src/render/tela';
 
 /*
@@ -119,5 +119,18 @@ describe('TarjaDoSuper (R-9, §3.2/§3.4): congela 30 ticks fixos', () => {
     }
     const proibidas = g.chamadas.filter(([n]) => n === '=shadowBlur' || n === '=filter' || n === 'getImageData');
     expect(proibidas).toEqual([]);
+  });
+});
+
+describe('geometria da tarja do super (a cena congela: pode ser a faixa GRANDE)', () => {
+  it('a faixa do super é a de 170 px (y 86-256), maior que a do especial comum (105 px)', () => {
+    expect(ALTURA_TARJA_SUPER).toBe(170);
+    const t = new TarjaDoSuper();
+    t.iniciar({ lutador: 0, golpe: 'sDown', ficha: null, nome: 'TENRAI-KEN' });
+    for (let i = 0; i < 10; i++) t.avancar();
+    const g = gravador();
+    t.desenhar(g.ctx, luta(), elenco);
+    const [, x, y, w, h] = g.chamadas.find(([n]) => n === 'rect') as [string, number, number, number, number];
+    expect([x, y, w, h]).toEqual([0, 86, 960, 170]);
   });
 });

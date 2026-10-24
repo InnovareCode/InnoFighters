@@ -14,9 +14,13 @@ import type { Ctx } from '../../src/render/tela';
 
 const prod = montarElenco();
 const IMG = { tag: 'atlas' } as unknown as CanvasImageSource;
-type ArteFalsa = { pronta: boolean; imagemDe: () => CanvasImageSource | null; silhuetaDe: () => null; retrato: () => null };
-const SEM_IMAGEM: ArteFalsa = { pronta: true, imagemDe: () => null, silhuetaDe: () => null, retrato: () => null };
+const RETRATO_IMG = { tag: 'retrato' } as unknown as CanvasImageSource;
+type Retrato = { imagem: CanvasImageSource; recorte: readonly [number, number, number, number] } | null;
+type ArteFalsa = { pronta: boolean; imagemDe: () => CanvasImageSource | null; silhuetaDe: () => null; retrato: () => Retrato };
+const SEM_NADA: ArteFalsa = { pronta: true, imagemDe: () => null, silhuetaDe: () => null, retrato: () => null };
 const COM_IMAGEM: ArteFalsa = { pronta: true, imagemDe: () => IMG, silhuetaDe: () => null, retrato: () => null };
+// só o retrato.webp (nenhuma célula do FILME na memória): o nível 3, que NUNCA falha
+const SO_RETRATO: ArteFalsa = { pronta: true, imagemDe: () => null, silhuetaDe: () => null, retrato: () => ({ imagem: RETRATO_IMG, recorte: [1, 2, 180, 200] }) };
 const elencoDe = (arte: ArteFalsa): Elenco => Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { ch, arte }])) as unknown as Elenco;
 
 function gravador() {
@@ -35,25 +39,41 @@ function gravador() {
   return { ctx, chamadas };
 }
 
-describe('rostoDoGolpe: o recorte vem do MESMO close/grito que o filme do especial usa', () => {
-  it('sem a imagem na memória (página FILME ainda não carregada): devolve null, nunca lança', () => {
-    const elenco = elencoDe(SEM_IMAGEM);
+describe('rostoDoGolpe: 3 níveis — painel do grito, painel alternativo (NILA/ZENON), retrato (nunca falha com arte pronta)', () => {
+  it('sem NENHUMA imagem (nem FILME nem retrato — dublê de teste sem arte pronta): devolve null, nunca lança', () => {
+    const elenco = elencoDe(SEM_NADA);
     for (const id of IDS_LUTADORES) expect(() => rostoDoGolpe(elenco, id, null, 'sFire')).not.toThrow();
     expect(rostoDoGolpe(elenco, 'hayato', null, 'sFire')).toBeNull();
   });
 
-  it('golpe sem roteiro próprio: cai no roteiro GENÉRICO (sem lançar) — pode ou não ter rosto, dependendo do `f3` do lutador', () => {
+  it('golpe sem roteiro próprio: cai no roteiro GENÉRICO (sem lançar)', () => {
     const elenco = elencoDe(COM_IMAGEM);
     expect(() => rostoDoGolpe(elenco, 'hayato', null, 'golpeInexistente')).not.toThrow();
   });
 
-  it('pelo menos ALGUNS dos 10 lutadores têm rosto disponível (painel:true no grito) com a imagem na memória — nunca todos null', () => {
+  it('TODOS os 10 lutadores têm rosto com a página FILME na memória — nível 1 (8 deles) + nível 2 (NILA/ZENON, pose alternativa)', () => {
     const elenco = elencoDe(COM_IMAGEM);
-    const comRosto = IDS_LUTADORES.filter((id) => rostoDoGolpe(elenco, id, null, 'sFire') !== null);
-    expect(comRosto.length).toBeGreaterThan(0);
+    for (const id of IDS_LUTADORES) expect(rostoDoGolpe(elenco, id, null, 'sFire'), id).not.toBeNull();
   });
 
-  it('o recorte devolvido (quando existe) tem largura e altura positivas e a mesma imagem passada por `arte.imagemDe`', () => {
+  it('NILA e ZENON: o grito do roteiro NÃO é painel (pose do mundo), mas o nível 2 (`f4`) resolve mesmo assim', () => {
+    const elenco = elencoDe(COM_IMAGEM);
+    expect(rostoDoGolpe(elenco, 'nila', null, 'sFire')).not.toBeNull();
+    expect(rostoDoGolpe(elenco, 'zenon', null, 'sFire')).not.toBeNull();
+  });
+
+  it('nível 3 (retrato.webp): sem NENHUMA célula do FILME na memória, ainda assim devolve um rosto — NUNCA fica vazio', () => {
+    const elenco = elencoDe(SO_RETRATO);
+    for (const id of IDS_LUTADORES) {
+      const r = rostoDoGolpe(elenco, id, null, 'sFire');
+      expect(r, id).not.toBeNull();
+      expect(r!.img).toBe(RETRATO_IMG);
+      expect(r!.sx).toBe(1);
+      expect(r!.sw).toBe(180);
+    }
+  });
+
+  it('o recorte devolvido (nível 1/2) tem largura e altura positivas e a mesma imagem passada por `arte.imagemDe`', () => {
     const elenco = elencoDe(COM_IMAGEM);
     for (const id of IDS_LUTADORES) {
       for (const golpe of ['sFire', 'sDown', 'sFwd']) {
@@ -69,7 +89,7 @@ describe('rostoDoGolpe: o recorte vem do MESMO close/grito que o filme do especi
 
 describe('desenharFaixaComRosto: a pintura pura', () => {
   const base = {
-    x: 0, y: 86, w: 960, h: 170, alfa: 1, deslocaX: 0, corDestaque: '#ff0000', nome: 'TESTE', corNome: ['#fff', '#000'] as const,
+    x: 0, y: 86, w: 960, h: 170, alfa: 1, deslocaX: 0, paleta: { escuro: '#0c0c10', medio: '#3c4414', claro: '#d9ff5e' }, nome: 'TESTE',
   };
 
   it('sem rosto: ainda assim desenha (fundo + nome), nunca fica em branco', () => {

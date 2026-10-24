@@ -29,7 +29,7 @@ const elencoDe = (trocas: Partial<Record<IdLutador, Record<string, unknown>>> = 
   Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { ch: { ...ch, ...(trocas[id as IdLutador] ?? {}) }, arte }])) as unknown as Elenco;
 
 const COM_COMBOS: Regras = { ...REGRAS_PADRAO, motorV2: { combos: true } };
-const SEM_COMBOS: Regras = { ...REGRAS_PADRAO, motorV2: {} }; // o padrão do jogo agora liga o motor v2 (MOTOR_V2_PADRAO): "sem a regra" é motorV2 vazio
+const SEM_COMBOS: Regras = { ...REGRAS_PADRAO, motorV2: {}, ritmo: {} }; // o padrão do jogo liga o motor v2 (MOTOR_V2_PADRAO) e o ritmo com super (linha "SUPER · nome" tem TOQUE): "sem a regra" é a aba de antes dos dois
 const nomesDe = (id: IdLutador): string[] => (prod[id].combosProprios ?? []).map((c) => c.nome);
 
 describe('golpe -> botões', () => {

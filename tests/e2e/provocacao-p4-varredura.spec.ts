@@ -15,7 +15,7 @@ test.describe.configure({ timeout: 900_000 });
 
 async function abrirJogo(page: Page): Promise<void> {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/?seed=3&manual=1&expansao=1');
+  await page.goto('/?seed=3&manual=1&expansao=1&ritmo=0');
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 }
 

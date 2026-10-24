@@ -31,3 +31,20 @@ export function gradienteLinear(ctx: Ctx, id: string, x0: number, y0: number, x1
   m.set(id, { x0, y0, x1, y1, g });
   return g;
 }
+
+/** Degradê vertical de duas cores (o preenchimento do `textoArcade`): chave pelas cores e pela altura, criado só na primeira vez. */
+export function gradienteVertical(ctx: Ctx, topo: string, base: string, y0: number, y1: number): CanvasGradient {
+  let m = porContexto.get(ctx);
+  if (!m) {
+    m = new Map();
+    porContexto.set(ctx, m);
+  }
+  const id = `v|${topo}|${base}|${y0}`;
+  const e = m.get(id);
+  if (e && e.y1 === y1) return e.g;
+  const g = ctx.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, topo);
+  g.addColorStop(1, base);
+  m.set(id, { x0: 0, y0, x1: 0, y1, g });
+  return g;
+}

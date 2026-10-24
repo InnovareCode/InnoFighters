@@ -9,6 +9,9 @@
  *  - DESCE um degrau se o p95 do intervalo passar de `LIMITE_DE_DESCIDA` (20 ms) em `JANELAS_PARA_DESCER` janelas SEGUIDAS (~3 s a 30 fps).
  *  - SOBE um degrau só com folga de verdade: p95 do intervalo <= `LIMITE_DE_SUBIDA` E p95 do trabalho <= `TRABALHO_MAXIMO_PARA_SUBIR`, por
  *    `JANELAS_PARA_SUBIR` janelas seguidas (~10 s) E fora do bloqueio de quem já desceu dali.
+ *  - DESCER TEM QUE ADIANTAR: depois de descer, a 1ª janela inteira é comparada com a que mandou descer. Se o p95 não caiu `GANHO_MINIMO` (10%) e ainda
+ *    passa do limite, o gargalo NÃO é pixel (é a thread principal: lógica, chamadas de desenho, GC): resolução menor só borra a imagem sem dar fluidez. Volta
+ *    ao degrau anterior (motivo 'ineficaz') e fica `BLOQUEIO_INEFICAZ_S` sem tentar descer de novo.
  *  - HISTERESE contra piscar: toda descida bloqueia a subida PARA AQUELE degrau por `BLOQUEIO_BASE_S` segundos, dobrando a cada reincidência
  *    (até `BLOQUEIO_MAXIMO_S`); depois de qualquer troca os primeiros `QUADROS_DE_ASSENTO` quadros (recriar o canvas, reaquecer a GPU) não contam.
  */
@@ -22,11 +25,13 @@ export const JANELAS_PARA_SUBIR = 6;
 export const BLOQUEIO_BASE_S = 120;
 export const BLOQUEIO_MAXIMO_S = 960;
 export const QUADROS_DE_ASSENTO = 45;
+export const GANHO_MINIMO = 0.1;
+export const BLOQUEIO_INEFICAZ_S = 600;
 
 export interface Troca {
   readonly de: number;
   readonly para: number;
-  readonly motivo: 'lento' | 'folga';
+  readonly motivo: 'lento' | 'folga' | 'ineficaz';
 }
 
 function percentil(v: readonly number[], p: number): number {
@@ -46,6 +51,10 @@ export class GovernadorDeResolucao {
   /** degrau -> instante (relogio) até o qual NÃO se sobe para ele. */
   private bloqueadoAte = new Map<number, number>();
   private descidasDe = new Map<number, number>();
+  /** p95 da janela que mandou descer; > 0 = a 1ª janela depois da descida ainda precisa provar que adiantou. */
+  private p95AntesDaDescida = 0;
+  /** Até este instante (relogio) não se desce: a última descida não adiantou. */
+  private semDescerAte = 0;
 
   constructor(
     private nivel: number,
@@ -71,10 +80,21 @@ export class GovernadorDeResolucao {
     const pT = percentil(this.trabalhos, 0.95);
     this.intervalos = [];
     this.trabalhos = [];
+    if (this.p95AntesDaDescida > 0) {
+      const antes = this.p95AntesDaDescida;
+      this.p95AntesDaDescida = 0;
+      if (pI > LIMITE_DE_DESCIDA && pI > antes * (1 - GANHO_MINIMO)) {
+        this.semDescerAte = this.relogio + BLOQUEIO_INEFICAZ_S;
+        return this.trocar(this.nivel - 1, 'ineficaz');
+      }
+    }
     if (pI > LIMITE_DE_DESCIDA) {
       this.lentas++;
       this.folgadas = 0;
-      if (this.lentas >= JANELAS_PARA_DESCER && this.nivel < this.ultimo) return this.trocar(this.nivel + 1, 'lento');
+      if (this.lentas >= JANELAS_PARA_DESCER && this.nivel < this.ultimo && this.relogio >= this.semDescerAte) {
+        this.p95AntesDaDescida = pI;
+        return this.trocar(this.nivel + 1, 'lento');
+      }
       return null;
     }
     this.lentas = 0;
@@ -99,6 +119,7 @@ export class GovernadorDeResolucao {
     this.assentando = QUADROS_DE_ASSENTO;
     this.intervalos = [];
     this.trabalhos = [];
+    if (motivo !== 'lento') this.p95AntesDaDescida = 0;
     return { de, para, motivo };
   }
 }

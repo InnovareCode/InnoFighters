@@ -8,7 +8,7 @@ export type Ctx = CanvasRenderingContext2D;
  * celular com 640x360 px CSS isso pinta ~4x mais pixels do que a tela mostra. Agora:
  *  - DESKTOP (ponteiro fino): RS 2 e 'high', exatamente como sempre — o oráculo de pixel (fidelidade-*) só vale assim.
  *  - TOQUE (celular/tablet): começa em 1,5/'medium' e um GOVERNADOR (`resolucao-adaptativa.ts`, chamado de `main.ts`) mede o intervalo entre quadros e
- *    desce um degrau (1/'low') se o p95 passar de 20 ms por alguns segundos, ou sobe (2/'medium') se sobrar folga, sem piscar (a troca é feita no início
+ *    desce um degrau (1/'medium', sem o reflexo no piso) se o p95 passar de 20 ms por alguns segundos E a descida adiantar (senão volta: o gargalo não é pixel), ou sobe (2/'medium') se sobrar folga, sem piscar (a troca é feita no início
  *    do callback, antes de desenhar). Só o canvas PRINCIPAL muda; os canvases fora da tela (balão, trailer) ficam no `RS` de partida.
  *  - `?rs=2`, `?rs=1.5` ou `?rs=1` força o degrau (sem governador, em qualquer aparelho); `?rs=auto` liga o governador também no desktop (teste).
  */

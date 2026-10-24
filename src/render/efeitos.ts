@@ -534,14 +534,14 @@ export class CampoDePetalas {
 
 export function desenharPetalas(ctx: Ctx, lista: readonly Petala[]): void {
   // D3 (docs/desempenho-android-2026-10-24.md): 34 pétalas = 34 pares save/restore + 68 atribuições por quadro. Agora UM par e as atribuições fora do laço;
-  // cada pétala parte da matriz de entrada (`setTransform(base)`) e compõe translate+rotate como antes, então o desenho é idêntico, pixel a pixel.
+  // cada pétala parte da matriz de entrada (`setTransform(a..f)`, números: passar o DOMMatrix inteiro custava mais que o save/restore) e compõe translate+rotate como antes, então o desenho é idêntico, pixel a pixel.
   if (lista.length === 0) return;
   ctx.save();
-  const base = ctx.getTransform();
+  const { a, b, c, d, e, f } = ctx.getTransform();
   ctx.globalAlpha = 0.85;
   ctx.fillStyle = '#ffc2d4';
   for (const p of lista) {
-    ctx.setTransform(base);
+    ctx.setTransform(a, b, c, d, e, f);
     ctx.translate(p.x, p.y);
     ctx.rotate(p.rot);
     ctx.beginPath();

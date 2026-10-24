@@ -1,3 +1,4 @@
+import { gradienteVertical } from './gradientes';
 import type { Ctx } from './tela';
 
 /**
@@ -54,9 +55,7 @@ export function textoArcade(
   if (typeof preenchimento === 'string') {
     tinta = preenchimento;
   } else {
-    tinta = ctx.createLinearGradient(0, -tamanho * 0.5, 0, tamanho * 0.5);
-    tinta.addColorStop(0, preenchimento[0]);
-    tinta.addColorStop(1, preenchimento[1]);
+    tinta = gradienteVertical(ctx, preenchimento[0], preenchimento[1], -tamanho * 0.5, tamanho * 0.5); // D3a: um degradê por (cores, tamanho), não um por chamada
   }
   ctx.fillStyle = tinta;
   ctx.fillText(texto, 0, 0);

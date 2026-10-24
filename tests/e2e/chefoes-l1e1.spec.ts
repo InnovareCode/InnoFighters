@@ -93,7 +93,7 @@ async function abrirJogo(page: Page, perfil: 'desktop' | 'celular', prog: Record
     }
   }, prog);
   if (perfil === 'celular') await page.setViewportSize({ width: 915, height: 412 });
-  await page.goto('/?seed=3&manual=1');
+  await page.goto('/?seed=3&manual=1&rs=2');
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 }
 

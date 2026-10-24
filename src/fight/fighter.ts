@@ -3,6 +3,7 @@ import type {
   ComboLeitura,
   EventoLuta,
   EstadoLutador,
+  FluidezMotor,
   IdLutador,
   IndiceLutador,
   InputFrame,
@@ -76,6 +77,8 @@ export interface PartidaParaLutador {
   readonly combosLigados?: boolean;
   /** R-7 (`ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Opcional: dublê de teste sem o campo = desligado. */
   readonly ritmoSuperLigado?: boolean;
+  /** FLUIDEZ (M1-M6, `ConfigPartida.fluidez`). Opcional: dublê de teste sem o campo = o motor de antes, bit a bit. */
+  readonly fluidez?: FluidezMotor | undefined;
   /** R-10 (D-R4): regen da barra por tick. Ausente = 0,04 de sempre (só `ritmo.super` + `ritmo.cpu` sobem, para a CPU juntar barra sem deixar de usar especiais). */
   readonly regenDeBarra?: number;
 }
@@ -193,6 +196,15 @@ export class Fighter {
   /** R-7: `age` do último `hp`/`hk` apertado (borda), para achar o par "as duas bordas no mesmo tick ou até 2 ticks de distância". */
   private hpApertadoEm = -99;
   private hkApertadoEm = -99;
+  /** M6 (`fluidez.agarraoPar`): `age` do último `lp`/`lk` apertado (borda), para achar o par "até 2 ticks de distância". */
+  private lpApertadoEm = -99;
+  private lkApertadoEm = -99;
+  /** M6: o par lp+lk que agarra, achado NESTE tick (`agarrarNaBorda`, 1x por tick em `corpoDoUpdate`). */
+  private agarrarNoTick = false;
+  /** M3 (`fluidez.fila`): a 2ª vaga do buffer de ataque (a 1ª é `buf`, a mais antiga). Sempre null com a flag desligada. */
+  bufFila: { k: ChaveAtaque; t: number } | null = null;
+  /** As flags de fluidez da partida, copiadas de `jogo.fluidez` no começo de cada `update` (`resolveAttack` não recebe o `jogo`). */
+  private flu: FluidezMotor | undefined = undefined;
   /** R-7: o golpe do super achado NESTE tick (`superNaBorda`, chamado 1x em `corpoDoUpdate`), ou null. Lido pelas duas entradas (estado livre e cancelamento). */
   private golpeSuperNoTick: NomeGolpe | null = null;
   flash = 0;
@@ -290,6 +302,7 @@ export class Fighter {
    */
   limparBotoesGuardados(): void {
     this.buf = null;
+    this.bufFila = null;
     this.bufEsq = 0;
   }
 
@@ -373,9 +386,12 @@ export class Fighter {
     this.crouching = false;
     this.holdBack = false;
     this.buf = null;
+    this.bufFila = null;
     this.superAtivo = false;
     this.hpApertadoEm = -99;
     this.hkApertadoEm = -99;
+    this.lpApertadoEm = -99;
+    this.lkApertadoEm = -99;
     this.flash = 0;
     this.invuln = 0;
     this.phase = 'air';
@@ -434,7 +450,9 @@ export class Fighter {
     if (punch && this.motion(MOTIONS.dp) && this.canAfford('sDown')) return 'sDown';
     if (punch && this.motion(MOTIONS.qcf) && this.canAfford('sFire')) return 'sFire';
     if (kick && this.motion(MOTIONS.qcb) && this.canAfford('sFwd')) return 'sFwd';
-    if (k === 'hp' && fwd && !inp.down && this.canThrow()) return 'throw'; // arremesso: → + soco forte colado no rival
+    // M6 (`fluidez.semAgarraoPorFrente` + `toque`): no celular o joystick fica empurrado para a frente, então → + soco forte de um HUMANO não agarra (o par lp+lk agarra); a CPU segue como sempre
+    const semFrente = this.flu?.semAgarraoPorFrente === true && this.flu.toque === true && this.cpu === null;
+    if (k === 'hp' && fwd && !inp.down && !semFrente && this.canThrow()) return 'throw'; // arremesso: → + soco forte colado no rival
     return ((inp.down ? 'c' : '') + k) as NomeGolpe;
   }
 
@@ -464,10 +482,82 @@ export class Fighter {
    * disparava: só o mesmo tick funcionava).
    */
   private aguardandoParDoSuper(jogo: PartidaParaLutador): boolean {
+    if (jogo.fluidez?.parSuper === true) return false; // M1: sem espera — o forte sai na hora e é PROMOVIDO a super se o par fechar (`promoverPar`)
     if (jogo.ritmoSuperLigado !== true || !this.buf || (this.buf.k !== 'hp' && this.buf.k !== 'hk')) return false;
     if (this.en < MAX_EN || !superDoLutador(this.ch.id, this.ficha)) return false;
     const apertadoEm = this.buf.k === 'hp' ? this.hpApertadoEm : this.hkApertadoEm;
     return this.age - apertadoEm <= 2;
+  }
+
+  /**
+   * M6 (`fluidez.agarraoPar`): registra as bordas de `lp`/`lk` deste tick e diz se as duas acabaram de casar (até 2 ticks de distância) COM o rival ao alcance
+   * do agarrão e este lutador no chão. Zera as marcas ao achar, para a próxima borda não repetir o par. Chamar UMA vez por tick.
+   */
+  private agarrarNaBorda(inp: InputFrame): boolean {
+    if (inp.lp) this.lpApertadoEm = this.age;
+    if (inp.lk) this.lkApertadoEm = this.age;
+    if (!inp.lp && !inp.lk) return false;
+    if (Math.abs(this.lpApertadoEm - this.lkApertadoEm) > 2) return false;
+    if (!this.grounded || !this.canThrow()) return false;
+    this.lpApertadoEm = -99;
+    this.lkApertadoEm = -99;
+    return true;
+  }
+
+  /** Esvazia as duas vagas do buffer (o par do super e o agarrão consomem o aperto inteiro, não só a 1ª vaga). */
+  private limparBuffer(): void {
+    this.buf = null;
+    this.bufFila = null;
+  }
+
+  /**
+   * M1/M6: o 1º botão do par já iniciou um normal (sem espera). Se o par fecha em até 2 ticks do golpe (`mt <= 2`, antes de o normal acertar) o golpe é PROMOVIDO:
+   * SOCO FORTE + CHUTE FORTE com a barra cheia viram o super (M1); SOCO FRACO + CHUTE FRACO ao alcance viram `throw` (M6). Devolve true se promoveu.
+   */
+  private promoverPar(jogo: PartidaParaLutador, mv: GolpeMontado): boolean {
+    const flu = jogo.fluidez;
+    if (!flu || !this.grounded || mv.air || this.mt > 2 || this.superAtivo) return false;
+    if (this.move === null || this.move[0] === 's' || this.move === '_lag' || this.move === 'throw') return false;
+    if (flu.parSuper === true && this.golpeSuperNoTick) {
+      this.limparBuffer();
+      this.startMove(this.golpeSuperNoTick, jogo, true);
+      return true;
+    }
+    if (flu.agarraoPar === true && this.agarrarNoTick) {
+      this.limparBuffer();
+      this.startMove('throw', jogo);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * M2 (`fluidez.dashCancela`): ataque, super ou agarrão cancelam o dash (frente a partir do tick 4; recuo a partir do 6, quando a invulnerabilidade de 6 ticks acabou).
+   * Antes disso o botão fica guardado (o buffer não expira dentro do dash). Devolve true se começou um golpe neste tick.
+   */
+  private cancelarDash(inp: InputFrame, jogo: PartidaParaLutador): boolean {
+    if (this.st < (this.dashDir < 0 ? 6 : 4)) return false;
+    const flu = jogo.fluidez;
+    if (flu?.parSuper === true && this.golpeSuperNoTick) {
+      this.limparBuffer();
+      this.startMove(this.golpeSuperNoTick, jogo, true);
+      return true;
+    }
+    if (flu?.agarraoPar === true && this.agarrarNoTick) {
+      this.limparBuffer();
+      this.startMove('throw', jogo);
+      return true;
+    }
+    if (this.aguardandoParDoSuper(jogo) || !this.buf) return false;
+    const nm = this.resolveAttack(this.buf.k, inp);
+    this.buf = null;
+    if (!nm) return false;
+    if (!this.canAfford(nm)) {
+      jogo.emitir({ tipo: 'deny', lutador: this.indice });
+      return false;
+    }
+    this.startMove(nm, jogo);
+    return true;
   }
 
   /**
@@ -597,16 +687,30 @@ export class Fighter {
     if (this.reboteFase !== 0 && !(this.state === 'move' && this.move !== null && this.golpeAtual().rebote)) this.reboteFase = 0;
     if (this.flash > 0) this.flash--;
     if (this.invuln > 0) this.invuln--;
-    if (this.buf && --this.buf.t <= 0) this.buf = null;
+    const flu = jogo.fluidez;
+    this.flu = flu;
+    // M2: dentro do dash o botão guardado não expira (o dash cancela a partir do tick 4; antes disso o aperto espera)
+    const congelaBuf = flu?.dashCancela === true && this.state === 'dash';
+    if (this.buf && !congelaBuf && --this.buf.t <= 0) this.buf = null;
+    if (flu?.fila === true) {
+      // M3: 2 vagas. `buf` é a mais antiga e executa primeiro; a 2ª sobe para a 1ª assim que a 1ª é gasta ou expira
+      if (this.bufFila && !congelaBuf && --this.bufFila.t <= 0) this.bufFila = null;
+      if (!this.buf && this.bufFila) {
+        this.buf = this.bufFila;
+        this.bufFila = null;
+      }
+    }
     for (const k of ATK_KEYS) {
       if (inp[k]) {
-        this.buf = { k, t: 9 };
+        if (flu?.fila === true && this.buf) this.bufFila = { k, t: 9 };
+        else this.buf = { k, t: 9 };
         break;
       }
     }
     // R-7: UMA chamada por tick, ANTES de qualquer estado (como o `buf` acima). Com a flag desligada, nada roda: nenhuma
     // borda é guardada e nenhum estado novo aparece (igual ao motor de antes, bit a bit).
     this.golpeSuperNoTick = jogo.ritmoSuperLigado === true ? this.superNaBorda(inp) : null;
+    this.agarrarNoTick = flu?.agarraoPar === true ? this.agarrarNaBorda(inp) : false;
     if (this.armor > 0) this.armor--;
     // ESQUIVA: o botão fica guardado `buffer` ticks. Com a flag desligada nada disto roda (ignorado antes de qualquer conta).
     if (jogo.esquivaLigada === true) {
@@ -668,6 +772,10 @@ export class Fighter {
         this.physics(jogo);
         return;
       case 'dash':
+        if (flu?.dashCancela === true && this.cancelarDash(inp, jogo)) {
+          this.physics(jogo);
+          return;
+        }
         this.vx =
           this.dashDir * this.facing * (this.dashDir > 0 ? 10.5 : 9) * this.ch.spd * Math.max(0, 1 - this.st / this.dashLen) * 1.25;
         if (this.st >= this.dashLen) this.setState('idle');
@@ -689,8 +797,15 @@ export class Fighter {
       if (jogo.esquivaLigada === true && this.bufEsq > 0 && this.tentarEsquivar(inp, jogo)) return;
       // R-7: o super vence o `buf` de um botão só (hp OU hk sozinho continuaria no buf e viraria o golpe de hoje).
       if (this.golpeSuperNoTick) {
-        this.buf = null;
+        this.limparBuffer();
         this.startMove(this.golpeSuperNoTick, jogo, true);
+        this.physics(jogo);
+        return;
+      }
+      // M6: lp + lk juntos, rival ao alcance = agarrão (sem esperar: se só um botão chegou, o normal sai e `promoverPar` troca)
+      if (this.agarrarNoTick) {
+        this.limparBuffer();
+        this.startMove('throw', jogo);
         this.physics(jogo);
         return;
       }
@@ -711,7 +826,9 @@ export class Fighter {
           jogo.emitir({ tipo: 'deny', lutador: this.indice });
         }
       }
-      if (tapped && !inp.down && !inp.up && this.state !== 'land') {
+      // M5 (`fluidez.toque`): no celular o humano não tem duplo toque (o joystick oscila no limiar e vira dash por engano; a esquiva cobre)
+      const semDash = flu?.toque === true && flu.semDashNoToque === true && this.cpu === null;
+      if (tapped && !semDash && !inp.down && !inp.up && this.state !== 'land') {
         // toque duplo = corrida / recuo rápido
         if (this.lastTap.dir === hdir && this.age - this.lastTap.t < 13) {
           this.dashDir = hdir * this.facing;
@@ -833,6 +950,10 @@ export class Fighter {
   private updateMove(inp: InputFrame, opp: Fighter, jogo: PartidaParaLutador): void {
     const mv = this.golpeAtual();
     this.mt++;
+    if (this.promoverPar(jogo, mv)) {
+      this.physics(jogo);
+      return;
+    }
     const segurando = mv.carga ? this.tickDaCarga(mv, inp, jogo) : false;
     if (mv.rebote) this.tickDoRebote(mv, jogo);
     if (mv.through) this.tickDoCruzamento(mv, opp);

@@ -1,5 +1,5 @@
 import { IDS_LUTADORES, type IdLutador } from '../core/contratos';
-import type { MotorV2, RitmoMotor } from '../core/contratos';
+import type { FluidezMotor, MotorV2, RitmoMotor } from '../core/contratos';
 import { VARIANTES_DO_DANO, type VarianteDoDano } from '../data/filmes';
 import type { Regras, Ritmo } from './tipos';
 
@@ -42,6 +42,27 @@ export const CHEFE: IdLutador | null = 'zenon';
 /** Rivais sorteados antes do chefao (ED4: 5 rivais + chefao = 6 lutas; sem chefao, a escada tem 5 etapas). */
 export const TAMANHO_ESCADA = 5;
 
+/**
+ * Fluidez do motor (auditoria de 24/10/2026): o dono sentiu "golpes com muitos delays" no Android e mandou deixar tudo LIGADO. Molde de `MOTOR_V2_PADRAO`: ausente = o motor
+ * de antes, bit a bit; rollback/A-B pela URL (`?fluidez=0`, `?fluidez=par,dash`).
+ *  - parSuper (M1): o forte do par do super sai no mesmo tick (antes esperava 3 ticks com a barra cheia) e é promovido a super se o par fecha;
+ *  - dashCancela (M2): ataque cancela o dash e o buffer não expira dentro dele (antes um golpe nos 8 primeiros ticks do dash se perdia);
+ *  - semDashNoToque (M5): no celular o humano não tem duplo toque de dash (a esquiva cobre);
+ *  - fila (M3): buffer de 2 vagas, em ordem de chegada;
+ *  - agarraoPar (M6): SOCO FRACO + CHUTE FRACO agarram (no teclado/controle o → + SOCO FORTE segue valendo);
+ *  - dados (D1): BAATAR ARREMESSO DO AVARGA R 36 -> 28.
+ * `semAgarraoPorFrente` (M6, tira o → + SOCO FORTE do humano no toque) fica DESLIGADO até existir o botão AGARRAR no toque (`data-k="z,c"`): sem ele o celular perderia o agarrão.
+ */
+export const FLUIDEZ_PADRAO: Readonly<Required<Omit<FluidezMotor, 'toque'>>> = Object.freeze({
+  parSuper: true,
+  dashCancela: true,
+  semDashNoToque: true,
+  fila: true,
+  agarraoPar: true,
+  semAgarraoPorFrente: false,
+  dados: true,
+});
+
 export const REGRAS_PADRAO: Regras = {
   roster: IDS_LUTADORES,
   iniciais: INICIAIS,
@@ -61,15 +82,26 @@ export const REGRAS_PADRAO: Regras = {
   motorV2: MOTOR_V2_PADRAO,
   // redesenho de ritmo: tarja, provocação, intervalos, filmeRestrito, super e cpu sempre ligados (ordem do dono, 24/10/2026). Rollback/A-B: `?ritmo=0`/`?ritmo=<lista>` (`regrasComRitmo`).
   ritmo: RITMO_PADRAO,
+  // fluidez do motor: par do super sem espera, dash cancelável, fila de botões, agarrão por par, dados do BAATAR (ordem do dono, 24/10/2026). Rollback/A-B: `?fluidez=0` (`regrasComFluidez`).
+  fluidez: FLUIDEZ_PADRAO,
 };
 
 /**
  * O pedaço da `ConfigPartida` que carrega as flags do motor v2 (`Regras.motorV2`). Sem flag nenhuma ligada devolve `{}`: a cfg fica idêntica
  * à de antes (nem a chave `motorV2` aparece), o que mantém os testes que comparam a cfg inteira.
  */
-export function cfgMotorV2(regras: { readonly motorV2?: MotorV2 }): { motorV2?: MotorV2 } {
+export function cfgMotorV2(regras: { readonly motorV2?: MotorV2; readonly fluidez?: FluidezMotor }): { motorV2?: MotorV2; fluidez?: FluidezMotor } {
   const m = regras.motorV2;
-  return m && Object.values(m).some((v) => v === true) ? { motorV2: m } : {};
+  return { ...(m && Object.values(m).some((v) => v === true) ? { motorV2: m } : {}), ...cfgFluidez(regras) };
+}
+
+/**
+ * O pedaço de `Regras.fluidez` que o motor lê (`ConfigPartida.fluidez`). Sem flag nenhuma ligada (só `toque` não conta, ele sozinho não muda nada) devolve `{}`: a cfg fica idêntica
+ * à de antes. `cfgMotorV2` já o inclui: os três lugares que montam a `ConfigPartida` (`select.ts`, `diff.ts`, `campanha.ts`) herdam a fluidez sem mudar.
+ */
+export function cfgFluidez(regras: { readonly fluidez?: FluidezMotor }): { fluidez?: FluidezMotor } {
+  const f = regras.fluidez;
+  return f && Object.entries(f).some(([k, v]) => k !== 'toque' && v === true) ? { fluidez: f } : {};
 }
 
 /**
@@ -100,6 +132,46 @@ export function regrasComMotorV2(regras: Regras, busca: string, dev = false): Re
   const motor = motorV2DaUrl(busca);
   const ab = dev ? danoFilmeDaUrl(busca) : undefined;
   return { ...regras, motorV2: ab ? { ...motor, danoFilme: ab } : motor };
+}
+
+/** Nomes das flags de `FluidezMotor` na URL (`?fluidez=par,dash`). */
+export const NOMES_FLUIDEZ: Readonly<Record<string, keyof FluidezMotor>> = Object.freeze({
+  par: 'parSuper',
+  dash: 'dashCancela',
+  semdash: 'semDashNoToque',
+  fila: 'fila',
+  agarrao: 'agarraoPar',
+  semfrente: 'semAgarraoPorFrente',
+  dados: 'dados',
+});
+
+/**
+ * Kill switch e A/B da fluidez pela URL (`?fluidez=`), no molde de `motorV2DaUrl`:
+ *  - ausente, vazio, `1`, `on`, `true` ou `sim` -> o padrão (`FLUIDEZ_PADRAO`);
+ *  - `0`, `off`, `false`, `nao` ou `não` -> `{}` (o motor de antes, bit a bit);
+ *  - lista (`par,dash,fila,agarrao,semdash,semfrente,dados`, em qualquer ordem) -> só essas ligadas;
+ *  - valor desconhecido NÃO desliga nada por engano: cai no padrão.
+ */
+export function fluidezDaUrl(busca: string): FluidezMotor {
+  const bruto = new URLSearchParams(busca).get('fluidez');
+  if (bruto === null) return { ...FLUIDEZ_PADRAO };
+  const v = bruto.trim().toLowerCase();
+  if (v === '' || v === '1' || v === 'on' || v === 'true' || v === 'sim') return { ...FLUIDEZ_PADRAO };
+  if (v === '0' || v === 'off' || v === 'false' || v === 'nao' || v === 'não') return {};
+  const nomes = v.split(',').map((x) => x.trim()).filter(Boolean);
+  if (nomes.length === 0 || !nomes.every((n) => Object.hasOwn(NOMES_FLUIDEZ, n))) return { ...FLUIDEZ_PADRAO };
+  const f: FluidezMotor = {};
+  for (const n of nomes) f[NOMES_FLUIDEZ[n]!] = true;
+  return f;
+}
+
+/**
+ * As regras com a fluidez resolvida pela URL. `toque` = o aparelho tem tela de toque (`temToque(window)`): vira `fluidez.toque` quando há alguma flag ligada, e é o sinal que
+ * faz valer `semDashNoToque`/`semAgarraoPorFrente`. Vale para QUALQUER base (`?expansao=4` inclusive). Não muta a entrada.
+ */
+export function regrasComFluidez(regras: Regras, busca: string, toque = false): Regras {
+  const f = fluidezDaUrl(busca);
+  return { ...regras, fluidez: toque && Object.keys(f).length > 0 ? { ...f, toque: true } : f };
 }
 
 /** Nomes das flags de `Ritmo` na URL (`?ritmo=tarja,provocacao`), na ordem do contrato (docs/spec-redesenho-jogabilidade.md §4). */

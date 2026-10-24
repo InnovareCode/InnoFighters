@@ -10,7 +10,7 @@ test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e
     if (m.type() === 'error') erros.push(m.text());
   });
 
-  await page.goto('/');
+  await page.goto('/?rs=2'); // `?rs=2` fixa o degrau 2 em qualquer aparelho (o celular nasce em 1,5: teste abaixo)
   await expect(page).toHaveTitle('InnoFighters');
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 
@@ -44,4 +44,18 @@ test('a pagina sobe, o canvas tem resolucao 1920x1080 (960x540 logicos x RS 2) e
   expect(desenhou.cores).toBeGreaterThan(20);
 
   expect(erros).toEqual([]);
+});
+
+// D1 (docs/desempenho-android-2026-10-24.md): o desktop continua em RS 2 (oráculo de pixel); o toque nasce em 1,5 e se adapta (`?rs=` força)
+test('resolução padrão: desktop 1920x1080 (RS 2); celular de toque 1440x810 (RS 1,5); ?rs=1 força 960x540', async ({ page }, info) => {
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+  const canvas = page.locator('canvas#jogo');
+  const esperado = info.project.name === 'celular' ? { w: '1440', h: '810' } : { w: '1920', h: '1080' };
+  await expect(canvas).toHaveAttribute('width', esperado.w);
+  await expect(canvas).toHaveAttribute('height', esperado.h);
+  await page.goto('/?rs=1');
+  await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+  await expect(canvas).toHaveAttribute('width', '960');
+  await expect(canvas).toHaveAttribute('height', '540');
 });

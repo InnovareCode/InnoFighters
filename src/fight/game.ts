@@ -4,6 +4,7 @@ import type {
   Configuracoes,
   EventoLuta,
   FaseLuta,
+  FluidezMotor,
   IdLutador,
   IndiceLutador,
   InfoTreino,
@@ -21,6 +22,7 @@ import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { PROJ_BASE } from '../data/base-moves';
 import { comboReconhecido } from '../data/combos-proprios';
 import { danoBaseDaVariante, filmeDoGolpe, type FilmeDoGolpe, type VarianteDoDano } from '../data/filmes';
+import { comDadosDeFluidez } from '../data/fluidez-dados';
 import type { LutadorMontado } from '../data/montar';
 import { superDoLutador, type SuperDoGolpe } from '../data/supers';
 import type { ContraDef, DrenaEnergiaDef, FinalDoCombo, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, NomeGolpe, SomGolpe } from '../data/tipos';
@@ -58,6 +60,8 @@ export type ConfigPartida = {
   motorV2?: MotorV2;
   /** R-6: as 6 flags do redesenho de ritmo que o motor lê (`cfgRitmo(regras)`). Ausente = o motor de antes, bit a bit. */
   ritmo?: RitmoMotor;
+  /** FLUIDEZ (M1-M6 + D1 da auditoria de 24/10/2026): as esperas escondidas do motor, cada uma atrás da sua flag. Ausente = o motor de antes, bit a bit (`cfgFluidez(regras)`). */
+  fluidez?: FluidezMotor;
 };
 
 /** O que um humano fez durante o hitstop e ainda não chegou ao `Fighter` (V2-1): o último botão de ataque, as mudanças de direção e a ESQUIVA. */
@@ -280,6 +284,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private ritmoFilmeRestrito = false;
   /** R-7 (`ConfigPartida.ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Público: `Fighter` (`PartidaParaLutador`) e `cpuInput` (`VistaParaCpu`) leem. */
   ritmoSuperLigado = false;
+  /** FLUIDEZ (`ConfigPartida.fluidez`): lida pelo `Fighter` (`PartidaParaLutador`). `undefined` = nenhuma flag ligada (o motor de antes). */
+  fluidez: FluidezMotor | undefined = undefined;
   /** R-10 (`ConfigPartida.ritmo.cpu`): a CPU reserva a barra para o super e o confirma (`cpuInput`/`VistaParaCpu`). Só tem efeito junto de `ritmo.super`. */
   ritmoCpuLigado = false;
   /** R-10 (D-R4): regen da barra por tick. 0,04 de sempre; `REGEN_DE_BARRA_RITMO` com `ritmo.super` + `ritmo.cpu` (a CPU junta a barra do super sem cortar os especiais). Lido pelo `Fighter`. */
@@ -341,8 +347,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.mode = cfg.mode;
     this.training = cfg.mode === 'training';
     this.stage = cfg.stage ?? this.lutadores[cfg.c2].stage; // luta na casa do rival
-    this.p1.setChar(this.lutadores[cfg.c1]);
-    this.p2.setChar(this.lutadores[cfg.c2]);
+    this.fluidez = cfg.fluidez && Object.values(cfg.fluidez).some((v) => v === true) ? cfg.fluidez : undefined;
+    // D1 (`fluidez.dados`): a cópia do lutador com os dados ajustados; sem a flag, o próprio objeto do elenco
+    const chDe = (id: IdLutador): LutadorMontado => (this.fluidez?.dados === true ? comDadosDeFluidez(this.lutadores[id]) : this.lutadores[id]);
+    this.p1.setChar(chDe(cfg.c1));
+    this.p2.setChar(chDe(cfg.c2));
     const cfgChefe = cfg.chefe ? this.lutadores[cfg.c2].chefe : undefined;
     if (cfgChefe) this.p2.virarChefe(cfgChefe);
     this.p1.cpu = cfg.p1cpu != null ? cfg.p1cpu : null;

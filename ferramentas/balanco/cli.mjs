@@ -44,6 +44,7 @@ function lerArgumentos(argv, env) {
     modo: 'rapido', sementes: null, niveis: null, pares: env.BALANCO_PARES ?? null, base: 1, chefe: true, so: null, jobs: null, saida: null,
     verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: true, filmes: true, combos: true, danoFilme: null, motorV2Explicito: false, chefes: null, semRegulares: false, varrerDano: null,
     ritmoIntervalos: false, ritmoFilmeRestrito: false, ritmoSuper: false, ritmoCpu: false,
+    fluidez: null,
   };
   // as flags do motor v2 nascem TODAS ligadas; a primeira opção que as escolhe (`--sem-motor-v2`, `--motor-v2`, `--filmes`, `--entrada-hitstop`) zera e liga só as pedidas
   const escolherMotorV2 = () => {
@@ -72,6 +73,17 @@ function lerArgumentos(argv, env) {
     else if (t === '--saida') a.saida = resolve(valor());
     else if (t === '--ajustes') a.ajustes = JSON.parse(valor());
     else if (t === '--esquiva') a.esquiva = true;
+    else if (t === '--fluidez') {
+      // FLUIDEZ do motor (M1-M6 + D1 da auditoria de 24/10/2026), atrás de flag: sem a opção o harness é o de antes, bit a bit. Lista opcional: par, dash, fila, agarrao, dados.
+      const prox = argv[i + 1];
+      const lista = prox !== undefined && !prox.startsWith('--') ? (i++, prox.split(',').map((x) => x.trim()).filter(Boolean)) : ['par', 'dash', 'fila', 'agarrao', 'dados'];
+      const nomes = { par: 'parSuper', dash: 'dashCancela', fila: 'fila', agarrao: 'agarraoPar', dados: 'dados' };
+      a.fluidez = {};
+      for (const f of lista) {
+        if (!Object.hasOwn(nomes, f)) throw new Error(`--fluidez: flag desconhecida '${f}' (use par, dash, fila, agarrao e/ou dados)`);
+        a.fluidez[nomes[f]] = true;
+      }
+    }
     else if (t === '--dano-filme') {
       a.danoFilme = valor();
       if (!['hoje', 'v2', 'forte'].includes(a.danoFilme)) throw new Error('--dano-filme: hoje, v2 ou forte');
@@ -134,6 +146,7 @@ function lerArgumentos(argv, env) {
   a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
     : parcial ? join(RAIZ, 'relatorios', 'balanco-chefes')
     : a.danoFilme && a.danoFilme !== 'v2' ? join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-dano-${a.danoFilme}`)
+    : a.fluidez ? join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-${rotuloV2}-fluidez-${Object.keys(a.fluidez).join('-')}${sufixoRitmo}`)
     : temRitmo ? join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-${rotuloV2}${sufixoRitmo}`)
     : a.modo === 'completo' && a.esquiva && todasV2 ? join(RAIZ, 'docs', 'balanco')
     : a.modo === 'completo' && a.esquiva && nenhumaV2 ? join(RAIZ, 'docs', 'balanco', 'sem-motor-v2')
@@ -193,6 +206,7 @@ function paramsDe(a) {
     ...(a.ritmoFilmeRestrito ? { ritmoFilmeRestrito: true } : {}),
     ...(a.ritmoSuper ? { ritmoSuper: true } : {}),
     ...(a.ritmoCpu ? { ritmoCpu: true } : {}),
+    ...(a.fluidez ? { fluidez: a.fluidez } : {}),
   };
 }
 
@@ -251,7 +265,7 @@ async function principal() {
   if (a.worker) {
     // os parâmetros chegam do processo principal, já validados (a linha de comando do worker só leva o --worker)
     const p = JSON.parse(process.env.BALANCO_PARAMS ?? '{}');
-    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, danoFilme: p.danoFilme ?? null, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true, ritmoIntervalos: p.ritmoIntervalos === true, ritmoFilmeRestrito: p.ritmoFilmeRestrito === true, ritmoSuper: p.ritmoSuper === true, ritmoCpu: p.ritmoCpu === true });
+    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, danoFilme: p.danoFilme ?? null, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true, ritmoIntervalos: p.ritmoIntervalos === true, ritmoFilmeRestrito: p.ritmoFilmeRestrito === true, ritmoSuper: p.ritmoSuper === true, ritmoCpu: p.ritmoCpu === true, fluidez: p.fluidez ?? null });
     return modoWorker(a);
   }
 
@@ -338,7 +352,7 @@ async function principal() {
         dif = null;
       }
     }
-    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.entradaHitstop ? " + ENTRADA NO HITSTOP (motorV2.entradaNoHitstop)" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : "") + (a.danoFilme && a.danoFilme !== 'v2' ? ` + A/B do dano do filme: ${a.danoFilme}` : "") + (!a.entradaHitstop && !a.filmes && !a.combos ? " + motor v2 DESLIGADO (o motor de antes)" : "") + (a.ritmoIntervalos || a.ritmoFilmeRestrito || a.ritmoSuper || a.ritmoCpu ? ` + RITMO: ${[a.ritmoIntervalos && 'intervalos', a.ritmoFilmeRestrito && 'filmeRestrito', a.ritmoSuper && 'super', a.ritmoCpu && 'cpu'].filter(Boolean).join('+')}` : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
+    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.entradaHitstop ? " + ENTRADA NO HITSTOP (motorV2.entradaNoHitstop)" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : "") + (a.danoFilme && a.danoFilme !== 'v2' ? ` + A/B do dano do filme: ${a.danoFilme}` : "") + (!a.entradaHitstop && !a.filmes && !a.combos ? " + motor v2 DESLIGADO (o motor de antes)" : "") + (a.fluidez ? ` + FLUIDEZ: ${Object.keys(a.fluidez).join('+')}` : "") + (a.ritmoIntervalos || a.ritmoFilmeRestrito || a.ritmoSuper || a.ritmoCpu ? ` + RITMO: ${[a.ritmoIntervalos && 'intervalos', a.ritmoFilmeRestrito && 'filmeRestrito', a.ritmoSuper && 'super', a.ritmoCpu && 'cpu'].filter(Boolean).join('+')}` : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
     writeFileSync(join(a.saida, 'resultados.md'), m.rel.resultadosMd(agr, ids, achados, dif, cab));
     writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, hashRegulares, hashChefes, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
     resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, { hashRegulares, hashChefes, semRegulares: a.semRegulares });

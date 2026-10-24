@@ -38,7 +38,7 @@ function coletarErros(page: Page): string[] {
 
 async function abrirJogo(page: Page, query = '', viewport?: { width: number; height: number }): Promise<void> {
   if (viewport) await page.setViewportSize(viewport);
-  await page.goto(`/?seed=3&manual=1${query}`);
+  await page.goto(`/?seed=3&manual=1&rs=2${query}`);
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 }
 

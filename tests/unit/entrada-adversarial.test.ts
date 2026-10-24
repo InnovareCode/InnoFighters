@@ -259,6 +259,8 @@ describe('toque: joystick', () => {
     expect(c.teclas.lerP1()).toMatchObject({ right: true, left: false });
     c.sobre(c.joy, 'touchend', [2]);
     expect(c.teclas.lerP1().right).toBe(true);
+    // o 1º dedo segura de verdade (1 tick de jogo passou): sem isto o aperto e a soltura no MESMO tick vira o toque curto de 1 tick da U2
+    c.teclas.fimDoTick();
     c.sobre(c.joy, 'touchend', [1]);
     expect(c.teclas.lerP1().right).toBe(false);
   });

@@ -7,7 +7,7 @@ test.describe.configure({ timeout: 90_000 });
 async function abrir(page: Page): Promise<string[]> {
   const erros: string[] = [];
   page.on('pageerror', (e) => erros.push(e.message));
-  await page.goto('/');
+  await page.goto('/?rs=2');
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   return erros;
 }

@@ -103,7 +103,7 @@ export class Gamepads {
 
   private soltarSlot(i: 0 | 1): void {
     const antes = this.anterior[i];
-    for (const botao of BOTOES) if (antes[botao]) this.teclas.definir(PAD_MAP[i][botao], false);
+    for (const botao of BOTOES) if (antes[botao]) this.teclas.cancelar(PAD_MAP[i][botao]);
     this.anterior[i] = {};
   }
 }

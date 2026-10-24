@@ -7,6 +7,26 @@ export const criarCanvasPadrao: CriarCanvas = (largura, altura) => {
   return c;
 };
 
+/**
+ * D3d (docs/desempenho-android-2026-10-24.md §5.4): o 1º `drawImage` de uma página grande (a folha FILME, 1920x1280) paga a DECODIFICAÇÃO e o upload
+ * da textura inteira no meio da luta (picos de 290-440 ms a 4x no 1º especial/KO). Desenha 1 px dela num canvas de 2x2 fora da tela (e lê o pixel, que
+ * força a rasterização) assim que a página chega, para o custo cair no começo da luta e não no 1º especial. Nunca lança; sem DOM não faz nada.
+ */
+export function aquecerTextura(imagem: CanvasImageSource): void {
+  if (typeof document === 'undefined') return;
+  try {
+    const c = document.createElement('canvas');
+    c.width = 2;
+    c.height = 2;
+    const g = c.getContext('2d');
+    if (!g) return;
+    g.drawImage(imagem, 0, 0, 1, 1, 0, 0, 1, 1);
+    g.getImageData(0, 0, 1, 1);
+  } catch {
+    // imagem sem dimensão / contexto indisponível: o 1º desenho de verdade paga, como antes
+  }
+}
+
 /** O retângulo de um quadro dentro da página do atlas (em pixels da imagem). */
 export type RetanguloDoQuadro = { readonly x: number; readonly y: number; readonly w: number; readonly h: number };
 

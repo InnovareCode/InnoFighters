@@ -7,7 +7,7 @@ import { getPD } from '../data/poses';
 import { desenharAuraChefe } from './aura-chefe';
 import { ALFA_FANTASMA, desenharFaixaDeEsquiva, ehPoseDeEsquiva, esquivaNaJanela, silhuetaTingidaDe } from './esquiva';
 import { desenharRastroGolpe } from './rastro-golpe';
-import type { Ctx } from './tela';
+import { qualidadeReduzida, type Ctx } from './tela';
 
 /**
  * O lutador montado a desenhar: a ficha ativa (C3 `LutadorLeitura.ficha`) quando não é null, senão o base.
@@ -72,8 +72,8 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
     ctx.restore();
   }
 
-  if (!deitado && img) {
-    // reflexo no piso molhado
+  if (!deitado && img && !qualidadeReduzida()) {
+    // reflexo no piso molhado (o degrau mais leve do canvas adaptativo o dispensa: `qualidadeReduzida`)
     ctx.save();
     ctx.translate(f.x, GROUND + 4 + (air - P.dy));
     ctx.scale(fl, -1);

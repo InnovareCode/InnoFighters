@@ -46,6 +46,88 @@ describe('TeclasVirtuais (C2 = readInput do protótipo)', () => {
     expect(t.estaSegurada('v')).toBe(false);
   });
 
+  it('U2: direção apertada e solta dentro do MESMO tick vale 1 tick (como a borda do botão); depois some', () => {
+    const t = new TeclasVirtuais();
+    t.definir('ArrowDown', true);
+    t.definir('ArrowDown', false);
+    expect(t.lerP1().down).toBe(true);
+    expect(t.estaSegurada('ArrowDown')).toBe(false);
+    t.fimDoTick();
+    expect(t.lerP1().down).toBe(false);
+  });
+
+  it('U2 não inventa direção: soltar uma tecla apertada em tick ANTERIOR solta na hora', () => {
+    const t = new TeclasVirtuais();
+    t.definir('ArrowLeft', true);
+    t.fimDoTick();
+    t.definir('ArrowLeft', false);
+    expect(t.lerP1().left).toBe(false);
+  });
+
+  it('U1: soltarDepois segura a tecla por N ticks; apertar de novo antes cancela (sem nova borda)', () => {
+    const t = new TeclasVirtuais();
+    t.definir('ArrowRight', true);
+    t.fimDoTick();
+    t.soltarDepois('ArrowRight', 2);
+    expect(t.lerP1().right).toBe(true);
+    t.fimDoTick();
+    expect(t.lerP1().right).toBe(true);
+    t.fimDoTick();
+    expect(t.lerP1().right).toBe(false);
+    t.definir('ArrowRight', true);
+    t.fimDoTick();
+    t.soltarDepois('ArrowRight', 2);
+    t.fimDoTick();
+    t.definir('ArrowRight', true); // de volta no prazo
+    for (let i = 0; i < 5; i++) {
+      expect(t.lerP1().right, `tick ${i}`).toBe(true);
+      t.fimDoTick();
+    }
+  });
+
+  it('soltarDepois numa tecla solta não faz nada; um definir(false) de verdade solta na hora e cancela o prazo', () => {
+    const t = new TeclasVirtuais();
+    t.soltarDepois('ArrowUp', 3);
+    t.fimDoTick();
+    expect(t.lerP1().up).toBe(false);
+    t.definir('ArrowUp', true);
+    t.fimDoTick();
+    t.soltarDepois('ArrowUp', 3);
+    t.definir('ArrowUp', false);
+    expect(t.lerP1().up).toBe(false);
+  });
+
+  it('cancelar (touchcancel, controle desconectado) solta na hora e NÃO deixa o tick de trava da direção; soltarTodas também', () => {
+    const t = new TeclasVirtuais();
+    t.definir('ArrowRight', true);
+    t.cancelar('ArrowRight');
+    expect(t.lerP1().right).toBe(false);
+    t.definir('ArrowLeft', true);
+    t.definir('ArrowLeft', false); // toque curto de verdade: vale 1 tick
+    expect(t.lerP1().left).toBe(true);
+    t.soltarTodas(); // perda de foco: nem esse tick sobra
+    expect(t.lerP1().left).toBe(false);
+  });
+
+  it('U4: atrasoDeNivel esconde só o spSeg (sp, a borda, sai na hora); soltar cancela; soltarTodas limpa', () => {
+    const t = new TeclasVirtuais();
+    t.definir('b', true, 3);
+    expect(t.lerP1()).toMatchObject({ sp: true, spSeg: false });
+    t.fimDoTick();
+    t.fimDoTick();
+    expect(t.lerP1().spSeg).toBe(false);
+    t.fimDoTick();
+    expect(t.lerP1().spSeg).toBe(true);
+    t.definir('b', false);
+    t.definir('b', true); // sem atraso: o atraso é do dedo no botão, não da tecla
+    expect(t.lerP1().spSeg).toBe(true);
+    t.definir('b', false);
+    t.definir('b', true, 5);
+    t.soltarTodas();
+    t.definir('b', true);
+    expect(t.lerP1().spSeg).toBe(true);
+  });
+
   it('P1 e P2 leem teclas diferentes', () => {
     const t = new TeclasVirtuais();
     t.definir('a', true);

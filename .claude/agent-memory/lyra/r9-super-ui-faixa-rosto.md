@@ -72,3 +72,12 @@ escala com a altura (`min(34, h*0.26)`). Lição: faixa que fica sobre o jogo ro
 **`modoDoFilme` usa `ev.decideALuta` (campo do motor, Vega), NUNCA `game.matchWinner`** — esse só sai em `endRound`, ~100 ticks depois do
 acerto, então o KO que fecha a luta abria CURTO. Teste de caminho real (motor com `ritmo.filmeRestrito` + `wins = winsNeeded-1`) em
 `filme-cena-ritmo-super.test.ts`. e2e isolado: `vite --config` com `hmr:false, watch:null` em porta própria (5393), config apagada depois.
+
+**Toque U1/U2/U4 (auditoria da Vega, 24/10, dono aprovou fugir do protótipo):** joystick com zonas angulares (φ<35° só horizontal, >55° só
+vertical, entre = diagonal; zona atual alarga 6°), histerese de magnitude (25/15, cima 35/25, baixo 30/20) e soltura mínima de 2 ticks
+(`TeclasVirtuais.soltarDepois`, cancelada se a tecla volta); a oposta sai na hora; levantar o dedo solta na hora. U2: `retida` = direção
+apertada+solta no MESMO tick vale 1 tick (ela perde para a oposta segurada; `cancelar()` = soltura forçada sem esse tick: touchcancel e controle
+desconectado). U4 (`data-nivel` no botão): mecanismo pronto e testado, **desligado**: a carga do MASHI decide em mt=S-1 (~tick 10) e NÃO
+retoma, então qualquer filtro >= ~10 ticks desliga a carga do AMINU no toque (ensaio no motor real em `toque-fluidez.test.ts`).
+Armadilha: testes antigos que apertam e soltam no MESMO tick sem `fimDoTick` no meio viram o toque curto da U2 — precisam de um tick entre
+as duas coisas se a intenção é "segurou de verdade". Ensaios de trajetória (semente fixa): `tests/unit/toque-fluidez.test.ts`.

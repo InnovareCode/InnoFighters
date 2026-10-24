@@ -314,10 +314,11 @@ export class CenaFight implements Cena {
     audio.setMusicVol?.(persist.settings.music * (baixar ? 0.5 : 1));
   }
 
-  private get fonte(): FonteEntradas {
-    const { entrada } = this.ui.c;
-    return { p1: (mesclado) => (mesclado ? entrada.lerMesclado() : entrada.lerP1()), p2: () => entrada.lerP2() };
-  }
+  /** D3c: UM objeto por cena (antes um novo a cada tick); as funções leem `ui.c.entrada` na hora da chamada, como o getter lia. */
+  private readonly fonte: FonteEntradas = {
+    p1: (mesclado) => (mesclado ? this.ui.c.entrada.lerMesclado() : this.ui.c.entrada.lerP1()),
+    p2: () => this.ui.c.entrada.lerP2(),
+  };
 
   enter(a: ArgsFight): void {
     const { game, efeitos } = this.ui.m;

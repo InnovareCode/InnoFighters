@@ -338,7 +338,7 @@ describe('V2-1: a flag nas Regras e na cfg da UI', () => {
   });
 
   it('ligada nas Regras, vai para a cfg das lutas do ARCADE', () => {
-    const regras = { ...REGRAS_PADRAO, motorV2: LIGADA };
+    const regras = { ...REGRAS_PADRAO, fluidez: {}, motorV2: LIGADA };
     expect(cfgMotorV2(regras)).toEqual({ motorV2: LIGADA });
     const run = { c1: 'hayato', diff: 1, idx: 0, etapas: [{ id: 'wei-long', chefe: false }] } as unknown as CampanhaArcade;
     expect(cfgDaEtapa(run, false, regras).motorV2).toEqual(LIGADA);

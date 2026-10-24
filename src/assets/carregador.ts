@@ -1,6 +1,6 @@
 import { manifestoParaPoses } from '../data/atlas';
 import type { PoseDados, Poses } from '../data/tipos';
-import { criarCanvasPadrao, type CriarCanvas } from './canvas';
+import { aquecerTextura, criarCanvasPadrao, type CriarCanvas } from './canvas';
 import { caminhoDoManifestoDoLutador } from './etapa0.mjs';
 import { paraManifestoV1, validarManifesto, validarRetrato } from './manifesto';
 import { CacheDeSilhuetas } from './silhuetas';
@@ -278,6 +278,7 @@ export class AtlasLutador {
         }
         if (geracao !== this.filmeGeracao) return false; // soltaram a folha enquanto baixava: não ressuscita
         this.filmeImg = imagem;
+        aquecerTextura(imagem);
         return true;
       } catch (e) {
         console.warn(`[filme] folha de "${this.id}" indisponivel, o especial usa a pose de reserva: ${e instanceof Error ? e.message : String(e)}`);

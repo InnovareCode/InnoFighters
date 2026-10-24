@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cfgMotorV2, MOTOR_V2_PADRAO, motorV2DaUrl, REGRAS_PADRAO, regrasComMotorV2 } from '../../src/meta';
+import { cfgMotorV2, FLUIDEZ_PADRAO, MOTOR_V2_PADRAO, motorV2DaUrl, REGRAS_PADRAO, regrasComMotorV2 } from '../../src/meta';
 import type { Regras } from '../../src/meta';
 
 /*
@@ -24,7 +24,8 @@ describe('motor v2: ligado por padrão (V2-6)', () => {
   });
 
   it('a ConfigPartida das lutas montadas pela UI recebe as três flags', () => {
-    expect(cfgMotorV2(REGRAS_PADRAO)).toEqual({ motorV2: TUDO });
+    // a fluidez (auditoria de 24/10/2026) viaja pelo mesmo `cfgMotorV2`: os 3 lugares da UI herdam sem mudar
+    expect(cfgMotorV2(REGRAS_PADRAO)).toEqual({ motorV2: TUDO, fluidez: FLUIDEZ_PADRAO });
   });
 
   it('sem a chave (regras de teste antigas), a cfg continua idêntica à de antes', () => {
@@ -67,13 +68,13 @@ describe('regrasComMotorV2', () => {
 
   it('vale para QUALQUER base, inclusive a do ?expansao=4 (sem a chave)', () => {
     expect(regrasComMotorV2(quatro, '').motorV2).toEqual(TUDO);
-    expect(cfgMotorV2(regrasComMotorV2(quatro, ''))).toEqual({ motorV2: TUDO });
+    expect(cfgMotorV2(regrasComMotorV2(quatro, ''))).toEqual({ motorV2: TUDO, fluidez: FLUIDEZ_PADRAO });
   });
 
   it('?motorv2=0 vence o padrão: a cfg volta a ser a de antes (sem a chave motorV2)', () => {
     const r = regrasComMotorV2(REGRAS_PADRAO, '?motorv2=0');
     expect(r.motorV2).toEqual({});
-    expect(cfgMotorV2(r)).toEqual({});
+    expect(cfgMotorV2(r)).toEqual({ fluidez: FLUIDEZ_PADRAO }); // `?motorv2=0` só desliga o motor v2; a fluidez tem o próprio `?fluidez=0`
   });
 
   it('não muta a entrada e preserva o resto das regras', () => {

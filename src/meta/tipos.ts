@@ -1,4 +1,4 @@
-import type { Configuracoes, IdLutador, MotorV2 } from '../core/contratos';
+import type { Configuracoes, FluidezMotor, IdLutador, MotorV2 } from '../core/contratos';
 
 /**
  * Progresso de desbloqueio (C4 v2, plano 3.1). So tipos: este arquivo nao tem codigo de execucao,
@@ -85,6 +85,12 @@ export type Regras = {
    * (`ritmoDaUrl`), como `?motorv2=`. Cada onda vai para produção DESLIGADA: só o dono vira o padrão depois de jogar com `?ritmo=1`.
    */
   readonly ritmo?: Ritmo;
+  /**
+   * Fluidez do motor (docs/auditoria-fidelidade-motor-2026-10-24.md §4.2): as esperas escondidas (par do super, dash, fila de botões, agarrão por par, dados do BAATAR),
+   * cada uma atrás da sua flag. AUSENTE ou `{}` = o motor de antes, bit a bit. `REGRAS_PADRAO` traz as flags LIGADAS (`FLUIDEZ_PADRAO`); o kill switch é `?fluidez=0`
+   * (`regrasComFluidez`). Vai à `ConfigPartida` pelo mesmo `cfgMotorV2` das lutas montadas pela UI.
+   */
+  readonly fluidez?: FluidezMotor;
 };
 
 /**

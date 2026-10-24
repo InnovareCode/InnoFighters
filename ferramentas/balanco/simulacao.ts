@@ -1,4 +1,4 @@
-import type { EventoLuta, IdLutador, InputFrame } from '../../src/core/contratos';
+import type { EventoLuta, FluidezMotor, IdLutador, InputFrame } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
 import { roteiroDoFilme } from '../../src/data/roteiros-filme';
 import type { VarianteDoDano } from '../../src/data/filmes';
@@ -53,6 +53,8 @@ export type Tarefa = {
   ritmoSuper?: true;
   /** `ritmo.cpu` ligada nesta tarefa (`--ritmo cpu`, R-10): a CPU reserva a barra e confirma o super (precisa de `ritmoSuper`). */
   ritmoCpu?: true;
+  /** FLUIDEZ do motor ligada nesta luta (`--fluidez`, auditoria de 24/10/2026): par do super sem espera, dash cancelável, fila, agarrão por par, dados do BAATAR. A semente não muda: referência própria (nunca em docs/balanco). */
+  fluidez?: FluidezMotor;
 };
 
 export type ParametrosSim = {
@@ -85,6 +87,8 @@ export type ParametrosSim = {
   ritmoSuper?: boolean;
   /** Liga `ritmo.cpu` (R-10) em todas as lutas. */
   ritmoCpu?: boolean;
+  /** Liga as flags de `fluidez` indicadas em todas as lutas (`--fluidez`). Ausente = o motor de antes. */
+  fluidez?: FluidezMotor;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
   ajustes?: Record<string, unknown>;
 };
@@ -182,6 +186,7 @@ export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | nul
       ...(p.ritmoFilmeRestrito ? { ritmoFilmeRestrito: true as const } : {}),
       ...(p.ritmoSuper ? { ritmoSuper: true as const } : {}),
       ...(p.ritmoCpu ? { ritmoCpu: true as const } : {}),
+      ...(p.fluidez ? { fluidez: p.fluidez } : {}),
     });
   };
   if (p.semRegulares !== true) {
@@ -271,7 +276,7 @@ function ritmoDaTarefa(t: Tarefa): { ritmo?: { intervalos?: true; filmeRestrito?
 export function lutar(elenco: Elenco, t: Tarefa): Registro {
   const g = new Game({ lutadores: elenco, rng: criarRng(t.semente) });
   g.setup(
-    { mode: 'cpu', c1: t.a, c2: t.b, cpu: t.nivel, p1cpu: t.nivel, ...(t.tipo === 'chefe' ? { chefe: true } : {}), ...(t.esquiva ? { esquiva: true } : {}), ...motorV2DaTarefa(t), ...ritmoDaTarefa(t) },
+    { mode: 'cpu', c1: t.a, c2: t.b, cpu: t.nivel, p1cpu: t.nivel, ...(t.tipo === 'chefe' ? { chefe: true } : {}), ...(t.esquiva ? { esquiva: true } : {}), ...motorV2DaTarefa(t), ...ritmoDaTarefa(t), ...(t.fluidez ? { fluidez: t.fluidez } : {}) },
     { ...AJUSTES_SIM },
   );
   const [f0, f1] = g.fighters;

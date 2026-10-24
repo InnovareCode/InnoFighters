@@ -63,24 +63,43 @@ function celulaDoPainel(ch: LutadorMontado, arte: Elenco[IdLutador]['arte'], nom
   return { img, sx, sy, sw: lado, sh: lado };
 }
 
-/** O recorte do rosto (gritando) de `lutador/ficha/golpe` — NUNCA null com a arte pronta (nível 3, retrato, sempre existe). Só é null sem a arte (`elenco[lutador]` ausente, dublê de teste). */
+/**
+ * D3: qual célula f0..f5 (nível 1 ou 2) serve de rosto para `lutador/ficha/golpe`, ou null (cai no retrato). É dado ESTÁTICO (roteiro + manifesto) e
+ * `roteiroDoFilme` monta arrays a cada chamada: resolvido UMA vez por (lutador, ficha, golpe) e guardado, em vez de a cada quadro da faixa/tarja.
+ */
+const CELULA_DO_ROSTO = new Map<string, string | null>();
+
+function celulaDoRosto(ch: LutadorMontado, lutador: IdLutador, ficha: string | null, golpe: string): string | null {
+  const chave = `${lutador}|${ficha ?? ''}|${golpe}`;
+  const guardada = CELULA_DO_ROSTO.get(chave);
+  if (guardada !== undefined) return guardada;
+  let achada: string | null = null;
+  const b0 = roteiroDoFilme(lutador, ficha, golpe, false).batidas[0];
+  if (b0) {
+    const resolvido = resolverPoseDoFilme(ch, b0.atacante, b0.atacanteAlt, 'idle0');
+    if (resolvido.painel) achada = resolvido.painel;
+  }
+  if (!achada) {
+    const alternativa = POSE_DE_ROSTO_ALTERNATIVA[lutador];
+    if (alternativa && (ch.pd as Record<string, { painel?: boolean } | undefined>)[alternativa]?.painel) achada = alternativa;
+  }
+  CELULA_DO_ROSTO.set(chave, achada);
+  return achada;
+}
+
+/**
+ * O recorte do rosto (gritando) de `lutador/ficha/golpe` — NUNCA null com a arte pronta (nível 3, retrato, sempre existe). Só é null sem a arte
+ * (`elenco[lutador]` ausente, dublê de teste). Nível 1/2 só valem com a imagem da folha FILME na memória; sem ela cai no retrato (e volta à célula
+ * assim que a página chega: a escolha da célula é estática, só a imagem varia).
+ */
 export function rostoDoGolpe(elenco: Elenco, lutador: IdLutador, ficha: string | null, golpe: string): RostoDaFaixa | null {
   const r = elenco[lutador];
   if (!r) return null;
   const ch = r.ch as unknown as LutadorMontado;
-  const roteiro = roteiroDoFilme(lutador, ficha, golpe, false);
-  const b0 = roteiro.batidas[0];
-  if (b0) {
-    const resolvido = resolverPoseDoFilme(ch, b0.atacante, b0.atacanteAlt, 'idle0');
-    if (resolvido.painel) {
-      const nivel1 = celulaDoPainel(ch, r.arte, resolvido.painel);
-      if (nivel1) return nivel1;
-    }
-  }
-  const alternativa = POSE_DE_ROSTO_ALTERNATIVA[lutador];
-  if (alternativa) {
-    const nivel2 = celulaDoPainel(ch, r.arte, alternativa);
-    if (nivel2) return nivel2;
+  const celula = celulaDoRosto(ch, lutador, ficha, golpe);
+  if (celula) {
+    const dela = celulaDoPainel(ch, r.arte, celula);
+    if (dela) return dela;
   }
   const retrato = r.arte.retrato(ch.head);
   if (!retrato) return null;

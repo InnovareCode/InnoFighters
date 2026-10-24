@@ -83,6 +83,30 @@ export type RitmoMotor = {
   impacto?: boolean;
 };
 
+/**
+ * FLUIDEZ (auditoria do motor, 24/10/2026, docs/auditoria-fidelidade-motor-2026-10-24.md §4.2): as esperas escondidas que o dono sentiu no Android.
+ * Cada flag ligada tira uma espera; AUSENTE = o motor de antes, bit a bit (oráculo, lock-step e hashes do balanço). Mesmo molde de `MotorV2`/`RitmoMotor`.
+ * Sem `readonly` nos campos: `fluidezDaUrl` monta o objeto campo a campo.
+ */
+export type FluidezMotor = {
+  /** M1: o par do super (SOCO FORTE + CHUTE FORTE) não espera mais: o forte sai no mesmo tick e, se o par fecha em até 2 ticks, o golpe é PROMOVIDO a super. */
+  parSuper?: boolean;
+  /** M2: ataque (ou o par do super) cancela o dash (frente a partir de 4 ticks, recuo a partir de 6) e o buffer de ataque não expira durante o dash. */
+  dashCancela?: boolean;
+  /** M5: com `toque`, o humano não tem duplo toque de dash (o joystick oscila no limiar e vira dash por engano; a esquiva cobre). */
+  semDashNoToque?: boolean;
+  /** M3: buffer de 2 vagas (fila, ordem de chegada) em vez de 1 (o mais novo vence). */
+  fila?: boolean;
+  /** M6: SOCO FRACO + CHUTE FRACO juntos (em até 2 ticks) agarram: o golpe sai na hora e é promovido a `throw` quando o par fecha. */
+  agarraoPar?: boolean;
+  /** M6: com `toque`, `->` + SOCO FORTE de um humano deixa de agarrar (o joystick fica sempre empurrado). Só ligar com o botão AGARRAR no toque (`z,c`). */
+  semAgarraoPorFrente?: boolean;
+  /** D1: ajustes de dados atrás da flag (BAATAR: ARREMESSO DO AVARGA R 36 -> 28), para o motor sem a flag seguir idêntico. */
+  dados?: boolean;
+  /** O aparelho tem tela de toque (`main.ts` preenche por `temToque`): é o sinal que liga `semDashNoToque` e `semAgarraoPorFrente`. Sozinho não muda nada. */
+  toque?: boolean;
+};
+
 /** Posição de um lutador num instante do filme (`antes` = no tick do contato, antes de o motor mexer; `depois` = estado final). */
 export type PosFilme = { x: number; y: number; facing: 1 | -1 };
 

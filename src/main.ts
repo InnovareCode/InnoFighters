@@ -13,7 +13,8 @@ import { VITRINE } from './data/lutadores';
 // efeito colateral PROPOSITAL: valida as falas das provocações no carregamento (lutador sem falas ou fora dos limites derruba o boot, alto e cedo)
 import './data/provocacoes';
 import { Game } from './fight/game';
-import { REGRAS_PADRAO, regrasComMotorV2, regrasComRitmo } from './meta';
+import { temToque } from './input/toque';
+import { REGRAS_PADRAO, regrasComFluidez, regrasComMotorV2, regrasComRitmo } from './meta';
 import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
 import { VERSAO, verificarVersao } from './versao';
@@ -27,7 +28,8 @@ import { carregarFontes } from './platform/fontes';
 import { alternarTelaCheia } from './platform/tela-cheia';
 import { criarVinheta } from './render/cenario';
 import { CampoDePetalas, Efeitos } from './render/efeitos';
-import { prepararCanvas } from './render/tela';
+import { GovernadorDeResolucao, type Troca } from './render/resolucao-adaptativa';
+import { degrauAtual, indiceDoDegrau, POLITICA_DE_RESOLUCAO, prepararCanvas, trocarDegrau } from './render/tela';
 import type { Contexto, Mundo } from './ui/contexto';
 import { criarFerramentas } from './ui/ferramentas';
 import { FundoPadrao } from './ui/fundo-padrao';
@@ -91,9 +93,15 @@ async function iniciar(): Promise<void> {
   const fixture = modoExpansao === '1' || modoExpansao === '4' ? await import('./ui/dev-expansao') : null;
   // o motor de luta v2 (entrada no hitstop, filme do especial, combos próprios) vale em QUALQUER modo de elenco, inclusive `?expansao=4`; `?motorv2=0` é o rollback
   // o redesenho de ritmo (docs/spec-redesenho-jogabilidade.md): nasce DESLIGADO em produção; `?ritmo=1` é a prévia do dono, `?ritmo=0` o rollback
-  const regras = regrasComRitmo(
-    regrasComMotorV2(!fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao(), window.location.search, import.meta.env.DEV),
+  // a fluidez do motor (auditoria de 24/10/2026: par do super sem espera, dash cancelável, fila de botões, agarrão por par, sem dash no toque) é padrão; `?fluidez=0` é o rollback.
+  // `temToque(window)` é o mesmo teste que liga a camada de toque, antes dela existir: é o sinal de "humano no celular" para o motor.
+  const regras = regrasComFluidez(
+    regrasComRitmo(
+      regrasComMotorV2(!fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao(), window.location.search, import.meta.env.DEV),
+      window.location.search,
+    ),
     window.location.search,
+    temToque(window),
   );
   // sem a mecânica da ESQUIVA (?expansao=4) o botão ESQ do toque some (a casa fica; ver toque.css)
   document.body.classList.toggle('sem-esquiva', !regras.esquiva);
@@ -247,9 +255,20 @@ async function iniciar(): Promise<void> {
   let ultimo = performance.now();
   let acc = 0;
   let avisou = false;
+  // D1 (docs/desempenho-android-2026-10-24.md): em toque o canvas principal troca de degrau (2 -> 1,5 -> 1) pelo que o aparelho entrega; o desktop é fixo
+  const governador = POLITICA_DE_RESOLUCAO.adaptativa ? new GovernadorDeResolucao(indiceDoDegrau(), POLITICA_DE_RESOLUCAO.degraus.length - 1) : null;
+  let trocaPendente: Troca | null = null;
+  const trocasFeitas: Array<Troca & { rs: number }> = [];
   const quadro = (agora: number): void => {
-    acc += Math.min(agora - ultimo, 100);
+    const intervalo = agora - ultimo;
+    acc += Math.min(intervalo, 100);
     ultimo = agora;
+    // a troca entra AQUI, no começo do callback: o canvas é recriado e este mesmo quadro já desenha por cima (nenhum quadro em branco)
+    if (trocaPendente) {
+      if (trocarDegrau(canvas, trocaPendente.para)) trocasFeitas.push({ ...trocaPendente, rs: degrauAtual().rs });
+      trocaPendente = null;
+    }
+    const inicioDoQuadro = governador ? performance.now() : 0;
     entrada.consultarGamepads();
     try {
       while (acc >= PASSO) {
@@ -266,6 +285,7 @@ async function iniciar(): Promise<void> {
         console.error(e);
       }
     }
+    if (governador && !document.hidden) trocaPendente = governador.registrar(intervalo, performance.now() - inicioDoQuadro);
     requestAnimationFrame(quadro);
   };
 
@@ -282,6 +302,8 @@ async function iniciar(): Promise<void> {
         avancar,
         desenhar: (alfa?: number) => ui.draw(alfa),
         mundo: () => ui.m,
+        /** D1: o degrau de resolução do canvas principal e as trocas do governador (só DEV). */
+        resolucao: () => ({ rs: degrauAtual().rs, suavizacao: degrauAtual().suavizacao, adaptativa: POLITICA_DE_RESOLUCAO.adaptativa, trocas: trocasFeitas }),
       },
     });
   }

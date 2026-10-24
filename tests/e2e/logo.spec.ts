@@ -45,7 +45,7 @@ async function abrir(page: Page, vp: { width: number; height: number }): Promise
     };
   });
   await page.setViewportSize(vp);
-  await page.goto('/?seed=5&manual=1');
+  await page.goto('/?seed=5&manual=1&rs=2');
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   await page.waitForFunction(
     async () => {

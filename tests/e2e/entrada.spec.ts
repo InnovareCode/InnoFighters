@@ -299,6 +299,10 @@ test.describe('camada de toque', () => {
     const deslocamento = await page.locator('#knob').evaluate((el) => (el as HTMLElement).style.transform);
     expect(deslocamento).toMatch(/^translate\(/);
     await mover(2, joy.x, joy.y + R * 2);
+    // U1 (soltura mínima): a oposta (cima) sai na hora, mas a direita, que só saiu da zona, segura mais 2 ticks (contra o tremor do dedo)
+    expect(await p1(page)).toEqual({ ...VAZIO, right: true, down: true });
+    await fimDoTick(page);
+    await fimDoTick(page);
     const baixo = await p1(page);
     expect(baixo).toEqual({ ...VAZIO, down: true });
     const knob = await page.locator('#knob').boundingBox();

@@ -34,3 +34,4 @@
 - [R-3 filme não dispara](project_r3_filme_nao_dispara.md) — cfgMotorV2/engine/CenaFight provados corretos (teste permanente), causa fora do alcance de vitest
 - [R-6 intervalos + filme restrito](project_r6_intervalos_filme_restrito.md) — RitmoMotor em core (não meta), filme pendente até saber o kill, agarrão duplicado à mão, matchend não troca de fase
 - [R-7/R-7b super](project_r7_super.md) — super reusa o NomeGolpe, superPreso agendado, filme só se matar; R-10: reserva da CPU + regen, decideALuta no evento, bug do rival state:move/move:null
+- [Auditoria do motor 24/10](project_auditoria_motor_2026_10_24.md) — delays reais: dash/par do super/MASHI/joystick; hitstop curto; hashes de hoje; ensaios

@@ -8,8 +8,17 @@ import { APRESENTACAO } from './apresentacao-lutadores';
 import { chDaFicha } from './lutador';
 import { ETIQUETA_POSTURA, desenharPostura, posturaDe, type Postura } from './postura';
 import { desenharRetratoMoldurado } from './retrato';
+import { gradienteLinear, type Parada } from './gradientes';
 import type { Ctx } from './tela';
 import { caminhoInclinado, painel, retanguloArredondado, texto, textoArcade } from './texto';
+
+/** Paradas dos gradientes do HUD (D3a: constantes, para `gradienteLinear` reaproveitar o objeto quadro a quadro sem nem alocar o vetor). */
+const P_VIDA_EMPILHADA: readonly Parada[] = [[0, '#c58aff'], [1, '#5a1fb0']];
+const P_VIDA_NORMAL: readonly Parada[] = [[0, '#fff59a'], [0.5, '#ffd51f'], [1, '#e89a00']];
+const P_VIDA_BAIXA: readonly Parada[] = [[0, '#fff3c4'], [0.5, '#ff9a2e'], [1, '#d94a10']];
+const P_ENERGIA_NORMAL: readonly Parada[] = [[0, '#a6efff'], [1, '#1e6fe8']];
+const P_ENERGIA_PULSO: readonly Parada[] = [[0, '#ffffff'], [1, '#7fe3ff']];
+const P_KO_FUNDO: readonly Parada[] = [[0, '#2a3f86'], [1, '#0a1030']];
 
 /** Comportamento do boneco de treino (`g.dummy` do protótipo). Ainda não faz parte do C3. */
 export type AlvoTreino = 'stand' | 'crouch' | 'block' | 'crouchblock' | 'jump' | 'cpu';
@@ -77,21 +86,14 @@ function desenharLado(
   ctx.clip();
   if (empilhada) {
     // a barra de baixo (a que vem depois) aparece inteira por trás da barra atual, em outra cor
-    const gp = ctx.createLinearGradient(0, y, 0, y + h);
-    gp.addColorStop(0, '#c58aff');
-    gp.addColorStop(1, '#5a1fb0');
-    ctx.fillStyle = gp;
+    ctx.fillStyle = gradienteLinear(ctx, 'hud.vida.empilhada', 0, y, 0, y + h, P_VIDA_EMPILHADA);
   } else ctx.fillStyle = '#4a0d12';
   ctx.fillRect(x, y, w, h);
   const fx = (f: number): number => (lado === 1 ? x + w - w * f : x);
   ctx.fillStyle = '#e03a2e';
   ctx.fillRect(fx(rastroPct), y, w * rastroPct, h);
   const baixa = pct < 0.25 && Math.floor(luta.t / 6) % 2 === 1;
-  const gr = ctx.createLinearGradient(0, y, 0, y + h);
-  gr.addColorStop(0, baixa ? '#fff3c4' : '#fff59a');
-  gr.addColorStop(0.5, baixa ? '#ff9a2e' : '#ffd51f');
-  gr.addColorStop(1, baixa ? '#d94a10' : '#e89a00');
-  ctx.fillStyle = gr;
+  ctx.fillStyle = gradienteLinear(ctx, baixa ? 'hud.vida.baixa' : 'hud.vida.normal', 0, y, 0, y + h, baixa ? P_VIDA_BAIXA : P_VIDA_NORMAL);
   ctx.fillRect(fx(pct), y, w * pct, h);
   ctx.fillStyle = 'rgba(255,255,255,.35)';
   ctx.fillRect(fx(pct), y + 2, w * pct, 5);
@@ -152,10 +154,7 @@ function desenharLado(
   ctx.fillRect(ex, ey, ew, eh);
   const pronta = p.en >= custoEspecial;
   const pulso = pronta && Math.floor(luta.t / 7) % 2 === 0;
-  const eg = ctx.createLinearGradient(0, ey, 0, ey + eh);
-  eg.addColorStop(0, pulso ? '#ffffff' : '#a6efff');
-  eg.addColorStop(1, pulso ? '#7fe3ff' : '#1e6fe8');
-  ctx.fillStyle = eg;
+  ctx.fillStyle = gradienteLinear(ctx, pulso ? 'hud.energia.pulso' : 'hud.energia.normal', 0, ey, 0, ey + eh, pulso ? P_ENERGIA_PULSO : P_ENERGIA_NORMAL);
   ctx.fillRect(lado === 1 ? ex : ex + ew - ew * ef, ey, ew * ef, eh);
   ctx.fillStyle = 'rgba(0,0,0,.35)';
   for (let i = 1; i < 10; i++) ctx.fillRect(ex + (ew * i) / 10, ey, 2, eh);
@@ -214,10 +213,7 @@ export function desenharHUD(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, opcoes:
   ctx.lineTo(450, 50);
   ctx.lineTo(436, 28);
   ctx.closePath();
-  const bg = ctx.createLinearGradient(0, 6, 0, 50);
-  bg.addColorStop(0, '#2a3f86');
-  bg.addColorStop(1, '#0a1030');
-  ctx.fillStyle = bg;
+  ctx.fillStyle = gradienteLinear(ctx, 'hud.ko.fundo', 0, 6, 0, 50, P_KO_FUNDO);
   ctx.fill();
   ctx.lineWidth = 3;
   ctx.strokeStyle = '#f4f7ff';

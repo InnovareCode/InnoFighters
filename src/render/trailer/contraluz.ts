@@ -61,7 +61,7 @@ export class CamadaDeContraluz {
     g.beginPath();
     g.rect(x * RS, y * RS, w * RS, h * RS);
     g.clip();
-    usarEspacoLogico(g);
+    usarEspacoLogico(g, RS);
     desenhar(g);
     g.restore();
     g.setTransform(1, 0, 0, 1, 0, 0);

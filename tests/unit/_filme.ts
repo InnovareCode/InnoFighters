@@ -1,4 +1,4 @@
-import type { EventoLuta, IdLutador, InputFrame, MotorV2 } from '../../src/core/contratos';
+import type { EventoLuta, IdLutador, InputFrame, MotorV2, RitmoMotor } from '../../src/core/contratos';
 import { INPUT_VAZIO } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
 import type { NomeGolpe } from '../../src/data/tipos';
@@ -28,6 +28,8 @@ export type Cena = {
 
 export type OpcoesCena = {
   motorV2?: MotorV2 | null;
+  /** R-6: as flags do motor de `ritmo` (`intervalos`, `filmeRestrito`...). Ausente = desligadas (o motor de hoje). */
+  ritmo?: RitmoMotor;
   esquiva?: boolean;
   chefe?: boolean;
   semente?: number;
@@ -53,6 +55,7 @@ export function cena(c1: IdLutador, c2: IdLutador, o: OpcoesCena = {}): Cena {
       ...(o.chefe ? { chefe: true } : {}),
       ...(o.esquiva ? { esquiva: true } : {}),
       ...(motorV2 ? { motorV2 } : {}),
+      ...(o.ritmo ? { ritmo: o.ritmo } : {}),
     },
     { rounds: 2, time: 99, shake: true },
   );

@@ -47,3 +47,31 @@ screenshot. `h.ui.scene.cine.estado` dá `{modo,tick,lutador,golpe}` da cinemát
 **How to apply:** próxima vez que pedirem "jogo real"/sensação, reusar esta técnica (worktree isolado +
 `?manual=1` + `h.avancar` + eventos de `game.emitir`) em vez de reinventar; é ~10x mais rápido e mais robusto
 que tempo real headless.
+
+**R-4 (2026-10-24, HEAD f92bbcf): `vite build --mode development` NÃO dá `window.__inno`.** `import.meta.env.DEV`
+é amarrado ao COMANDO (`vite dev`/`serve` vs `vite build`), não ao `--mode`: um `vite build --mode development`
+continua com `DEV=false` no bundle, e todo gancho DEV (`window.__inno`, `?manual=1`) some. Para prova com ganchos
+DEV, usar `vite` (dev server) de verdade — o que é seguro dentro do `git worktree --detach` isolado (o `src/` do
+worktree é uma cópia congelada no commit, imune a HMR de outro agente editando o working tree principal), então
+"isolar com worktree" + "servir com `vite dev` numa porta própria" substitui build+preview sem perder isolamento.
+
+**`h.ui.go(nome, args)` só inicia o FADE — não troca `h.ui.scene` na hora** (quem troca na hora é `h.ui.set`).
+Para testar o caminho real de navegação (ex.: `CenaDiff.escolher()` → `CenaVs` → `CenaFight`, que é o único lugar
+que roda `cfgMotorV2(regras)` de verdade), ou usar `h.ui.set(cena, args)` (entra direto, pula o fade) ou dirigir
+`h.avancar` em CHAMADAS SEPARADAS de `page.evaluate` (nunca um laço 100% síncrono dentro de UM `evaluate`): a
+arte carrega por `fetch`/Promise, e um laço síncrono nunca devolve o controle ao event loop da página para essas
+promises resolverem — a cena fica "presa" em `espera.pronta === false` para sempre, parecendo travamento do jogo
+quando é só o teste que nunca cede a vez.
+
+**R-3 do spec-redesenho (filme "nunca dispara" no diagnóstico 2026-10-24): causa raiz era o PRÓPRIO atalho de
+teste, não o jogo.** `CenaFight` só abre o filme com `cfg.motorV2?.filmes === true` (`fight.ts` ~l.373); só
+`select.ts`/`diff.ts`/`campanha.ts` populam `cfg.motorV2` (via `cfgMotorV2(regras)`). O diagnóstico (e a 1ª versão
+desta própria sessão) usava `h.ui.set('fight', { cfg: {...} })` com um objeto cfg montado à mão, SEM
+`...cfgMotorV2(regras)` — `cfg.motorV2` ficava `undefined` e o filme nunca abria (0/10, reproduzi o 0/46 na
+hora). Com `cfg.motorV2` presente (seja à mão com os valores de `cfgMotorV2(REGRAS_PADRAO)` =
+`{entradaNoHitstop:true,filmes:true,combos:true}`, seja navegando de verdade por `CenaDiff.escolher()`), o MESMO
+roteiro de bot deu 100% (11/11) de filme nos especiais limpos, em DOM/canvas real. Prova disponível em
+`filme-caminho-real-menu.mjs` (não versionado, scratchpad da sessão): só `h.ui.set`/`h.avancar`, sem reimplementar
+cfg — chama `CenaDiff.escolher()` de produção e segue o fade real até `fight`. **How to apply:** todo atalho de
+teste que monta `cfg` à mão para `h.ui.set('fight', {cfg})` tem que espalhar `...cfgMotorV2(regras)` (ou o valor
+fixo acima), senão reproduz esse falso alarme de "mecânica não dispara" sem ser bug nenhum.

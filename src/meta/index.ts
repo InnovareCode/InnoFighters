@@ -8,6 +8,7 @@ export {
   NOMES_RITMO,
   RITMO_TUDO_LIGADO,
   cfgMotorV2,
+  cfgRitmo,
   danoFilmeDaUrl,
   INICIAIS,
   motorV2DaUrl,

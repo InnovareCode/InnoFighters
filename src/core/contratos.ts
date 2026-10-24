@@ -63,6 +63,26 @@ export type MotorV2 = {
   danoFilme?: 'hoje' | 'v2' | 'forte';
 };
 
+/**
+ * As 6 flags do redesenho de ritmo (docs/spec-redesenho-jogabilidade.md §4) que o MOTOR lê, atrás de `ConfigPartida.ritmo`
+ * (`cfgRitmo` em `src/meta/regras.ts`, no molde de `cfgMotorV2`). As outras 2 de `Regras.ritmo` (`tarja`, `provocacao`) são só
+ * UI e nunca chegam aqui — `src/meta/tipos.ts` tem o conjunto completo das 8; mantenha os nomes em sincronia com ele.
+ */
+export type RitmoMotor = {
+  /** R-6 (Vega): `ko` 100->60, `roundend` 175->90, `intro` dos rounds 2+ 90->60, `matchend` 150->90. */
+  intervalos?: boolean;
+  /** R-6 (Vega): o filme só no super (R-7) e no especial comum que dá KO; o resto resolve pelo dano normal, sem filme. */
+  filmeRestrito?: boolean;
+  /** R-7 (Vega): o golpe super (barra cheia). */
+  super?: boolean;
+  /** R-8 (Vega): cadeia de combo por força, até 4 golpes. */
+  cadeia?: boolean;
+  /** R-10 (Vega): CPU que confirma, varia e pune. */
+  cpu?: boolean;
+  /** R-17 (opcional, Vega+Lyra): hitstop por força, faísca e empurrão. */
+  impacto?: boolean;
+};
+
 /** Posição de um lutador num instante do filme (`antes` = no tick do contato, antes de o motor mexer; `depois` = estado final). */
 export type PosFilme = { x: number; y: number; facing: 1 | -1 };
 
@@ -482,6 +502,8 @@ export type EventoLuta =
       final: 'derruba' | 'parede' | 'lanca';
       antes: { atacante: PosFilme; defensor: PosFilme };
       depois: { atacante: PosFilme; defensor: PosFilme };
+      /** R-6 (`ritmo.filmeRestrito`): por que este filme abriu (super do R-7, ou o especial comum que deu KO). Ausente = flag desligada. */
+      motivo?: 'super' | 'ko';
     }
   | {
       tipo: 'throw';

@@ -67,14 +67,16 @@ const nota = (info: { annotations: Array<{ type: string; description?: string }>
 };
 
 // Íris (`mem-luta.mjs`, só imagens, sem FILME): vitrine 102 + cenários do título 31,6 + dupla fora da vitrine + cenário da casa do rival (se fora do título) + retratos 1,65.
+// Remedidos em 2026-10-24 (HEAD f92bbcf): o atlas do CAIO ficou ~2,0 MiB menor (commit 5bd8e7a, capoeira f3 v2 + especiais).
+// Como o CAIO está sempre na vitrine da política 'fixa', TODA luta (não só as do CAIO) caiu ~2,0 MiB.
 const FIXA: Array<[string, string, number]> = [
-  ['hayato', 'min-ji', 135.3],
-  ['nila', 'centella', 206.7],
-  ['baatar', 'baatar', 185.1],
-  ['baatar', 'zenon', 231.6],
-  ['zenon', 'zenon', 189.6],
-  ['caio', 'aminu', 173.2],
-  ['aminu', 'caio', 165.3],
+  ['hayato', 'min-ji', 133.2],
+  ['nila', 'centella', 204.6],
+  ['baatar', 'baatar', 183.1],
+  ['baatar', 'zenon', 229.6],
+  ['zenon', 'zenon', 187.6],
+  ['caio', 'aminu', 171.1],
+  ['aminu', 'caio', 163.2],
 ];
 
 test.describe("política 'fixa' (o padrão de hoje): a vitrine e os 4 cenários ficam na luta", () => {
@@ -94,11 +96,12 @@ test.describe("política 'fixa' (o padrão de hoje): a vitrine e os 4 cenários 
 });
 
 // Spec §6 C1: imagens esperadas com as FILME dos dois (±0,5), na luta exclusiva.
+// CAIO x AMINU remedido em 2026-10-24 (HEAD f92bbcf): atlas do CAIO ~2,1 MiB menor (commit 5bd8e7a).
 const PESO: Array<[string, string, number]> = [
   ['hayato', 'min-ji', 75.8],
   ['nila', 'centella', 91.3],
   ['nila', 'aminu', 94.9],
-  ['caio', 'aminu', 85.7],
+  ['caio', 'aminu', 83.6],
   ['hayato', 'hayato', 42.9],
   ['baatar', 'baatar', 61.0],
   ['zenon', 'zenon', 64.6],

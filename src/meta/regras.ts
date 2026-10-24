@@ -1,5 +1,5 @@
 import { IDS_LUTADORES, type IdLutador } from '../core/contratos';
-import type { MotorV2 } from '../core/contratos';
+import type { MotorV2, RitmoMotor } from '../core/contratos';
 import { VARIANTES_DO_DANO, type VarianteDoDano } from '../data/filmes';
 import type { Regras, Ritmo } from './tipos';
 
@@ -140,6 +140,24 @@ export function ritmoDaUrl(busca: string): Ritmo {
 /** As regras com o ritmo resolvido pela URL. Vale para QUALQUER base, como `regrasComMotorV2`. Não muta a entrada. */
 export function regrasComRitmo(regras: Regras, busca: string): Regras {
   return { ...regras, ritmo: ritmoDaUrl(busca) };
+}
+
+/** Nomes das 6 flags de `RitmoMotor` (as de `Ritmo` que o motor lê), para `cfgRitmo` não listar `tarja`/`provocacao` (só UI) duas vezes. */
+const NOMES_RITMO_MOTOR = ['intervalos', 'filmeRestrito', 'super', 'cadeia', 'cpu', 'impacto'] as const satisfies readonly (keyof RitmoMotor)[];
+
+/**
+ * R-6: o pedaço de `Regras.ritmo` que o MOTOR lê (`ConfigPartida.ritmo`), no molde de `cfgMotorV2` — só as 6 flags de
+ * `RitmoMotor` (`tarja`/`provocacao` ficam de fora: são só UI, lidas direto de `Regras.ritmo` por `fight.ts`, como já
+ * está). Sem flag nenhuma ligada devolve `{}`: a cfg fica idêntica à de antes (nem a chave `ritmo` aparece), o que mantém
+ * os hashes/snapshots de hoje. Chame junto de `cfgMotorV2(regras)` nos mesmos lugares que montam `ConfigPartida`
+ * (`select.ts`, `diff.ts`, `campanha.ts`).
+ */
+export function cfgRitmo(regras: { readonly ritmo?: Ritmo }): { ritmo?: RitmoMotor } {
+  const r = regras.ritmo;
+  if (!r) return {};
+  const m: RitmoMotor = {};
+  for (const n of NOMES_RITMO_MOTOR) if (r[n] === true) m[n] = true;
+  return Object.keys(m).length > 0 ? { ritmo: m } : {};
 }
 
 /**

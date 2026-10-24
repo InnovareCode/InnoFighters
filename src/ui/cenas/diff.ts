@@ -1,5 +1,5 @@
 import { LARGURA } from '../../core/constantes';
-import { cfgMotorV2, montarEscada } from '../../meta';
+import { cfgMotorV2, cfgRitmo, montarEscada } from '../../meta';
 import { cfgDaEtapa } from '../campanha';
 import { AI_LEVELS } from '../../fight/cpu';
 import { desenharFundoMenu } from '../../render/cenario';
@@ -39,7 +39,7 @@ export class CenaDiff implements Cena {
       const run: CampanhaArcade = { c1: a.c1, etapas, idx: 0, score: 0, continues: 3, diff: i, cont: 0 };
       this.ui.run = run;
       this.ui.go('vs', { cfg: cfgDaEtapa(run, false, regras), run });
-    } else this.ui.go('vs', { cfg: { mode: 'cpu', c1: a.c1, c2: a.c2, cpu: i, esquiva: regras.esquiva, ...cfgMotorV2(regras) } });
+    } else this.ui.go('vs', { cfg: { mode: 'cpu', c1: a.c1, c2: a.c2, cpu: i, esquiva: regras.esquiva, ...cfgMotorV2(regras), ...cfgRitmo(regras) } });
   }
 
   draw(): void {

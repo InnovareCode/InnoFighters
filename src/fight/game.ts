@@ -12,6 +12,7 @@ import type {
   ModoLuta,
   MotorV2,
   PosFilme,
+  RitmoMotor,
   TextoFlutuante,
 } from '../core/contratos';
 import { clamp, lerp, overlap, type Retangulo } from '../core/math';
@@ -54,6 +55,8 @@ export type ConfigPartida = {
   esquiva?: boolean;
   /** Mecânicas da revisão do motor (v2), cada uma atrás da sua flag. Ausente = o motor de antes, bit a bit. Quem liga é a UI (`Regras.motorV2`). */
   motorV2?: MotorV2;
+  /** R-6: as 6 flags do redesenho de ritmo que o motor lê (`cfgRitmo(regras)`). Ausente = o motor de antes, bit a bit. */
+  ritmo?: RitmoMotor;
 };
 
 /** O que um humano fez durante o hitstop e ainda não chegou ao `Fighter` (V2-1): o último botão de ataque, as mudanças de direção e a ESQUIVA. */
@@ -82,6 +85,20 @@ type PassoDoCombo = { readonly semQueda: boolean; readonly final: FinalDoCombo |
 const DISTANCIA_PADRAO_DO_FILME = 150;
 /** Margem de parede de quem está caído (a mesma de `Fighter.physics`). */
 const MARGEM_CAIDO = 150;
+
+/**
+ * R-6 (`ritmo.intervalos`, docs/spec-redesenho-jogabilidade.md §3.1): espera (ticks) de cada fase de intervalo, de hoje e
+ * com a flag. `ko` vale tanto para o KO quanto para o fim por tempo (`timeover`): as duas fases esperam o mesmo hoje.
+ * `intro` só encolhe a partir do round 2 (o round 1 é coberto pela sobreposição do R-2 na UI, flag separada).
+ */
+const KO_ESPERA = 100;
+const KO_ESPERA_RITMO = 60;
+const ROUNDEND_ESPERA = 175;
+const ROUNDEND_ESPERA_RITMO = 90;
+const INTRO_LEN_PADRAO = 90;
+const INTRO_LEN_RODADA_SEGUINTE_RITMO = 60;
+const MATCHEND_ESPERA = 150;
+const MATCHEND_ESPERA_RITMO = 90;
 
 /** Parte das configurações que a luta lê. Passe o MESMO objeto que a UI altera (shake é lido ao vivo). */
 export type AjustesLuta = Pick<Configuracoes, 'rounds' | 'time' | 'shake'>;
@@ -222,6 +239,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   readonly combosPropriosFeitos: [number, number] = [0, 0];
   /** Ferramenta de medição (verificador de combos, spec §6.2): desliga o teto de combo para medir o dano que o desenho do combo dá SEM a rede. */
   semTetoDeCombo = false;
+  /** R-6 (`ConfigPartida.ritmo.intervalos`): `ko`/`roundend`/`intro` dos rounds 2+/`matchend` mais curtos. Desligada, os de hoje. */
+  private ritmoIntervalos = false;
+  /** R-6 (`ConfigPartida.ritmo.filmeRestrito`): o filme só abre no super (R-7) ou no especial comum que dá KO. Desligada, qualquer acerto limpo de especial abre (V2-3c de hoje). */
+  private ritmoFilmeRestrito = false;
   /** Já houve um filme neste tick? O 2º contato de especial do mesmo tick resolve como acerto comum (spec §3.1). Zera em `update`. */
   private filmeNoTick = false;
   /** Execuções de especial que já tiveram o seu contato (filme, bloqueio, esquiva ou armadura): chave `atk * 2 + indice`. Zera por round. */
@@ -287,6 +308,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.filmesLigados = cfg.motorV2?.filmes === true;
     this.variantePadraoDoFilme = cfg.motorV2?.danoFilme ?? 'v2';
     this.combosLigados = cfg.motorV2?.combos === true;
+    this.ritmoIntervalos = cfg.ritmo?.intervalos === true;
+    this.ritmoFilmeRestrito = cfg.ritmo?.filmeRestrito === true;
     this.combosPropriosFeitos[0] = 0;
     this.combosPropriosFeitos[1] = 0;
     this.winsNeeded = cfgChefe ? 1 : ajustes.rounds;
@@ -325,7 +348,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.trainInfo = { hits: 0, dmg: 0 };
     this.p1.combo = { hits: 0, dmg: 0, t: 0 };
     this.p2.combo = { hits: 0, dmg: 0, t: 0 };
-    this.introLen = this.training ? 40 : 90;
+    this.introLen = this.training ? 40 : this.ritmoIntervalos && this.round > 1 ? INTRO_LEN_RODADA_SEGUINTE_RITMO : INTRO_LEN_PADRAO;
     if (!this.training) this.emitir({ tipo: 'round', fase: 'start', round: this.round });
   }
 
@@ -358,11 +381,16 @@ export class Game implements LeituraLuta, PartidaParaLutador {
 
   /** Arremesso: joga o rival por cima do ombro. */
   arremessar(a: Fighter, d: Fighter, golpe?: GolpeMontado): void {
-    const filme = golpe && this.filmesLigados && !this.filmeNoTick && golpe.id[0] === 's' ? filmeDoGolpe(a.ch.id, a.ficha, golpe.id) : undefined;
-    if (golpe && filme) {
-      this.arremessarComFilme(a, d, golpe, filme);
+    const filmeCandidato = golpe && this.filmesLigados && !this.filmeNoTick && golpe.id[0] === 's' ? filmeDoGolpe(a.ch.id, a.ficha, golpe.id) : undefined;
+    // R-6 (`ritmo.filmeRestrito`): o agarrão de especial (BAATAR, CENTELLA) é "especial comum" como qualquer outro — só
+    // vira filme se o acerto der KO (sem super ainda, R-7). Igual a `applyHit`: o candidato fica pendente até o dano
+    // NORMAL (abaixo, o mesmo de sempre) decidir.
+    const restringir = this.ritmoFilmeRestrito && filmeCandidato !== undefined;
+    if (golpe && filmeCandidato && !restringir) {
+      this.arremessarComFilme(a, d, golpe, filmeCandidato);
       return;
     }
+    const antes = restringir ? this.posicoesDoFilme(a, d) : undefined;
     const dmg = this.danoNoDefensor(d, (golpe?.agarrao?.dmg ?? 12) * a.ch.pow);
     const hpAntes = d.hp;
     d.hp = Math.max(this.training ? 1 : 0, d.hp - dmg);
@@ -377,7 +405,46 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     a.en = Math.min(MAX_EN, a.en + 8);
     d.x = clamp(a.x + a.facing * 30, 70, LARGURA - 70);
     const noAr = !d.grounded; // HURACANRANA: o rival agarrado no ar é jogado PARA BAIXO; no chão o arremesso o lança para cima
-    if (this.resolverVidaZerada(d, a)) {
+    const barrasAntes = d.barras;
+    const diferidos: EventoLuta[] = [];
+    const kill = this.resolverVidaZerada(d, a, restringir ? diferidos : undefined);
+    if (restringir && kill) {
+      // Confirma o filme (motivo 'ko') por cima do dano NORMAL já aplicado acima: o estado final de queda do filme
+      // (§3.3) substitui o knockdown comum.
+      this.filmeNoTick = true;
+      this.estadoFinalDoFilme(a, d, filmeCandidato as FilmeDoGolpe, false, kill);
+      this.reforcarTrocaDeBarra();
+      this.emitir({
+        tipo: 'throw',
+        atacante: a.indice,
+        defensor: d.indice,
+        pitch: d.ch.pitch,
+        texto: textoFlutuante(a.x, a.y - SH, 'ARREMESSO!', '#ffd23f', 22),
+        dano,
+        golpe: (golpe as GolpeMontado).id,
+        especial: true as const,
+        filme: true,
+      });
+      this.emitir({
+        tipo: 'filme',
+        atacante: a.indice,
+        defensor: d.indice,
+        golpe: (golpe as GolpeMontado).id,
+        ficha: a.ficha,
+        projetil: false,
+        dano,
+        contragolpe: false,
+        ko: true,
+        trocaDeBarra: d.barras < barrasAntes,
+        final: (filmeCandidato as FilmeDoGolpe).final ?? 'derruba',
+        antes: antes as { atacante: PosFilme; defensor: PosFilme },
+        depois: this.posicoesDoFilme(a, d),
+        motivo: 'ko',
+      });
+      for (const ev of diferidos) this.emitir(ev);
+      return;
+    }
+    if (kill) {
       d.vx = -a.facing * 7;
     } else {
       d.knockdown(-a.facing, 6);
@@ -568,12 +635,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
     if (this.phase === 'cena-chefe') this.andarCenaDoChefe();
     else if (this.phase === 'fight') this.talvezIniciarCenaDoChefe();
-    if ((this.phase === 'ko' || this.phase === 'timeover') && this.t >= 100) this.endRound();
-    if (this.phase === 'roundend' && this.t >= 175) {
+    if ((this.phase === 'ko' || this.phase === 'timeover') && this.t >= (this.ritmoIntervalos ? KO_ESPERA_RITMO : KO_ESPERA)) this.endRound();
+    if (this.phase === 'roundend' && this.t >= (this.ritmoIntervalos ? ROUNDEND_ESPERA_RITMO : ROUNDEND_ESPERA)) {
       this.round++;
       this.startRound(false);
     }
-    if (this.phase === 'matchend' && this.t >= 150) this.matchDone = true;
+    if (this.phase === 'matchend' && this.t >= (this.ritmoIntervalos ? MATCHEND_ESPERA_RITMO : MATCHEND_ESPERA)) this.matchDone = true;
   }
 
   /**
@@ -941,8 +1008,13 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     // V2-4: o acerto entra no histórico do atacante ANTES de `gotHits++` (o histórico recomeça quando o rival estava livre).
     const passoDoCombo = this.combosLigados ? this.registrarAcertoDoCombo(a, d, mv) : null;
     // V2-3c: o 2º contato de especial do MESMO tick resolve como acerto comum (spec §3.1); o 1º leva o filme.
-    const filme = this.filmeNoTick ? undefined : doFilme;
-    const antes = filme ? this.posicoesDoFilme(a, d) : undefined;
+    const filmeCandidato = this.filmeNoTick ? undefined : doFilme;
+    // R-6 (`ritmo.filmeRestrito`): sem super ainda (R-7, sempre "não é super" por ora), um especial comum só vira filme
+    // SE o acerto der KO — e isso só se sabe depois do dano (abaixo). Até lá o candidato fica pendente, não confirmado:
+    // `filme` nasce `undefined` e a conta do dano cai no caminho normal (`danoDoGolpe`), como a tabela do §3.3 manda.
+    const restringir = this.ritmoFilmeRestrito && filmeCandidato !== undefined;
+    let filme = restringir ? undefined : filmeCandidato;
+    const antes = filmeCandidato ? this.posicoesDoFilme(a, d) : undefined;
     const multContra = emPreparo ? mv.contra?.mult : undefined;
     let dmg = this.danoNoDefensor(
       d,
@@ -967,7 +1039,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     d.move = null;
     const barrasAntes = d.barras;
     const diferidos: EventoLuta[] = []; // o `ko` do filme sai DEPOIS do `hit` e do `filme` (spec §3.2); fora do filme sai na hora, como sempre
-    const kill = this.resolverVidaZerada(d, a, filme ? diferidos : undefined);
+    // `restringir`: o `ko` TAMBÉM fica pendente em `diferidos` (adiantado), porque só se confirma filme depois do `kill`.
+    const kill = this.resolverVidaZerada(d, a, filme || restringir ? diferidos : undefined);
+    if (restringir) filme = kill ? filmeCandidato : undefined; // confirma o filme só se este acerto zerou a vida (motivo 'ko')
     if (filme) {
       this.filmeNoTick = true;
       this.estadoFinalDoFilme(a, d, filme, mv.proj, kill);
@@ -1034,6 +1108,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
         final: filme.final ?? 'derruba',
         antes,
         depois: this.posicoesDoFilme(a, d),
+        // R-6: só com `ritmo.filmeRestrito` (sem super ainda, R-7: todo filme confirmado aqui é por KO).
+        ...(this.ritmoFilmeRestrito ? ({ motivo: kill ? 'ko' : 'super' } as const) : {}),
       });
       for (const ev of diferidos) this.emitir(ev);
     }

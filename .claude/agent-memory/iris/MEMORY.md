@@ -15,4 +15,5 @@
 - [Paginas FILME v2 AMINU/ZENON/BAATAR](project_qa-paginas-filme-v2-aminu-zenon-baatar.md) — APROVADO; ampliacao 1,019/1,019/1,054 no drawImage; memoria-filme (processos) vermelho por ruido, ajuste proposto
 - [Validacao final d48cf1e](project_validacao-final-d48cf1e.md) — 3 specs velhos pos-commit, SW x page.route, ARCADE flaky sob carga, memoria por luta final, JPGs removidos
 - [SW skipWaiting pendente + boot lento (5080310)](project_sw-skipwaiting-pendente-e-boot-lento.md) — flake do spec 'versão nova' (Chromium), trailer Fast 3G, 0,913 / 145,3 MiB
-- [Jogar de verdade contra CPU (209ecd8)](reference_jogar-de-verdade-contra-cpu.md) — rAF estrangulado headless, worktree isolado de HMR, tarja 100% exceto reduced-motion, filme nunca dispara, tempo parado 44,6%
+- [Jogar de verdade contra CPU (209ecd8)](reference_jogar-de-verdade-contra-cpu.md) — rAF estrangulado headless, worktree isolado de HMR, tarja 100% exceto reduced-motion, filme nunca dispara, tempo parado 44,6%; + vite build não da DEV hooks, h.ui.go so comeca fade, causa raiz do R-3
+- [R-4: prova da onda 1 (f92bbcf)](project_r4-onda1-ritmo-prova.md) — G1/G2 medidos (45,0%→31,9%), tarja 0 em 100% das 11 partidas, causa raiz do filme (atalho sem cfgMotorV2), fixture do CAIO corrigida (16 testes)

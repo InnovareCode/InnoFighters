@@ -3,9 +3,9 @@ import { ALTURA, LARGURA } from '../../core/constantes';
 import type { IdLutador } from '../../core/contratos';
 import type { Ferramentas } from '../../ui/ferramentas';
 import { desenharCenarioLuta, desenharVinheta } from '../cenario';
-import { desenharRetrato } from '../retrato';
 import type { Ctx } from '../tela';
 import { desenharFundoDaMontagem } from './retratos';
+import { desenharRostoOuPlaca } from './rosto';
 
 /*
  * O CARTÃO DE RESERVA (spec §4.4): quando a pré-rolagem de um plano de luta não ficou pronta, ou a arte dele não chegou a tempo (aparelho lento, rede ruim), o
@@ -40,7 +40,8 @@ export function desenharReserva(e: EntradaDaReserva): void {
     const l = e.elenco[id];
     const x = i === 0 ? 150 + empurrao : LARGURA - 150 - lado - empurrao;
     const y = 120;
-    desenharRetrato(ctx, l.arte.retrato(l.ch.head), x, y, lado, i === 1, ['#34406e', '#0c1233']);
+    // sem o retrato (a etapa 1 do boot ainda não o trouxe) a placa tipográfica: o cartão de reserva nunca sai vazio
+    desenharRostoOuPlaca(ctx, f, l, x, y, lado, i === 1, ['#34406e', '#0c1233']);
     ctx.lineWidth = 3;
     ctx.strokeStyle = l.ch.accent;
     ctx.strokeRect(x + 1.5, y + 1.5, lado - 3, lado - 3);

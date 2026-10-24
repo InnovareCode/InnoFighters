@@ -6,9 +6,9 @@ import { LAYOUT_DA_MARCA, LOGO_ALTURA } from '../../ui/logo';
 import type { Ferramentas } from '../../ui/ferramentas';
 import { desenharCenarioLuta, desenharVinheta } from '../cenario';
 import { desenharPose } from '../pose';
-import { desenharRetrato } from '../retrato';
 import type { Ctx } from '../tela';
 import { desenharFundoDaMontagem } from './retratos';
+import { desenharRostoOuPlaca } from './rosto';
 
 /*
  * Versão ESTÁTICA do trailer (movimento reduzido ou economia de dados, spec §6.3): quadros PARADOS que trocam por dissolução. Zero aproximação, tremor, câmera lenta,
@@ -56,8 +56,19 @@ export function desenharQuadroEstatico(r: RecursosDaEstatica, q: QuadroEstatico,
     const xs = posicoesDoQuadro(q.lutadores.length);
     q.lutadores.forEach((id, i) => {
       const l = r.elenco[id];
-      f.floorShadow(xs[i] as number, GROUND, 70);
-      desenharPose(ctx, l.ch, l.arte, 'win', xs[i] as number, GROUND, 1.05, i === 1 ? -1 : 1);
+      if (l.arte.pronta !== false) {
+        f.floorShadow(xs[i] as number, GROUND, 70);
+        desenharPose(ctx, l.ch, l.arte, 'win', xs[i] as number, GROUND, 1.05, i === 1 ? -1 : 1);
+      } else {
+        // o atlas não está na memória (rede lenta: o estático por vazão só pede cenários e retratos): o rosto no lugar da pose, nunca um vão
+        const lado = 190;
+        const x = (xs[i] as number) - lado / 2;
+        desenharRostoOuPlaca(ctx, f, l, x, 170, lado, i === 1, ['#34406e', '#0c1233']);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = l.ch.accent;
+        ctx.strokeRect(x + 1.5, 171.5, lado - 3, lado - 3);
+        f.A(l.ch.name, x + lado / 2, 170 + lado + 30, 26, ['#ffffff', '#ffd27a'], '#000');
+      }
     });
   } else if (q.retratos && q.retratos.length > 0) {
     const xs = posicoesDoQuadro(q.retratos.length);
@@ -70,7 +81,7 @@ export function desenharQuadroEstatico(r: RecursosDaEstatica, q: QuadroEstatico,
         ctx.fillStyle = 'rgba(6,3,16,.92)';
         ctx.fillRect(x, y, lado, lado);
         f.A('?', x + lado / 2, y + lado / 2, 80, '#6c5a8a', '#000');
-      } else desenharRetrato(ctx, l.arte.retrato(l.ch.head), x, y, lado, false, ['#34406e', '#0c1233']);
+      } else desenharRostoOuPlaca(ctx, f, l, x, y, lado, false, ['#34406e', '#0c1233']);
       ctx.lineWidth = 3;
       ctx.strokeStyle = l.ch.accent;
       ctx.strokeRect(x + 1.5, y + 1.5, lado - 3, lado - 3);

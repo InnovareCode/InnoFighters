@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect, test, type Page } from '@playwright/test';
+import { esperarVitrine } from './_arte';
 import { SEM_PROVOCACAO } from './_luta';
 
 /*
@@ -23,6 +24,7 @@ const estado = (page: Page): Promise<{ atlas: string[]; cenarios: string[]; silh
 async function abrirNoMenu(page: Page, query: string): Promise<void> {
   await page.goto(`/?seed=7&expansao=1&trailer=0${query}`);
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+  if (!query.includes('residencia=fixa')) await esperarVitrine(page); // T4: o data-pronto é só a etapa 0; o teste parte do menu com a vitrine na memória
   await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('menu'); }`);
   // dá silhueta ao cache: desenha o HAYATO levando um flash
   await hook(page, `(h) => { const a = h.mundo().arte.atlas.get('hayato'); const pd = Object.values(h.mundo().elenco.hayato.ch.pd)[0]; try { h.mundo().elenco.hayato.arte.silhuetaDe(pd); } catch (e) {} void a; }`);

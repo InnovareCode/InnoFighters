@@ -56,7 +56,8 @@ import type { CenaTitle } from '../cenas/title';
 import type { CenaTrailer } from '../cenas/trailer';
 import { marca } from '../logo';
 import { parametroDoTrailer } from '../cenas/trailer';
-import { conexaoDoNavegador, economiaDeDados, prerolarNoOrcamento } from './ambiente';
+import { vazaoDoBoot } from '../../platform/vazao';
+import { conexaoDoNavegador, decidirTrailerEstatico, LIMITE_DE_RESERVAS, prerolarNoOrcamento, type MotivoDoEstatico } from './ambiente';
 import { aquecerImagens, agendadorOcioso, canvasDeAquecimento } from './aquecer';
 import { CargaEscalonada } from './arte';
 
@@ -112,6 +113,10 @@ export class TrailerEmCena implements ControladorDoTrailer {
   pronta = false;
   private args: ArgsTrailer = { origem: 'boot' };
   private estatico = false;
+  /** Por que a versão estática foi escolhida (null = completa). */
+  private motivoEstatico: MotivoDoEstatico | null = null;
+  /** O completo desistiu no meio (reserva em série) e a cena seguiu pelo estático. */
+  private degradou = false;
   private d: DiretorDoTrailer | null = null;
   private carga: CargaEscalonada | null = null;
   private q: QuadroDoTrailer | null = null;
@@ -241,7 +246,11 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.args = args;
     const { regras, persist } = this.ui.c;
     const reduz = this.ui.c.reduzirMovimento?.() ?? false;
-    this.estatico = reduz || economiaDeDados(conexaoDoNavegador());
+    // estático ou completo: movimento reduzido, economia de dados / 2g-3g (Network Information API) OU vazão medida no boot abaixo do limiar (o iPhone não tem a API)
+    const decisao = decidirTrailerEstatico({ reduzirMovimento: reduz, conexao: conexaoDoNavegador(), vazao: vazaoDoBoot() });
+    this.estatico = decisao.estatico;
+    this.motivoEstatico = decisao.motivo;
+    this.degradou = false;
     this.tCena = 0;
     this.fimPendente = false;
     this.q = null;
@@ -266,19 +275,22 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.cine.zerarLuta();
     this.entrada.zerar();
     document.body.classList.add('em-trailer');
+    document.body.dataset['trailer'] = this.estatico ? 'estatico' : 'completo';
     this.ativo = true;
     if (!this.estatico) this.prepararOCompleto();
-    else this.prepararAEstatica();
+    else this.prepararAEstatica(this.motivoEstatico);
     this.pronta = true;
   }
 
   /**
    * A versão estática desenha a vitrine e os cenários do título (spec §6.3) e não tem plano de carga. A cena do trailer entra exclusiva (`arteDaCena`) e solta tudo, então ela pede
    * a vitrine e os 4 cenários aqui e os marca em uso: 133,6 MiB de imagem, dentro dos 150. Os quadros desenham o que já chegou e o resto entra quando chega.
+   * Por rede lenta (vazão, economia de dados ou a desistência do completo) NÃO se pedem os atlas (4,7 MiB que competiriam com os retratos): só os 4 cenários, e os quadros
+   * mostram o rosto (retrato ou placa tipográfica) no lugar da pose.
    */
-  private prepararAEstatica(): void {
+  private prepararAEstatica(motivo: MotivoDoEstatico | null): void {
     const arte = this.ui.m.arte;
-    const pedido = { lutadores: [...LUTADORES_DO_TITULO], cenarios: [...CENARIOS_DO_TITULO] };
+    const pedido = { lutadores: motivo === 'movimento' ? [...LUTADORES_DO_TITULO] : [], cenarios: [...CENARIOS_DO_TITULO] };
     arte.usar(pedido);
     arte.garantir(pedido).catch((e: unknown) => console.error('trailer: a arte da versão estática não chegou', e));
   }
@@ -313,6 +325,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.ativo = false;
     this.pronta = false;
     document.body.classList.remove('em-trailer');
+    delete document.body.dataset['trailer'];
     this.pararMusica(this.fadeDaSaida);
     this.carga?.liberarTudo();
     this.carga = null;
@@ -427,7 +440,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     if (this.esperandoOAudio()) return;
     const { ticks, pular } = this.ticksDesteUpdate(d.duracao);
     for (let i = 0; i < ticks; i++) {
-      this.aoComecarUmTick(d);
+      if (this.aoComecarUmTick(d)) return; // desistiu do completo: o estático assume no próximo update
       this.processar(d.avancar(), !pular || i >= ticks - 3);
       if (d.fim) {
         this.fimPendente = true;
@@ -437,14 +450,57 @@ export class TrailerEmCena implements ControladorDoTrailer {
   }
 
   /** Antes de produzir um tick: se ele abre um plano, solta/inicia a carga da arte e decide a reserva dos planos de luta ANTES de o plano começar. */
-  private aoComecarUmTick(d: DiretorDoTrailer): void {
+  private aoComecarUmTick(d: DiretorDoTrailer): boolean {
     const t = d.tickAtual;
     const k = indiceDoPlano(t);
-    if ((INICIOS[k] as number) !== t) return;
+    if ((INICIOS[k] as number) !== t) return false;
     const carga = this.carga as CargaEscalonada;
     carga.entrouNoPlano(k);
     const plano = ROTEIRO.planos[k] as Plano;
-    if (temMotor(plano) && !carga.pronto(d.pedidosDeArte().agora)) d.reservaForcada(plano.id);
+    if (temMotor(plano) && !carga.pronto(d.pedidosDeArte().agora)) {
+      // reserva em série é pior que o estático: o 1º cartão de reserva é tolerado (e nunca sai vazio), o 2º faz a cena seguir pelo estático
+      if (d.planosEmReserva().length + 1 >= LIMITE_DE_RESERVAS) {
+        this.degradarParaOEstatico(t);
+        return true;
+      }
+      d.reservaForcada(plano.id);
+    }
+    return false;
+  }
+
+  /**
+   * Desiste do completo no meio (a rede não sustenta a carga por plano): solta a carga e o diretor, para a música da abertura e segue pela versão estática a partir do quadro dela
+   * que corresponde ao compasso em que estava (a música do estático é o mesmo arranjo, só nos compassos do roteiro). Sem cartão de reserva em série.
+   */
+  private degradarParaOEstatico(tick: number): void {
+    const compassoAtual = Math.floor(tick / TICKS_POR_COMPASSO);
+    const marcas = ROTEIRO.estatica.compassosDaMusica;
+    const achado = marcas.findIndex((c) => c >= compassoAtual);
+    const quadro = achado < 0 ? marcas.length - 1 : achado;
+    this.carga?.liberarTudo();
+    this.carga = null;
+    this.d = null;
+    this.q = null;
+    this.qe = null;
+    this.camada.soltar();
+    this.montagem.soltar();
+    this.cine.zerarLuta();
+    this.entrada.zerar();
+    this.filme.zerar();
+    this.efeitos.limpar();
+    this.adiadosNaQueda = [];
+    this.adiadosNoFim = [];
+    this.esperaPorArte = null;
+    // a música da abertura completa sai (fade curto) e a do estático entra no compasso seguinte ao do quadro; sem música (modo atrair repetido) segue muda
+    const mudo = this.musica === 'muda';
+    this.pararMusica(0.25);
+    this.musica = mudo ? 'muda' : 'pendente';
+    this.estatico = true;
+    this.motivoEstatico = 'vazao';
+    this.degradou = true;
+    this.tickEstatico = quadro * ROTEIRO.estatica.ticksPorQuadro;
+    document.body.dataset['trailer'] = 'estatico';
+    this.prepararAEstatica('vazao');
   }
 
   private updateEstatico(): void {
@@ -829,13 +885,13 @@ export class TrailerEmCena implements ControladorDoTrailer {
     }
     // o próximo plano: quantos ticks faltam e se a arte dele (a que o diretor vai exigir) já chegou: os testes avançam em manual e esperam a rede neste ponto
     const d = this.d;
-    let proximoPlano: { emTicks: number; artePronta: boolean } | null = null;
+    let proximoPlano: { id: IdPlano; emTicks: number; artePronta: boolean } | null = null;
     if (d && !this.estatico && d.tickAtual < d.duracao) {
       const k = indiceDoPlano(d.tickAtual);
       const seguinte = INICIOS[k + 1];
       if (seguinte !== undefined) {
         const agora = pedidosNoPlano(ROTEIRO, planoDeCarga(ROTEIRO), k + 1).agora;
-        proximoPlano = { emTicks: seguinte - d.tickAtual, artePronta: this.carga?.pronto(agora) ?? true };
+        proximoPlano = { id: (ROTEIRO.planos[k + 1] as Plano).id, emTicks: seguinte - d.tickAtual, artePronta: this.carga?.pronto(agora) ?? true };
       }
     }
     // a arte do plano EM CURSO (a que ele exige no começo e a que chega com ele na tela, como a vitrine da logo) já está na memória? Os testes de pixel esperam por isto antes de capturar
@@ -849,6 +905,9 @@ export class TrailerEmCena implements ControladorDoTrailer {
       ativo: this.ativo,
       origem: this.args.origem,
       estatico: this.estatico,
+      /** Por que é estático ('movimento', 'economia', 'vazao') ou null; `degradou`: o completo desistiu no meio e seguiu pelo estático. */
+      motivoEstatico: this.motivoEstatico,
+      degradou: this.degradou,
       musica: this.musica,
       tCena: this.tCena,
       tick: this.estatico ? this.tickEstatico : (this.d?.tickAtual ?? 0),

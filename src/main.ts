@@ -22,6 +22,7 @@ import { mostrarErrosNaTela } from './platform/erros';
 import { observarFoco } from './platform/foco';
 import { criarAviso } from './platform/aviso';
 import { desbloquearAudio } from './platform/audio-desbloqueio';
+import { registrarVazaoDoBoot } from './platform/vazao';
 import { carregarFontes } from './platform/fontes';
 import { alternarTelaCheia } from './platform/tela-cheia';
 import { criarVinheta } from './render/cenario';
@@ -211,6 +212,10 @@ async function iniciar(): Promise<void> {
         efeitos: new Efeitos(rngVisual),
         petalasLuta: new CampoDePetalas(rngVisual, 'luta'),
       };
+      // a vazão que a etapa 0 mediu (Resource Timing; o trailer decide estático x completo com ela, porque o iPhone não tem a Network Information API).
+      // `?vazao=<bytes/s>` (SÓ em desenvolvimento) a fixa para os testes; `?vazao=nenhuma` = não medida
+      const vazaoFixa = import.meta.env.DEV ? params.get('vazao') : null;
+      registrarVazaoDoBoot(vazaoFixa === null ? undefined : vazaoFixa === 'nenhuma' || !Number.isFinite(Number(vazaoFixa)) ? null : Number(vazaoFixa));
       ui.pronto(mundo);
       // `data-pronto` = a ETAPA 0 do boot (manifestos, cenário padrão, marca, fontes): é o que o jogador espera para ver "CLIQUE OU PRESSIONE UMA TECLA" (meta 4, <= 1,5 MiB)
       document.documentElement.dataset['pronto'] = 'true';

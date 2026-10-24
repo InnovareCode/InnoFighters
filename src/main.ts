@@ -9,6 +9,7 @@ import { carregarDadosV2, type ArmazenamentoLike } from './core/storage';
 import type { IdLutador } from './core/contratos';
 import { criarRng, sementeAleatoria } from './core/rng';
 import { CENARIO_PADRAO } from './data/cenarios';
+import { VITRINE } from './data/lutadores';
 // efeito colateral PROPOSITAL: valida as falas das provocações no carregamento (lutador sem falas ou fora dos limites derruba o boot, alto e cedo)
 import './data/provocacoes';
 import { Game } from './fight/game';
@@ -29,6 +30,7 @@ import { prepararCanvas } from './render/tela';
 import type { Contexto, Mundo } from './ui/contexto';
 import { criarFerramentas } from './ui/ferramentas';
 import { FundoPadrao } from './ui/fundo-padrao';
+import { CENARIOS_DA_VITRINE } from './ui/residencia';
 import { iniciarMarca } from './ui/logo';
 import { Navegador } from './ui/navegador';
 import { criarPersistencia, MSG_NAO_SALVO } from './ui/persistencia';
@@ -188,7 +190,7 @@ async function iniciar(): Promise<void> {
     ...(precarga ? { precarregar: precarga } : {}),
     ...(politica ? { politica } : {}),
   })
-    .then(({ elenco, arte }) => {
+    .then(({ elenco, arte, etapa1 }) => {
       const lutadores = {} as Record<IdLutador, (typeof elenco)[IdLutador]['ch']>;
       for (const id of Object.keys(elenco) as IdLutador[]) lutadores[id] = elenco[id].ch;
       // o fundo dos menus lê do gerenciador a cada quadro (o `jp` sai da memória na luta e volta depois); na falta, um canvas 1 x 1 da cor do fundo
@@ -210,7 +212,13 @@ async function iniciar(): Promise<void> {
         petalasLuta: new CampoDePetalas(rngVisual, 'luta'),
       };
       ui.pronto(mundo);
+      // `data-pronto` = a ETAPA 0 do boot (manifestos, cenário padrão, marca, fontes): é o que o jogador espera para ver "CLIQUE OU PRESSIONE UMA TECLA" (meta 4, <= 1,5 MiB)
       document.documentElement.dataset['pronto'] = 'true';
+      // etapa 1: os retratos e a vitrine chegam em segundo plano; `data-vitrine` marca que a vitrine inteira (atlas e cenários do título) já está na memória
+      etapa1();
+      void arte.fundoPronto().then(() => {
+        if (arte.estaPronto({ lutadores: VITRINE, cenarios: CENARIOS_DA_VITRINE })) document.documentElement.dataset['vitrine'] = 'true';
+      });
     })
     .catch((e: unknown) => {
       console.error(e);

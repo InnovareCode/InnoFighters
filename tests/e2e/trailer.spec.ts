@@ -56,7 +56,7 @@ async function irAteTick(page: Page, alvo: number): Promise<any> {
 test.describe('trailer de abertura', () => {
   test.skip(({ browserName }) => browserName !== 'chromium', 'só Chromium');
 
-  test('o fluxo inteiro: boot -> gesto -> trailer (40 s, música, sem reserva, memória <= 270 MB, <= 2 atlas não fixos) -> título com fromTrailer', async ({ page }, info) => {
+  test('o fluxo inteiro: boot -> gesto -> trailer (40 s, música, sem reserva, imagem <= 150 MiB, sem arte fixa) -> título com fromTrailer', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'o fluxo de 40 s roda só no desktop');
     test.setTimeout(120_000);
     const erros = coletarErros(page);
@@ -68,7 +68,7 @@ test.describe('trailer de abertura', () => {
     expect(await hook(page, '(h) => document.body.classList.contains("em-trailer")')).toBe(true);
     const planos = new Set<string>();
     let maxMB = 0;
-    let maxNaoFixos = 0;
+    let maxResidentes = 0;
     let tocou = false;
     let reserva = false;
     let ultimoTick = 0;
@@ -78,7 +78,7 @@ test.describe('trailer de abertura', () => {
       if (!d) break;
       planos.add(d.plano);
       maxMB = Math.max(maxMB, d.memoriaDecodificadaMB);
-      maxNaoFixos = Math.max(maxNaoFixos, d.residentes.length);
+      maxResidentes = Math.max(maxResidentes, d.residentes.length);
       expect(d.residentes.includes('baatar') && d.residentes.includes('zenon'), `BAATAR e ZENON juntos no tick ${d.tick}`).toBe(false);
       tocou ||= d.musica === 'tocando';
       reserva ||= d.planosEmReserva.length > 0;
@@ -94,13 +94,13 @@ test.describe('trailer de abertura', () => {
     expect(ultimoTick).toBeGreaterThan(2300);
     expect(reserva, 'nenhum plano virou cartão de reserva').toBe(false);
     expect(tocou, 'a música tocou').toBe(true);
-    expect(maxNaoFixos).toBeLessThanOrEqual(2);
-    expect(maxMB, 'memória decodificada (aprox.) dos atlas e cenários').toBeLessThanOrEqual(270);
-    // o título nasce em t = 120 (fromTrailer) e o trailer soltou tudo o que carregou
+    // T12: o trailer não segura a vitrine; cada plano pede e solta a sua arte, e o pico (P6 + P7, com 4 atlas) é medido tick a tick por `npm run trailer:medir -- --cena trailer --modo memoria`
+    expect(maxResidentes, 'atlas na memória ao mesmo tempo').toBeLessThanOrEqual(4);
+    expect(maxMB, 'memória decodificada dos atlas e cenários (MiB)').toBeLessThanOrEqual(150);
+    // o título nasce em t = 120 (fromTrailer) e o trailer soltou tudo o que carregou, menos a vitrine que o título pede
     expect(await hook(page, '(h) => h.ui.scene.t')).toBeGreaterThanOrEqual(120);
     expect(await hook(page, '(h) => document.body.classList.contains("em-trailer")')).toBe(false);
-    const residentes = await hook(page, '(h) => h.mundo().arte.lutadoresResidentes()');
-    expect([...residentes].sort()).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
+    await expect.poll(async () => [...(await hook(page, '(h) => h.mundo().arte.lutadoresResidentes()'))].sort(), { timeout: 15_000 }).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
     expect(await hook(page, '(h) => h.ui.c.audio.posicaoDaAbertura()')).toBeNull(); // a música da abertura parou
     expect(erros).toEqual([]);
   });
@@ -311,6 +311,8 @@ test.describe('trailer de abertura', () => {
       for (const alvo of [300, 1200, 2300]) {
         const d = await irAteTick(page, alvo);
         expect(d.planosEmReserva, `reservas até o tick ${alvo}`).toEqual([]);
+        // T12: o trailer não tem arte fixa. A vitrine da logo (P10) chega com o plano já na tela: o pixel só é igual entre as visitas com a arte do plano toda na memória
+        await page.waitForFunction(() => (window as any).__inno.ui.cenas.trailer.diagnostico().artePronta === true, undefined, { timeout: 30_000 });
         quadros[alvo] = await hook(page, "(h) => { h.desenhar(); return document.getElementById('jogo').toDataURL('image/png'); }");
       }
       await ctx.close();

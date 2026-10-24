@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { CriarCanvas } from '../../src/assets/canvas';
 import { AtlasLutador, carregarManifestos, carregarRecursos, type ImagemCarregada, type LeitorDeRecursos } from '../../src/assets/carregador';
 import { iniciarArte } from '../../src/assets/elenco';
+import { arquivosFixosDaEtapa0 } from '../../src/assets/etapa0.mjs';
 import { GerenciadorDeArte } from '../../src/assets/gerenciador';
 import { paraManifestoV1, validarManifesto, validarRetrato } from '../../src/assets/manifesto';
 import { ErroDeAsset } from '../../src/assets/tipos';
@@ -301,20 +302,48 @@ describe("GerenciadorDeArte (carga sob demanda, política 'fixa')", () => {
 describe('iniciarArte (boot) com o elenco real e leitor falso', () => {
   const todos = Object.fromEntries(IDS_LUTADORES.map((i) => [i, v1(i)]));
 
-  it('padrão: manifestos e retratos de TODOS, atlas só da vitrine, cenário padrão + os da vitrine', async () => {
+  it('padrão (T4): a ETAPA 0 baixa SÓ os manifestos dos 10 e o cenário padrão, exatamente o que a lista de etapa0.ts diz', async () => {
     const L = leitor({ manifestos: todos });
     const { elenco, arte } = await iniciarArte({ baseUrl: '/', leitor: L.l, criarCanvas: criarCanvasFalso });
     expect(Object.keys(elenco).sort()).toEqual([...IDS_LUTADORES].sort());
+    expect(arte.lutadoresResidentes()).toEqual([]); // nenhum atlas antes do data-pronto
+    expect(L.atlasBaixados()).toEqual([]);
+    expect(L.pedidos.filter((p) => p.endsWith('/retrato.webp'))).toEqual([]); // retratos: etapa 1
+    expect([...arte.cenarios.keys()]).toEqual(['jp']);
+    // contrato T4/T7: o que o boot baixa (arquivos de dados) é um SUBCONJUNTO da lista que o SW pré-carrega, e o que a lista tem de arte, o boot baixou
+    const pedidos = L.pedidos.map((p) => p.slice(1)).sort();
+    expect(pedidos).toEqual(arquivosFixosDaEtapa0(IDS_LUTADORES).filter((c) => c.startsWith('assets/lutadores/') || c.startsWith('assets/cenarios/')).sort());
+  });
+
+  it('padrão (T4): a ETAPA 1 (etapa1) traz os retratos de todos e a vitrine (atlas e cenários do título) em segundo plano, sem bloquear', async () => {
+    const L = leitor({ manifestos: todos });
+    const { arte, etapa1 } = await iniciarArte({ baseUrl: '/', leitor: L.l, criarCanvas: criarCanvasFalso });
+    etapa1();
+    await arte.fundoPronto();
     expect(arte.lutadoresResidentes().sort()).toEqual([...VITRINE].sort());
     expect(L.atlasBaixados()).toHaveLength(VITRINE.length);
     expect(L.pedidos.filter((p) => p.endsWith('/retrato.webp'))).toHaveLength(IDS_LUTADORES.length);
+    expect(arte.estaPronto({ lutadores: VITRINE, cenarios: ['jp', 'cn', 'kr', 'br'] })).toBe(true);
+  });
+
+  it("política 'fixa' (rollback `?residencia=fixa`): o boot de antes, retratos e vitrine na etapa 0 e a etapa 1 não faz nada", async () => {
+    const L = leitor({ manifestos: todos });
+    const { arte, etapa1 } = await iniciarArte({ baseUrl: '/', leitor: L.l, criarCanvas: criarCanvasFalso, politica: 'fixa' });
+    expect(arte.lutadoresResidentes().sort()).toEqual([...VITRINE].sort());
+    expect(L.pedidos.filter((p) => p.endsWith('/retrato.webp'))).toHaveLength(IDS_LUTADORES.length);
     expect(arte.cenarios.has('jp')).toBe(true);
+    const antes = L.pedidos.length;
+    etapa1();
+    await arte.fundoPronto();
+    expect(L.pedidos).toHaveLength(antes);
   });
 
   it('precarregar vazio: nenhum atlas no boot (tudo sob demanda), só retratos e o cenário padrão', async () => {
     const L = leitor({ manifestos: todos });
     const marcos: number[] = [];
-    const { arte } = await iniciarArte({ baseUrl: '/', leitor: L.l, precarregar: [], criarCanvas: criarCanvasFalso, aoProgredir: (f) => marcos.push(f) });
+    const { arte, etapa1 } = await iniciarArte({ baseUrl: '/', leitor: L.l, precarregar: [], criarCanvas: criarCanvasFalso, aoProgredir: (f) => marcos.push(f) });
+    etapa1();
+    await arte.fundoPronto();
     expect(L.atlasBaixados()).toEqual([]);
     expect([...arte.cenarios.keys()]).toEqual(['jp']);
     expect(marcos.at(-1)).toBe(1);

@@ -216,7 +216,7 @@ export class DiretorDoTrailer {
   }
 
   /** Os pedidos de arte do plano em curso. */
-  pedidosDeArte(): { readonly agora: PedidoDeArte; readonly proximo: PedidoDeArte; readonly soltar: readonly string[] } {
+  pedidosDeArte(): { readonly agora: PedidoDeArte; readonly tarde: PedidoDeArte; readonly proximo: PedidoDeArte; readonly soltar: readonly string[] } {
     return pedidosNoPlano(this.roteiro, this.pedidos, this.indiceDoPlano(Math.min(this.tick, this.duracao - 1)));
   }
 

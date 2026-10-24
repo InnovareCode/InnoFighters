@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect, test, type Page } from '@playwright/test';
+import { esperarVitrine } from './_arte';
 import { SEM_PROVOCACAO } from './_luta';
 
 /*
@@ -27,6 +28,7 @@ async function abrir(page: Page, url = URL): Promise<void> {
   });
   await page.goto(url);
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+  await esperarVitrine(page); // T4: o `data-pronto` é só a etapa 0; estes testes partem do título com a vitrine na memória
 }
 
 const naCena = (page: Page, nome: string, timeout = 30_000): Promise<unknown> =>

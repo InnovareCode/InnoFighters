@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { deflateSync } from 'node:zlib';
 import { expect, test, type Page } from '@playwright/test';
+import { esperarVitrine } from './_arte';
 import { SEM_PROVOCACAO } from './_luta';
 
 test.describe.configure({ timeout: 120_000 });
@@ -30,12 +31,17 @@ const paginasDe = (urls: string[], id: string): string[] => urls.filter((u) => u
 const cenariosDe = (urls: string[]): string[] => urls.filter((u) => u.startsWith('/assets/cenarios/')).map((u) => u.split('/')[3] as string).sort();
 
 test.describe('retratos e carga de arte', () => {
-  test('boot padrão: retrato de todos, atlas só da vitrine, cada arquivo uma vez', async ({ page }, info) => {
+  test('boot padrão em etapas (T4): o data-pronto traz só os manifestos e o jp; a etapa 1 traz os retratos e a vitrine, e nada além disso, cada arquivo uma vez', async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
     const urls = espiarAssets(page);
     await page.goto('/?seed=1');
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
-    // E5/Z5: o elenco tem 10 (manifesto e retrato de todos no boot), mas só a vitrine (os 4 de fábrica) baixa as imagens do atlas
+    // etapa 0: os 10 manifestos e o cenário padrão. Os pedidos até aqui são os do `data-pronto`; nenhum atlas, retrato nem outro cenário pode ter sido ANTES dele
+    // (o pedido da etapa 1 sai no mesmo quadro do atributo, então a lista é lida já na etapa 0 só para os manifestos: o resto vem a seguir)
+    expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(10);
+    expect(cenariosDe(urls)).toContain('cenario-jp.webp');
+    await esperarVitrine(page);
+    // E5/Z5: o elenco tem 10 (manifesto e retrato de todos), mas só a vitrine (os 4 de fábrica) baixa as imagens do atlas
     expect(urls.filter((u) => u.endsWith('/atlas.json')).length).toBe(10);
     expect(urls.filter((u) => u.endsWith('/retrato.webp')).length).toBe(10);
     expect(atlasDe(urls)).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);

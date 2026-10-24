@@ -25,6 +25,11 @@ export type PoliticaDeResidencia = 'fixa' | 'por-peso';
 export interface PedidoDeArte {
   readonly lutadores?: readonly string[];
   readonly cenarios?: readonly string[];
+  /**
+   * Os retratos dos dez lutadores (WebP pequenos, ~0,3 MiB no total). Só a fila de fundo (`preferir`) os entende: saem JÁ, em paralelo com o 1º atlas (não esperam
+   * a vez nem são cancelados pela próxima cena) e nunca entram em `estaPronto`. É a etapa 1 do boot (docs/orcamentos-2026-10-23.md §2.2).
+   */
+  readonly retratos?: boolean;
 }
 
 /** Bytes decodificados (w x h x 4) do que o gerenciador segura AGORA (carga em andamento não conta: só o que já chegou). */
@@ -99,6 +104,8 @@ export class GerenciadorDeArte {
   private readonly ehCenarioPreferido: ReadonlySet<string>;
   private readonly fila: ItemDaFila[] = [];
   private drenando: Promise<void> | null = null;
+  /** Os retratos estão sendo baixados (etapa 1 do boot); idempotente. */
+  private retratosEmCarga: Promise<void> | null = null;
 
   constructor(private readonly op: OpcoesGerenciador) {
     this.atlas = new Map(op.atlas);
@@ -349,6 +356,7 @@ export class GerenciadorDeArte {
    */
   preferir(p: PedidoDeArte): void {
     if (this.politica === 'fixa') return;
+    if (p.retratos) this.iniciarRetratos();
     const itens: ItemDaFila[] = [
       ...(p.lutadores ?? []).map((id): ItemDaFila => ({ tipo: 'lutador', id })),
       ...(p.cenarios ?? []).map((id): ItemDaFila => ({ tipo: 'cenario', id })),
@@ -359,9 +367,15 @@ export class GerenciadorDeArte {
     });
   }
 
-  /** Resolve quando a fila de fundo esvazia (teste e métricas). */
-  fundoPronto(): Promise<void> {
-    return this.drenando ?? Promise.resolve();
+  /** Baixa os retratos de todos UMA vez, sem esperar a fila dos atlas (são pequenos e a seleção, o HUD e a VS os desenham). Erros viram console. */
+  private iniciarRetratos(): void {
+    if (this.retratosEmCarga) return;
+    this.retratosEmCarga = this.carregarRetratos([...this.atlas.keys()]).catch((e: unknown) => console.error(e));
+  }
+
+  /** Resolve quando a fila de fundo esvazia e os retratos chegaram (teste e métricas). */
+  async fundoPronto(): Promise<void> {
+    await Promise.all([this.drenando ?? Promise.resolve(), this.retratosEmCarga ?? Promise.resolve()]);
   }
 
   private async drenar(): Promise<void> {
@@ -477,6 +491,24 @@ export class GerenciadorDeArte {
   /** Quem está com a folha FILME na memória agora (teste e métricas). */
   filmesResidentes(): string[] {
     return [...new Set([...this.atlas.values()].filter((a) => a.filmePronto).map((a) => a.id))];
+  }
+
+  /**
+   * Solta JÁ os atlas e cenários de `p`, MESMO os preferidos (a vitrine), menos o que está em uso. É o que a cena do trailer usa (T12): ela não tem arte fixa e devolve cada plano à
+   * memória assim que ele termina. Em `'fixa'` vale o de sempre (`liberarLutador` e `liberarCenario`: o fixo fica), porque lá a vitrine é fixa por definição.
+   */
+  soltar(p: PedidoDeArte): void {
+    for (const id of p.lutadores ?? []) {
+      if (this.politica === 'fixa') this.liberarLutador(id);
+      else if (!this.emUsoLut.has(id)) {
+        const a = this.atlas.get(id);
+        if (a) this.soltarAtlas(a);
+      }
+    }
+    for (const id of p.cenarios ?? []) {
+      if (this.politica === 'fixa') this.liberarCenario(id);
+      else if (!this.emUsoCen.has(id)) this.soltarCenario(id);
+    }
   }
 
   /** Solta o atlas, salvo preferido (e, em `'por-peso'`, salvo em uso). */

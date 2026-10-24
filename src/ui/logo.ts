@@ -1,4 +1,5 @@
 import { criarCanvasPadrao, type CriarCanvas } from '../assets/canvas';
+import { ARQUIVOS_DA_MARCA, PASTA_DA_MARCA } from '../assets/etapa0.mjs';
 import { ALTURA, LARGURA } from '../core/constantes';
 import type { IdLutador } from '../core/contratos';
 import type { Rng } from '../core/rng';
@@ -48,9 +49,9 @@ type Fonte = CanvasImageSource & { readonly width: number; readonly height: numb
  * pixels de CANVAS (= px lógicos x RS) em que a imagem é desenhada no tamanho normal: a imagem é reduzida UMA vez para essa largura, e não a cada quadro.
  */
 const VARIANTES: Readonly<Record<VarianteDaMarca, { readonly arquivo: string; readonly larguraPre: number }>> = {
-  principal: { arquivo: 'logo-v1-1600.webp', larguraPre: Math.round(LOGO_ALTURA * (1600 / 1127) * RS) },
-  horizontal: { arquivo: 'logo-horizontal-v1-600.webp', larguraPre: Math.round(LOGO_MENU.altura * (600 / 336) * RS) },
-  splash: { arquivo: 'splash-v1-1920x1080.webp', larguraPre: 0 },
+  principal: { arquivo: ARQUIVOS_DA_MARCA.principal, larguraPre: Math.round(LOGO_ALTURA * (1600 / 1127) * RS) },
+  horizontal: { arquivo: ARQUIVOS_DA_MARCA.horizontal, larguraPre: Math.round(LOGO_MENU.altura * (600 / 336) * RS) },
+  splash: { arquivo: ARQUIVOS_DA_MARCA.splash, larguraPre: 0 },
 };
 
 interface ImagemDaMarca {
@@ -109,7 +110,7 @@ function carregarVariante(v: VarianteDaMarca): void {
   if (estado.has(v)) return;
   estado.set(v, 'carregando');
   const { arquivo, larguraPre } = VARIANTES[v];
-  carregador(`${baseDaMarca}assets/ui/logo/${arquivo}`).then(
+  carregador(`${baseDaMarca}${PASTA_DA_MARCA}${arquivo}`).then(
     (fonte) => {
       try {
         estado.set(v, prepararImagemDaMarca(fonte, larguraPre, criarCanvas));

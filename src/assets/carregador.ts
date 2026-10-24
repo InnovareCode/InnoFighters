@@ -1,6 +1,7 @@
 import { manifestoParaPoses } from '../data/atlas';
 import type { PoseDados, Poses } from '../data/tipos';
 import { criarCanvasPadrao, type CriarCanvas } from './canvas';
+import { caminhoDoManifestoDoLutador } from './etapa0.mjs';
 import { paraManifestoV1, validarManifesto, validarRetrato } from './manifesto';
 import { CacheDeSilhuetas } from './silhuetas';
 import { ErroDeAsset, type ManifestoC1, type Quatro, type RetratoDef } from './tipos';
@@ -64,7 +65,7 @@ export interface OpcoesCarga {
 
 const comBarra = (base: string): string => (base.endsWith('/') ? base : `${base}/`);
 
-export const urlManifesto = (baseUrl: string, lutador: string): string => `${comBarra(baseUrl)}assets/lutadores/${lutador}/atlas.json`;
+export const urlManifesto = (baseUrl: string, lutador: string): string => `${comBarra(baseUrl)}${caminhoDoManifestoDoLutador(lutador)}`;
 export const urlAtlas = (baseUrl: string, lutador: string, arquivo: string): string => `${comBarra(baseUrl)}assets/lutadores/${lutador}/${arquivo}`;
 /** Página da folha FILME do lutador (bloco `filme` do atlas.json); mesma pasta do atlas. */
 export const urlFilme = (baseUrl: string, lutador: string, arquivo: string): string => urlAtlas(baseUrl, lutador, arquivo);

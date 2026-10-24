@@ -10,7 +10,10 @@
  *   --taxas 1,4            estrangulamentos de CPU (padrão 1,4)
  *   --quadros N            quadros medidos por rodada (padrão 450) depois de 120 de aquecimento
  *   --rodadas N            rodadas; reporta a MEDIANA dos p95 (padrão 3)
- *   --modo custo|intervalo|ambos|ao-vivo
+ *   --modo custo|intervalo|ambos|ao-vivo|por-plano|memoria
+ *                          memoria (só para o trailer, T12 do orçamento): o trailer inteiro SEM desenhar (nada de SwiftShader), um tick por vez, esperando a arte do plano seguinte nos limites
+ *                          de plano (o pior caso: o plano atual e o seguinte inteiros na memória). Mede em CADA tick a memória decodificada de imagem (atlas + cenários, w x h x 4) e
+ *                          reporta o PICO e o pico de cada plano; a meta é <= 150 MiB (docs/orcamentos-2026-10-23.md §2.3). Sai com código 1 se passar do limite (--limite-mib).
  *                          ao-vivo (só para o trailer, de preferência com --canvas cpu): o trailer inteiro num laço contínuo, esperando a arte de cada plano; reporta p95 geral e por plano
  *                          por-plano (só para o trailer): cada plano numa página própria (`?trailer=Px`), custo update+draw de todos os ticks do plano; reporta p95 geral e por plano
  *                          custo = update+draw+flush de um quadro (laço manual, `?manual=1`); intervalo = tempo entre quadros do requestAnimationFrame
@@ -37,7 +40,7 @@ const AJUDA = [
 ].join('\n');
 
 function lerArgumentos(argv) {
-  const a = { cena: 'fight', lutas: ['hayato:min-ji', 'caio:wei-long'], canvas: 'acelerado', taxas: [1, 4], quadros: 450, rodadas: 3, modo: 'ambos', decode: false, url: 'http://127.0.0.1:5173', gravarBase: false, saida: null, prep: null, ajuda: false };
+  const a = { cena: 'fight', lutas: ['hayato:min-ji', 'caio:wei-long'], canvas: 'acelerado', taxas: [1, 4], quadros: 450, rodadas: 3, modo: 'ambos', decode: false, url: 'http://127.0.0.1:5173', gravarBase: false, saida: null, prep: null, ajuda: false, limiteMiB: 150 };
   for (let i = 0; i < argv.length; i++) {
     const t = argv[i];
     const valor = () => {
@@ -59,14 +62,16 @@ function lerArgumentos(argv) {
     else if (t === '--saida') a.saida = resolve(valor());
     else if (t === '--prep') a.prep = valor();
     else if (t === '--planos') a.planos = valor().split(',').map((x) => x.trim()).filter(Boolean);
+    else if (t === '--limite-mib') a.limiteMiB = Number(valor());
     else if (t === '--ajuda' || t === '-h' || t === '--help') a.ajuda = true;
     else throw new Error(`opção desconhecida: ${t}`);
   }
   if (!['fight', 'trailer'].includes(a.cena)) throw new Error('--cena: fight ou trailer');
   if (!['acelerado', 'cpu'].includes(a.canvas)) throw new Error('--canvas: acelerado ou cpu');
   if (!a.lutas.every((l) => /^[a-z-]+:[a-z-]+$/.test(l))) throw new Error('--lutas: pares id:id separados por vírgula');
-  if (!['custo', 'intervalo', 'ambos', 'por-plano', 'ao-vivo'].includes(a.modo)) throw new Error('--modo: custo, intervalo, ambos, por-plano ou ao-vivo');
-  if (['por-plano', 'ao-vivo'].includes(a.modo) && a.cena !== 'trailer') throw new Error('--modo por-plano e ao-vivo só valem com --cena trailer');
+  if (!['custo', 'intervalo', 'ambos', 'por-plano', 'ao-vivo', 'memoria'].includes(a.modo)) throw new Error('--modo: custo, intervalo, ambos, por-plano, ao-vivo ou memoria');
+  if (['por-plano', 'ao-vivo', 'memoria'].includes(a.modo) && a.cena !== 'trailer') throw new Error('--modo por-plano, ao-vivo e memoria só valem com --cena trailer');
+  if (!Number.isFinite(a.limiteMiB) || a.limiteMiB <= 0) throw new Error('--limite-mib: número positivo');
   if (!a.taxas.every((n) => Number.isFinite(n) && n >= 1 && n <= 20)) throw new Error('--taxas: números de 1 a 20');
   if (!Number.isInteger(a.quadros) || a.quadros < 60 || a.quadros > 5000) throw new Error('--quadros: inteiro de 60 a 5000');
   if (!Number.isInteger(a.rodadas) || a.rodadas < 1 || a.rodadas > 15) throw new Error('--rodadas: inteiro de 1 a 15');
@@ -216,6 +221,55 @@ async function medirPorPlano(navegador, a, taxa) {
   return { por, todas: { quadros: todas.length, mediana: +mediana(todas).toFixed(2), p95: +percentil(todas, 0.95).toFixed(2), p99: +percentil(todas, 0.99).toFixed(2), max: +Math.max(...todas).toFixed(2), acima24: todas.filter((x) => x > 24.15).length, acima50: todas.filter((x) => x > 50).length } };
 }
 
+/**
+ * Modo memoria: o trailer inteiro em laço MANUAL, um tick por vez e SEM desenhar (a memória que se mede é a decodificada por conta, w x h x 4, e não depende de
+ * rasterizar). A cada limite de plano espera a arte do plano seguinte (a rede é lenta perto de um laço de ticks), então no limite o plano atual E o seguinte estão inteiros
+ * na memória: o pior instante de cada transição. Em cada tick lê `diagnostico().memoriaDecodificadaMB` (atlas + cenários residentes) e `arte.memoria().imagens` (também retratos
+ * e FILME). Devolve o pico geral, o pico por plano e o que ficou em reserva.
+ */
+const MEDIR_MEMORIA = `(async () => {
+  const h = window.__inno; const ui = h.ui; const por = {}; let pico = { mb: 0, tick: -1, plano: '?', residentes: [], cenarios: [] };
+  let picoTotal = 0; let ticks = 0;
+  const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
+  ui.fade = 0; ui.fadeDir = 0; ui.set('trailer', { origem: 'atrair' });
+  for (let i = 0; i < 400 && !ui.cenas.trailer.pronta; i++) await dormir(50);
+  const amostrar = () => {
+    const d = ui.cenas.trailer.diagnostico(); if (!d) return;
+    const m = h.mundo().arte.memoria();
+    const p = (por[d.plano] ??= { mbMax: 0, imagensMax: 0 });
+    p.mbMax = Math.max(p.mbMax, d.memoriaDecodificadaMB); p.imagensMax = Math.max(p.imagensMax, m.imagens / 1048576);
+    picoTotal = Math.max(picoTotal, m.imagens / 1048576);
+    if (d.memoriaDecodificadaMB > pico.mb) pico = { mb: d.memoriaDecodificadaMB, tick: d.tick, plano: d.plano, residentes: h.mundo().arte.lutadoresResidentes(), cenarios: d.cenarios };
+  };
+  while (ui.name === 'trailer' && ticks < 4000) {
+    const d0 = ui.cenas.trailer.diagnostico();
+    if (d0 && d0.proximoPlano && d0.proximoPlano.emTicks <= 1 && !d0.proximoPlano.artePronta) {
+      for (let e = 0; e < 1200 && !ui.cenas.trailer.diagnostico().proximoPlano.artePronta; e++) { amostrar(); await dormir(25); }
+    }
+    h.avancar(1); ticks++; amostrar();
+    if (ticks % 16 === 0) await dormir(0);
+  }
+  const d = ui.cenas.trailer.diagnostico();
+  return { ticks, pico, picoTotalMiB: picoTotal, por, reservas: d ? d.planosEmReserva : [], cena: ui.name };
+})()`;
+
+/** Roda o modo memoria numa página nova e imprime o pico (MiB de imagem decodificada: atlas + cenários) e o pico de cada plano. Devolve o resultado. */
+async function medirMemoria(navegador, a) {
+  const ctx = await navegador.newContext({ viewport: { width: 960, height: 540 } });
+  const page = await ctx.newPage();
+  const erros = [];
+  page.on('pageerror', (e) => erros.push(e.message));
+  await page.goto(`${a.url}/?seed=7&expansao=1&manual=1`);
+  await page.waitForSelector('html[data-pronto="true"]', { timeout: 90_000 });
+  const r = await comPrazo(page.evaluate(MEDIR_MEMORIA), 300_000, 'memória do trailer');
+  await ctx.close();
+  console.log(`trailer, memória de imagem (${r.ticks} ticks, sem desenhar): PICO ${r.pico.mb.toFixed(1)} MiB no tick ${r.pico.tick} (${r.pico.plano}); com retratos e FILME ${r.picoTotalMiB.toFixed(1)} MiB; limite ${a.limiteMiB} MiB`);
+  console.log(`  atlas no pico: ${r.pico.residentes.join(', ')}; cenários: ${r.pico.cenarios.join(', ')}`);
+  console.log(`  por plano (MiB): ${Object.entries(r.por).map(([k, v]) => `${k} ${v.mbMax.toFixed(1)}`).join(' | ')}`);
+  console.log(`  planos em reserva: ${r.reservas.length ? r.reservas.join(', ') : 'nenhum'}; cena ao fim: ${r.cena}; erros da página: ${erros.length}`);
+  return { ...r, erros: erros.length };
+}
+
 /** Uma avaliação na página com prazo: se a página travar, a ferramenta diz onde em vez de ficar parada para sempre. */
 function comPrazo(promessa, ms, rotulo) {
   let id;
@@ -250,8 +304,17 @@ async function principal() {
   }
   const navegador = await chromium.launch(a.canvas === 'acelerado' ? { args: ['--enable-gpu-rasterization', '--use-angle=swiftshader'] } : {});
   const saida = { data: new Date().toISOString(), navegador: navegador.version(), canvas: a.canvas, cena: a.cena, quadros: a.quadros, rodadas: a.rodadas, lutas: {} };
-  const alvos = a.soDecode ? [] : a.cena === 'fight' ? a.lutas : ['trailer'];
+  const alvos = a.soDecode || a.modo === 'memoria' ? [] : a.cena === 'fight' ? a.lutas : ['trailer'];
+  let codigo = 0;
   try {
+    if (a.modo === 'memoria') {
+      const r = await medirMemoria(navegador, a);
+      saida.memoria = r;
+      if (r.pico.mb > a.limiteMiB || r.reservas.length > 0 || r.erros > 0) {
+        console.error(`FALHOU: pico ${r.pico.mb.toFixed(1)} MiB (limite ${a.limiteMiB}), reservas ${r.reservas.length}, erros ${r.erros}`);
+        codigo = 1;
+      }
+    }
     for (const alvo of alvos) {
       const [c1, c2] = alvo.split(':');
       saida.lutas[alvo] = {};
@@ -349,7 +412,7 @@ async function principal() {
     writeFileSync(alvo, JSON.stringify(base, null, 2) + '\n', 'utf8');
     console.log(`gravado ${alvo}`);
   }
-  return 0;
+  return codigo;
 }
 
 // só roda como script (os testes importam este módulo para checar a sintaxe e as funções puras)

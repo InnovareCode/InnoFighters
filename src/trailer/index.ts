@@ -5,7 +5,7 @@
 export { DiretorDoTrailer, type DependenciasDoDiretor, type QuadroDoTrailer, type TituloVisivel } from './diretor';
 export { duracaoDaEstatica, quadroEstaticoNoTick, type QuadroEstaticoNoTick } from './estatica';
 export { entradaDaMusica, MAX_TICKS_POR_CHAMADA, tickAlvoDoAudio, ticksAAvancar } from './relogio';
-export { planoDeCarga, pedidosNoPlano, residentesNoPlano, MAX_NAO_FIXOS, PESADOS, type PedidoDeCarga } from './carga';
+export { planoDeCarga, pedidosNoPlano, residentesNoPlano, arteDoPlano, ANTECEDENCIA_DA_CARGA, ORCAMENTO_DO_TRAILER_MIB, PESADOS, type PedidoDeCarga } from './carga';
 export { impressaoDoEstado, impressaoDoQuadro } from './impressao';
 export { arranjoDaAbertura, arranjoDaEstatica, citacoesDoRoteiro, janelasDeCitacao } from './musica';
 export type { Marca } from './marca';

@@ -16,7 +16,7 @@ import { impressaoDoEstado } from '../../src/trailer/impressao';
 import { criarPartida, FONTE_VAZIA } from '../../src/trailer/partida';
 import { ticksDoFilmeNoTrailer } from '../../src/trailer/filme';
 import { casaBatida } from '../../src/trailer/ritmo';
-import { planoDeCarga, residentesNoPlano, MAX_NAO_FIXOS, PESADOS } from '../../src/trailer/carga';
+import { planoDeCarga, residentesNoPlano, PESADOS } from '../../src/trailer/carga';
 import { duracaoDaEstatica, quadroEstaticoNoTick } from '../../src/trailer/estatica';
 import { entradaDaMusica, MAX_TICKS_POR_CHAMADA, tickAlvoDoAudio, ticksAAvancar } from '../../src/trailer/relogio';
 import { correr, DESTAQUE, ELENCO, ROTEIRO, TOMADAS } from './_trailer';
@@ -335,33 +335,45 @@ describe('7 · fotossensibilidade', () => {
 describe('8 · carga da arte e reserva', () => {
   const pedidos = planoDeCarga(ROTEIRO);
   const idx = (id: IdPlano): number => ROTEIRO.planos.findIndex((p) => p.id === id);
-  it('a tabela de carga da spec §5.2: quem, quando começa e quando precisa estar pronto', () => {
-    expect(pedidos.map((p) => [p.lutador, p.cenario, p.comecaEm, p.prontoEm])).toEqual([
-      ['aminu', 'ng', 'P0', 'P3'],
-      ['centella', 'mx', 'P3', 'P4'],
-      ['camille', 'fr', 'P4', 'P5'],
-      ['nila', 'in', 'P5', 'P6'],
-      ['baatar', 'mn', 'P6', 'P7'],
-      ['zenon', 'gr', 'P8', 'P9'],
+  it('a tabela de carga (T12): TODO plano com arte tem o seu pedido, 2 compassos antes do uso, e a logo pede a vitrine em duas levas', () => {
+    expect(pedidos.map((p) => [p.lutadores.join('+'), p.cenarios.join('+'), p.comecaEm, p.prontoEm])).toEqual([
+      ['hayato', 'jp', 'P0', 'P0'],
+      ['hayato+wei-long', 'cn', 'P0', 'P1'],
+      ['', 'kr', 'P1', 'C1'],
+      ['min-ji+caio', 'br', 'P1', 'P2'],
+      ['', 'cn', 'P2', 'C2'],
+      ['aminu+hayato', 'ng', 'P2', 'P3'],
+      ['centella+caio', 'mx', 'P3', 'P4'],
+      ['camille+min-ji', 'fr', 'P4', 'P5'],
+      ['nila+wei-long', 'in', 'P5', 'P6'],
+      ['baatar+hayato', 'mn', 'P6', 'P7'],
+      ['hayato+zenon', 'gr', 'P8', 'P9'],
+      // a logo desenha o título: os 4 cenários com a antecedência de sempre; os 4 atlas só no próprio plano (com o P9 ainda na memória passariam de 150 MiB)
+      ['', 'jp+cn+kr+br', 'P9', 'P10'],
+      ['hayato+wei-long+min-ji+caio', '', 'P10', 'P10'],
     ]);
   });
-  it('todo pedido sai pelo menos 1 plano antes do uso, em nenhum plano há mais de 2 atlas não fixos e BAATAR e ZENON nunca estão juntos', () => {
-    for (const p of pedidos) expect(idx(p.comecaEm), p.lutador).toBeLessThan(idx(p.prontoEm));
+  it('todo pedido começa no máximo no plano que o usa (os da abertura e a vitrine da logo sem folga) e BAATAR e ZENON nunca estão juntos na memória', () => {
+    for (const p of pedidos) expect(idx(p.comecaEm), `${p.prontoEm}`).toBeLessThanOrEqual(idx(p.prontoEm));
+    const semFolga = pedidos.filter((p) => idx(p.comecaEm) === idx(p.prontoEm)).map((p) => p.prontoEm);
+    expect(semFolga).toEqual(['P0', 'P10']);
     ROTEIRO.planos.forEach((_, i) => {
       const r = residentesNoPlano(ROTEIRO, pedidos, i);
-      expect(r.length, `plano ${i}`).toBeLessThanOrEqual(MAX_NAO_FIXOS);
-      expect(PESADOS.every((id) => r.includes(id)), `plano ${i}`).toBe(false);
+      expect(PESADOS.every((id) => r.lutadores.includes(id)), `plano ${i}`).toBe(false);
     });
   });
   it('o plano do diretor pede a arte do plano atual e do próximo, e solta o que já foi usado', () => {
     const d = new DiretorDoTrailer(ROTEIRO, TOMADAS, { lutadores: ELENCO, criarRng });
-    expect(d.pedidosDeArte().proximo.lutadores).toEqual(['aminu']);
+    // a abertura não tem folga: o P0 pede a arte dele no próprio começo (`tarde`) e o P1 já vai carregando
+    expect(d.pedidosDeArte().agora).toEqual({ lutadores: [], cenarios: [] });
+    expect(d.pedidosDeArte().tarde).toEqual({ lutadores: ['hayato'], cenarios: ['jp'] });
+    expect(d.pedidosDeArte().proximo.lutadores).toEqual(['hayato', 'wei-long']);
     d.prerolar(Number.POSITIVE_INFINITY);
-    d.irPara(6 * 96 - 1 + 96 * 2); // dentro do P3 (c9..c10 = ticks 768..959)
+    d.irPara(800); // dentro do P3 (c9..c10 = ticks 768..959)
     const p = d.pedidosDeArte();
-    expect(p.agora.lutadores).toEqual(['aminu']);
-    expect(p.proximo.lutadores).toContain('centella');
-    expect(p.soltar).toEqual([]);
+    expect(p.agora.lutadores).toEqual(['aminu', 'hayato']);
+    expect(p.proximo.lutadores).toEqual(['centella', 'caio']);
+    expect(p.soltar).toEqual(expect.arrayContaining(['wei-long', 'min-ji']));
   });
   it('arte que não chegou: o plano vira cartão de reserva, a duração continua 2400, não há exceção e os outros planos não mudam', () => {
     const c = correr({ reservaForcada: ['P3'], guardar: true });

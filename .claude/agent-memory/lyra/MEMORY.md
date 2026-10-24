@@ -5,4 +5,5 @@
 - [Combos, silhueta e painel V2](combos-silhueta-painel-v2.md) — lista de combos na UI, silhueta por quadro com margem 1 px (medida), folha FILME na cena, painel direito estreito no topo
 - [Pos-QA 2026-10-23: flag do filme + deslize do balao](qa-reprovado-filme-flag-balao-deslize.md) — folha so com flag; deslize fora da nota do plano; servidor 5173 velho
 - [Residência de memória L1+L2](residencia-memoria-l1l2.md) — gerenciador por peso: fixa idêntica (diferencial), geração de carga, dublês sem entrarNaLuta, Stop-Process mata o próprio bash
+- [Boot em etapas T4 + trailer T12](boot-etapas-t4-t12.md) — etapa0.mjs unica p/ boot+SW, data-pronto=0,91 MiB, data-vitrine, trailer sem arte fixa (pico 145,3), ordem iniciar>usar>soltar, heredoc come barra invertida
 - [Residência L3-L6 e trailer com filme](residencia-memoria-l3l4.md) — Navegador/arteDaCena, preto 45 ticks, FundoPadrao, ChegadaDeArte, decode() muda pixel (revertido), padrão por-peso, D-V6

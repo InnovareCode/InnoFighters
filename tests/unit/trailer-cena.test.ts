@@ -10,7 +10,7 @@ import { CORTES_COM_SMEAR, smearNoTick, TICKS_DO_SMEAR } from '../../src/render/
 import { alfaDoCartao, alfaDaPlaca, alfaDoTituloNaFaixa, escalaDoCartao, partesDoCartao, PLACA, reflexoDoCartao, TAMANHO_DO_CARTAO, Y_DA_FAIXA } from '../../src/render/trailer/titulos';
 import { alfaDaLogo, ATRASO_DO_TITULO, brilhoDaLogo, escalaDaBatida, fagulha, FAGULHAS, tDoTituloNaRevelacao, tremorDoImpacto } from '../../src/render/trailer/logo-revelacao';
 import { animacaoDoRetrato, colunasDaMontagem, layoutDosPaineis, PAINEL } from '../../src/render/trailer/retratos';
-import { LUTADORES_FIXOS, planoDeCarga, type PedidoDeCarga } from '../../src/trailer/carga';
+import { CENARIOS_DO_TITULO, LUTADORES_FIXOS, planoDeCarga, residentesNoPlano, type PedidoDeCarga } from '../../src/trailer/carga';
 import { CargaEscalonada, type GerenciadorDaCarga } from '../../src/ui/trailer/arte';
 import { conexaoDoNavegador, economiaDeDados, MINIMO_DE_TICKS_POR_QUADRO, prerolarNoOrcamento } from '../../src/ui/trailer/ambiente';
 import { ROTEIRO } from './_trailer';
@@ -24,12 +24,18 @@ const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
 
 // ------------------------------------------------------------------------------------------------------------------------------ carga escalonada
 
-/** Um gerenciador falso: só guarda o que "está na memória" e deixa o teste decidir quando cada carga termina. */
+/** Um gerenciador falso: só guarda o que "está na memória" e deixa o teste decidir quando cada carga termina. Imita a regra do de verdade: `soltar` não solta o que está em uso. */
 class GerenciadorFalso implements GerenciadorDaCarga {
   readonly cenarios = new Map<string, unknown>();
   readonly lutadores = new Set<string>();
+  /** Um item por chamada de `garantir`: o atlas ("hayato") ou "cen:jp" para os cenários. */
   readonly pedidosFeitos: string[] = [];
   readonly prebuscas: string[] = [];
+  emUsoLut = new Set<string>();
+  emUsoCen = new Set<string>();
+  /** O maior número de atlas e de cenários ao mesmo tempo na memória. */
+  maxLutadores = 0;
+  maxCenarios = 0;
   noAr = 0;
   maxNoAr = 0;
   pendentes: Array<() => void> = [];
@@ -38,11 +44,14 @@ class GerenciadorFalso implements GerenciadorDaCarga {
   falham = new Set<string>();
 
   estaPronto(p: { lutadores?: readonly string[]; cenarios?: readonly string[] }): boolean {
-    return (p.lutadores ?? []).every((id) => LUTADORES_FIXOS.has(id as never) || this.lutadores.has(id)) && (p.cenarios ?? []).every((id) => this.cenarios.has(id) || ['jp', 'cn', 'kr', 'br'].includes(id));
+    return (p.lutadores ?? []).every((id) => this.lutadores.has(id)) && (p.cenarios ?? []).every((id) => this.cenarios.has(id));
   }
   garantir(p: { lutadores?: readonly string[]; cenarios?: readonly string[] }): Promise<void> {
-    const ids = p.lutadores ?? [];
-    this.pedidosFeitos.push(ids.join(','));
+    // como o de verdade: o que já está na memória não é carregado de novo
+    const ids = (p.lutadores ?? []).filter((i) => !this.lutadores.has(i));
+    const cens = (p.cenarios ?? []).filter((c) => !this.cenarios.has(c));
+    if (ids.length + cens.length === 0) return Promise.resolve();
+    this.pedidosFeitos.push(ids.length > 0 ? ids.join(',') : `cen:${cens.join(',')}`);
     this.noAr++;
     this.maxNoAr = Math.max(this.maxNoAr, this.noAr);
     return new Promise<void>((resolve, reject) => {
@@ -50,21 +59,31 @@ class GerenciadorFalso implements GerenciadorDaCarga {
         this.noAr--;
         if (ids.some((i) => this.falham.has(i))) return reject(new Error('rede'));
         for (const i of ids) this.lutadores.add(i);
-        for (const c of p.cenarios ?? []) this.cenarios.set(c, 1);
+        for (const c of cens) this.cenarios.set(c, 1);
+        this.maxLutadores = Math.max(this.maxLutadores, this.lutadores.size);
+        this.maxCenarios = Math.max(this.maxCenarios, this.cenarios.size);
         resolve();
       };
       if (ids.some((i) => this.travados.has(i))) return; // nunca resolve
       this.pendentes.push(fim);
     });
   }
-  prebuscar(p: { lutadores?: readonly string[] }): void {
-    this.prebuscas.push((p.lutadores ?? []).join(','));
+  prebuscar(p: { lutadores?: readonly string[]; cenarios?: readonly string[] }): void {
+    this.prebuscas.push(`${(p.lutadores ?? []).join(',')}|${(p.cenarios ?? []).join(',')}`);
+  }
+  usar(p: { lutadores?: readonly string[]; cenarios?: readonly string[] }): void {
+    this.emUsoLut = new Set(p.lutadores ?? []);
+    this.emUsoCen = new Set(p.cenarios ?? []);
+  }
+  soltar(p: { lutadores?: readonly string[]; cenarios?: readonly string[] }): void {
+    for (const i of p.lutadores ?? []) if (!this.emUsoLut.has(i)) this.lutadores.delete(i);
+    for (const c of p.cenarios ?? []) if (!this.emUsoCen.has(c)) this.cenarios.delete(c);
   }
   liberarLutador(id: string): void {
-    this.lutadores.delete(id);
+    if (!this.emUsoLut.has(id) && !LUTADORES_FIXOS.has(id as never)) this.lutadores.delete(id);
   }
   liberarCenario(id: string): void {
-    this.cenarios.delete(id);
+    if (!this.emUsoCen.has(id) && !CENARIOS_DO_TITULO.includes(id as never)) this.cenarios.delete(id);
   }
   lutadoresResidentes(): string[] {
     return [...this.lutadores];
@@ -75,7 +94,7 @@ class GerenciadorFalso implements GerenciadorDaCarga {
     const virar = async (): Promise<void> => {
       for (let i = 0; i < 12; i++) await Promise.resolve();
     };
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 40; i++) {
       await virar();
       const fim = this.pendentes.shift();
       if (fim) fim();
@@ -86,45 +105,70 @@ class GerenciadorFalso implements GerenciadorDaCarga {
 
 const PEDIDOS = planoDeCarga(ROTEIRO);
 const indiceDe = (id: string): number => ROTEIRO.planos.findIndex((p) => p.id === id);
+const pedidoDoPlano = (id: string): PedidoDeCarga => PEDIDOS.find((p) => p.prontoEm === id && p.lutadores.length > 0) ?? (PEDIDOS.find((p) => p.prontoEm === id) as PedidoDeCarga);
+const arteDe = (p: PedidoDeCarga): { lutadores: readonly string[]; cenarios: readonly string[] } => ({ lutadores: p.lutadores, cenarios: p.cenarios });
 
-describe('carga escalonada da arte do trailer', () => {
-  it('nunca passa de 2 atlas não fixos na memória, BAATAR e ZENON nunca juntos, e carrega UM atlas por vez', async () => {
+describe('carga escalonada da arte do trailer (T12: sem arte fixa)', () => {
+  it('carrega UM atlas por vez, BAATAR e ZENON nunca juntos, e na memória só o plano atual e o seguinte (no máximo 4 atlas e 5 cenários)', async () => {
     const g = new GerenciadorFalso();
     const c = new CargaEscalonada(ROTEIRO, PEDIDOS, g);
     c.limparSobras();
-    let maxResidentes = 0;
     for (let k = 0; k < ROTEIRO.planos.length; k++) {
       c.entrouNoPlano(k);
       await g.resolverTudo();
-      maxResidentes = Math.max(maxResidentes, g.lutadores.size);
-      expect(g.lutadores.size, `no plano ${ROTEIRO.planos[k]?.id}: ${[...g.lutadores].join(',')}`).toBeLessThanOrEqual(2);
       expect(g.lutadores.has('baatar') && g.lutadores.has('zenon'), `BAATAR e ZENON juntos no plano ${ROTEIRO.planos[k]?.id}`).toBe(false);
+      // o que está na memória é o que a tabela de carga diz para este plano
+      const r = residentesNoPlano(ROTEIRO, PEDIDOS, k);
+      expect([...g.lutadores].sort(), `atlas no plano ${ROTEIRO.planos[k]?.id}`).toEqual([...r.lutadores].sort());
+      expect([...g.cenarios.keys()].sort(), `cenários no plano ${ROTEIRO.planos[k]?.id}`).toEqual([...r.cenarios].sort());
     }
     expect(g.maxNoAr).toBe(1);
-    expect(maxResidentes).toBe(2);
-    // os 6 atlas não fixos foram pedidos, na ordem do roteiro
-    expect(g.pedidosFeitos).toEqual(['aminu', 'centella', 'camille', 'nila', 'baatar', 'zenon']);
+    expect(g.maxLutadores).toBe(4); // NILA, WEI LONG, BAATAR e HAYATO: o P6 e o P7 juntos, o pior instante
+    expect(g.maxCenarios).toBe(5); // o P9 (gr) mais os 4 do título que a logo pede com antecedência
+    // a ordem dos pedidos: o do plano e, dentro dele, os cenários primeiro e depois um atlas por vez
+    expect(g.pedidosFeitos.slice(0, 6)).toEqual(['cen:jp', 'hayato', 'cen:cn', 'wei-long', 'cen:kr', 'cen:br']);
   });
 
-  it('todo atlas está pronto no começo do plano que o usa e é solto depois dele', async () => {
+  it('todo plano de luta está pronto no começo dele, e o que ele usou sai depois (menos o que um pedido seguinte ainda segura)', async () => {
     const g = new GerenciadorFalso();
     const c = new CargaEscalonada(ROTEIRO, PEDIDOS, g);
     for (let k = 0; k < ROTEIRO.planos.length; k++) {
       c.entrouNoPlano(k);
       await g.resolverTudo();
       for (const p of PEDIDOS) {
-        if (indiceDe(p.prontoEm) === k) expect(c.pronto({ lutadores: [p.lutador], cenarios: [p.cenario] }), `${p.lutador} no ${p.prontoEm}`).toBe(true);
-        if (indiceDe(p.soltarAoFimDe) < k) expect(g.lutadores.has(p.lutador), `${p.lutador} depois do ${p.soltarAoFimDe}`).toBe(false);
+        if (indiceDe(p.prontoEm) === k && p.lutadores.length > 0 && indiceDe(p.comecaEm) < k) expect(c.pronto(arteDe(p)), `${p.lutadores.join('+')} no ${p.prontoEm}`).toBe(true);
+      }
+      const seguros = residentesNoPlano(ROTEIRO, PEDIDOS, k);
+      for (const p of PEDIDOS) {
+        if (indiceDe(p.soltarAoFimDe) >= k) continue;
+        for (const l of p.lutadores) if (!seguros.lutadores.includes(l)) expect(g.lutadores.has(l), `${l} depois do ${p.soltarAoFimDe}`).toBe(false);
       }
     }
   });
 
-  it('pré-busca o seguinte, uma vez por pedido, sem decodificar', async () => {
+  it('o HAYATO do P0 ao P1 e do P7 ao P9 NÃO é solto e recarregado (o pedido seguinte começa antes de o anterior terminar)', async () => {
+    const g = new GerenciadorFalso();
+    const c = new CargaEscalonada(ROTEIRO, PEDIDOS, g);
+    for (let k = 0; k <= indiceDe('P1'); k++) {
+      c.entrouNoPlano(k);
+      await g.resolverTudo();
+    }
+    expect(g.pedidosFeitos.filter((x) => x === 'hayato')).toHaveLength(1);
+    for (let k = indiceDe('P1') + 1; k <= indiceDe('P10'); k++) {
+      c.entrouNoPlano(k);
+      await g.resolverTudo();
+    }
+    // P0+P1, P3, P7+P9 (o P8 não tem arte) e a vitrine da logo: o P9 já o segura, então a logo não o pede de novo
+    expect(g.pedidosFeitos.filter((x) => x === 'hayato')).toHaveLength(3);
+  });
+
+  it('pré-busca os pedidos que vão esperar na fila e o seguinte, uma vez por pedido, sem decodificar', async () => {
     const g = new GerenciadorFalso();
     const c = new CargaEscalonada(ROTEIRO, PEDIDOS, g);
     c.entrouNoPlano(0);
     c.entrouNoPlano(0);
-    expect(g.prebuscas).toEqual(['centella']);
+    // o P0 começa já; o pedido do P1 espera na fila e baixa enquanto o P0 carrega (sem o HAYATO, que o P0 já traz); o seguinte, o cartão C1, ainda nem começou
+    expect(g.prebuscas).toEqual(['wei-long|cn', '|kr']);
     await g.resolverTudo();
   });
 
@@ -134,9 +178,10 @@ describe('carga escalonada da arte do trailer', () => {
     const c = new CargaEscalonada(ROTEIRO, PEDIDOS, g);
     for (let k = 0; k < indiceDe('P3') + 1; k++) c.entrouNoPlano(k);
     await g.resolverTudo();
-    expect(c.pronto({ lutadores: ['aminu'], cenarios: ['ng'] })).toBe(false);
-    // série: a CENTELLA não começou, porque a AMINU ainda segura a fila
-    expect(g.pedidosFeitos).toEqual(['aminu']);
+    expect(c.pronto(arteDe(pedidoDoPlano('P3')))).toBe(false);
+    // série: o atlas seguinte da fila não começou, porque a AMINU ainda segura a fila (o P4 só começa no P3)
+    expect(g.pedidosFeitos).not.toContain('centella');
+    expect(g.pedidosFeitos.at(-1)).toBe('aminu');
   });
 
   it('uma carga que falha vira "não pronto" para sempre (reserva), sem derrubar as outras', async () => {
@@ -149,20 +194,22 @@ describe('carga escalonada da arte do trailer', () => {
       await g.resolverTudo();
     }
     expect(c.falhas.has('aminu')).toBe(true);
-    expect(c.pronto({ lutadores: ['aminu'], cenarios: ['ng'] })).toBe(false);
-    expect(c.pronto({ lutadores: ['centella'], cenarios: ['mx'] })).toBe(true);
+    expect(c.pronto({ lutadores: ['aminu', 'hayato'], cenarios: ['ng'] })).toBe(false);
+    expect(c.pronto({ lutadores: ['centella', 'caio'], cenarios: ['mx'] })).toBe(true);
     erro.mockRestore();
   });
 
-  it('ao sair solta TUDO, inclusive o que ainda estava a caminho (solta quando chega)', async () => {
+  it('ao sair solta TUDO, inclusive o que ainda estava a caminho (solta quando chega), menos a vitrine e os cenários do título que o destino pede', async () => {
     const g = new GerenciadorFalso();
     const c = new CargaEscalonada(ROTEIRO, PEDIDOS, g);
     for (let k = 0; k <= indiceDe('P3'); k++) c.entrouNoPlano(k);
     await Promise.resolve();
     c.liberarTudo(); // a AMINU ainda está carregando
     await g.resolverTudo();
-    expect(g.lutadores.size).toBe(0);
-    expect([...g.cenarios.keys()]).toEqual([]);
+    for (const l of g.lutadores) expect(LUTADORES_FIXOS.has(l as never), `${l} é da vitrine`).toBe(true);
+    expect(g.lutadores.has('aminu')).toBe(false);
+    for (const cen of g.cenarios.keys()) expect(CENARIOS_DO_TITULO.includes(cen as never), `${cen} é do título`).toBe(true);
+    expect(g.cenarios.has('ng')).toBe(false);
   });
 
   it('uma prévia que abre no meio (?trailer=P7) não carrega o que já passou e solta as sobras', async () => {
@@ -172,12 +219,12 @@ describe('carga escalonada da arte do trailer', () => {
     c.limparSobras();
     c.entrouNoPlano(indiceDe('P7'));
     await g.resolverTudo();
-    expect(g.pedidosFeitos).toEqual(['baatar']);
-    expect([...g.lutadores]).toEqual(['baatar']);
+    expect(g.pedidosFeitos).toEqual(['cen:mn', 'baatar', 'hayato']);
+    expect([...g.lutadores].sort()).toEqual(['baatar', 'hayato']);
   });
 
-  it('o plano de carga continua coerente com o roteiro (todo pedido sai >= 1 plano antes do uso, exceto o que não tem folga)', () => {
-    const arconte = PEDIDOS.find((p) => p.lutador === 'zenon') as PedidoDeCarga;
+  it('o plano de carga continua coerente com o roteiro (o ZENON sai 1 plano antes do uso)', () => {
+    const arconte = PEDIDOS.find((p) => p.lutadores.includes('zenon')) as PedidoDeCarga;
     expect(indiceDe(arconte.comecaEm)).toBeLessThan(indiceDe(arconte.prontoEm));
   });
 });

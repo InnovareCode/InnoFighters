@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { VITRINE } from '../../src/data/lutadores';
+import { ROTEIRO } from '../../src/data/trailer/roteiro';
+import { arteDoPlano } from '../../src/trailer/carga';
 import type { Mundo } from '../../src/ui/contexto';
 import { COR_DA_RESERVA_DO_FUNDO, FundoPadrao } from '../../src/ui/fundo-padrao';
-import { arteDaCena, CENARIOS_DA_VITRINE } from '../../src/ui/residencia';
+import { ARTE_DE_ABERTURA_DO_TRAILER, arteDaCena, CENARIOS_DA_VITRINE } from '../../src/ui/residencia';
 import type { NomeCena } from '../../src/ui/tipos';
 import { mundoFalso } from './_ui';
 
@@ -33,8 +35,8 @@ describe('arteDaCena: a tabela do §2.3', () => {
     expect(VITRINE).toEqual(['hayato', 'wei-long', 'min-ji', 'caio']);
   });
 
-  it('só a VS e a luta são exclusivas, com a dupla e o cenário da CASA DO RIVAL', () => {
-    for (const n of NOMES) expect(arteDaCena(n, argsLuta, M).exclusiva === true, n).toBe(n === 'vs' || n === 'fight');
+  it('só a VS, a luta e o trailer são exclusivas; a VS e a luta com a dupla e o cenário da CASA DO RIVAL', () => {
+    for (const n of NOMES) expect(arteDaCena(n, argsLuta, M).exclusiva === true, n).toBe(n === 'vs' || n === 'fight' || n === 'trailer');
     for (const n of ['vs', 'fight'] as const) {
       const t = arteDaCena(n, argsLuta, M);
       expect(t.essencial).toEqual({ lutadores: ['nila', 'aminu'], cenarios: [M.elenco.aminu.ch.stage] });
@@ -47,12 +49,23 @@ describe('arteDaCena: a tabela do §2.3', () => {
     expect(arteDaCena('vs', { cfg: { ...cfg, c1: 'hayato', c2: 'hayato' } }, M).essencial).toEqual({ lutadores: ['hayato'], cenarios: ['jp'] });
   });
 
-  it('intro e trailer: a vitrine inteira e os 4 cenários em uso (o roteiro supõe que estão lá)', () => {
-    for (const n of ['intro', 'trailer'] as const) {
-      const t = arteDaCena(n, { origem: 'atrair' }, M);
-      expect(t.essencial).toEqual({ lutadores: [...VITRINE], cenarios: ['jp', 'cn', 'kr', 'br'] });
-      expect(t.desejavel).toBeUndefined();
-    }
+  it('intro: a vitrine inteira e os 4 cenários em uso (a abertura de hoje supõe que estão lá)', () => {
+    const t = arteDaCena('intro', {}, M);
+    expect(t.essencial).toEqual({ lutadores: [...VITRINE], cenarios: ['jp', 'cn', 'kr', 'br'] });
+    expect(t.desejavel).toBeUndefined();
+    expect(t.exclusiva).toBeUndefined();
+  });
+
+  it('trailer (T12): EXCLUSIVO, e só a arte dos 2 primeiros planos (P0 e P1) fica ao entrar; o resto a carga dele pede e solta plano a plano', () => {
+    const t = arteDaCena('trailer', { origem: 'atrair' }, M);
+    expect(t.exclusiva).toBe(true);
+    expect(t.essencial).toEqual({ lutadores: ['hayato', 'wei-long'], cenarios: ['jp', 'cn'] });
+    expect(t.essencial).toEqual(ARTE_DE_ABERTURA_DO_TRAILER);
+    expect(t.desejavel).toBeUndefined();
+    // a constante da tabela é a arte de P0 + P1 do roteiro: o pico do trailer (tests/unit/trailer-memoria.test.ts) parte daqui
+    const abertura = ROTEIRO.planos.slice(0, 2).map((p) => arteDoPlano(p));
+    expect([...new Set(abertura.flatMap((a) => a.lutadores))]).toEqual([...(ARTE_DE_ABERTURA_DO_TRAILER.lutadores ?? [])]);
+    expect([...new Set(abertura.flatMap((a) => a.cenarios))].sort()).toEqual([...(ARTE_DE_ABERTURA_DO_TRAILER.cenarios ?? [])].sort());
   });
 
   it('título: a vitrine + jp; desejável cn, kr, br (o ciclo só troca aos ~6 s)', () => {

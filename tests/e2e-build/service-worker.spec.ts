@@ -68,7 +68,10 @@ test.describe('service worker no build', () => {
     expect(m.revisoes['manifest.webmanifest']).toBeTruthy();
     expect(Object.keys(m.revisoes).some((c) => c.startsWith('assets/lutadores/') && c.endsWith('.webp'))).toBe(true); // arte de public/ SEM hash no nome ganha revisão
     expect(m.shell).toContain(m.marca);
-    expect(m.shell.some((c) => c.includes('/lutadores/') || c.endsWith('filme.webp'))).toBe(false);
+    // o shell leva a ETAPA 0 do boot (T4: os 10 atlas.json, o cenário padrão, a marca, as fontes e o JS das camadas sonoras), nunca as imagens dos lutadores
+    expect(m.shell.some((c) => /\/lutadores\/.*\.(webp|png)$/.test(c) || c.endsWith('filme.webp') || c.endsWith('.mp3'))).toBe(false);
+    expect(m.shell.filter((c) => /\/lutadores\/[^/]+\/atlas\.json$/.test(c))).toHaveLength(10);
+    expect(m.shell).toContain('assets/cenarios/cenario-jp.webp');
     expect(Object.keys(m.revisoes).some((c) => c === 'index.html' || c === 'version.json' || c.endsWith('.map'))).toBe(false);
   });
 
@@ -93,6 +96,62 @@ test.describe('service worker no build', () => {
     expect(new URL(off.url()).search).toBe('?trailer=0&residencia=fixa&motorv2=0');
     await off.waitForTimeout(1500);
     expect(await coresNoCanvas(off)).toBeGreaterThan(200);
+    await ctx.close();
+  });
+
+  test('2ª visita OFFLINE com o boot em etapas (T4): data-pronto, vitrine, trailer, título, menu, seleção, VS e luta, sem nenhum pedido falhar', async ({ browser }) => {
+    test.setTimeout(240_000);
+    const ctx = await browser.newContext({ viewport: { width: 1280, height: 720 } });
+    const page = await ctx.newPage();
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+    await expect(page.locator('html')).toHaveAttribute('data-vitrine', 'true', { timeout: 60_000 });
+    await expect.poll(async () => (await estado(page)).controller, { timeout: 30_000 }).toBe(true);
+    // o SW guarda o que a página já tinha baixado antes de assumir (captura em ~8 s): a vitrine inteira e o trailer, tudo da etapa 1, precisam estar no cache
+    await expect
+      .poll(async () => (await estado(page)).arte.filter((u) => /\/(hayato|wei-long|min-ji|caio)\/atlas-\d\.webp/.test(u)).length, { timeout: 60_000 })
+      .toBe(8);
+    const guardado = (await estado(page)).arte;
+    for (const cen of ['jp', 'cn', 'kr', 'br']) expect(guardado.some((u) => u.includes(`cenario-${cen}.webp`)), `cenário ${cen} guardado`).toBe(true);
+    expect(guardado.filter((u) => /retrato\.webp/.test(u))).toHaveLength(10);
+    expect(guardado.some((u) => /\/trailer-[^/]+\.js/.test(u)), 'o pedaço do trailer').toBe(true);
+
+    await ctx.setOffline(true);
+    const off = await ctx.newPage();
+    const falhas: string[] = [];
+    off.on('requestfailed', (r) => {
+      const u = new URL(r.url());
+      if (u.pathname !== '/version.json') falhas.push(`${u.pathname} (${r.failure()?.errorText ?? '?'})`);
+    });
+    const erros: string[] = [];
+    off.on('pageerror', (e) => erros.push(e.message));
+    await off.goto('/');
+    await expect(off.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+    await expect(off.locator('html')).toHaveAttribute('data-vitrine', 'true', { timeout: 60_000 }); // a etapa 1 inteira veio do cache do SW, sem rede
+    // o jogo de ponta a ponta pelo teclado: o gesto abre o trailer (o pedaço veio do cache), qualquer tecla o pula, e então título -> menu -> LUTA vs CPU -> HAYATO x o rival sugerido -> VS -> luta
+    const tecla = async (k: string, espera = 700): Promise<void> => {
+      await off.keyboard.press(k);
+      await off.waitForTimeout(espera);
+    };
+    await tecla('Enter', 2200); // trailer (ou a abertura): passa do tick 10
+    await tecla('Enter', 2000); // pula: título
+    await tecla('Enter', 1200); // menu
+    await tecla('ArrowDown', 300);
+    await tecla('ArrowDown', 300);
+    await tecla('Enter', 1800); // LUTA vs CPU: seleção
+    await tecla('Enter', 1200); // HAYATO
+    await tecla('Enter', 1500); // o rival sugerido (WEI LONG)
+    await tecla('Enter', 1500); // dificuldade
+    await off.waitForTimeout(3500); // VS: a arte da dupla e o cenário vêm do cache
+    await tecla('Enter', 1500); // começa a luta
+    await off.waitForTimeout(2500); // provocação/abertura da luta
+    expect(await coresNoCanvas(off)).toBeGreaterThan(200);
+    // OR-7: só o que foi USADO na visita online fica no cache. Nesta visita ninguém lutou nem tocou som, então as folhas FILME e os .mp3 não estão lá: a luta cai na pose Alt e no som
+    // sintetizado (o jogo continua). Tudo o mais (JS, atlas, cenários, retratos, JSON) tem de vir do cache. O pedido da FILME do HAYATO prova que a luta COMEÇOU offline (ela só é pedida depois do início).
+    const opcionais = falhas.filter((f) => /\/filme\.webp|\.mp3/.test(f));
+    expect(falhas.filter((f) => !opcionais.includes(f)), 'nenhum pedido essencial falhou offline').toEqual([]);
+    expect(opcionais.some((f) => f.includes('/hayato/filme.webp')), 'a luta começou offline (pediu a FILME do HAYATO)').toBe(true);
+    expect(erros).toEqual([]);
     await ctx.close();
   });
 

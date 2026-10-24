@@ -2,7 +2,8 @@ import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { build as viteBuild, type Plugin, type ResolvedConfig } from 'vite';
 import { defineConfig } from 'vitest/config';
-import { escreverManifesto } from './ferramentas/sw/manifesto.mjs';
+import { arquivosDaEtapa0 } from './src/assets/etapa0.mjs';
+import { escreverManifesto, listarArquivos } from './ferramentas/sw/manifesto.mjs';
 
 /**
  * Política de segurança de conteúdo (achado do Órion, E8 prévia). Vai por `<meta http-equiv>` porque o Pages não
@@ -106,7 +107,10 @@ function serviceWorker(): Plugin {
           lib: { entry: resolve(cfg.root, 'src/sw/sw.ts'), formats: ['iife'], name: 'InnoSw', fileName: () => 'sw.js' },
         },
       });
-      const r = escreverManifesto({ dist, base: cfg.base, build: { commit: BUILD.commit, data: BUILD.data }, desligado: process.env['INNO_SW'] === 'off' });
+      // contrato T4/T7: o shell do install = o que o index.html puxa + a ETAPA 0 do boot (src/assets/etapa0.ts, o mesmo módulo que o boot usa). Aposentado: sem lista (não baixa nada).
+      const desligado = process.env['INNO_SW'] === 'off';
+      const extras = desligado ? [] : arquivosDaEtapa0(listarArquivos(dist));
+      const r = escreverManifesto({ dist, base: cfg.base, build: { commit: BUILD.commit, data: BUILD.data }, extras, desligado });
       cfg.logger.info(
         `sw: dist/sw.js + sw-manifesto.js (versao ${r.manifesto.versao}${r.manifesto.desligado ? ', APOSENTADO' : ''}): ${r.arquivos} arquivos com revisao, shell de ${r.manifesto.shell.length} (${(r.bytesShell / 1048576).toFixed(2)} MiB), manifesto de ${(r.bytesManifesto / 1024).toFixed(1)} KiB`,
       );

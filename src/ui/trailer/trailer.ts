@@ -48,7 +48,8 @@ import {
   type QuadroEstaticoNoTick,
 } from '../../trailer';
 import { FILA_DESBLOQUEIO, liberados } from '../../meta';
-import { LUTADORES_FIXOS } from '../../trailer/carga';
+import { CENARIOS_DO_TITULO, LUTADORES_DO_TITULO, type PedidoDeCarga } from '../../trailer/carga';
+import { ARTE_DE_ABERTURA_DO_TRAILER } from '../residencia';
 import type { Navegador } from '../navegador';
 import type { ArgsTrailer } from '../tipos';
 import type { CenaTitle } from '../cenas/title';
@@ -58,7 +59,6 @@ import { parametroDoTrailer } from '../cenas/trailer';
 import { conexaoDoNavegador, economiaDeDados, prerolarNoOrcamento } from './ambiente';
 import { aquecerImagens, agendadorOcioso, canvasDeAquecimento } from './aquecer';
 import { CargaEscalonada } from './arte';
-import { VITRINE } from '../../data/lutadores';
 
 /*
  * O trailer em cena (docs/spec-trailer-abertura.md). Esta classe é o pedaço LAZY: o `CenaTrailer` (casca) a cria quando o pedaço chega. Ela só APRESENTA: o estado do
@@ -195,27 +195,37 @@ export class TrailerEmCena implements ControladorDoTrailer {
     }
   }
 
-  /** A arte de um plano acabou de chegar: o 1º desenho dela (decodificação e GPU) sai num tempo ocioso, antes do plano que a usa, e não no 1º quadro dele. */
-  private aquecerQueChegou(lutador: string, cenario: string): void {
+  /** A arte de um pedido acabou de chegar: o 1º desenho dela (decodificação e GPU) sai num tempo ocioso, antes do plano que a usa, e não no 1º quadro dele. */
+  private aquecerQueChegou(p: PedidoDeCarga): void {
     try {
       const alvo = canvasDeAquecimento();
       if (!alvo) return;
       const arte = this.ui.m.arte as unknown as { atlas: Map<string, { paginas: CanvasImageSource[] | null }>; cenarios: Map<string, CanvasImageSource> };
-      const imagens: CanvasImageSource[] = [...(arte.atlas.get(lutador)?.paginas ?? [])];
-      const c = arte.cenarios.get(cenario);
-      if (c) imagens.push(c);
+      const imagens: CanvasImageSource[] = [];
+      for (const l of p.lutadores) imagens.push(...(arte.atlas.get(l)?.paginas ?? []));
+      for (const cen of p.cenarios) {
+        const c = arte.cenarios.get(cen);
+        if (c) imagens.push(c);
+      }
       aquecerImagens(imagens, alvo, agendadorOcioso(), () => !this.ativo);
     } catch {
       /* sem aquecimento o 1º desenho paga o custo, como sempre */
     }
   }
 
-  /** Os atlas (todas as páginas) e os cenários que o boot deixa na memória: o P0 e os planos da vitrine os desenham. */
+  /**
+   * A arte dos dois primeiros planos (P0 e P1) que já está na memória quando o pedaço do trailer carrega, no tempo ocioso da tela de "CLIQUE": a cena os mantém ao entrar
+   * (`ARTE_DE_ABERTURA_DO_TRAILER`), então o 1º desenho deles já saiu e o 1º quadro não paga o custo de primeira vez. O resto do trailer não tem arte fixa: cada pedido
+   * é aquecido quando chega (`aquecerQueChegou`).
+   */
   private imagensFixas(): CanvasImageSource[] {
     const arte = this.ui.m.arte as unknown as { atlas: Map<string, { pronta: boolean; paginas: CanvasImageSource[] | null }>; cenarios: Map<string, CanvasImageSource> };
     const r: CanvasImageSource[] = [];
-    for (const id of VITRINE) for (const p of arte.atlas.get(id)?.paginas ?? []) r.push(p);
-    for (const c of arte.cenarios.values()) r.push(c);
+    for (const id of ARTE_DE_ABERTURA_DO_TRAILER.lutadores ?? []) for (const p of arte.atlas.get(id)?.paginas ?? []) r.push(p);
+    for (const id of ARTE_DE_ABERTURA_DO_TRAILER.cenarios ?? []) {
+      const c = arte.cenarios.get(id);
+      if (c) r.push(c);
+    }
     return r;
   }
 
@@ -258,7 +268,19 @@ export class TrailerEmCena implements ControladorDoTrailer {
     document.body.classList.add('em-trailer');
     this.ativo = true;
     if (!this.estatico) this.prepararOCompleto();
+    else this.prepararAEstatica();
     this.pronta = true;
+  }
+
+  /**
+   * A versão estática desenha a vitrine e os cenários do título (spec §6.3) e não tem plano de carga. A cena do trailer entra exclusiva (`arteDaCena`) e solta tudo, então ela pede
+   * a vitrine e os 4 cenários aqui e os marca em uso: 133,6 MiB de imagem, dentro dos 150. Os quadros desenham o que já chegou e o resto entra quando chega.
+   */
+  private prepararAEstatica(): void {
+    const arte = this.ui.m.arte;
+    const pedido = { lutadores: [...LUTADORES_DO_TITULO], cenarios: [...CENARIOS_DO_TITULO] };
+    arte.usar(pedido);
+    arte.garantir(pedido).catch((e: unknown) => console.error('trailer: a arte da versão estática não chegou', e));
   }
 
   private prepararOCompleto(): void {
@@ -267,7 +289,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     for (const id of Object.keys(m.elenco) as IdLutador[]) lutadores[id] = m.elenco[id].ch;
     const d = new DiretorDoTrailer(ROTEIRO, TOMADAS, { lutadores, criarRng });
     this.d = d;
-    const carga = new CargaEscalonada(ROTEIRO, planoDeCarga(ROTEIRO), m.arte, (p) => this.aquecerQueChegou(p.lutador, p.cenario));
+    const carga = new CargaEscalonada(ROTEIRO, planoDeCarga(ROTEIRO), m.arte, (p) => this.aquecerQueChegou(p));
     this.carga = carga;
     carga.limparSobras();
     // prévia de desenvolvimento: `?trailer=P5` abre no começo do plano (pré-rola os anteriores de uma vez e espera a arte do plano)
@@ -280,7 +302,8 @@ export class TrailerEmCena implements ControladorDoTrailer {
       }
       d.prerolar(Number.MAX_SAFE_INTEGER);
       carga.entrouNoPlano(k);
-      this.esperaPorArte = d.pedidosDeArte().agora;
+      // só os planos de luta esperam a arte (são os que viram cartão de reserva sem ela); a abertura, os cartões e a logo desenham o que já chegou
+      this.esperaPorArte = temMotor(ROTEIRO.planos[k] as Plano) ? d.pedidosDeArte().agora : null;
       this.planoVisto = null;
     } else carga.entrouNoPlano(0);
   }
@@ -798,11 +821,11 @@ export class TrailerEmCena implements ControladorDoTrailer {
       lutadoresResidentes(): string[];
     };
     let bytes = 0;
-    const naoFixos: string[] = [];
+    const residentes: string[] = [];
     for (const id of arte.lutadoresResidentes()) {
       const a = arte.atlas.get(id);
       for (const p of a?.paginas ?? []) bytes += p.width * p.height * 4;
-      if (!LUTADORES_FIXOS.has(id as IdLutador)) naoFixos.push(id);
+      residentes.push(id);
     }
     // o próximo plano: quantos ticks faltam e se a arte dele (a que o diretor vai exigir) já chegou: os testes avançam em manual e esperam a rede neste ponto
     const d = this.d;
@@ -814,6 +837,12 @@ export class TrailerEmCena implements ControladorDoTrailer {
         const agora = pedidosNoPlano(ROTEIRO, planoDeCarga(ROTEIRO), k + 1).agora;
         proximoPlano = { emTicks: seguinte - d.tickAtual, artePronta: this.carga?.pronto(agora) ?? true };
       }
+    }
+    // a arte do plano EM CURSO (a que ele exige no começo e a que chega com ele na tela, como a vitrine da logo) já está na memória? Os testes de pixel esperam por isto antes de capturar
+    let artePronta = true;
+    if (d && this.carga && !this.estatico) {
+      const a = d.pedidosDeArte();
+      artePronta = this.carga.pronto({ lutadores: [...(a.agora.lutadores ?? []), ...(a.tarde.lutadores ?? [])], cenarios: [...(a.agora.cenarios ?? []), ...(a.tarde.cenarios ?? [])] });
     }
     for (const c of arte.cenarios.values()) bytes += c.width * c.height * 4;
     return {
@@ -829,7 +858,9 @@ export class TrailerEmCena implements ControladorDoTrailer {
       filmeAtivo: this.filme.ativo,
       planosEmReserva: this.d?.planosEmReserva() ?? [],
       jogosVivos: this.d?.jogosVivos ?? 0,
-      residentes: naoFixos,
+      /** Os atlas na memória agora (o trailer não tem arte fixa: a vitrine também vai e vem por plano). */
+      residentes,
+      artePronta,
       proximoPlano,
       cenarios: [...arte.cenarios.keys()],
       memoriaDecodificadaMB: bytes / 1048576,

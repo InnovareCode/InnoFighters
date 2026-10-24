@@ -10,7 +10,9 @@ Código: `src/sw/logica.ts` (decisões puras), `src/sw/sw.ts` (eventos), `src/pl
 |---|---|
 | Build | Depois do `vite build`: compila `src/sw/sw.ts` para `dist/sw.js` (sem hash no nome) e grava `dist/sw-manifesto.js` com o **hash do conteúdo** de cada arquivo (`revisoes`). Os arquivos de `public/` não têm hash no nome; é este hash que diz que a arte mudou. |
 | Troca de bytes | `sw.js` carrega o manifesto por `importScripts`; o navegador compara os bytes dos dois, então **arte nova = SW novo**. Registro com `updateViaCache: 'none'` (nem o `sw.js` nem o manifesto passam pelo cache HTTP de 10 min do Pages). |
-| Install (shell) | Baixa o `index.html` (`cache: 'reload'`; só vale se citar o JS de entrada desta versão) e o que ele puxa: JS de entrada, modulepreload, CSS, fontes, splash, ícones e manifest do app (15 arquivos, 0,73 MiB). Falhou qualquer parte: o install falha e a versão anterior segue. A lista sai do **próprio `index.html` construído**; quando a T4 exportar a lista da etapa 0, entra por `extras` em `gerarManifesto`. |
+| Install (shell) | Baixa o `index.html` (`cache: 'reload'`; só vale se citar o JS de entrada desta versão) e o que ele puxa: JS de entrada, modulepreload, CSS, fontes, splash, ícones e manifest do app, mais os **extras da etapa 0** do boot (`src/assets/etapa0.mjs`, desde `c058ac9`). Total: 34 arquivos, 1,51 MiB (relatado pela coordenação; confirmar no log do build). Falhou qualquer parte: o install falha e a versão anterior segue. A lista sai do **próprio `index.html` construído** e dos extras do build. |
+
+**Lista da etapa 0.** `src/assets/etapa0.mjs` é a única lista: o boot monta as URLs a partir dela, e o build passa `arquivosDaEtapa0(dist)` ao `extras` de `gerarManifesto` (`vite.config.ts:112`). Um pedaço da etapa 0 que o build não gera derruba o build, então o SW nunca pré-carrega menos do que o boot baixa. `ferramentas/sw/cli.mjs` herda essa lista do `shell` do manifesto que já está no dist (`shellAnterior`, `ferramentas/sw/cli.mjs:13`; `--sem-extras` desliga). Ele não recalcula a etapa 0 sozinho. O comentário de cabeçalho do `cli.mjs` ainda cita `src/assets/etapa0.ts` (o arquivo é `.mjs`): comentário a corrigir, não tocado aqui.
 | Arte e JS | Qualquer arquivo do manifesto: **cache-first** na chave `URL?__rev=<hash>`. Miss: baixa com `cache: 'no-cache'` (o cache HTTP pode ter a arte da versão anterior), responde e guarda só resposta 200 que não seja HTML. **Só se guarda o que foi usado**: nada de pré-baixar o elenco ou as 10 páginas FILME (OR-7). |
 | 1ª visita | O que a página baixou antes de o SW assumir não passou por ele. A página manda a lista do Resource Timing (3 vezes: ao ficar pronto, +8 s, +30 s) e o SW guarda o que ainda falta, **só se o `{commit, data}` da página for o da versão do SW**. |
 | `index.html` | Vem do **shell da versão** (qualquer `?query`; `?trailer=`, `?residencia=`, `?motorv2=`, `?v=` seguem valendo). Não é network-first como a tabela da T7 dizia: um HTML mais novo que o SW pediria arte que o SW ainda serve na revisão velha (JS novo + arte velha). |
@@ -55,7 +57,8 @@ npm run test:e2e:build -- service-worker  # instala, abre offline, troca de vers
 
 | O que | Resultado |
 |---|---|
-| Shell | 15 arquivos, 0,73 MiB; 153 arquivos com revisão; `sw-manifesto.js` 9,1 KiB; `sw.js` 4,4 KiB |
+| Shell (antes da T4) | 15 arquivos, 0,73 MiB; 153 arquivos com revisão; `sw-manifesto.js` 9,1 KiB; `sw.js` 4,4 KiB |
+| Shell (c058ac9, com a etapa 0) | 34 arquivos, 1,51 MiB (relatado; confirmar no log `sw-manifesto.js` do build) |
 | 1ª visita (até o título e a seleção, ~35 s) | 6,6 MiB pela rede; 56 arquivos guardados (só os usados; 0 páginas FILME) |
 | 2ª visita, online | 0,1 KiB (`version.json` e as 2 checagens do SW, 304): meta 5c <= 0,1 MiB cumprida, também sob `/InnoFighters/` |
 | Offline (rede cortada de verdade) | título, seleção e luta abrem e desenham; `?trailer=&residencia=&motorv2=` preservados |

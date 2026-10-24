@@ -196,6 +196,9 @@ título volta à memória de base.
 
 ### 5.2 Fila de carga escalonada (pura: `planoDeCarga(roteiro)`)
 
+> **Nota de estado (`c058ac9`, 2026-10-24; a tabela abaixo é o plano original da Nova, não a fila em vigor).** O trailer não tem arte fixa. Cada plano que desenha atlas ou cenário tem o seu pedido (`PedidoDeCarga`, `src/trailer/carga.ts`): a carga começa 2 compassos antes do plano que usa a arte (`ANTECEDENCIA_DA_CARGA`, `src/trailer/carga.ts:19`) e é solta no fim desse plano. Pico medido: P6 + P7, 145,3 MiB, contra o orçamento de 150 MiB (`ORCAMENTO_DO_TRAILER_MIB`, `src/trailer/carga.ts:21`; relatado pela coordenação). Nenhum código do trailer carrega folha FILME, e o filme do especial no trailer é a versão curta do motor (30 ticks, `src/trailer/filme.ts:14`). Não há close de FILME ampliado no trailer: o OR-5 do orçamento (close ~1,35x) não foi aplicado no código do trailer.
+
+
 | Pedido | Começa em | Precisa estar pronto em |
 |---|---|---|
 | `aminu` + `ng` | P0 (tick 0) | P3 (c9) |

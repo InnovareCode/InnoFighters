@@ -1,6 +1,6 @@
 # Como adicionar um lutador
 
-Passo a passo, da arte ao lutador jogável. Tudo confrontado com o código no commit `9dce4da` (2026-10-24, `origin/main`).
+Passo a passo, da arte ao lutador jogável. Tudo confrontado com o código no commit `c058ac9` (2026-10-24, `origin/main`).
 Onde algo não foi confirmado, está marcado **a confirmar**.
 
 Exemplos reais: AMINU (lutador de fila, o modelo mais simples), NILA (duas fichas e folha extra), ZENON (chefão final, com cena, dreno e
@@ -129,7 +129,7 @@ export const AMINU: LutadorDef = {
 - `parry` (PARADE da CAMILLE): condição da PARADE em `src/fight/game.ts:814`.
 - `troca` (VADIVU da NILA): `src/fight/fighter.ts:789`.
 
-Linhas conferidas no commit `9dce4da`.
+Linhas conferidas no commit `c058ac9`.
 
 **Fichas (variações de um lutador):** `fichas` aceita campos parciais que sobrescrevem a base (`FichaDef`, `src/data/tipos.ts:265`). A NILA usa `fichas.sarpa` (`src/data/lutadores/nila.ts`).
 
@@ -146,7 +146,7 @@ Linhas conferidas no commit `9dce4da`.
 
 Campo `chefe` no `LutadorDef` (`src/data/tipos.ts:337`); o tipo `ConfigChefe` está em `src/data/tipos.ts:124`. Quem vira chefão é decidido por `chefeDoArcade` (`src/meta/chefes.ts:21`): o ZENON (id em `CHEFE`, `src/meta/regras.ts:31`) ou o próximo guardião da fila (ver "Guardião", abaixo). Fora da luta de chefe, o lutador é jogável comum.
 
-Exemplo real, ZENON (`src/data/lutadores/zenon.ts:151-162`, commit `9dce4da`, campos resumidos):
+Exemplo real, ZENON (`src/data/lutadores/zenon.ts:151-162`, commit `c058ac9`, campos resumidos):
 
 ```ts
 chefe: {
@@ -177,7 +177,7 @@ chefe: {
 
 ### Guardião (chefe da fila)
 
-Os guardiões AMINU, CENTELLA, CAMILLE, NILA e BAATAR têm um `chefe` como o do ZENON, mas **sem** `fichaFase1`/`fichaFase2`: lutam com a ficha de jogável e a fase 2 é só a troca de barra. Exemplo real, AMINU (`src/data/lutadores/aminu.ts:71-78`, commit `9dce4da`):
+Os guardiões AMINU, CENTELLA, CAMILLE, NILA e BAATAR têm um `chefe` como o do ZENON, mas **sem** `fichaFase1`/`fichaFase2`: lutam com a ficha de jogável e a fase 2 é só a troca de barra. Exemplo real, AMINU (`src/data/lutadores/aminu.ts:71-78`, commit `c058ac9`):
 
 ```ts
 chefe: {
@@ -199,13 +199,13 @@ npm run balanco -- --chefes <id> --esquiva                 # só este chefão, c
 npm run balanco -- --sem-regulares --varrer-dano 1,0.9,0.8 --esquiva
 ```
 
-  A rodada `--chefes` nunca grava em `docs/balanco/` (`docs/balanco/README.md`). Mantenha o hash das lutas regulares igual antes e depois de um ajuste de chefão (na rodada de produção do commit `9dce4da`: `e5db8a2586c836b5` (com BAATAR e ZENON a 0,9 da escala, T10 do orçamento)).
+  A rodada `--chefes` nunca grava em `docs/balanco/` (`docs/balanco/README.md`). Mantenha o hash das lutas regulares igual antes e depois de um ajuste de chefão (na rodada de produção do commit `c058ac9`: `e5db8a2586c836b5` (com BAATAR e ZENON a 0,9 da escala, T10 do orçamento)).
 
 **Para o guardião entrar no ARCADE:**
 
 1. Id em `FILA_DESBLOQUEIO` (`src/meta/regras.ts:24`, ordem da fila). O ZENON continua em `CHEFE`. Um id em `INICIAIS` ou `FILA_DESBLOQUEIO` não pode também estar em `CHEFE` (`tests/unit/papeis-lutadores.test.ts`).
-2. `chefesDaFila` precisa estar `true` em `REGRAS_PADRAO` (`src/meta/regras.ts:47`). No commit `9dce4da` está `true`. Com a chave `false` (rollback), o guardião existe nos dados, mas o ARCADE só põe o ZENON como chefão.
-3. Textos e roteiro (no commit `9dce4da`, já commitados):
+2. `chefesDaFila` precisa estar `true` em `REGRAS_PADRAO` (`src/meta/regras.ts:47`). No commit `c058ac9` está `true`. Com a chave `false` (rollback), o guardião existe nos dados, mas o ARCADE só põe o ZENON como chefão.
+3. Textos e roteiro (no commit `c058ac9`, já commitados):
    - `TEXTOS_DOS_CHEFOES[id]` em `src/render/textos-dos-chefoes.ts`: `cartao` (nome, título, rodapé), `aviso`, `avisoRodape`, `vs`, `falas` (`derrota`, `fase2`, `vitoria`), `epilogo` (`quem`, `porque`, `convite`) e `tituloHud` (até 16 caracteres).
    - `ROTEIROS_DOS_GUARDIOES[id]` em `src/render/roteiros-de-entrada.ts` (`:56`): batidas (`em`, `pose`, e `zoom`/`dx` opcionais), efeito e som. As poses precisam existir no atlas.
    - `APRESENTACAO[id] = doGuardiao('<id>')` em `src/render/apresentacao-lutadores.ts`. `doGuardiao` (`:60`) lança erro no carregamento se faltar texto ou roteiro: o boot não sobe.
@@ -331,16 +331,16 @@ export const CHEFE: IdLutador | null = 'zenon';
 
 ## Passo 8: assets e carga
 
-**Por que a ordem importa:** no boot, o jogo lê o `atlas.json` de **todos** os ids de `IDS_LUTADORES` (`src/assets/elenco.ts:94`, `src/assets/carregador.ts:354`). Um arquivo que falte dá erro HTTP, e a falha interrompe o `Promise.all`. O jogo inteiro não sobe.
+**Por que a ordem importa:** no boot, o jogo lê o `atlas.json` de **todos** os ids de `IDS_LUTADORES` (`src/assets/elenco.ts:109`, `src/assets/carregador.ts:355`). Um arquivo que falte dá erro HTTP, e a falha interrompe o `Promise.all`. O jogo inteiro não sobe.
 
 Regra prática: registre o id em `IDS_LUTADORES` só depois de `public/assets/lutadores/<id>/atlas.json` existir.
 
 Depois do boot, a carga fica assim (`src/assets/elenco.ts`, `src/assets/gerenciador.ts`):
 
-- Retratos: todos os lutadores, no boot.
-- Imagens: a vitrine `VITRINE` e o cenário do título, fixos.
-- Demais atlas: sob demanda. Na política de produção (`'por-peso'`, `POLITICA_PADRAO` em `src/assets/elenco.ts:87`), o teto é em bytes e o despejo acontece antes de decodificar. Com `?residencia=fixa` (rollback), há no máximo `LIMITE_RESIDENTES_FIXA = 3` atlas não fixos (`src/assets/gerenciador.ts:17`) e a poda acontece depois de carregar (`podar`, `gerenciador.ts:501`). Detalhes em `docs/arquitetura.md`, seção 21.
-- Folha FILME: só entra na luta (`carregarFilme`, `src/assets/carregador.ts:265`).
+- Retratos: todos os lutadores, em WebP (`retrato.webp`), na etapa 1 do boot pela política por peso (no boot, pela `'fixa'`). A etapa 0 não baixa nenhum retrato. Lista da etapa 0 em `src/assets/etapa0.mjs`.
+- Imagens: a vitrine `VITRINE` e o cenário do título, na etapa 1 (política por peso) ou na etapa 0 (`'fixa'`).
+- Demais atlas: sob demanda. Na política de produção (`'por-peso'`, `POLITICA_PADRAO` em `src/assets/elenco.ts:87`), o teto é em bytes e o despejo acontece antes de decodificar. Com `?residencia=fixa` (rollback), há no máximo `LIMITE_RESIDENTES_FIXA = 3` atlas não fixos (`src/assets/gerenciador.ts:17`) e a poda acontece depois de carregar (`podar`, `gerenciador.ts:533`). Detalhes em `docs/arquitetura.md`, seção 21.
+- Folha FILME: só entra na luta (`carregarFilme`, `src/assets/carregador.ts:266`).
 - Atlas sem imagem ainda: o lutador some do desenho até a arte chegar.
 
 **A confirmar:** o comportamento com `atlas.json` ausente não foi testado de ponta a ponta.
@@ -381,7 +381,7 @@ Metas de peso e de tamanho, em `ferramentas/orcamento/orcamento.json` (fonte: `d
 - Folha FILME: até 0,8 MiB e até 2048 x 1280 px.
 - Cenário: até 250 KiB por arquivo em `public/assets/cenarios/`.
 
-Hoje `bloqueantes` está vazio, então estouro vira aviso. Os valores medidos no commit `9dce4da` não foram reconferidos nesta passada (é preciso `npm run build` antes de `npm run orcamento`).
+Hoje `bloqueantes` está vazio, então estouro vira aviso. Os valores medidos no commit `c058ac9` não foram reconferidos nesta passada (é preciso `npm run build` antes de `npm run orcamento`).
 
 ## Checklist de entrega
 

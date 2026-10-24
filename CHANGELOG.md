@@ -3,6 +3,14 @@
 Marcos do InnoFighters, do mais recente para o mais antigo. Datas e hashes vêm do `git log` (fuso -03:00).
 Os nomes de fase (F0, E1a, E3 S2...) são os de `PLANO.md` e `docs/plano-expansao.md`.
 
+## 2026-10-24: boot em etapas (T4) e trailer no orçamento de 150 MiB (T12) (`c058ac9`)
+
+- **Boot em etapas** (T4): a etapa 0 é a única que bloqueia a tela de "CLIQUE OU PRESSIONE UMA TECLA" (`data-pronto`): 0,913 MiB e 28 pedidos (relatado; meta de 1,5 MiB; gate `tests/e2e-build/boot-peso.spec.ts`). Retratos e vitrine vêm na etapa 1, em segundo plano, com `data-vitrine`. A lista da etapa 0 está em `src/assets/etapa0.mjs`, a mesma que o shell do service worker usa (34 arquivos, 1,51 MiB; relatado). `?residencia=fixa` mantém o boot de antes.
+- **Trailer no orçamento de 150 MiB** (T12): a arte é pedida por plano, com 2 compassos de antecedência, e solta no fim do plano (`src/trailer/carga.ts`). Pico de 145,3 MiB (P6 + P7), margem de 4,7 MiB (relatado; `npm run trailer:medir -- --modo memoria`). Nenhum código do trailer carrega folha FILME.
+- **Aviso de orçamento:** `js-inicial` mede 140,7 kB contra a meta de 135 kB. É AVISO e não bloqueia (relatado).
+- **Não provado:** aparelho (T13, do dono). Os números de boot, de shell e de trailer são relatados pela coordenação e não foram reconferidos nesta passada.
+- **Pendente:** T13.
+
 ## 2026-10-24: orçamento T1, T5, T6, T7, T9 e T10 (`d48cf1e`, `9dce4da`)
 
 - **Sons fora do boot** (T5, `d48cf1e`): a `base` (272 KiB) desce depois do primeiro gesto, com o navegador ocioso; as folhas dos dois lutadores descem na tela VS e, no mais tardar, no primeiro tick da luta (`src/audio/camadas.ts`, `src/ui/cenas/vs.ts`).

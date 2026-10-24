@@ -25,8 +25,14 @@ Exit: `0` ok ou só avisos, `1` há FALHA, `2` dist ausente ou argumento inváli
 | `filme-px:<id>` | largura e altura da `filme.webp` (cabeçalho do WebP) | <= 2048 x 1280 (BAATAR 2032 x 1248 cabe) |
 | `cenario-peso:<arquivo>` | cada arquivo de `assets/cenarios/` | <= 250 KiB |
 
-Não cobertos aqui (outras tarefas de `docs/orcamentos-2026-10-23.md`): memória decodificada por lutador (2b, 40/64 MiB), memória decodificada da FILME (2c; o peso e os px dela já estão aqui),
-JS até a 1ª luta (1c), pesos de boot (4 e 5). Entram quando o dado existir no dist.
+Em `c058ac9`, `js-inicial` mediu 140,7 kB contra a meta de 135 kB: **AVISO**, não derruba (relatado pela coordenação; confirmar com `npm run build && npm run orcamento`).
+
+**Gates fora do `dist/`** (T4 e T12, em `c058ac9`):
+
+- `tests/e2e-build/boot-peso.spec.ts` (roda em `npm run test:e2e:build` e na CI): a etapa 0 do boot, até `data-pronto`, pesa até 1,5 MiB pela rede e não traz atlas, retrato, FILME nem som. Medido: 0,913 MiB, 28 pedidos (relatado). O conteúdo da etapa 0 está em `src/assets/etapa0.mjs`.
+- `npm run trailer:medir -- --modo memoria`: pico de memória decodificada do trailer (atlas + cenários), por plano. Meta de 150 MiB (`--limite-mib`); sai com código 1 se passar. Medido: pico de 145,3 MiB (P6 + P7), margem de 4,7 MiB (relatado).
+
+Não cobertos aqui ainda: memória decodificada por lutador (2b, 40/64 MiB) e JS até a 1ª luta (1c). Entram quando o dado existir no dist.
 
 ## Como virar bloqueante (por item)
 

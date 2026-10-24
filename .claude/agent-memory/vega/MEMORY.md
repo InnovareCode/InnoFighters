@@ -30,3 +30,5 @@
 
 - [V2-6 regravação](project_v2_6_regravacao.md) — MOTOR_V2_PADRAO, ?motorv2=0, harness v2 por padrão, pow x filmes.ts, hpPorBarra, portões, trailer, sed -i tira CR
 - [Orçamento T5/T6/T10](project_orcamento_t5_t6_t10.md) — sons fora do boot, retratos WebP, BAATAR/ZENON 0,9 (lp do BAATAR parou de conectar), hashes novos
+- [CAIO capoeira v1](project_caio_capoeira_v1.md) — alturaDoProjetil vazando pro oráculo, centro da caixa fixo (só bh espalha), harness filtrado enviesado
+- [R-3 filme não dispara](project_r3_filme_nao_dispara.md) — cfgMotorV2/engine/CenaFight provados corretos (teste permanente), causa fora do alcance de vitest

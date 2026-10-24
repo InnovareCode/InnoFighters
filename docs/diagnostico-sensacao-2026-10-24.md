@@ -31,7 +31,7 @@ robotizados", "não vi a tarja dos especiais". Esta é uma tarefa de **evidênci
   tempo parado devem generalizar (são por fase do motor, não por número de rounds), mas a duração absoluta de
   uma luta "normal" (melhor de 3) seria maior.
 - Dados brutos (amostras + eventos + frames PNG) ficam em
-  `C:\Users\Personal Computer\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\out-*` (pasta de sessão, não versionada).
+  `<scratchpad da sessão>/out-*` (pasta de sessão, não versionada).
 
 ## 1. Tempo parado por luta
 
@@ -142,12 +142,12 @@ Capturei o trailer completo (14 planos, P0 a P10, ~10 s de jogo simulado) do boo
 
 ## Caminhos de imagem para o dono ver
 
-1. `C:\Users\Personal Computer\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\entrega\trailer-contact-sheet.png` — os 14 planos do trailer, 1 quadro cada.
-2. `C:\Users\Personal Computer\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\entrega\f2-ciclo-tempo-parado.png` — uma luta inteira (CAIO×MIN-JI) do início ao "MIN-JI VENCE!", mostrando onde o tempo vai.
-3. `C:\Users\Personal Computer\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\entrega\tarja-completa-vs-curta.png` — a tarja normal (esquerda) contra o modo sem tarja de `prefers-reduced-motion` (direita).
-4. `C:\Users\Personal Computer\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\entrega\tarja-completa.gif` — a tarja completa animada (8 quadros, 100 ms cada = 800 ms reais).
-5. `C:\Users\Personal Computer\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\entrega\trailer-p1-especial.gif` — o plano P1 do trailer em movimento.
-6. (bônus) `C:\Users\Personal Computer\AppData\Local\Temp\claude\C--Projetos-Web-InnoGames-InnoFighters\61f7b893-ce21-4943-9b98-4c03eaa90187\scratchpad\out-f1\frames\f0041_4100ms.png` — CAIO na provocação pré-round (punhos erguidos, postura que não lê como capoeira).
+1. `<scratchpad da sessão>/entrega/trailer-contact-sheet.png` — os 14 planos do trailer, 1 quadro cada.
+2. `<scratchpad da sessão>/entrega/f2-ciclo-tempo-parado.png` — uma luta inteira (CAIO×MIN-JI) do início ao "MIN-JI VENCE!", mostrando onde o tempo vai.
+3. `<scratchpad da sessão>/entrega/tarja-completa-vs-curta.png` — a tarja normal (esquerda) contra o modo sem tarja de `prefers-reduced-motion` (direita).
+4. `<scratchpad da sessão>/entrega/tarja-completa.gif` — a tarja completa animada (8 quadros, 100 ms cada = 800 ms reais).
+5. `<scratchpad da sessão>/entrega/trailer-p1-especial.gif` — o plano P1 do trailer em movimento.
+6. (bônus) `<scratchpad da sessão>/out-f1/frames/f0041_4100ms.png` — CAIO na provocação pré-round (punhos erguidos, postura que não lê como capoeira).
 
 ## O que este diagnóstico NÃO prova (pendências para quem corrigir)
 

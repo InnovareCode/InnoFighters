@@ -10,7 +10,7 @@ import { CampoDePetalas, Efeitos } from '../../src/render/efeitos';
 import type { Mundo } from '../../src/ui/contexto';
 import type { CenaFight } from '../../src/ui/cenas/fight';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { navegadorFalso } from './_ui';
+import { navegadorFalso, arteFalsa } from './_ui';
 
 /*
  * A CENA da luta ligada às duas camadas (S4 e T3, sempre ligadas por decisão do dono): a trilha da luta (o tema do adversário), os eventos pela camada de
@@ -29,7 +29,7 @@ function montar(c1: IdLutador = 'hayato', c2: IdLutador = 'caio', regras: Regras
   const mundo = {
     rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
     elenco,
-    arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+    arte: arteFalsa(),
     game,
     efeitos: new Efeitos(criarRng(1)),
     petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),

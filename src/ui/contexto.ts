@@ -11,6 +11,7 @@ import type { Ctx } from '../render/tela';
 import type { Entrada } from '../input/entrada';
 import type { ResultadoTelaCheia } from '../platform/tela-cheia';
 import type { Ferramentas } from './ferramentas';
+import type { FundoPadrao } from './fundo-padrao';
 
 /** Configurações e recorde salvos (C4). `salvar()` grava no armazenamento local. */
 export interface Persistencia {
@@ -29,6 +30,8 @@ export interface Mundo {
   readonly elenco: Elenco;
   /** Carga sob demanda das imagens (atlas e cenários); os dados dos lutadores já estão todos em `elenco`. */
   readonly arte: GerenciadorDeArte;
+  /** O fundo dos menus (o contador `vezesSemFundo` é dos testes). Ausente nos mundos falsos dos testes antigos. */
+  readonly fundo?: FundoPadrao;
   readonly game: Game;
   readonly efeitos: Efeitos;
   /** Pétalas do fundo da luta (as dos menus ficam no Navegador). */

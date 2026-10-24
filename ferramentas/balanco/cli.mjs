@@ -11,14 +11,17 @@
  *   --sem-chefe     pula as lutas contra os chefões
  *   --chefes a,b    só estes chefões (ex.: aminu,zenon); cada um contra o elenco que existe no ponto dele da progressão (39 pares no total)
  *   --sem-regulares não joga as 90 combinações regulares (só os chefões): calibração rápida. Nunca grava em docs/balanco
- *   --varrer-dano 1,0.9,0.8  roda SÓ os chefões com cada fator `danoRecebido` (30 sementes por padrão) e imprime taxa x fator por chefão e nível
+ *   --varrer-dano 1,0.9,0.8  roda SÓ os chefões com cada fator `danoRecebido` (e `danoRecebidoDificil`, igual) nos dois níveis (30 sementes por padrão) e imprime taxa x fator por chefão e nível
  *   --so frame|sim  só a frame data, ou só a simulação
  *   --jobs N        processos em paralelo (padrão: núcleos − 1, no máximo 8)
  *   --saida <pasta> onde gravar (padrão acima)
  *   --esquiva       liga a ESQUIVA em todas as lutas (V2); com --completo grava a referência de PRODUÇÃO em docs/balanco (a rodada sem a flag vai para docs/balanco/sem-esquiva); com --rapido, em relatorios/balanco-esquiva
- *   --entrada-hitstop liga `motorV2.entradaNoHitstop` (V2-1) em todas as lutas; PROVA de que a flag não muda o harness (o hash tem de ser o mesmo); sai em relatorios/balanco-entrada-hitstop, nunca em docs/
- *   --filmes        liga `motorV2.filmes` (V2-3c: o filme do especial no motor) em todas as lutas E na frame data (ganha a coluna "Filme"); muda o resultado de propósito, então sai em relatorios/balanco-filmes, nunca em docs/ (a referência nova é da V2-6)
- *   --motor-v2 a,b  atalho para as flags do motor v2: entrada (= --entrada-hitstop), filmes (= --filmes) e combos (V2-4: os combos próprios; a CPU DIFÍCIL passa a usá-los e o verificador roda; sai em relatorios/balanco-combos, nunca em docs/), ex.: --motor-v2 entrada,filmes,combos
+ * MOTOR V2 (V2-6): as três mecânicas (entrada no hitstop, filme do especial, combos próprios) estão LIGADAS por padrão, como no jogo. A referência de
+ * produção é `--completo --esquiva` (grava em docs/balanco); a de antes do motor v2 é `--completo --esquiva --sem-motor-v2` (docs/balanco/sem-motor-v2).
+ *   --dano-filme v  A/B do dano do filme (D-V3): hoje | v2 (o padrão) | forte. Sai em relatorios/, nunca em docs/
+ *   --sem-motor-v2  desliga as três: o motor de antes, bit a bit (a referência "antes" da V2-6). Com --completo --esquiva grava em docs/balanco/sem-motor-v2
+ *   --motor-v2 a,b  liga SÓ estas (A/B de uma mecânica; sai em relatorios/, nunca em docs/): entrada (V2-1), filmes (V2-3c: coluna "Filme" na frame data) e combos (V2-4: a CPU DIFÍCIL os usa e o verificador roda), ex.: --motor-v2 entrada
+ *   --entrada-hitstop / --filmes  o mesmo que `--motor-v2 entrada` / `--motor-v2 filmes` (somam-se entre si); PROVA da V2-1: `--sem-motor-v2` x `--motor-v2 entrada` tem de dar o mesmo hash
  *   --ajustes <json> "e se...": ajustes em memória, ex. '{"wei-long":{"hp":100,"pow":1.08}}' (não grava dados; saída em relatorios/)
  *   --verificar     antes de tudo, joga uma amostra duas vezes e exige resultado idêntico (determinismo)
  *
@@ -38,7 +41,13 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 function lerArgumentos(argv, env) {
   const a = {
     modo: 'rapido', sementes: null, niveis: null, pares: env.BALANCO_PARES ?? null, base: 1, chefe: true, so: null, jobs: null, saida: null,
-    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: false, filmes: false, combos: false, chefes: null, semRegulares: false, varrerDano: null,
+    verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: true, filmes: true, combos: true, danoFilme: null, motorV2Explicito: false, chefes: null, semRegulares: false, varrerDano: null,
+  };
+  // as flags do motor v2 nascem TODAS ligadas; a primeira opção que as escolhe (`--sem-motor-v2`, `--motor-v2`, `--filmes`, `--entrada-hitstop`) zera e liga só as pedidas
+  const escolherMotorV2 = () => {
+    if (a.motorV2Explicito) return;
+    a.motorV2Explicito = true;
+    a.entradaHitstop = a.filmes = a.combos = false;
   };
   if (env.BALANCO_SEMENTES) a.sementes = Number(env.BALANCO_SEMENTES);
   if (env.BALANCO_NIVEIS) a.niveis = env.BALANCO_NIVEIS.split(',').map(Number);
@@ -61,9 +70,18 @@ function lerArgumentos(argv, env) {
     else if (t === '--saida') a.saida = resolve(valor());
     else if (t === '--ajustes') a.ajustes = JSON.parse(valor());
     else if (t === '--esquiva') a.esquiva = true;
-    else if (t === '--entrada-hitstop') a.entradaHitstop = true;
-    else if (t === '--filmes') a.filmes = true;
-    else if (t === '--motor-v2') {
+    else if (t === '--dano-filme') {
+      a.danoFilme = valor();
+      if (!['hoje', 'v2', 'forte'].includes(a.danoFilme)) throw new Error('--dano-filme: hoje, v2 ou forte');
+    } else if (t === '--sem-motor-v2') escolherMotorV2();
+    else if (t === '--entrada-hitstop') {
+      escolherMotorV2();
+      a.entradaHitstop = true;
+    } else if (t === '--filmes') {
+      escolherMotorV2();
+      a.filmes = true;
+    } else if (t === '--motor-v2') {
+      escolherMotorV2();
       for (const f of valor().split(',').map((x) => x.trim()).filter(Boolean)) {
         if (f === 'entrada') a.entradaHitstop = true;
         else if (f === 'filmes') a.filmes = true;
@@ -94,15 +112,18 @@ function lerArgumentos(argv, env) {
   // a rodada sem a flag fica ao lado, em docs/balanco/sem-esquiva (o `--completo` sem `--esquiva` NÃO sobrescreve a de produção).
   // Rodada parcial (sem regulares ou só alguns chefões) NUNCA vira a referência de docs/balanco.
   const parcial = a.semRegulares || a.chefes !== null;
-  // `--entrada-hitstop` é uma PROVA (o hash tem de bater com o de referência), nunca a referência: sai sempre em relatorios/
+  // V2-6: as referências versionadas são (1) a de PRODUÇÃO = esquiva + as 3 flags do motor v2 (docs/balanco), (2) a de ANTES = esquiva, motor v2 desligado
+  // (docs/balanco/sem-motor-v2) e (3) a antiga sem esquiva (docs/balanco/sem-esquiva). Qualquer outra combinação (subconjunto de flags, esquiva desligada com motor v2) é A/B: relatorios/.
+  const todasV2 = a.entradaHitstop && a.filmes && a.combos;
+  const nenhumaV2 = !a.entradaHitstop && !a.filmes && !a.combos;
+  const rotuloV2 = todasV2 ? 'v2' : nenhumaV2 ? 'sem-v2' : ['entrada', 'filmes', 'combos'].filter((_, i) => [a.entradaHitstop, a.filmes, a.combos][i]).join('-');
   a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
-    : a.filmes && a.combos ? join(RAIZ, 'relatorios', 'balanco-filmes-combos')
-    : a.filmes ? join(RAIZ, 'relatorios', 'balanco-filmes')
-    : a.combos ? join(RAIZ, 'relatorios', 'balanco-combos')
-    : a.entradaHitstop ? join(RAIZ, 'relatorios', 'balanco-entrada-hitstop')
     : parcial ? join(RAIZ, 'relatorios', 'balanco-chefes')
-    : a.modo === 'completo' ? join(RAIZ, 'docs', 'balanco', a.esquiva ? '' : 'sem-esquiva')
-    : join(RAIZ, 'relatorios', a.esquiva ? 'balanco-esquiva' : 'balanco');
+    : a.danoFilme && a.danoFilme !== 'v2' ? join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-dano-${a.danoFilme}`)
+    : a.modo === 'completo' && a.esquiva && todasV2 ? join(RAIZ, 'docs', 'balanco')
+    : a.modo === 'completo' && a.esquiva && nenhumaV2 ? join(RAIZ, 'docs', 'balanco', 'sem-motor-v2')
+    : a.modo === 'completo' && !a.esquiva && nenhumaV2 ? join(RAIZ, 'docs', 'balanco', 'sem-esquiva')
+    : join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-${rotuloV2}`);
   return a;
 }
 
@@ -120,6 +141,7 @@ async function carregarModulos() {
     rel: await server.ssrLoadModule('/ferramentas/balanco/relatorio.ts'),
     regras: await server.ssrLoadModule('/src/meta/regras.ts'),
     chefoes: await server.ssrLoadModule('/ferramentas/balanco/chefoes.ts'),
+    portoes: await server.ssrLoadModule('/ferramentas/balanco/portoes-v2.ts'),
   };
   return { server, m };
 }
@@ -151,6 +173,7 @@ function paramsDe(a) {
     ...(a.entradaHitstop ? { entradaNoHitstop: true } : {}),
     ...(a.filmes ? { filmes: true } : {}),
     ...(a.combos ? { combos: true } : {}),
+    ...(a.danoFilme && a.danoFilme !== 'v2' ? { danoFilme: a.danoFilme } : {}),
   };
 }
 
@@ -209,7 +232,7 @@ async function principal() {
   if (a.worker) {
     // os parâmetros chegam do processo principal, já validados (a linha de comando do worker só leva o --worker)
     const p = JSON.parse(process.env.BALANCO_PARAMS ?? '{}');
-    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
+    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, danoFilme: p.danoFilme ?? null, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true });
     return modoWorker(a);
   }
 
@@ -229,7 +252,7 @@ async function principal() {
     }
 
     if (a.verificar) {
-      const amostra = m.sim.montarTarefas(ids, chefoesDe(m), { sementes: 2, niveis: [1, 2], base: a.base, filtro: 'hayato:caio,aminu:nila,*:aminu,*:zenon', incluirChefe: true });
+      const amostra = m.sim.montarTarefas(ids, chefoesDe(m), { sementes: 2, niveis: [1, 2], base: a.base, filtro: 'hayato:caio,aminu:nila,*:aminu,*:zenon', incluirChefe: true, ...(a.entradaHitstop ? { entradaNoHitstop: true } : {}), ...(a.filmes ? { filmes: true } : {}), ...(a.combos ? { combos: true } : {}), ...(a.danoFilme && a.danoFilme !== 'v2' ? { danoFilme: a.danoFilme } : {}) });
       const h1 = m.agr.hashDosRegistros(m.sim.rodarTarefas(elenco, amostra));
       const h2 = m.agr.hashDosRegistros(m.sim.rodarTarefas(elenco, amostra));
       console.log(`verificar: ${amostra.length} lutas x 2 rodadas -> ${h1 === h2 ? 'IDÊNTICAS' : 'DIFERENTES'} (${h1} / ${h2})`);
@@ -280,6 +303,7 @@ async function principal() {
     registros.sort((x, y) => x.idx - y.idx);
     const agr = m.agr.agregar(registros, ids, chefoes, params);
     agr.danoRecebido = Object.fromEntries(chefoes.map((c) => [c.chefe, elenco[c.chefe]?.chefe?.danoRecebido ?? 1]));
+    agr.danoRecebidoDificil = Object.fromEntries(chefoes.filter((c) => elenco[c.chefe]?.chefe?.danoRecebidoDificil !== undefined).map((c) => [c.chefe, elenco[c.chefe].chefe.danoRecebidoDificil]));
     const hash = m.agr.hashDosRegistros(registros);
     const hashRegulares = m.agr.hashRegulares(registros);
     const hashChefes = m.agr.hashChefes(registros);
@@ -295,13 +319,44 @@ async function principal() {
         dif = null;
       }
     }
-    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
+    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.entradaHitstop ? " + ENTRADA NO HITSTOP (motorV2.entradaNoHitstop)" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : "") + (a.danoFilme && a.danoFilme !== 'v2' ? ` + A/B do dano do filme: ${a.danoFilme}` : "") + (!a.entradaHitstop && !a.filmes && !a.combos ? " + motor v2 DESLIGADO (o motor de antes)" : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
     writeFileSync(join(a.saida, 'resultados.md'), m.rel.resultadosMd(agr, ids, achados, dif, cab));
     writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, hashRegulares, hashChefes, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
     resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, { hashRegulares, hashChefes, semRegulares: a.semRegulares });
+    if (!a.semRegulares) gravarPortoes(a, m, registros, versaoDados, hoje, relDir);
     if (a.combos) imprimirCombosDaCpu(registros);
   } finally {
     await server.close();
+  }
+}
+
+/**
+ * Portões do §4.5 (V2-6): mede as lutas regulares e, se existir a rodada de referência SEM motor v2 (`docs/balanco/sem-motor-v2/portoes-v2.json`) e esta não for ela
+ * mesma, confronta. Grava `portoes-v2.json` (a medida) e `portoes-v2.md` ao lado dos resultados.
+ */
+function gravarPortoes(a, m, registros, versaoDados, hoje, relDir) {
+  const agora = m.portoes.medirPortoes(registros);
+  if (!agora.medidas.length) return;
+  const arqRef = join(RAIZ, 'docs', 'balanco', 'sem-motor-v2', 'portoes-v2.json');
+  const ehReferencia = resolve(a.saida, 'portoes-v2.json') === resolve(arqRef);
+  let antes = null;
+  if (!ehReferencia && existsSync(arqRef)) {
+    try {
+      antes = JSON.parse(readFileSync(arqRef, 'utf8')).portoes;
+    } catch {
+      antes = null;
+    }
+  }
+  const vs = m.portoes.veredictoDosPortoes(agora, antes);
+  writeFileSync(join(a.saida, 'portoes-v2.json'), JSON.stringify({ versaoDados, geradoEm: hoje, portoes: agora }, null, 1));
+  writeFileSync(join(a.saida, 'portoes-v2.md'), m.portoes.portoesV2Md(vs, { geradoEm: hoje, versaoDados }));
+  console.log(`
+portões do §4.5 (${antes ? 'contra a rodada sem motor v2' : 'limites absolutos; sem referência'}) -> ${join(relDir, 'portoes-v2.md')}`);
+  for (const v of vs) {
+    const x = v.agora;
+    console.log(
+      `  ${x.nivel === 1 ? 'NORMAL ' : 'DIFÍCIL'} ticks/round ${x.ticksPorRound.toFixed(0)}${v.duracao.variacao === null ? '' : ` (${(v.duracao.variacao * 100).toFixed(1)}%)`} ${v.duracao.ok ? 'ok' : 'FORA'} | dano de especial ${(x.fatiaEspecial * 100).toFixed(1)}%${v.fatia.deltaPontos === null ? '' : ` (${v.fatia.deltaPontos >= 0 ? '+' : ''}${v.fatia.deltaPontos.toFixed(1)} pt)`} ${v.fatia.ok ? 'ok' : 'FORA'} | parado ${(x.paradoFracao * 100).toFixed(1)}% ${v.parado.ok ? 'ok' : 'FORA'} | ${x.especiaisPorLuta.toFixed(1)} especiais e ${x.filmesPorLuta.toFixed(1)} filmes por luta`,
+    );
   }
 }
 
@@ -317,7 +372,7 @@ async function varrerDano(a, m, ids, versaoDados) {
   const celulas = {};
   for (const f of fatores) {
     const ajustes = { ...(a.ajustes ?? {}) };
-    for (const c of chefoes) ajustes[c.chefe] = { ...(ajustes[c.chefe] ?? {}), chefe: { ...(ajustes[c.chefe]?.chefe ?? {}), danoRecebido: f } };
+    for (const c of chefoes) ajustes[c.chefe] = { ...(ajustes[c.chefe] ?? {}), chefe: { ...(ajustes[c.chefe]?.chefe ?? {}), danoRecebido: f, danoRecebidoDificil: f } };
     const af = { ...a, ajustes };
     const tarefas = m.sim.montarTarefas(ids, chefoes, paramsDe(af));
     const { registros } = await rodarWorkers(af, tarefas.length);
@@ -362,7 +417,7 @@ function imprimirChefoes(agr) {
   if (!agr.resumoChefes.length) return;
   console.log('\nchefão     fator nível   jogador vence  meta     KO     tempo  duração  pior            melhor');
   for (const s of agr.resumoChefes) {
-    const f = agr.danoRecebido?.[s.chefe] ?? 1;
+    const f = (s.nivel === 2 ? agr.danoRecebidoDificil?.[s.chefe] : undefined) ?? agr.danoRecebido?.[s.chefe] ?? 1;
     const bandeira = s.ok.taxa ? 'ok ' : 'FORA';
     const crit = s.ok.ko && s.ok.duracao && s.ok.pior && s.ok.melhor && s.ok.travadas ? '' : ' [critério fora]';
     console.log(

@@ -13,10 +13,10 @@ export const HAYATO: LutadorDef = {
   desc: 'Equilibrado e confiável. Ótimo para quem está começando.',
   fire: ['#6fe0ff', '#ffffff', '#1e6fe8'],
   accent: '#3fa9ff',
-  // E6b: hp 100 -> 106 e pow 1 -> 1,07 (original do protótipo em tests/fixtures/dados-prototipo/originais.json).
+  // E6b: hp 100 -> 106 e pow 1 -> 1,07 (original do protótipo em tests/fixtures/dados-prototipo/originais.json). V2-6: hp 106 -> 109 (motor v2 ligado, docs/balanco-motor-v2.md).
   pow: 1.07,
   spd: 1,
-  hp: 106,
+  hp: 109,
   jump: 1,
   scale: 1,
   stride: 9,

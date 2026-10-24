@@ -25,7 +25,7 @@ import type { CampanhaArcade } from '../../src/ui/tipos';
 import type { Mundo } from '../../src/ui/contexto';
 import type { CenaFight } from '../../src/ui/cenas/fight';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { gravador as gravadorBasico, navegadorFalso } from './_ui';
+import { gravador as gravadorBasico, navegadorFalso, arteFalsa } from './_ui';
 
 /*
  * Z3 (Lyra): a ENTRADA DRAMÁTICA do chefão e a tabela de apresentação (docs/spec-chefao-zenon.md §3). A entrada é apresentação pura e fica FORA do
@@ -347,7 +347,7 @@ describe('a CENA da luta com a entrada: o motor e o lock-step não a veem', () =
     n.ui.pronto({
       rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
       elenco,
-      arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+      arte: arteFalsa(),
       game,
       efeitos: new Efeitos(criarRng(1)),
       petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),

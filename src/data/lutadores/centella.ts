@@ -18,9 +18,10 @@ export const CENTELLA: LutadorDef = {
   desc: 'Luchadora técnica. A arena é a arma dela: quanto mais longe a corda, mais forte a volta.',
   fire: ['#22e3b0', '#eafff8', '#0b9a7a'],
   accent: '#19d9a8',
-  pow: 0.94,
+  // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0,94 -> 0,95 e hp 96 -> 99.
+  pow: 0.95,
   spd: 1.12,
-  hp: 96,
+  hp: 99,
   jump: 1.18,
   scale: 0.95,
   stride: 12,
@@ -64,9 +65,10 @@ export const CENTELLA: LutadorDef = {
   // Guardiã (spec chefões §4.2): ver AMINU. A cena da fase 2 é a pose de braços para o público (`win`).
   chefe: {
     barras: 2,
-    hpPorBarra: 48,
+    hpPorBarra: 50,
     cena: { duracao: 60, poses: ['win'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.875,
+    danoRecebido: 0.86,
+    danoRecebidoDificil: 0.74,
   },
 };

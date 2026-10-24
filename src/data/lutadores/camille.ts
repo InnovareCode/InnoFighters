@@ -18,9 +18,10 @@ export const CAMILLE: LutadorDef = {
   desc: 'Savate e esgrima. Quem ataca no momento errado apanha com o próprio golpe.',
   fire: ['#e6ebf7', '#ffffff', '#8a94b0'],
   accent: '#a9b8e6',
-  pow: 0.98,
+  // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0,98 -> 0,94 e hp 98 -> 94 (ela chegava a 64% de vitória com o filme e a PARADE/COUP D'ARRÊT).
+  pow: 0.94,
   spd: 1.04,
-  hp: 98,
+  hp: 94,
   jump: 1.0,
   scale: 1.03,
   stride: 12,
@@ -74,9 +75,10 @@ export const CAMILLE: LutadorDef = {
   // Guardiã (spec chefões §4.2): ver AMINU. A cena da fase 2 é a guarda ("en garde", `block`).
   chefe: {
     barras: 2,
-    hpPorBarra: 49,
+    hpPorBarra: 47,
     cena: { duracao: 60, poses: ['block'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.925,
+    danoRecebido: 0.89,
+    danoRecebidoDificil: 0.82,
   },
 };

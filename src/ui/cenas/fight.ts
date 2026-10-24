@@ -3,6 +3,7 @@ import { tocarReceita, type SintetizadorLike } from '../../audio/receitas';
 import { ALTURA, GROUND, LARGURA, SH } from '../../core/constantes';
 import { clamp } from '../../core/math';
 import { CINEMATICA_PADRAO, type EventoLuta, type IndiceLutador } from '../../core/contratos';
+import { CENARIO_PADRAO } from '../../data/cenarios';
 import { ESQUIVA_PADRAO } from '../../data/esquiva';
 import { filmeDoGolpe } from '../../data/filmes';
 import { criarMemoriaDeFalas, provocacoesLigadas } from '../../data/provocacoes';
@@ -76,6 +77,8 @@ export class CenaFight implements Cena {
   private aberturaPendente = false;
   /** A provocação da vitória já foi (ou não vai ser) disparada nesta luta? */
   private vitoriaDisparada = false;
+  /** O gancho do fim da luta (solta a FILME, pré-carrega o fundo dos menus) já disparou nesta luta? */
+  private fimDaLutaAvisado = false;
   /** Quem venceu o round que acabou de terminar (null = empate) e se o round foi decidido por tempo: vêm dos eventos, o `Game` zera `winner` no round novo. */
   private vencedorDoRound: 0 | 1 | null = null;
   private roundPorTempo = false;
@@ -328,6 +331,7 @@ export class CenaFight implements Cena {
     this.antesDoTick = null;
     this.semProvocacao = false;
     this.vitoriaDisparada = false;
+    this.fimDaLutaAvisado = false;
     this.vencedorDoRound = null;
     this.roundPorTempo = false;
     const confronto = `${a.cfg.c1}|${a.cfg.c2}|${a.cfg.stage ?? ''}`;
@@ -352,6 +356,21 @@ export class CenaFight implements Cena {
   private carregarFolhasDoFilme(a: ArgsFight): void {
     if (a.cfg.motorV2?.filmes !== true && this.filmeDev === null) return;
     void this.ui.m.arte.carregarFilme?.([a.cfg.c1, a.cfg.c2]);
+  }
+
+  /**
+   * Fim da luta (residência por peso, uma vez por luta): no 1º tick com `matchend`, vencedor definido e o filme parado (um KO por especial termina de tocar antes), as
+   * folhas FILME saem e o fundo dos menus (`jp`) começa a voltar em segundo plano, para o resultado já nascer com fundo e o pico não subir (-FILME +7,9). Em `'fixa'` não faz nada.
+   * O `?.` é dos dublês de teste do gerenciador.
+   */
+  private aoFimDaLuta(): void {
+    if (this.fimDaLutaAvisado) return;
+    const { game, arte } = this.ui.m;
+    if (game.phase !== 'matchend' || game.matchWinner === null || this.filme.ativo) return;
+    this.fimDaLutaAvisado = true;
+    if (arte.politica !== 'por-peso') return;
+    arte.soltarFilme?.();
+    arte.preferir?.({ cenarios: [CENARIO_PADRAO] });
   }
 
   /** Saiu da luta (para a VS, o resultado, o menu...): a folha FILME sai da memória. Obrigatório: o HAYATO é fixo da vitrine, `liberarLutador` não o solta. */
@@ -500,6 +519,7 @@ export class CenaFight implements Cena {
     // o estado de ANTES do tick, para o desenho interpolar; em toda chamada (pausa, cinemática, provocação, entrada), então nada desliza quando nada anda
     if (this.ui.fluidez && this.espera.pronta) this.fluidez.gravar(this.ui.m.game, this.ui.m.elenco, { tremor: this.ui.c.persist.settings.shake });
     if (this.paused || !this.espera.pronta) return;
+    this.aoFimDaLuta();
     if (this.entradaPendente) this.comecarEntrada();
     if (this.entrada.ativa) {
       // a entrada anda no lugar do motor: `game.update` NÃO é chamado (nada do lock-step muda). Qualquer ataque de um humano pula (depois do tick 10).

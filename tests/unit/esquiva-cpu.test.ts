@@ -6,6 +6,7 @@ import { AI_LEVELS, cpuInput, perfilChefe, type PerfilCpu } from '../../src/figh
 import { Game, type FonteEntradas } from '../../src/fight/game';
 import { ateALuta, criarLuta, soltar, tipos, type Luta } from './_kit-e3';
 import { montarTodos } from './_lutadores';
+import { MOTOR_V2_DESLIGADO } from './_motor-v2';
 
 /*
  * V2 — CPU da esquiva (docs/spec-esquiva-e-cinematica-especial.md 2.2 e testes 8/9). Regra de ouro: com a esquiva desligada (ou no nível
@@ -226,7 +227,7 @@ describe('CPU x CPU com esquiva (fumaça e snapshot)', () => {
 
   function resumo(semente: number, ticks: number, esquiva: boolean, motorV2?: MotorV2) {
     const g = new Game({ lutadores: elenco, rng: criarRng(semente) });
-    g.setup({ mode: 'cpu', c1: 'wei-long', c2: 'min-ji', cpu: 2, p1cpu: 2, esquiva, ...(motorV2 ? { motorV2 } : {}) }, { rounds: 2, time: 99, shake: true });
+    g.setup({ mode: 'cpu', c1: 'wei-long', c2: 'min-ji', cpu: 2, p1cpu: 2, esquiva, motorV2: motorV2 ?? MOTOR_V2_DESLIGADO }, { rounds: 2, time: 99, shake: true });
     const contagem: Record<string, number> = {};
     for (let i = 0; i < ticks; i++) {
       g.update(SEM_ENTRADA);
@@ -266,7 +267,7 @@ describe('CPU x CPU com esquiva (fumaça e snapshot)', () => {
 
   it('todas as ocorrências do estado esquiva voltam ao normal (nenhum lutador fica preso)', () => {
     const g = new Game({ lutadores: elenco, rng: criarRng(7) });
-    g.setup({ mode: 'cpu', c1: 'camille', c2: 'baatar', cpu: 2, p1cpu: 2, esquiva: true }, { rounds: 2, time: 99, shake: true });
+    g.setup({ mode: 'cpu', c1: 'camille', c2: 'baatar', cpu: 2, p1cpu: 2, esquiva: true, motorV2: MOTOR_V2_DESLIGADO }, { rounds: 2, time: 99, shake: true });
     let seguidos = 0;
     let maximo = 0;
     for (let i = 0; i < 8000; i++) {

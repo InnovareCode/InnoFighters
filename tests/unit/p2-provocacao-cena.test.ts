@@ -12,7 +12,7 @@ import { desenharMundo } from '../../src/render/mundo';
 import type { CenaFight } from '../../src/ui/cenas/fight';
 import type { Mundo } from '../../src/ui/contexto';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { gravador, navegadorFalso } from './_ui';
+import { gravador, navegadorFalso, arteFalsa } from './_ui';
 
 /*
  * P2 (Lyra): a CENA da luta com a provocação. Elenco de produção e um `Game` de verdade (só a arte e o áudio são falsos). O que se prova aqui:
@@ -39,7 +39,7 @@ function montar(cfg: Cfg = CPU_DIFICIL, set: Partial<Configuracoes> = {}, regras
   n.ui.pronto({
     rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
     elenco,
-    arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+    arte: arteFalsa(),
     game,
     efeitos: new Efeitos(criarRng(1)),
     petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),

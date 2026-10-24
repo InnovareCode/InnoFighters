@@ -5,8 +5,8 @@ import type { Mundo } from './contexto';
 export type PedidoDaLuta = { c1: IdLutador; c2: IdLutador; stage?: string | undefined };
 
 /**
- * Espera a arte de uma luta (VS e luta): marca os dois lutadores como "em uso" (a poda não os solta), pede o que
- * falta ao gerenciador e expõe `pronta`/`progresso`/`falhou`. Se tudo já está na memória (a vitrine, hoje) `pronta`
+ * Espera a arte de uma luta (VS e luta): pede o que falta ao gerenciador e expõe `pronta`/`progresso`/`falhou`. Quem marca a dupla "em uso" (e solta
+ * a vitrine, na política `'por-peso'`) é o `Navegador.set`, pela tabela de `residencia.ts`, antes do `enter` da cena. Se tudo já está na memória (a vitrine, hoje) `pronta`
  * já nasce verdadeira, sem nenhuma espera: o jogador não vê diferença.
  */
 export class EsperaDeArte {
@@ -19,9 +19,6 @@ export class EsperaDeArte {
     const pedido = { lutadores: [p.c1, p.c2], cenarios: [p.stage ?? m.elenco[p.c2].ch.stage] };
     const minha = ++this.geracao;
     this.falhou = null;
-    // 'fixa': só marca em uso (como sempre); 'por-peso': luta exclusiva, solta a vitrine e os outros cenários já. Provisório: a L3 move isto para o Navegador.
-    // O `?.` é dos dublês de teste do gerenciador (os mesmos de `carregarFilme?.` em fight.ts).
-    m.arte.entrarNaLuta?.(pedido);
     this.pronta = m.arte.estaPronto(pedido);
     this.progresso = this.pronta ? 1 : 0;
     if (this.pronta) return;

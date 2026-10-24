@@ -1,5 +1,6 @@
 import type { EventoLuta } from '../core/contratos';
 import { DURACAO_DA_CINE, type BatidaGravada, type BatidaPedida } from '../data/trailer/tipos';
+import type { EventoFilmeLuta } from './filme';
 
 /*
  * O RITMO de um plano de luta: dado o tick do plano, o motor anda ou não? É a única parte do diretor que decide "quando" (câmera lenta e congelamento da
@@ -9,6 +10,7 @@ import { DURACAO_DA_CINE, type BatidaGravada, type BatidaPedida } from '../data/
  * Regras (spec §4.3):
  *  - A tarja da cinemática só sai nas batidas marcadas com `cine`: no tick em que o evento `special` do golpe sai, o motor congela por 20 (curta) ou 48 (completa).
  *  - A câmera lenta começa no acerto: por `ticks` ticks do trailer o motor anda 1 update a cada `fator` (6 updates viram 18 ticks a ×3).
+ *  - O FILME do especial (evento `filme` do motor, D-V6): o motor congela pelos ticks do filme (`ticksDoFilme`), como na tarja. O jogo faz o mesmo na cena da luta.
  *  - Batida esperada que NÃO veio (os dados mudaram e o CI ainda não rodou): nada dispara. O plano não estica e o trailer não quebra.
  */
 
@@ -44,23 +46,30 @@ export interface DisparoDoRitmo {
   readonly cine: { readonly ev: EventoLuta; readonly modo: 'curta' | 'completa' } | null;
   /** A câmera lenta começou agora (fator), ou 0. */
   readonly lenta: number;
+  /** O evento `filme` saiu neste update: a cena abre o filme e o motor congela pela duração dele. */
+  readonly filme: EventoFilmeLuta | null;
 }
-const SEM_DISPARO: DisparoDoRitmo = { cine: null, lenta: 0 };
+const SEM_DISPARO: DisparoDoRitmo = { cine: null, lenta: 0, filme: null };
 
 export class RitmoDoPlano {
   private cineRestante = 0;
   private lentaRestante = 0;
   private lentaFator = 1;
   private lentaIdx = 0;
+  private filmeRestante = 0;
   /** O fator do tick que `decidir` acabou de resolver (1 fora da câmera lenta). */
   private fatorNesteTick = 1;
   private readonly cineUsada = new Set<number>();
   private readonly lentaUsada = new Set<number>();
 
-  /** `congeladoAte`: até este tick do plano o motor NÃO anda (a entrada do chefão no P9). */
+  /**
+   * `congeladoAte`: até este tick do plano o motor NÃO anda (a entrada do chefão no P9). `ticksDoFilme`: quantos ticks o motor fica parado por um evento `filme`
+   * (sem ele, o filme não congela nada: os testes antigos do ritmo).
+   */
   constructor(
     private readonly esperadas: readonly EsperadaDoRitmo[],
     private readonly congeladoAte = 0,
+    private readonly ticksDoFilme?: (ev: EventoFilmeLuta) => number,
   ) {}
 
   /** Fator da câmera lenta agora (1 = velocidade normal). */
@@ -74,6 +83,10 @@ export class RitmoDoPlano {
     if (tau < this.congeladoAte) return false;
     if (this.cineRestante > 0) {
       this.cineRestante--;
+      return false;
+    }
+    if (this.filmeRestante > 0) {
+      this.filmeRestante--;
       return false;
     }
     if (this.lentaRestante > 0) {
@@ -106,7 +119,10 @@ export class RitmoDoPlano {
         lenta = pedida.lenta.fator;
       }
     });
-    return cine === null && lenta === 0 ? SEM_DISPARO : { cine, lenta };
+    const ev = this.ticksDoFilme ? eventos.find((x): x is EventoFilmeLuta => x.tipo === 'filme') : undefined;
+    const filme = ev ?? null;
+    if (ev && this.ticksDoFilme) this.filmeRestante = this.ticksDoFilme(ev);
+    return cine === null && lenta === 0 && filme === null ? SEM_DISPARO : { cine, lenta, filme };
   }
 }
 

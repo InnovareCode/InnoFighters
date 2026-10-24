@@ -1,6 +1,6 @@
 export type { ArmazenamentoV2, Etapa, Progresso, Regras, ResultadoVitoria, VitoriaArcade } from './tipos';
 export { chefeDoArcade, desafiantesDoChefe, ehChefeFinal } from './chefes';
-export { CHEFE, FILA_DESBLOQUEIO, cfgMotorV2, INICIAIS, REGRAS_PADRAO, TAMANHO_ESCADA } from './regras';
+export { CHEFE, FILA_DESBLOQUEIO, MOTOR_V2_PADRAO, NOMES_MOTOR_V2, cfgMotorV2, danoFilmeDaUrl, INICIAIS, motorV2DaUrl, REGRAS_PADRAO, regrasComMotorV2, TAMANHO_ESCADA } from './regras';
 export {
   CHEFE_LEGADO,
   CHEFOES_SO_POR_DERROTA,

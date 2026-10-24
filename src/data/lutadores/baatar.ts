@@ -87,6 +87,7 @@ export const BAATAR: LutadorDef = {
     hpPorBarra: 46,
     cena: { duracao: 60, poses: ['devekh2', 'win'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.85,
+    danoRecebido: 0.82,
+    danoRecebidoDificil: 0.75,
   },
 };

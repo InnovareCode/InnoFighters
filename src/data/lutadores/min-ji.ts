@@ -13,9 +13,10 @@ export const MIN_JI: LutadorDef = {
   desc: 'Campeã de taekwondo. Rápida, chutes em sequência, mas frágil.',
   fire: ['#ff6a9a', '#fff0f5', '#d4144f'],
   accent: '#ff4f86',
-  pow: 0.9,
+  // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0.9 -> 0.92 e hp 94 -> 97 (original do protótipo em tests/fixtures/dados-prototipo/originais.json).
+  pow: 0.92,
   spd: 1.17,
-  hp: 94,
+  hp: 97,
   jump: 1.08,
   scale: 0.97,
   stride: 12,

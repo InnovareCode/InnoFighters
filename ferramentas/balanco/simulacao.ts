@@ -1,5 +1,7 @@
 import type { EventoLuta, IdLutador, InputFrame } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
+import { roteiroDoFilme } from '../../src/data/roteiros-filme';
+import type { VarianteDoDano } from '../../src/data/filmes';
 import type { NomeGolpe } from '../../src/data/tipos';
 import { Game, type FonteEntradas } from '../../src/fight/game';
 import type { Fighter } from '../../src/fight/fighter';
@@ -41,6 +43,8 @@ export type Tarefa = {
   filmes?: true;
   /** `motorV2.combos` ligada nesta luta (`--motor-v2 combos`, V2-4). A semente não muda; a CPU DIFÍCIL passa a sortear os combos próprios (consome RNG): referência própria. */
   combos?: true;
+  /** A/B do dano do filme (`--dano-filme hoje|forte`); ausente = a tabela decidida (`v2`). Só tem efeito com `filmes`. */
+  danoFilme?: VarianteDoDano;
 };
 
 export type ParametrosSim = {
@@ -63,6 +67,8 @@ export type ParametrosSim = {
   filmes?: boolean;
   /** Liga `motorV2.combos` (V2-4) em todas as lutas. A semente não muda: a mesma luta com e sem combos é comparável. */
   combos?: boolean;
+  /** A/B do dano do filme (`--dano-filme`): `hoje`, `v2` (o padrão) ou `forte`. */
+  danoFilme?: VarianteDoDano;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
   ajustes?: Record<string, unknown>;
 };
@@ -109,7 +115,17 @@ export type Registro = {
   reboteFaixas: [[number, number, number, number], [number, number, number, number]];
   /** Combos próprios COMPLETOS por lutador (V2-4). Só existe com `--motor-v2 combos`: sem a flag a chave não aparece e o hash é o de sempre. */
   combosProprios?: [number, number];
+  /**
+   * Medidas dos portões do §4.5 da spec v2 (V2-6): NÃO entram no hash (`hashDosRegistros` as tira), então ligar ou desligar o motor v2 não muda o hash por causa delas.
+   * `especiais` = golpes especiais iniciados (a tarja), `filmes` = filmes abertos, `danoEspecial` = vida tirada em ticks de acerto de especial (de cada lado),
+   * `paradoTicks` = estimativa de tempo parado: especiais x 48 + soma da duração do roteiro de cada filme.
+   */
+  medidas?: { especiais: [number, number]; filmes: [number, number]; danoEspecial: [number, number]; paradoTicks: number };
 };
+
+/** Duração (ticks) da tarja completa que congela o motor em todo especial (a cinemática da esquiva/especial). */
+export const TICKS_DA_TARJA = 48;
+const GOLPES_ESPECIAIS: ReadonlySet<string> = new Set(['sFire', 'sDown', 'sFwd', 'sResp']);
 
 const ZERO_FRAME = (): InputFrame => ({ left: false, right: false, up: false, down: false, lp: false, hp: false, lk: false, hk: false, sp: false });
 const FONTE_VAZIA: FonteEntradas = { p1: ZERO_FRAME, p2: ZERO_FRAME };
@@ -145,6 +161,7 @@ export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | nul
       ...(p.entradaNoHitstop ? { entradaNoHitstop: true as const } : {}),
       ...(p.filmes ? { filmes: true as const } : {}),
       ...(p.combos ? { combos: true as const } : {}),
+      ...(p.danoFilme && p.danoFilme !== 'v2' ? { danoFilme: p.danoFilme } : {}),
     });
   };
   if (p.semRegulares !== true) {
@@ -205,13 +222,14 @@ function contagem(r: Record<string, ContagemGolpe>, chave: string): ContagemGolp
 }
 
 /** As flags do motor v2 desta tarefa (`{}` quando nenhuma: a cfg fica idêntica à de antes, nem a chave `motorV2` aparece). */
-function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; filmes?: true; combos?: true } } {
+function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; filmes?: true; combos?: true; danoFilme?: VarianteDoDano } } {
   if (!t.entradaNoHitstop && !t.filmes && !t.combos) return {};
   return {
     motorV2: {
       ...(t.entradaNoHitstop ? { entradaNoHitstop: true as const } : {}),
       ...(t.filmes ? { filmes: true as const } : {}),
       ...(t.combos ? { combos: true as const } : {}),
+      ...(t.danoFilme ? { danoFilme: t.danoFilme } : {}),
     },
   };
 }
@@ -260,10 +278,12 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
       [0, 0, 0, 0],
     ],
   };
+  const medidas = { especiais: [0, 0] as [number, number], filmes: [0, 0] as [number, number], danoEspecial: [0, 0] as [number, number], paradoTicks: 0 };
   const ultimoAtk: [number, number] = [f0.atkId, f1.atkId];
   const vida: [number, number] = [f0.vidaTotal, f1.vidaTotal];
   let faseAnterior = g.phase;
   let projAntes: ProjetilLuta[] = [];
+  const queda: [number, number] = [0, 0];
   while (!g.matchDone) {
     projAntes = g.projectiles.length ? g.projectiles.slice() : projAntes.length ? [] : projAntes;
     g.update(FONTE_VAZIA);
@@ -275,11 +295,13 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
         ultimoAtk[i] = f.atkId;
       }
       const vt = f.vidaTotal;
+      queda[i] = vt < vida[i] ? vida[i] - vt : 0;
       if (vt < vida[i]) reg.dano[1 - i as 0 | 1] += vida[i] - vt;
       vida[i] = vt;
     }
     const mortos = projAntes.length ? projAntes.filter((pr) => pr.life <= 0) : projAntes;
     for (const e of g.events as readonly EventoLuta[]) contarEvento(reg, e, lutadores, mortos);
+    medirPortoes(medidas, g.events as readonly EventoLuta[], lutadores, queda);
     if (g.phase !== faseAnterior) {
       if (g.phase === 'ko') reg.fim.push('ko');
       else if (g.phase === 'timeover') reg.fim.push('tempo');
@@ -294,8 +316,33 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
   reg.rounds = g.round;
   reg.empates = reg.fim.length - (g.p1.wins + g.p2.wins);
   if (t.combos) reg.combosProprios = [g.combosPropriosFeitos[0], g.combosPropriosFeitos[1]];
+  reg.medidas = medidas;
   if (!reg.travou) reg.venc = g.matchWinner;
   return reg;
+}
+
+/**
+ * Portões do §4.5: conta especiais iniciados e filmes e atribui ao especial a vida que caiu no tick em que o atacante bateu com ele (filme, projétil, agarrão
+ * de especial ou golpe especial no momento do acerto). Um tick com acerto comum E de especial do mesmo atacante conta inteiro como especial (raro).
+ */
+function medirPortoes(m: NonNullable<Registro['medidas']>, eventos: readonly EventoLuta[], f: readonly [Fighter, Fighter], queda: readonly [number, number]): void {
+  const especial: [boolean, boolean] = [false, false];
+  for (const e of eventos) {
+    if (e.tipo === 'special') {
+      m.especiais[e.lutador]++;
+      m.paradoTicks += TICKS_DA_TARJA;
+    }
+    else if (e.tipo === 'filme') {
+      m.filmes[e.atacante]++;
+      m.paradoTicks += roteiroDoFilme((f[e.atacante] as Fighter).ch.id, e.ficha, e.golpe, e.projetil).duracao;
+      especial[e.atacante] = true;
+    } else if (e.tipo === 'hit' || e.tipo === 'throw' || e.tipo === 'quebra-guarda' || e.tipo === 'armor') {
+      const a = f[e.atacante];
+      const projetil = e.tipo === 'hit' && e.projetil;
+      if (projetil || (e.tipo === 'throw' && e.especial === true) || (a.move !== null && GOLPES_ESPECIAIS.has(a.move))) especial[e.atacante] = true;
+    }
+  }
+  for (const i of [0, 1] as const) if (especial[i]) m.danoEspecial[i] += queda[i === 0 ? 1 : 0] ?? 0;
 }
 
 function contarEvento(reg: Registro, e: EventoLuta, f: readonly [Fighter, Fighter], mortos: readonly ProjetilLuta[]): void {

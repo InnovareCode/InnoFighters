@@ -14,7 +14,7 @@ import type { CenaHow } from '../../src/ui/cenas/how';
 import type { Mundo } from '../../src/ui/contexto';
 import { criarFerramentas } from '../../src/ui/ferramentas';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { gravador, navegadorFalso } from './_ui';
+import { gravador, navegadorFalso, arteFalsa } from './_ui';
 
 /*
  * V2-4, UI (spec §6.2 "Onde o jogador aprende"): a lista dos combos próprios aparece no TREINO (no lugar da dica genérica) e no "Como jogar",
@@ -29,7 +29,7 @@ const elencoDe = (trocas: Partial<Record<IdLutador, Record<string, unknown>>> = 
   Object.fromEntries(Object.entries(prod).map(([id, ch]) => [id, { ch: { ...ch, ...(trocas[id as IdLutador] ?? {}) }, arte }])) as unknown as Elenco;
 
 const COM_COMBOS: Regras = { ...REGRAS_PADRAO, motorV2: { combos: true } };
-const SEM_COMBOS: Regras = { ...REGRAS_PADRAO };
+const SEM_COMBOS: Regras = { ...REGRAS_PADRAO, motorV2: {} }; // o padrão do jogo agora liga o motor v2 (MOTOR_V2_PADRAO): "sem a regra" é motorV2 vazio
 const nomesDe = (id: IdLutador): string[] => (prod[id].combosProprios ?? []).map((c) => c.nome);
 
 describe('golpe -> botões', () => {
@@ -178,7 +178,7 @@ function mundo(elenco: Elenco, game?: Game): Mundo {
   return {
     rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
     elenco,
-    arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+    arte: arteFalsa(),
     game: game ?? new Game({ lutadores: prod, rng: criarRng(5) }),
     efeitos: new Efeitos(criarRng(1)),
     petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),

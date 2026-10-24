@@ -4,6 +4,7 @@ import { INICIO_MAXIMO, TICKS_POR_COMPASSO, temMotor, type BatidaGravada, type I
 import { TICK_DO_MOTOR_NO_ARCONTE } from '../../src/data/trailer/curvas';
 import type { LutadorMontado } from '../../src/data/montar';
 import { DiretorDoTrailer } from '../../src/trailer/diretor';
+import { ticksDoFilmeNoTrailer } from '../../src/trailer/filme';
 import { criarPartida, FONTE_VAZIA } from '../../src/trailer/partida';
 import { casaBatida, casaInicio, passoDoPlano, RitmoDoPlano, type EsperadaDoRitmo } from '../../src/trailer/ritmo';
 
@@ -130,7 +131,8 @@ const alvoDe = (plano: PlanoComMotor, i: number): { alvo: number; folga: number 
 function avaliar(grav: Gravacao, plano: PlanoComMotor, inicio: number, escolhas: readonly Ocorrencia[]): Avaliacao {
   const duracao = plano.compassos * TICKS_POR_COMPASSO;
   const esperadas: EsperadaDoRitmo[] = escolhas.map((o, i) => ({ pedida: plano.pede[i] as EsperadaDoRitmo['pedida'], gravada: { pedida: i, tickMotor: o.uHit, tickInicio: o.uInicio } }));
-  const ritmo = new RitmoDoPlano(esperadas, plano.tipo === 'arconte' ? TICK_DO_MOTOR_NO_ARCONTE : 0);
+  // o MESMO ritmo do diretor, com o filme do especial congelando o motor (D-V6)
+  const ritmo = new RitmoDoPlano(esperadas, plano.tipo === 'arconte' ? TICK_DO_MOTOR_NO_ARCONTE : 0, (ev) => ticksDoFilmeNoTrailer(ev.atacante === 0 ? plano.c1 : plano.c2, ev));
   const taus: number[] = escolhas.map(() => -1);
   let u = inicio;
   const falha = (motivo: string): Avaliacao => ({ ok: false, motivo, score: -Infinity, batidas: [], taus, acertos: 0, vidaMin: 0, uFim: u });
@@ -141,6 +143,10 @@ function avaliar(grav: Gravacao, plano: PlanoComMotor, inicio: number, escolhas:
     });
     if (passo.andou && passo.u > grav.ate) return falha('a gravação acabou antes do plano');
     u = passo.u;
+    // D-V6: um filme que o fim do plano cortaria no meio é um corte seco com música: a tomada que o tem é recusada
+    for (const ev of passo.eventos) {
+      if (ev.tipo === 'filme' && tau + ticksDoFilmeNoTrailer(ev.atacante === 0 ? plano.c1 : plano.c2, ev) >= duracao) return falha('um filme não cabe no plano');
+    }
     if (passo.andou) {
       escolhas.forEach((o, i) => {
         if (u === o.uHit && passo.eventos.some((ev) => casaBatida(plano.pede[i] as EsperadaDoRitmo['pedida'], ev))) taus[i] = tau;

@@ -12,7 +12,7 @@ import { CENARIO_PADRAO } from './data/cenarios';
 // efeito colateral PROPOSITAL: valida as falas das provocações no carregamento (lutador sem falas ou fora dos limites derruba o boot, alto e cedo)
 import './data/provocacoes';
 import { Game } from './fight/game';
-import { REGRAS_PADRAO } from './meta';
+import { REGRAS_PADRAO, regrasComMotorV2 } from './meta';
 import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
 import { verificarVersao } from './versao';
@@ -27,6 +27,7 @@ import { CampoDePetalas, Efeitos } from './render/efeitos';
 import { prepararCanvas } from './render/tela';
 import type { Contexto, Mundo } from './ui/contexto';
 import { criarFerramentas } from './ui/ferramentas';
+import { FundoPadrao } from './ui/fundo-padrao';
 import { iniciarMarca } from './ui/logo';
 import { Navegador } from './ui/navegador';
 import { criarPersistencia, MSG_NAO_SALVO } from './ui/persistencia';
@@ -82,7 +83,8 @@ async function iniciar(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const modoExpansao = import.meta.env.DEV ? params.get('expansao') : null;
   const fixture = modoExpansao === '1' || modoExpansao === '4' ? await import('./ui/dev-expansao') : null;
-  const regras = !fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao();
+  // o motor de luta v2 (entrada no hitstop, filme do especial, combos próprios) vale em QUALQUER modo de elenco, inclusive `?expansao=4`; `?motorv2=0` é o rollback
+  const regras = regrasComMotorV2(!fixture ? REGRAS_PADRAO : modoExpansao === '4' ? fixture.regrasDeQuatro() : fixture.regrasExpansao(), window.location.search, import.meta.env.DEV);
   // sem a mecânica da ESQUIVA (?expansao=4) o botão ESQ do toque some (a casa fica; ver toque.css)
   document.body.classList.toggle('sem-esquiva', !regras.esquiva);
 
@@ -178,15 +180,20 @@ async function iniciar(): Promise<void> {
     .then(({ elenco, arte }) => {
       const lutadores = {} as Record<IdLutador, (typeof elenco)[IdLutador]['ch']>;
       for (const id of Object.keys(elenco) as IdLutador[]) lutadores[id] = elenco[id].ch;
+      // o fundo dos menus lê do gerenciador a cada quadro (o `jp` sai da memória na luta e volta depois); na falta, um canvas 1 x 1 da cor do fundo
+      const fundo = new FundoPadrao(arte.cenarios, CENARIO_PADRAO);
       const mundo: Mundo = {
         rec: {
           elenco,
           cenarios: arte.cenarios,
-          cenarioPadrao: arte.cenarios.get(CENARIO_PADRAO) as CanvasImageSource,
+          get cenarioPadrao(): CanvasImageSource {
+            return fundo.imagem;
+          },
           vinheta: criarVinheta(),
         },
         elenco,
         arte,
+        fundo,
         game: new Game({ lutadores, rng: rngLogica }),
         efeitos: new Efeitos(rngVisual),
         petalasLuta: new CampoDePetalas(rngVisual, 'luta'),

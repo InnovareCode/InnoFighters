@@ -3,6 +3,7 @@ import type { Rng } from '../core/rng';
 import type { LutadorMontado } from '../data/montar';
 import { AJUSTES_DO_TRAILER, type PlanoComMotor, type Tomada } from '../data/trailer/tipos';
 import { Game, type FonteEntradas } from '../fight/game';
+import { MOTOR_V2_PADRAO } from '../meta/regras';
 
 /*
  * Como o trailer monta o `Game` de um plano de luta: UM lugar só, usado pelo diretor (em jogo) e pela escalação (offline). Se os dois montassem a partida cada um
@@ -23,9 +24,9 @@ export function criarPartida(
   const game = new Game({ lutadores, rng: criarRng(tomada.semente) });
   game.setup(
     // ESQUIVA ligada como no jogo; o P9 é luta de chefe (round único, a ficha e a IA do ZENON como no ARCADE).
-    // SEM `motorV2` de propósito (V2, spec §2.2/§10): as tomadas têm semente, `tickMotor` e impressão fixados com o motor de antes; ligar
-    // `filmes` aqui muda o resultado de todas. Só entra na regravação do trailer (V2-6), com o dono reaprovando.
-    { mode: 'cpu', c1: plano.c1, c2: plano.c2, cpu: tomada.cpu[1], p1cpu: tomada.cpu[0], stage: plano.stage, esquiva: true, ...(plano.tipo === 'arconte' ? { chefe: true } : {}) },
+    // `motorV2` com as MESMAS flags do jogo (V2-6, ordem do dono: sempre ligado; D-V6: o trailer mostra filme). As tomadas (semente, `tickMotor`, impressão) foram
+    // reescaladas com elas (`npm run trailer:escalar`); trocar uma flag aqui invalida todas. A chave `?motorv2=0` NÃO chega ao trailer de propósito.
+    { mode: 'cpu', c1: plano.c1, c2: plano.c2, cpu: tomada.cpu[1], p1cpu: tomada.cpu[0], stage: plano.stage, esquiva: true, motorV2: MOTOR_V2_PADRAO, ...(plano.tipo === 'arconte' ? { chefe: true } : {}) },
     { ...AJUSTES_DO_TRAILER },
   );
   return game;

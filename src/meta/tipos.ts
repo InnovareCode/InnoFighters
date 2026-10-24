@@ -73,9 +73,9 @@ export type Regras = {
    */
   readonly trailer: boolean;
   /**
-   * Revisão do motor de luta v2 (docs/spec-revisao-motor-luta-v2.md §2), flag por mecânica. AUSENTE = o motor de antes, bit a bit: é o que o
-   * oráculo, o harness de balanço, o `?expansao=4` e `REGRAS_PADRAO` rodam hoje. Só vai à `ConfigPartida` das lutas montadas pela UI (`cfgMotorV2`);
-   * o trailer monta a sua e nunca a recebe. Liga-se na V2-6, quando o dono mandar.
+   * Revisão do motor de luta v2 (docs/spec-revisao-motor-luta-v2.md §2), flag por mecânica. AUSENTE = o motor de antes, bit a bit (é o que os testes de
+   * fidelidade ao protótipo e o oráculo CPU x CPU fixam). V2-6: `REGRAS_PADRAO` traz as três LIGADAS (`MOTOR_V2_PADRAO`), também em `?expansao=4`; o
+   * kill switch é `?motorv2=0` (`regrasComMotorV2`). Vai à `ConfigPartida` das lutas montadas pela UI (`cfgMotorV2`) e à do trailer (`criarPartida`).
    */
   readonly motorV2?: MotorV2;
 };

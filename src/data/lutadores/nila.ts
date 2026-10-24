@@ -35,10 +35,10 @@ export const NILA: LutadorDef = {
   fire: ['#ffb02e', '#fff6dc', '#d9720b'],
   accent: '#ffa21f',
   // GAJA (ficha base)
-  // E6b: GAJA hp 98 -> 108 e pow 1,10 -> 1,18 (harness: 29,7% de vitória antes). A SARPA mantém o pow 0,9.
-  pow: 1.18,
+  // E6b: GAJA hp 98 -> 108 e pow 1,10 -> 1,18 (harness: 29,7% de vitória antes). V2-6: hp 108 -> 104 e pow 1,18 -> 1,15 (motor v2 ligado). A SARPA mantém o pow 0,9.
+  pow: 1.15,
   spd: 0.92,
-  hp: 108,
+  hp: 104,
   jump: 1.06,
   scale: 0.98,
   stride: 12,
@@ -129,9 +129,10 @@ export const NILA: LutadorDef = {
   // A cena da fase 2 é o `crouch` (não usa `sarpa*`, porque a postura continua a que estava).
   chefe: {
     barras: 2,
-    hpPorBarra: 54,
+    hpPorBarra: 52,
     cena: { duracao: 60, poses: ['crouch'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.875,
+    danoRecebido: 0.84,
+    danoRecebidoDificil: 0.72,
   },
 };

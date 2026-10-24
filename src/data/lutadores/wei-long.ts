@@ -15,9 +15,10 @@ export const WEI_LONG: LutadorDef = {
   accent: '#b46bff',
   // E6b (balanceamento, docs/handoff-vega-e6b.md): pow 1.14 -> 0.93 e hp 108 -> 96, e o dano dos golpes comuns abaixo. Os números do
   // PROTÓTIPO ficam em tests/fixtures/dados-prototipo/originais.json (oráculo de fidelidade); tempos, alcance e armadura não mudaram.
-  pow: 0.93,
+  // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0.93 -> 0.95 e hp 96 -> 101.
+  pow: 0.95,
   spd: 0.9,
-  hp: 96,
+  hp: 101,
   jump: 0.94,
   scale: 1.04,
   stride: 15,

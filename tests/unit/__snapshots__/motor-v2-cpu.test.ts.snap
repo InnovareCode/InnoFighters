@@ -1,0 +1,120 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CPU x CPU com o motor v2 ligado (snapshot do jogo de produção) > CAMILLE x BAATAR, 6000 ticks, semente 7: resultado fixo (regressão; a PARADE, a armadura e o COUP D'ARRÊT com filme) 1`] = `
+{
+  "combosProprios": [
+    0,
+    2,
+  ],
+  "contagem": {
+    "armor": 2,
+    "block": 52,
+    "dust": 226,
+    "esquiva": 11,
+    "esquivou": 2,
+    "filme": 8,
+    "hit": 24,
+    "jump": 8,
+    "ko": 1,
+    "land": 12,
+    "round": 5,
+    "special": 34,
+    "swing": 108,
+    "throw": 2,
+  },
+  "fase": "fight",
+  "hp": [
+    13.147,
+    21.227,
+  ],
+  "round": 2,
+  "tick": 5768,
+  "wins": [
+    0,
+    1,
+  ],
+  "x": [
+    464.013,
+    284.928,
+  ],
+}
+`;
+
+exports[`CPU x CPU com o motor v2 ligado (snapshot do jogo de produção) > NILA x AMINU, 6000 ticks, semente 11: resultado fixo (regressão; GAJA/SARPA e a carga da MASHI com filme) 1`] = `
+{
+  "combosProprios": [
+    0,
+    2,
+  ],
+  "contagem": {
+    "block": 24,
+    "carga": 12,
+    "dust": 163,
+    "esquiva": 6,
+    "filme": 6,
+    "hit": 25,
+    "jump": 9,
+    "ko": 2,
+    "land": 13,
+    "round": 6,
+    "special": 23,
+    "swing": 92,
+    "troca-ficha": 16,
+  },
+  "fase": "matchend",
+  "hp": [
+    0,
+    60.709,
+  ],
+  "round": 2,
+  "tick": 5818,
+  "wins": [
+    0,
+    2,
+  ],
+  "x": [
+    412.095,
+    759.295,
+  ],
+}
+`;
+
+exports[`CPU x CPU com o motor v2 ligado (snapshot do jogo de produção) > WEI LONG x MIN-JI, 6000 ticks, semente 42: resultado fixo (regressão) 1`] = `
+{
+  "combosProprios": [
+    0,
+    0,
+  ],
+  "contagem": {
+    "block": 50,
+    "dust": 166,
+    "esquiva": 9,
+    "esquivou": 2,
+    "filme": 6,
+    "hit": 28,
+    "jump": 15,
+    "ko": 2,
+    "land": 18,
+    "projectile": 17,
+    "round": 6,
+    "special": 26,
+    "swing": 119,
+    "throw": 1,
+  },
+  "fase": "matchend",
+  "hp": [
+    0,
+    30.945,
+  ],
+  "round": 2,
+  "tick": 5750,
+  "wins": [
+    0,
+    2,
+  ],
+  "x": [
+    655.774,
+    366.481,
+  ],
+}
+`;

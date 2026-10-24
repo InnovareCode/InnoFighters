@@ -156,15 +156,19 @@ export function resultadosMd(agr: Agregado, ids: readonly IdLutador[], achados: 
   else {
     o.push('"Jogador" = a CPU do desafiante como P1, no lugar de uma pessoa (uma APROXIMAÇÃO, não a taxa de uma pessoa). Round único, 2 barras; empate repete o round.', '');
     o.push('Metas: rampa aprovada pelo dono (AMINU ~26-30% no NORMAL descendo até ZENON ~15-19%; DIFÍCIL proporcionalmente menor, centro x 0,575 ± 3 pontos). Acompanham: KO >= 90%, duração <= 75 s (NORMAL) / 90 s (DIFÍCIL), pior desafiante >= 5% e melhor <= 40% no NORMAL, 0 travadas, `danoRecebido` >= 0,60.', '');
-    const dr = (c: string): string => agr.danoRecebido?.[c] === undefined ? '1' : String(agr.danoRecebido[c]);
+    const dr = (c: string, nivel: number): string => {
+      const dificil = agr.danoRecebidoDificil?.[c];
+      const f = nivel === 2 && dificil !== undefined ? dificil : agr.danoRecebido?.[c];
+      return f === undefined ? '1' : String(f);
+    };
     o.push('### Resumo', '');
-    o.push('| Chefão | Desafiantes | Fator `danoRecebido` | Nível | Jogador vence | IC95 | Meta | Na meta | Terminou por KO | Por tempo | Duração | Pior desafiante | Melhor desafiante | Travadas |');
+    o.push('| Chefão | Desafiantes | Fator `danoRecebido` (do nível) | Nível | Jogador vence | IC95 | Meta | Na meta | Terminou por KO | Por tempo | Duração | Pior desafiante | Melhor desafiante | Travadas |');
     o.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
     for (const s of agr.resumoChefes) {
       const metaTxt = `${Math.round(s.meta[0] * 100)}-${Math.round(s.meta[1] * 100)}%`;
       const crit = [s.ok.ko && s.ok.duracao && s.ok.pior && s.ok.melhor && s.ok.travadas ? '' : ' (critério fora)'].join('');
       o.push(
-        `| **${s.chefe}** | ${s.desafiantes} | ${dr(s.chefe)} | ${s.nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} | **${pct(s.jogador.taxa)}** (${s.jogador.k}/${s.jogador.n}) | ${pct(s.jogador.lo, 0)}-${pct(s.jogador.hi, 0)} | ${metaTxt} | ${s.ok.taxa ? 'sim' : '**NÃO**'}${crit} | ${pct(s.porKo, 0)} | ${pct(s.porTempo, 0)} | ${s.duracaoSeg.toFixed(0)} s | ${s.pior.desafiante} ${pct(s.pior.taxa, 0)} | ${s.melhor.desafiante} ${pct(s.melhor.taxa, 0)} | ${s.travadas} |`,
+        `| **${s.chefe}** | ${s.desafiantes} | ${dr(s.chefe, s.nivel)} | ${s.nivel === 1 ? 'NORMAL' : 'DIFÍCIL'} | **${pct(s.jogador.taxa)}** (${s.jogador.k}/${s.jogador.n}) | ${pct(s.jogador.lo, 0)}-${pct(s.jogador.hi, 0)} | ${metaTxt} | ${s.ok.taxa ? 'sim' : '**NÃO**'}${crit} | ${pct(s.porKo, 0)} | ${pct(s.porTempo, 0)} | ${s.duracaoSeg.toFixed(0)} s | ${s.pior.desafiante} ${pct(s.pior.taxa, 0)} | ${s.melhor.desafiante} ${pct(s.melhor.taxa, 0)} | ${s.travadas} |`,
       );
     }
     o.push('');

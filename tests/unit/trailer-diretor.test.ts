@@ -14,6 +14,7 @@ import { TEXTOS } from '../../src/data/trailer/textos';
 import { DiretorDoTrailer, type QuadroDoTrailer } from '../../src/trailer/diretor';
 import { impressaoDoEstado } from '../../src/trailer/impressao';
 import { criarPartida, FONTE_VAZIA } from '../../src/trailer/partida';
+import { ticksDoFilmeNoTrailer } from '../../src/trailer/filme';
 import { casaBatida } from '../../src/trailer/ritmo';
 import { planoDeCarga, residentesNoPlano, MAX_NAO_FIXOS, PESADOS } from '../../src/trailer/carga';
 import { duracaoDaEstatica, quadroEstaticoNoTick } from '../../src/trailer/estatica';
@@ -43,6 +44,13 @@ function quadroDaBatida(id: IdPlano, u: number): QuadroDoTrailer | undefined {
 
 // uma corrida inteira reaproveitada pelos testes que só leem (cada uma custa algumas centenas de ms)
 const A = correr({ guardar: true });
+
+/** Quantos ticks o motor fica parado pelo filme que abre neste quadro (o roteiro do golpe do atacante, versão curta). */
+function ticksDoFilmeDoQuadro(q: QuadroDoTrailer): number {
+  const f = q.filme;
+  if (!f || !temMotor(q.plano)) return 0;
+  return ticksDoFilmeNoTrailer(f.ev.atacante === 0 ? q.plano.c1 : q.plano.c2, f.ev);
+}
 
 describe('1 · determinismo', () => {
   it('dois diretores com o mesmo roteiro dão os mesmos 2400 quadros (impressão por tick)', () => {
@@ -127,11 +135,34 @@ describe('2 · batidas: cada golpe pedido cai onde a tomada gravou e no tempo qu
     const acerto = quadroDaBatida('P1', TOMADAS['P1']?.batidas[0]?.tickMotor ?? 0);
     expect(acerto?.eventos.some((ev) => ev.tipo === 'hit' && ev.especial === true)).toBe(true);
     const i = acerto?.tickNoPlano ?? 0;
-    const lenta = q1.slice(i + 1, i + 1 + 18);
+    // com o motor v2 ligado o acerto do especial abre o FILME (D-V6): o motor congela pelos ticks dele e a câmera lenta começa DEPOIS
+    const filmeNoAcerto = acerto?.filme ?? null;
+    const congelado = acerto && filmeNoAcerto ? ticksDoFilmeDoQuadro(acerto) : 0;
+    const lenta = q1.slice(i + 1 + congelado, i + 1 + congelado + 18);
     expect(lenta.length).toBe(18);
     expect(lenta.every((q) => q.lenta === 3)).toBe(true);
     expect(lenta.filter((q) => q.motorAndou)).toHaveLength(6);
-    expect(q1[i + 1 + 18]?.lenta).toBe(1);
+    expect(q1[i + 1 + congelado + 18]?.lenta).toBe(1);
+  });
+
+  it('FILME (D-V6): cada evento `filme` do motor abre o filme no tick do contato e segura o motor pelos ticks do roteiro, em todos os planos de luta', () => {
+    let total = 0;
+    for (const p of ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P9'] as const) {
+      const qs = A.quadros.filter((q) => q.plano.id === p);
+      const abre = qs.filter((q) => q.filme);
+      for (const q of abre) {
+        total++;
+        const d = ticksDoFilmeDoQuadro(q);
+        expect(d, `${p}: o roteiro do filme dura mais de 0 ticks`).toBeGreaterThan(0);
+        expect(q.motorAndou, `${p}: o tick do contato é um update do motor`).toBe(true);
+        expect(q.filme?.modo).toBe('curta');
+        // os `d` ticks seguintes (dentro do plano) estão congelados; um filme que o plano corta no meio só congela até o fim dele
+        const seguintes = qs.slice(q.tickNoPlano + 1, q.tickNoPlano + 1 + d);
+        expect(seguintes.every((x) => !x.motorAndou), `${p}: motor parado durante o filme`).toBe(true);
+        expect(seguintes.every((x) => !x.filme), `${p}: nenhum filme novo dentro do filme`).toBe(true);
+      }
+    }
+    expect(total, 'pelo menos um filme no trailer (a tomada escalada tem especial)').toBeGreaterThan(0);
   });
 
   it('batida esperada que não veio: o plano segue sem tarja nem câmera lenta, a duração é a mesma e nada lança', () => {
@@ -143,7 +174,10 @@ describe('2 · batidas: cada golpe pedido cai onde a tomada gravou e no tempo qu
     const q1 = c.quadros.filter((q) => q.plano.id === 'P1');
     expect(q1.some((q) => q.cine)).toBe(false);
     expect(q1.every((q) => q.lenta === 1)).toBe(true);
-    expect(q1.every((q) => q.motorAndou)).toBe(true);
+    // o único congelamento que sobra é o do FILME (D-V6): cada evento `filme` segura o motor pelos ticks do roteiro, e nada além disso
+    const filmes = q1.filter((q) => q.filme);
+    const esperados = filmes.reduce((n, q) => n + ticksDoFilmeDoQuadro(q), 0);
+    expect(q1.filter((q) => !q.motorAndou)).toHaveLength(esperados);
   });
 
   it('as durações da tarja e da entrada curta são as da render (o diretor não importa a render, então o teste importa)', () => {

@@ -87,11 +87,29 @@ const ELENCO_FALSO: ReadonlyArray<readonly [string, string, number, string]> = [
   ['zenon', 'ZENON', 0.76, 'gr'],
 ];
 
+/**
+ * Dublê do `GerenciadorDeArte` para as cenas: tudo pronto, nada carrega. Política `'fixa'` (o `Navegador` só chama `entrarNaLuta`, que em `'fixa'` é o `usar` de sempre).
+ * `extra` sobrescreve/acrescenta (ex.: `carregarFilme`, `soltarFilme`, `politica: 'por-peso'`).
+ */
+export function arteFalsa(extra: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    politica: 'fixa',
+    pedir: () => undefined,
+    usar: () => undefined,
+    entrarNaLuta: () => undefined,
+    preferir: () => undefined,
+    garantir: () => Promise.resolve(),
+    estaPronto: () => true,
+    prebuscar: () => undefined,
+    ...extra,
+  };
+}
+
 /** Mundo mínimo (só o que as cenas testadas leem): nome, tom e cenário dos 10 lutadores. */
 export function mundoFalso(): Mundo {
   const ch = (name: string, pitch: number, stage: string) => ({ ch: { name, pitch, stage, K: 1, scale: 1, fichas: {}, title: 'O Arconte', head: [0, 0, 1, 1] }, arte: { retrato: () => null } });
   const elenco = Object.fromEntries(ELENCO_FALSO.map(([id, nome, tom, cen]) => [id, ch(nome, tom, cen)]));
-  return { elenco, arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined } } as unknown as Mundo;
+  return { elenco, arte: arteFalsa() } as unknown as Mundo;
 }
 
 /** Igual a `mundoFalso` (desde a E5 as regras padrão já têm os 9): mantido pelo nome que os testes da E4 usam. */

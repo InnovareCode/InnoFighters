@@ -93,6 +93,8 @@ export type Agregado = {
   resumoChefes: ResumoChefe[];
   /** `ConfigChefe.danoRecebido` de cada chefão NESTA rodada (o cli preenche a partir do elenco; ausente = 1). Só para o relatório. */
   danoRecebido?: Record<string, number>;
+  /** `ConfigChefe.danoRecebidoDificil` de cada chefão que tem (V2-6b): vale no nível DIFÍCIL no lugar de `danoRecebido`. Ausente = `danoRecebido`. */
+  danoRecebidoDificil?: Record<string, number>;
   /** golpes[lutador][golpe] = [usos, acertos, bloqueios+paradas] (regulares). */
   golpes: Record<string, Record<string, ContagemGolpe>>;
   mecanicas: MecanicasCpu;
@@ -298,7 +300,8 @@ export function agregar(registros: readonly Registro[], ids: readonly IdLutador[
 
 /** Hash do resultado: só o que decide o balanço (os registros ordenados por `idx`). Duas rodadas iguais dão o mesmo hash. */
 export function hashDosRegistros(registros: readonly Registro[]): string {
-  return hashDe([...registros].sort((a, b) => a.idx - b.idx));
+  // `medidas` (portões do §4.5) é só leitura: fora do hash, para ligar/desligar o motor v2 não mudar o hash por causa delas
+  return hashDe([...registros].sort((a, b) => a.idx - b.idx).map(({ medidas: _medidas, ...r }) => r));
 }
 
 /** Hash só das lutas regulares: prova que acrescentar/mexer em chefões não muda o jogável (spec §4.3, "regulares idênticos"). */

@@ -4,10 +4,14 @@ import { CampoDePetalas, desenharPetalas } from '../render/efeitos';
 import { usarEspacoLogico } from '../render/tela';
 import { criarCenas } from './cenas';
 import type { Contexto, Mundo } from './contexto';
+import { arteDaCena, type ArteDaCena } from './residencia';
 import { NAV, type CampanhaArcade, type Cena, type NomeCena } from './tipos';
 
 /** Cenas em que toca a música de menu ao entrar. */
 const CENAS_COM_MUSICA_DE_MENU: readonly NomeCena[] = ['title', 'menu', 'select', 'diff', 'how', 'options'];
+
+/** Ticks (0,75 s) que a troca de cena segura no preto esperando a arte essencial do destino (política `'por-peso'`). Passado isso, entra mesmo assim. Spec da residência §2.6. */
+export const TETO_DO_PRETO = 45;
 
 /**
  * Gerente de cenas e transições (o objeto `UI` do protótipo): fade entre telas, tecla -> ação de
@@ -37,6 +41,10 @@ export class Navegador {
   readonly petalas: CampoDePetalas;
   readonly cenas: Record<NomeCena, Cena>;
   private mundo: Mundo | null = null;
+  /** O que o destino da troca em curso precisa (só na política `'por-peso'`; null = nada a esperar). */
+  private destino: ArteDaCena | null = null;
+  /** Ticks que a troca em curso já ficou presa no preto esperando a arte. */
+  private esperaNoPreto = 0;
 
   constructor(readonly c: Contexto) {
     this.petalas = new CampoDePetalas(c.rngVisual, 'menu');
@@ -57,17 +65,73 @@ export class Navegador {
     (this.cenas.trailer as { precarregar?: () => void }).precarregar?.();
   }
 
+  /**
+   * Há uma troca de cena em curso esperando a arte essencial do destino? (Para os e2e esperarem em vez de contar ticks.) Sempre falso na política `'fixa'`, em que a
+   * troca nunca espera.
+   */
+  get esperandoArte(): boolean {
+    return this.fadeTo !== null && this.destino !== null && this.mundo !== null && !this.mundo.arte.estaPronto(this.destino.essencial);
+  }
+
   /** Troca de cena com fade (ignorado se já há uma troca em curso). */
   go(name: NomeCena, args?: unknown): void {
     if (this.fadeTo) return;
     this.fadeTo = name;
     this.fadeArgs = args ?? {};
     this.fadeDir = 1;
+    this.prepararDestino(name, this.fadeArgs);
+  }
+
+  /**
+   * Política `'por-peso'`: ao sair da luta a FILME já sai (antes de carregar o destino, para o pico não somar) e, se o destino não é exclusivo, o essencial dele começa a
+   * carregar JÁ, em paralelo com o fade. A VS e a luta carregam pelo `EsperaDeArte`, depois de soltar (despejo antes de decodificar).
+   */
+  private prepararDestino(name: NomeCena, args: unknown): void {
+    this.destino = null;
+    this.esperaNoPreto = 0;
+    const mundo = this.mundo;
+    if (!mundo || mundo.arte.politica !== 'por-peso') return;
+    if (this.name === 'fight') mundo.arte.soltarFilme();
+    const alvo = arteDaCena(name, args, mundo);
+    if (alvo.exclusiva) return;
+    this.destino = alvo;
+    mundo.arte.garantir(alvo.essencial).catch((e: unknown) => console.error(e));
+  }
+
+  /**
+   * Aplica a tabela da cena ao gerenciador ANTES do `enter`. `'fixa'`: só a VS e a luta marcam a dupla em uso (o `usar` de sempre). `'por-peso'`: a cena exclusiva solta tudo o
+   * que está fora dela; as outras marcam o essencial em uso e trocam a fila de fundo pelo desejável (vazia, se a cena não tem: cancela a da cena anterior).
+   */
+  private aplicarArte(name: NomeCena, args: unknown): void {
+    this.destino = null;
+    this.esperaNoPreto = 0;
+    const mundo = this.mundo;
+    if (!mundo) return;
+    const { arte } = mundo;
+    const alvo = arteDaCena(name, args, mundo);
+    if (arte.politica !== 'por-peso') {
+      if (alvo.exclusiva) arte.entrarNaLuta(alvo.essencial);
+      return;
+    }
+    if (alvo.exclusiva) arte.entrarNaLuta(alvo.essencial);
+    else arte.usar(alvo.essencial);
+    arte.preferir(alvo.desejavel ?? {});
+  }
+
+  /** Segura a troca no preto (a cena velha congela) até o essencial do destino chegar, no máximo `TETO_DO_PRETO` ticks. Com a arte pronta segura ZERO ticks. */
+  private seguraNoPreto(): boolean {
+    if (this.fadeDir !== 1 || this.fadeTo === null || this.destino === null || !this.mundo) return false;
+    if (this.fade + 0.12 < 1) return false; // o fade ainda não chega ao preto neste tick
+    if (this.esperaNoPreto >= TETO_DO_PRETO || this.mundo.arte.estaPronto(this.destino.essencial)) return false;
+    this.esperaNoPreto++;
+    this.fade = 1;
+    return true;
   }
 
   /** Troca imediata. */
   set(name: NomeCena, args?: unknown): void {
     if (this.scene && this.name !== name) this.scene.exit?.();
+    this.aplicarArte(name, args ?? {});
     this.name = name;
     this.scene = this.cenas[name];
     if (CENAS_COM_MUSICA_DE_MENU.includes(name) && this.c.audio.ctx) this.c.audio.startMusic('menu');
@@ -77,6 +141,7 @@ export class Navegador {
 
   /** Um tick de 1/60 s. */
   update(): void {
+    if (this.seguraNoPreto()) return; // a cena velha congela no preto: sem t++, sem pétalas, sem scene.update
     this.t++;
     this.petalas.avancar(this.t);
     if (this.fadeDir === 1) {

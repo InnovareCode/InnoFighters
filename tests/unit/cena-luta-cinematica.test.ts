@@ -9,7 +9,7 @@ import { DURACAO_COMPLETA, DURACAO_CURTA, TICKS_DA_SAIDA_AO_PULAR } from '../../
 import type { Mundo } from '../../src/ui/contexto';
 import type { CenaFight } from '../../src/ui/cenas/fight';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { navegadorFalso } from './_ui';
+import { navegadorFalso, arteFalsa } from './_ui';
 
 /*
  * A CENA da luta com a cinemática: enquanto ela roda, a cena NÃO chama `game.update` (como a pausa) — o motor não congela, a cena só não o
@@ -35,7 +35,7 @@ function montar(settings: Partial<Configuracoes> = {}, regras: Regras = REGRAS_P
   const mundo = {
     rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
     elenco,
-    arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+    arte: arteFalsa(),
     game,
     efeitos: new Efeitos(criarRng(1)),
     petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),

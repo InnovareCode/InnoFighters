@@ -111,7 +111,7 @@ describe('frame data medida no motor: dois casos conhecidos', () => {
   it('WEI LONG hk (S12 A5 R22, dano 14 depois da E6b) e seu golpe baixo: início/ativos/recup do motor = tabela; derruba; chk é baixo', () => {
     const m = medirGolpe(elenco, 'wei-long', null, 'hk');
     expect([m.inicio, m.ativos, m.recuperacao]).toEqual([12, 5, 22]);
-    expect(m.dano).toBeCloseTo(14 * 0.93, 6); // dado de produção da E6b: dmg 14 x pow 0,93
+    expect(m.dano).toBeCloseTo(14 * 0.95, 6); // dado de produção da E6b: dmg 14 x pow 0,95 (V2-6)
     expect(m.derruba).toBe(true); // hk tem `kd`
     const baixo = medirGolpe(elenco, 'wei-long', null, 'clk');
     expect(baixo.bloqueioMedido).toBe('low');
@@ -226,11 +226,11 @@ describe('"e se..." (--ajustes): ajusta em memória, não mexe nos dados do jogo
     expect(outro.baatar.chefe?.hpPorBarra).toBe(33);
     expect(outro.baatar.fichas['chefe']?.pow).toBe(0.5);
     // nada vazou para os dados estáticos nem para o elenco do outro teste
-    expect(WEI_LONG.hp).toBe(96);
+    expect(WEI_LONG.hp).toBe(101);
     expect(WEI_LONG.mods.hk?.dmg).toBe(14);
     expect((WEI_LONG.especiais.sFire.proj as { dmg: number }).dmg).toBe(20);
     expect(BAATAR_CHEFE.chefe?.hpPorBarra).toBe(40);
-    expect(elenco['wei-long'].hp).toBe(96);
+    expect(elenco['wei-long'].hp).toBe(101);
     expect(elenco['wei-long'].moves.sFire.proj?.dmg).toBe(20);
     expect(elenco.baatar.chefe?.hpPorBarra).toBe(46); // o elenco de produção: BAATAR guardião (R1), não o chefão antigo de 40
   });

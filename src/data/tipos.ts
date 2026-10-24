@@ -142,6 +142,11 @@ export type ConfigChefe = {
    * (`drenaEnergia`) não passa por ele.
    */
   danoRecebido?: number;
+  /**
+   * V2-6b: `danoRecebido` SÓ quando o chefão joga no DIFÍCIL (nível 2 da CPU); nos outros níveis vale `danoRecebido`. Existe porque um fator só não serve aos dois
+   * níveis: com o motor v2 o desafiante DIFÍCIL (combos, filme) abriu a distância entre NORMAL e DIFÍCIL, e ela é diferente em cada chefão. Mesma faixa (0,60 a 1). Ausente = `danoRecebido`.
+   */
+  danoRecebidoDificil?: number;
 };
 
 /**

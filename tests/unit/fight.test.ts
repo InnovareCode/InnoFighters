@@ -8,13 +8,15 @@ import { AI_LEVELS, moveInput } from '../../src/fight/cpu';
 import { Game, type FonteEntradas } from '../../src/fight/game';
 import type { NomeGolpe } from '../../src/data/tipos';
 import { montarTodos } from './_lutadores';
+import { MOTOR_V2_DESLIGADO } from './_motor-v2';
 
 const lutadores = montarTodos();
 const SEM_ENTRADA: FonteEntradas = { p1: () => ({ ...INPUT_VAZIO }), p2: () => ({ ...INPUT_VAZIO }) };
 
 function novaLuta(c1: IdLutador, c2: IdLutador, semente: number, cfg: { cpu?: number | null; p1cpu?: number | null; mode?: 'versus' | 'cpu' | 'training'; motorV2?: MotorV2 } = {}): Game {
   const g = new Game({ lutadores, rng: criarRng(semente) });
-  g.setup({ mode: cfg.mode ?? 'versus', c1, c2, ...cfg }, { rounds: 2, time: 99, shake: true });
+  // o motor de antes FIXADO (V2-6): o jogo liga o v2 por padrão, o oráculo CPU x CPU não
+  g.setup({ mode: cfg.mode ?? 'versus', c1, c2, motorV2: MOTOR_V2_DESLIGADO, ...cfg }, { rounds: 2, time: 99, shake: true });
   return g;
 }
 

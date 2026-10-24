@@ -27,3 +27,5 @@
 - [Folha FILME no loader](project_folha_filme_loader.md) — bloco `filme` no atlas, carga so na luta, fixo nao solta sozinho, nunca lanca
 - [FILME dos 10 + pipeline](project_filme_10_lutadores.md) — bloco filme em lutadores.json repoe no atlas regerado, portao filme-peso/px, AMINU sem f2
 - [CAIO ginga f1 v2](project_caio_ginga_f1v2.md) — alturaRef 396 NAO mantem tamanho (K), chave ancora idle*=pes, retrato com alturaRef<410, hp e a alavanca, trailer P2
+
+- [V2-6 regravação](project_v2_6_regravacao.md) — MOTOR_V2_PADRAO, ?motorv2=0, harness v2 por padrão, pow x filmes.ts, hpPorBarra, portões, trailer, sed -i tira CR

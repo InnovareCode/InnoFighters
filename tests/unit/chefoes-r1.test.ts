@@ -266,7 +266,7 @@ describe('R1 · NILA chefe: o fator mora no ConfigChefe, não na ficha (VADIVU n
     const g = luta(elenco, 'nila', true);
     expect(g.p2.chefe).toBe(true);
     expect(g.p2.ficha).toBeNull();
-    expect(g.p2.maxHp).toBe(54);
+    expect(g.p2.maxHp).toBe(52); // ceil(104 / 2): hp da NILA recalibrado na V2-6 (era 108 -> 54)
     expect(g.p2.barrasMax).toBe(2);
   });
 

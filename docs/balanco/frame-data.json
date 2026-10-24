@@ -1,5 +1,5 @@
 {
- "versaoDados": "f6b9952cee5e",
+ "versaoDados": "0a39396db39d",
  "linhas": [
   {
    "lutador": "hayato",
@@ -46,6 +46,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.5135999999999967,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -95,6 +96,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.6419999999999959,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -142,6 +144,7 @@
    "vantagemBloqueio": -6,
    "raspao": 1.1556000000000068,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -191,6 +194,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.6692000000000036,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -240,6 +244,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.5135999999999967,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -287,6 +292,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.6419999999999959,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -334,6 +340,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.284000000000006,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -381,6 +388,7 @@
    "vantagemBloqueio": -12,
    "raspao": 1.1556000000000068,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -428,6 +436,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.6419999999999959,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -477,6 +486,7 @@
    "vantagemBloqueio": 1,
    "raspao": 1.0271999999999935,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -526,6 +536,7 @@
    "vantagemBloqueio": -1,
    "raspao": 0.7703999999999951,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -575,6 +586,7 @@
    "vantagemBloqueio": 3,
    "raspao": 1.284000000000006,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -624,6 +636,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -659,15 +672,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 15,
+   "dano": 17.5,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 50,
+   "vantagemAcerto": 29,
    "blockstun": 17,
    "vantagemBloqueio": -4,
    "raspao": 1.7999999999999972,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "projétil: início = tick do 1º tiro",
     "conecta até o teto da varredura (780)",
@@ -710,15 +724,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 17.120000000000005,
+   "dano": 21.496300000000005,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 16,
+   "vantagemAcerto": 18,
    "blockstun": 14,
    "vantagemBloqueio": -41,
    "raspao": 2.054400000000001,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -759,15 +774,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 11.769999999999996,
+   "dano": 15.5043,
    "acertos": 1,
-   "hitstun": 26,
-   "derruba": false,
-   "vantagemAcerto": 2,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 12,
    "vantagemBloqueio": -12,
    "raspao": 1.4124000000000052,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": []
   },
   {
@@ -786,14 +802,14 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 130.36146341463416,
-    "fy": 258.27226480836237,
+    "w": 127.45725502439024,
+    "fy": 233.82365853658538,
     "h": 54,
-    "alcanceEstatico": 150.36146341463416
+    "alcanceEstatico": 147.45725502439024
    },
    "inicio": 4,
    "ativos": 3,
@@ -801,20 +817,21 @@
    "total": 14,
    "alcance": {
     "min": 78,
-    "max": 188,
+    "max": 185,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.185000000000002,
+   "dano": 4.275000000000006,
    "acertos": 1,
    "hitstun": 14,
    "derruba": false,
    "vantagemAcerto": 4,
    "blockstun": 8,
    "vantagemBloqueio": -2,
-   "raspao": 0.502200000000002,
+   "raspao": 0.5130000000000052,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -835,14 +852,14 @@
     "bs": 9,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 115.41039024390244,
-    "fy": 182.08129635816908,
+    "w": 112.05989863414632,
+    "fy": 219.7926536585366,
     "h": 70,
-    "alcanceEstatico": 135.41039024390244
+    "alcanceEstatico": 132.05989863414632
    },
    "inicio": 6,
    "ativos": 4,
@@ -850,21 +867,24 @@
    "total": 19,
    "alcance": {
     "min": 78,
-    "max": 173,
+    "max": 170,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 5.579999999999998,
+   "dano": 5.700000000000003,
    "acertos": 1,
    "hitstun": 16,
    "derruba": false,
    "vantagemAcerto": 3,
    "blockstun": 9,
    "vantagemBloqueio": -4,
-   "raspao": 0.6696000000000026,
+   "raspao": 0.6839999999999975,
    "bloqueioMedido": "mid",
-   "notas": []
+   "filme": false,
+   "notas": [
+    "erra o boneco agachado (golpe alto)"
+   ]
   },
   {
    "lutador": "wei-long",
@@ -882,14 +902,14 @@
     "bs": 12,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 177.15517073170733,
-    "fy": 209.69025963808028,
+    "w": 172.60923531707317,
+    "fy": 238.79778536585366,
     "h": 64,
-    "alcanceEstatico": 197.15517073170733
+    "alcanceEstatico": 192.60923531707317
    },
    "inicio": 9,
    "ativos": 5,
@@ -897,21 +917,24 @@
    "total": 31,
    "alcance": {
     "min": 78,
-    "max": 253,
+    "max": 248,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 9.299999999999997,
+   "dano": 9.5,
    "acertos": 1,
    "hitstun": 24,
    "derruba": false,
    "vantagemAcerto": 2,
    "blockstun": 12,
    "vantagemBloqueio": -10,
-   "raspao": 1.1159999999999997,
+   "raspao": 1.1400000000000006,
    "bloqueioMedido": "mid",
-   "notas": []
+   "filme": false,
+   "notas": [
+    "erra o boneco agachado (golpe alto)"
+   ]
   },
   {
    "lutador": "wei-long",
@@ -929,14 +952,14 @@
     "bs": 14,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 185.83200000000002,
-    "fy": 284.9808472400514,
+    "w": 180.21028292682925,
+    "fy": 285.5182829268293,
     "h": 84,
-    "alcanceEstatico": 205.83200000000002
+    "alcanceEstatico": 200.21028292682925
    },
    "inicio": 12,
    "ativos": 5,
@@ -944,20 +967,21 @@
    "total": 39,
    "alcance": {
     "min": 78,
-    "max": 263,
+    "max": 258,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 13.019999999999996,
+   "dano": 13.299999999999997,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 44,
    "blockstun": 14,
    "vantagemBloqueio": -13,
-   "raspao": 1.5623999999999967,
+   "raspao": 1.5960000000000036,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -978,12 +1002,12 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
     "w": 130,
-    "fy": 121.21748706577975,
+    "fy": 192.1730243902439,
     "h": 50,
     "alcanceEstatico": 150
    },
@@ -998,15 +1022,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.650000000000006,
+   "dano": 4.75,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 4,
    "blockstun": 8,
    "vantagemBloqueio": -3,
-   "raspao": 0.5580000000000069,
+   "raspao": 0.5699999999999932,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -1025,14 +1050,14 @@
     "bs": 9,
     "lvl": "low",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 129.696,
-    "fy": 94.40405872602416,
+    "w": 134.72056975609758,
+    "fy": 139.50300487804878,
     "h": 44,
-    "alcanceEstatico": 149.696
+    "alcanceEstatico": 154.72056975609758
    },
    "inicio": 6,
    "ativos": 3,
@@ -1040,20 +1065,21 @@
    "total": 19,
    "alcance": {
     "min": 78,
-    "max": 187,
+    "max": 192,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.650000000000006,
+   "dano": 4.75,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 2,
    "blockstun": 9,
    "vantagemBloqueio": -4,
-   "raspao": 0.5580000000000069,
+   "raspao": 0.5699999999999932,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -1072,7 +1098,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 6,
@@ -1092,15 +1118,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 9.299999999999997,
+   "dano": 9.5,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 50,
    "blockstun": 12,
    "vantagemBloqueio": -9,
-   "raspao": 1.1159999999999997,
+   "raspao": 1.1400000000000006,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -1119,14 +1146,14 @@
     "bs": 14,
     "lvl": "low",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 200.10829268292684,
-    "fy": 61.50138931769066,
+    "w": 196.6337873170732,
+    "fy": 41.15650731707316,
     "h": 56,
-    "alcanceEstatico": 220.10829268292684
+    "alcanceEstatico": 216.6337873170732
    },
    "inicio": 9,
    "ativos": 6,
@@ -1134,20 +1161,21 @@
    "total": 35,
    "alcance": {
     "min": 78,
-    "max": 258,
+    "max": 254,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 8.370000000000005,
+   "dano": 8.549999999999997,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 45,
    "blockstun": 14,
    "vantagemBloqueio": -12,
-   "raspao": 1.004400000000004,
+   "raspao": 1.0259999999999962,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -1166,14 +1194,14 @@
     "bs": 10,
     "lvl": "over",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 167.7668292682927,
-    "fy": 210.69025963808028,
+    "w": 163.5031756097561,
+    "fy": 94.94037073170732,
     "h": 66,
-    "alcanceEstatico": 187.7668292682927
+    "alcanceEstatico": 183.5031756097561
    },
    "inicio": 2,
    "ativos": 12,
@@ -1181,23 +1209,23 @@
    "total": 14,
    "alcance": {
     "min": 78,
-    "max": 225,
+    "max": 221,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.650000000000006,
+   "dano": 4.75,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
-   "vantagemAcerto": 5,
+   "vantagemAcerto": 3,
    "blockstun": 10,
-   "vantagemBloqueio": 0,
-   "raspao": 0.5580000000000069,
+   "vantagemBloqueio": -2,
+   "raspao": 0.5699999999999932,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
-    "aéreo: ativos até pousar",
-    "erra o boneco agachado (golpe alto)"
+    "aéreo: ativos até pousar"
    ]
   },
   {
@@ -1216,14 +1244,14 @@
     "bs": 12,
     "lvl": "over",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 177.15517073170733,
-    "fy": 214.69025963808028,
+    "w": 172.52792195121955,
+    "fy": 98.94037073170732,
     "h": 74,
-    "alcanceEstatico": 197.15517073170733
+    "alcanceEstatico": 192.52792195121955
    },
    "inicio": 4,
    "ativos": 10,
@@ -1231,23 +1259,23 @@
    "total": 14,
    "alcance": {
     "min": 78,
-    "max": 235,
+    "max": 230,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 10.230000000000004,
+   "dano": 10.450000000000003,
    "acertos": 1,
    "hitstun": 20,
    "derruba": false,
    "vantagemAcerto": 10,
    "blockstun": 12,
    "vantagemBloqueio": 2,
-   "raspao": 1.2275999999999954,
+   "raspao": 1.2540000000000049,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
-    "aéreo: ativos até pousar",
-    "erra o boneco agachado (golpe alto)"
+    "aéreo: ativos até pousar"
    ]
   },
   {
@@ -1266,14 +1294,14 @@
     "bs": 11,
     "lvl": "over",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 169.70731707317074,
-    "fy": 169.68082156611038,
+    "w": 166.69085629268295,
+    "fy": 135.80058536585364,
     "h": 76,
-    "alcanceEstatico": 189.70731707317074
+    "alcanceEstatico": 186.69085629268295
    },
    "inicio": 3,
    "ativos": 11,
@@ -1281,20 +1309,21 @@
    "total": 14,
    "alcance": {
     "min": 78,
-    "max": 227,
+    "max": 224,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 5.579999999999998,
+   "dano": 5.700000000000003,
    "acertos": 1,
    "hitstun": 17,
    "derruba": false,
    "vantagemAcerto": 6,
    "blockstun": 11,
    "vantagemBloqueio": 0,
-   "raspao": 0.6696000000000026,
+   "raspao": 0.6839999999999975,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -1315,14 +1344,14 @@
     "bs": 13,
     "lvl": "over",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 188.67804878048784,
-    "fy": 174.68082156611038,
+    "w": 183.00364956097565,
+    "fy": 140.80058536585364,
     "h": 86,
-    "alcanceEstatico": 208.67804878048784
+    "alcanceEstatico": 203.00364956097565
    },
    "inicio": 5,
    "ativos": 9,
@@ -1330,20 +1359,21 @@
    "total": 14,
    "alcance": {
     "min": 78,
-    "max": 246,
+    "max": 241,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 12.090000000000003,
+   "dano": 12.349999999999994,
    "acertos": 1,
    "hitstun": 22,
    "derruba": false,
    "vantagemAcerto": 13,
    "blockstun": 13,
    "vantagemBloqueio": 4,
-   "raspao": 1.450800000000001,
+   "raspao": 1.4819999999999993,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -1364,14 +1394,14 @@
     "bs": 0,
     "lvl": "throw",
     "custo": null,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 92.66009756097561,
-    "fy": 207.69025963808028,
+    "w": 90,
+    "fy": 236.79778536585366,
     "h": 60,
-    "alcanceEstatico": 112.66009756097561
+    "alcanceEstatico": 110
    },
    "inicio": 3,
    "ativos": 1,
@@ -1384,7 +1414,7 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 11.159999999999997,
+   "dano": 11.400000000000006,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
@@ -1393,6 +1423,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -1414,7 +1445,7 @@
     "bs": null,
     "lvl": "mid",
     "custo": 45,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": null,
    "inicio": 20,
@@ -1422,24 +1453,26 @@
    "recuperacao": 24,
    "total": 45,
    "alcance": {
-    "min": 160,
+    "min": 78,
     "max": 780,
     "noTeto": true,
     "furos": 0
    },
-   "dRef": 160,
-   "dano": 20,
+   "dRef": 90,
+   "dano": 23,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 46,
+   "vantagemAcerto": 25,
    "blockstun": 17,
    "vantagemBloqueio": -8,
    "raspao": 2.4000000000000057,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "projétil: início = tick do 1º tiro",
-    "conecta até o teto da varredura (780)"
+    "conecta até o teto da varredura (780)",
+    "erra o boneco agachado (golpe alto)"
    ]
   },
   {
@@ -1458,7 +1491,7 @@
     "bs": null,
     "lvl": "mid",
     "custo": 28,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": null,
    "inicio": 14,
@@ -1466,24 +1499,24 @@
    "recuperacao": 28,
    "total": 43,
    "alcance": {
-    "min": 178,
-    "max": 780,
-    "noTeto": true,
+    "min": 78,
+    "max": 662,
+    "noTeto": false,
     "furos": 0
    },
-   "dRef": 178,
-   "dano": 13,
+   "dRef": 90,
+   "dano": 15,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 42,
+   "vantagemAcerto": 21,
    "blockstun": 17,
    "vantagemBloqueio": -12,
    "raspao": 1.5600000000000023,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
-    "projétil: início = tick do 1º tiro",
-    "conecta até o teto da varredura (780)"
+    "projétil: início = tick do 1º tiro"
    ]
   },
   {
@@ -1502,14 +1535,14 @@
     "bs": 15,
     "lvl": "mid",
     "custo": 35,
-    "pow": 0.93
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
-    "w": 151.6191219512195,
-    "fy": 236.06321889078765,
+    "w": 147.50299180487804,
+    "fy": 210.16141463414633,
     "h": 120,
-    "alcanceEstatico": 171.6191219512195
+    "alcanceEstatico": 167.50299180487804
    },
    "inicio": 10,
    "ativos": 10,
@@ -1517,20 +1550,21 @@
    "total": 44,
    "alcance": {
     "min": 78,
-    "max": 291,
+    "max": 287,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 17.67,
+   "dano": 22.001999999999995,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 37,
+   "vantagemAcerto": 39,
    "blockstun": 15,
    "vantagemBloqueio": -19,
-   "raspao": 2.1204000000000036,
+   "raspao": 2.165999999999997,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": []
   },
   {
@@ -1549,7 +1583,7 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1569,7 +1603,7 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 3.1500000000000057,
+   "dano": 3.219999999999999,
    "acertos": 1,
    "hitstun": 14,
    "derruba": false,
@@ -1578,6 +1612,7 @@
    "vantagemBloqueio": 0,
    "raspao": 0.4000000000000057,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -1598,7 +1633,7 @@
     "bs": 9,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1618,15 +1653,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.049999999999997,
+   "dano": 4.140000000000001,
    "acertos": 1,
    "hitstun": 16,
    "derruba": false,
    "vantagemAcerto": 5,
    "blockstun": 9,
    "vantagemBloqueio": -2,
-   "raspao": 0.4860000000000042,
+   "raspao": 0.49679999999999325,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -1645,7 +1681,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1665,15 +1701,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 6.75,
+   "dano": 6.900000000000006,
    "acertos": 1,
    "hitstun": 24,
    "derruba": false,
    "vantagemAcerto": 9,
    "blockstun": 12,
    "vantagemBloqueio": -3,
-   "raspao": 0.8100000000000023,
+   "raspao": 0.828000000000003,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -1692,7 +1729,7 @@
     "bs": 14,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1712,15 +1749,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 9.450000000000003,
+   "dano": 9.659999999999997,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 52,
    "blockstun": 14,
    "vantagemBloqueio": -5,
-   "raspao": 1.1340000000000003,
+   "raspao": 1.1591999999999985,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -1741,7 +1779,7 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1761,15 +1799,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 3.5999999999999943,
+   "dano": 3.680000000000007,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 6,
    "blockstun": 8,
    "vantagemBloqueio": -1,
-   "raspao": 0.43200000000000216,
+   "raspao": 0.441599999999994,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -1788,7 +1827,7 @@
     "bs": 9,
     "lvl": "low",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1808,15 +1847,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.5,
+   "dano": 4.599999999999994,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 2,
    "blockstun": 9,
    "vantagemBloqueio": -4,
-   "raspao": 0.5400000000000063,
+   "raspao": 0.5520000000000067,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -1835,7 +1875,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 6,
@@ -1855,15 +1895,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 7.650000000000006,
+   "dano": 7.819999999999993,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 50,
    "blockstun": 12,
    "vantagemBloqueio": -9,
-   "raspao": 0.9180000000000064,
+   "raspao": 0.9384000000000015,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -1882,7 +1923,7 @@
     "bs": 14,
     "lvl": "low",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1902,15 +1943,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 7.200000000000003,
+   "dano": 7.359999999999999,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 50,
    "blockstun": 14,
    "vantagemBloqueio": -7,
-   "raspao": 0.8640000000000043,
+   "raspao": 0.8832000000000022,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -1929,7 +1971,7 @@
     "bs": 10,
     "lvl": "over",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1949,15 +1991,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.049999999999997,
+   "dano": 4.140000000000001,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 0,
    "blockstun": 10,
    "vantagemBloqueio": -5,
-   "raspao": 0.4860000000000042,
+   "raspao": 0.49679999999999325,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -1978,7 +2021,7 @@
     "bs": 12,
     "lvl": "over",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -1998,15 +2041,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 7.200000000000003,
+   "dano": 7.359999999999999,
    "acertos": 1,
    "hitstun": 20,
    "derruba": false,
    "vantagemAcerto": 7,
    "blockstun": 12,
    "vantagemBloqueio": -1,
-   "raspao": 0.8640000000000043,
+   "raspao": 0.8832000000000022,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -2027,7 +2071,7 @@
     "bs": 11,
     "lvl": "over",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -2047,15 +2091,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 5.400000000000006,
+   "dano": 5.519999999999996,
    "acertos": 1,
    "hitstun": 17,
    "derruba": false,
    "vantagemAcerto": 3,
    "blockstun": 11,
    "vantagemBloqueio": -3,
-   "raspao": 0.6479999999999961,
+   "raspao": 0.6624000000000052,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -2076,7 +2121,7 @@
     "bs": 13,
     "lvl": "over",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -2096,15 +2141,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 7.650000000000006,
+   "dano": 7.819999999999993,
    "acertos": 1,
    "hitstun": 22,
    "derruba": false,
    "vantagemAcerto": 10,
    "blockstun": 13,
    "vantagemBloqueio": 1,
-   "raspao": 0.9180000000000064,
+   "raspao": 0.9384000000000015,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -2125,7 +2171,7 @@
     "bs": 0,
     "lvl": "throw",
     "custo": null,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -2145,7 +2191,7 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 10.799999999999997,
+   "dano": 11.040000000000006,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
@@ -2154,6 +2200,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -2175,7 +2222,7 @@
     "bs": null,
     "lvl": "mid",
     "custo": 30,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": null,
    "inicio": 9,
@@ -2189,15 +2236,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 15.200000000000003,
-   "acertos": 2,
-   "hitstun": 10,
+   "dano": 17.5,
+   "acertos": 1,
+   "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 63,
-   "blockstun": 27,
-   "vantagemBloqueio": 9,
-   "raspao": 1.9199999999999875,
+   "vantagemAcerto": 32,
+   "blockstun": 17,
+   "vantagemBloqueio": -1,
+   "raspao": 0.9599999999999937,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "projétil: início = tick do 1º tiro",
     "conecta até o teto da varredura (780)",
@@ -2220,7 +2268,7 @@
     "bs": 10,
     "lvl": "mid",
     "custo": 28,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 6,
@@ -2240,15 +2288,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 14.580000000000013,
-   "acertos": 3,
-   "hitstun": 14,
+   "dano": 18.501199999999997,
+   "acertos": 1,
+   "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 45,
-   "blockstun": 24,
-   "vantagemBloqueio": -22,
-   "raspao": 1.9439999999999884,
+   "vantagemAcerto": 42,
+   "blockstun": 10,
+   "vantagemBloqueio": -36,
+   "raspao": 0.6624000000000052,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -2269,7 +2318,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": 22,
-    "pow": 0.9
+    "pow": 0.92
    },
    "caixa": {
     "fx": 20,
@@ -2289,15 +2338,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 10.799999999999997,
+   "dano": 13.496399999999994,
    "acertos": 1,
-   "hitstun": 24,
-   "derruba": false,
-   "vantagemAcerto": -1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 12,
    "vantagemBloqueio": -13,
-   "raspao": 1.2960000000000065,
+   "raspao": 1.3247999999999962,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -2322,10 +2372,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 90,
-    "fy": 235.42508040739747,
+    "w": 93.08201036363639,
+    "fy": 232.2359772727273,
     "h": 54,
-    "alcanceEstatico": 110
+    "alcanceEstatico": 113.08201036363639
    },
    "inicio": 3,
    "ativos": 3,
@@ -2333,7 +2383,7 @@
    "total": 13,
    "alcance": {
     "min": 78,
-    "max": 147,
+    "max": 151,
     "noTeto": false,
     "furos": 0
    },
@@ -2347,6 +2397,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.4655999999999949,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -2371,10 +2422,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 156.0086556097561,
-    "fy": 193.2145803395947,
+    "w": 162.12729639999998,
+    "fy": 211.1060909090909,
     "h": 70,
-    "alcanceEstatico": 176.0086556097561
+    "alcanceEstatico": 182.12729639999998
    },
    "inicio": 5,
    "ativos": 4,
@@ -2382,7 +2433,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 214,
+    "max": 220,
     "noTeto": false,
     "furos": 0
    },
@@ -2396,6 +2447,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5819999999999936,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -2418,10 +2470,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 100.42377951219513,
-    "fy": 211.88112325045768,
+    "w": 112.81829527272728,
+    "fy": 228.1915909090909,
     "h": 64,
-    "alcanceEstatico": 120.42377951219513
+    "alcanceEstatico": 132.81829527272728
    },
    "inicio": 8,
    "ativos": 4,
@@ -2429,7 +2481,7 @@
    "total": 26,
    "alcance": {
     "min": 78,
-    "max": 172,
+    "max": 184,
     "noTeto": false,
     "furos": 0
    },
@@ -2443,7 +2495,10 @@
    "vantagemBloqueio": -6,
    "raspao": 0.9894000000000034,
    "bloqueioMedido": "mid",
-   "notas": []
+   "filme": false,
+   "notas": [
+    "erra o boneco agachado (golpe alto)"
+   ]
   },
   {
    "lutador": "caio",
@@ -2465,10 +2520,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 206.89860370731705,
-    "fy": 241.93052532833025,
-    "h": 84,
-    "alcanceEstatico": 226.89860370731705
+    "w": 213.51642465454546,
+    "fy": 342.0441136363636,
+    "h": 184,
+    "alcanceEstatico": 233.51642465454546
    },
    "inicio": 10,
    "ativos": 5,
@@ -2476,7 +2531,7 @@
    "total": 33,
    "alcance": {
     "min": 78,
-    "max": 282,
+    "max": 289,
     "noTeto": false,
     "furos": 0
    },
@@ -2490,6 +2545,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.4549999999999983,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -2514,10 +2570,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 130,
-    "fy": 204.44009107749304,
+    "w": 141.39579400000002,
+    "fy": 145.802,
     "h": 50,
-    "alcanceEstatico": 150
+    "alcanceEstatico": 161.39579400000002
    },
    "inicio": 4,
    "ativos": 3,
@@ -2525,7 +2581,7 @@
    "total": 15,
    "alcance": {
     "min": 78,
-    "max": 187,
+    "max": 199,
     "noTeto": false,
     "furos": 0
    },
@@ -2539,9 +2595,8 @@
    "vantagemBloqueio": -3,
    "raspao": 0.4655999999999949,
    "bloqueioMedido": "mid",
-   "notas": [
-    "erra o boneco agachado (golpe alto)"
-   ]
+   "filme": false,
+   "notas": []
   },
   {
    "lutador": "caio",
@@ -2563,10 +2618,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 164.7690497560976,
-    "fy": 110.60861434436126,
+    "w": 177.21198000000004,
+    "fy": 115.05143181818181,
     "h": 44,
-    "alcanceEstatico": 184.7690497560976
+    "alcanceEstatico": 197.21198000000004
    },
    "inicio": 6,
    "ativos": 3,
@@ -2574,7 +2629,7 @@
    "total": 19,
    "alcance": {
     "min": 78,
-    "max": 222,
+    "max": 235,
     "noTeto": false,
     "furos": 0
    },
@@ -2588,6 +2643,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5819999999999936,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -2635,6 +2691,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.1640000000000015,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -2657,10 +2714,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 190,
-    "fy": 112.7050311968236,
+    "w": 198.07145309090907,
+    "fy": 152.50645454545455,
     "h": 56,
-    "alcanceEstatico": 210
+    "alcanceEstatico": 218.07145309090907
    },
    "inicio": 8,
    "ativos": 6,
@@ -2668,7 +2725,7 @@
    "total": 34,
    "alcance": {
     "min": 78,
-    "max": 247,
+    "max": 256,
     "noTeto": false,
     "furos": 0
    },
@@ -2682,6 +2739,7 @@
    "vantagemBloqueio": -12,
    "raspao": 1.0476000000000028,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -2704,10 +2762,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 106.76187317073172,
-    "fy": 212.88112325045768,
+    "w": 110.41871665454548,
+    "fy": 158.18297727272727,
     "h": 66,
-    "alcanceEstatico": 126.76187317073172
+    "alcanceEstatico": 130.41871665454548
    },
    "inicio": 2,
    "ativos": 16,
@@ -2715,7 +2773,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 164,
+    "max": 168,
     "noTeto": false,
     "furos": 0
    },
@@ -2724,14 +2782,14 @@
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
-   "vantagemAcerto": 8,
+   "vantagemAcerto": 2,
    "blockstun": 10,
-   "vantagemBloqueio": 3,
+   "vantagemBloqueio": -3,
    "raspao": 0.5819999999999936,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
-    "aéreo: ativos até pousar",
-    "erra o boneco agachado (golpe alto)"
+    "aéreo: ativos até pousar"
    ]
   },
   {
@@ -2754,10 +2812,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 113.09996682926831,
-    "fy": 216.88112325045768,
+    "w": 117.28285963636367,
+    "fy": 162.18297727272727,
     "h": 74,
-    "alcanceEstatico": 133.0999668292683
+    "alcanceEstatico": 137.28285963636367
    },
    "inicio": 4,
    "ativos": 14,
@@ -2765,7 +2823,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 171,
+    "max": 175,
     "noTeto": false,
     "furos": 0
    },
@@ -2774,14 +2832,14 @@
    "acertos": 1,
    "hitstun": 20,
    "derruba": false,
-   "vantagemAcerto": 13,
+   "vantagemAcerto": 7,
    "blockstun": 12,
-   "vantagemBloqueio": 5,
+   "vantagemBloqueio": -1,
    "raspao": 0.931200000000004,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
-    "aéreo: ativos até pousar",
-    "erra o boneco agachado (golpe alto)"
+    "aéreo: ativos até pousar"
    ]
   },
   {
@@ -2804,10 +2862,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 102.8975043902439,
-    "fy": 175.58527486060274,
+    "w": 106.98664516363638,
+    "fy": 163.18297727272727,
     "h": 76,
-    "alcanceEstatico": 122.8975043902439
+    "alcanceEstatico": 126.98664516363638
    },
    "inicio": 3,
    "ativos": 15,
@@ -2815,7 +2873,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 160,
+    "max": 164,
     "noTeto": false,
     "furos": 0
    },
@@ -2824,11 +2882,12 @@
    "acertos": 1,
    "hitstun": 17,
    "derruba": false,
-   "vantagemAcerto": 5,
+   "vantagemAcerto": 3,
    "blockstun": 11,
-   "vantagemBloqueio": -1,
+   "vantagemBloqueio": -3,
    "raspao": 0.6984000000000066,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -2853,10 +2912,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 113.58424390243903,
-    "fy": 180.58527486060274,
+    "w": 117.28285963636367,
+    "fy": 168.18297727272727,
     "h": 86,
-    "alcanceEstatico": 133.58424390243903
+    "alcanceEstatico": 137.28285963636367
    },
    "inicio": 5,
    "ativos": 13,
@@ -2864,7 +2923,7 @@
    "total": 18,
    "alcance": {
     "min": 78,
-    "max": 171,
+    "max": 175,
     "noTeto": false,
     "furos": 0
    },
@@ -2873,11 +2932,12 @@
    "acertos": 1,
    "hitstun": 22,
    "derruba": false,
-   "vantagemAcerto": 10,
+   "vantagemAcerto": 9,
    "blockstun": 13,
-   "vantagemBloqueio": 1,
+   "vantagemBloqueio": 0,
    "raspao": 1.1640000000000015,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -2902,10 +2962,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 90,
-    "fy": 209.88112325045768,
+    "w": 90.68191272727275,
+    "fy": 226.1915909090909,
     "h": 60,
-    "alcanceEstatico": 110
+    "alcanceEstatico": 110.68191272727275
    },
    "inicio": 3,
    "ativos": 1,
@@ -2927,6 +2987,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -2957,22 +3018,24 @@
    "total": 32,
    "alcance": {
     "min": 78,
-    "max": 356,
+    "max": 385,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 14,
+   "dano": 16,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 51,
+   "vantagemAcerto": 30,
    "blockstun": 17,
    "vantagemBloqueio": -3,
    "raspao": 1.6800000000000068,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
-    "projétil: início = tick do 1º tiro"
+    "projétil: início = tick do 1º tiro",
+    "erra o boneco agachado (golpe alto)"
    ]
   },
   {
@@ -2995,10 +3058,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 399.78474146341466,
-    "fy": 90.29472795497185,
+    "w": 400.28258618181815,
+    "fy": 105.9856590909091,
     "h": 58,
-    "alcanceEstatico": 419.78474146341466
+    "alcanceEstatico": 420.28258618181815
    },
    "inicio": 9,
    "ativos": 7,
@@ -3006,12 +3069,12 @@
    "total": 38,
    "alcance": {
     "min": 78,
-    "max": 457,
+    "max": 458,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 12.61,
+   "dano": 15.9953,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
@@ -3020,6 +3083,7 @@
    "vantagemBloqueio": -14,
    "raspao": 1.5131999999999977,
    "bloqueioMedido": "low",
+   "filme": true,
    "notas": []
   },
   {
@@ -3042,10 +3106,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 111.651356097561,
-    "fy": 163.32159414634145,
-    "h": 92,
-    "alcanceEstatico": 131.651356097561
+    "w": 115.67410283636366,
+    "fy": 286.75322727272726,
+    "h": 160,
+    "alcanceEstatico": 135.67410283636366
    },
    "inicio": 6,
    "ativos": 24,
@@ -3053,20 +3117,21 @@
    "total": 42,
    "alcance": {
     "min": 78,
-    "max": 371,
+    "max": 375,
     "noTeto": false,
     "furos": 0
    },
    "dRef": 90,
-   "dano": 13.579999999999998,
+   "dano": 17.004099999999994,
    "acertos": 1,
-   "hitstun": 26,
-   "derruba": false,
-   "vantagemAcerto": -10,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 13,
    "vantagemBloqueio": -23,
    "raspao": 1.6295999999999964,
    "bloqueioMedido": "over",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -3116,6 +3181,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.5664000000000016,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -3165,6 +3231,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.7079999999999984,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -3214,6 +3281,7 @@
    "vantagemBloqueio": -6,
    "raspao": 1.2744,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -3263,6 +3331,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.8408000000000015,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -3312,6 +3381,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.5664000000000016,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -3359,6 +3429,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.7079999999999984,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -3406,6 +3477,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.4159999999999968,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -3453,6 +3525,7 @@
    "vantagemBloqueio": -12,
    "raspao": 1.2744,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -3500,6 +3573,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.7079999999999984,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -3549,6 +3623,7 @@
    "vantagemBloqueio": 2,
    "raspao": 1.1328000000000031,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -3598,6 +3673,7 @@
    "vantagemBloqueio": 0,
    "raspao": 0.8495999999999952,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -3647,6 +3723,7 @@
    "vantagemBloqueio": 4,
    "raspao": 1.4159999999999968,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -3696,6 +3773,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -3737,15 +3815,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 9.439999999999998,
+   "dano": 17.0038,
    "acertos": 1,
-   "hitstun": 22,
-   "derruba": false,
-   "vantagemAcerto": -3,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 42,
    "blockstun": 12,
    "vantagemBloqueio": -13,
    "raspao": 1.1328000000000031,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -3786,15 +3865,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 17.700000000000003,
+   "dano": 21.995199999999997,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 46,
+   "vantagemAcerto": 42,
    "blockstun": 12,
    "vantagemBloqueio": -13,
    "raspao": 2.1239999999999952,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "início inclui 38 ticks segurando ESP",
     "erra o boneco agachado (golpe alto)"
@@ -3836,15 +3916,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 25.959999999999994,
+   "dano": 25.995400000000004,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 46,
+   "vantagemAcerto": 42,
    "blockstun": null,
    "vantagemBloqueio": 15,
    "raspao": 3.1152000000000015,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "início inclui 78 ticks segurando ESP",
     "erra o boneco agachado (golpe alto)",
@@ -3887,15 +3968,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 5.900000000000006,
+   "dano": 17.0038,
    "acertos": 1,
-   "hitstun": 18,
-   "derruba": false,
-   "vantagemAcerto": -20,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 10,
    "vantagemBloqueio": -28,
    "raspao": 0.7079999999999984,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -3936,15 +4018,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 11.799999999999997,
+   "dano": 17.0038,
    "acertos": 1,
-   "hitstun": 26,
-   "derruba": false,
-   "vantagemAcerto": -3,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 16,
    "vantagemBloqueio": -13,
    "raspao": 1.4159999999999968,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -3965,7 +4048,7 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.94
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
@@ -3985,15 +4068,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 3.760000000000005,
+   "dano": 3.799999999999997,
    "acertos": 1,
    "hitstun": 14,
    "derruba": false,
    "vantagemAcerto": 4,
    "blockstun": 8,
    "vantagemBloqueio": -2,
-   "raspao": 0.45120000000000005,
+   "raspao": 0.45600000000000307,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -4014,7 +4098,7 @@
     "bs": 9,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.94
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
@@ -4034,15 +4118,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.700000000000003,
+   "dano": 4.75,
    "acertos": 1,
    "hitstun": 16,
    "derruba": false,
    "vantagemAcerto": 3,
    "blockstun": 9,
    "vantagemBloqueio": -4,
-   "raspao": 0.563999999999993,
+   "raspao": 0.5699999999999932,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -4061,7 +4146,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.94
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
@@ -4081,15 +4166,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 8.459999999999994,
+   "dano": 8.549999999999997,
    "acertos": 1,
    "hitstun": 24,
    "derruba": false,
    "vantagemAcerto": 6,
    "blockstun": 12,
    "vantagemBloqueio": -6,
-   "raspao": 1.015199999999993,
+   "raspao": 1.0259999999999962,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -4110,7 +4196,7 @@
     "bs": 14,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.94
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
@@ -4130,15 +4216,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 12.219999999999999,
+   "dano": 12.349999999999994,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 48,
    "blockstun": 14,
    "vantagemBloqueio": -9,
-   "raspao": 1.466399999999993,
+   "raspao": 1.4819999999999993,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -4159,7 +4246,7 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.94
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
@@ -4179,15 +4266,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 3.760000000000005,
+   "dano": 3.799999999999997,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 4,
    "blockstun": 8,
    "vantagemBloqueio": -3,
-   "raspao": 0.45120000000000005,
+   "raspao": 0.45600000000000307,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -4206,7 +4294,7 @@
     "bs": 9,
     "lvl": "low",
     "custo": null,
-    "pow": 0.94
+    "pow": 0.95
    },
    "caixa": {
     "fx": 20,
@@ -4226,6 +4314,801 @@
     "furos": 0
    },
    "dRef": 90,
+   "dano": 4.75,
+   "acertos": 1,
+   "hitstun": 15,
+   "derruba": false,
+   "vantagemAcerto": 2,
+   "blockstun": 9,
+   "vantagemBloqueio": -4,
+   "raspao": 0.5699999999999932,
+   "bloqueioMedido": "low",
+   "filme": false,
+   "notas": []
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "chp",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 6,
+    "A": 4,
+    "R": 17,
+    "dmg": 10,
+    "hs": 0,
+    "bs": 12,
+    "lvl": "mid",
+    "custo": null,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 6,
+    "w": 100,
+    "fy": 155,
+    "h": 125,
+    "alcanceEstatico": 106
+   },
+   "inicio": 6,
+   "ativos": 4,
+   "recuperacao": 17,
+   "total": 27,
+   "alcance": {
+    "min": 78,
+    "max": 143,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 9.5,
+   "acertos": 1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 50,
+   "blockstun": 12,
+   "vantagemBloqueio": -9,
+   "raspao": 1.1400000000000006,
+   "bloqueioMedido": "mid",
+   "filme": false,
+   "notas": []
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "chk",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 8,
+    "A": 6,
+    "R": 20,
+    "dmg": 9,
+    "hs": 0,
+    "bs": 14,
+    "lvl": "low",
+    "custo": null,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 172.15096341463413,
+    "fy": 41.81415853658536,
+    "h": 56,
+    "alcanceEstatico": 192.15096341463413
+   },
+   "inicio": 8,
+   "ativos": 6,
+   "recuperacao": 20,
+   "total": 34,
+   "alcance": {
+    "min": 78,
+    "max": 230,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 8.549999999999997,
+   "acertos": 1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 45,
+   "blockstun": 14,
+   "vantagemBloqueio": -12,
+   "raspao": 1.0259999999999962,
+   "bloqueioMedido": "low",
+   "filme": false,
+   "notas": []
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "jlp",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 2,
+    "A": 80,
+    "R": 0,
+    "dmg": 5,
+    "hs": 15,
+    "bs": 10,
+    "lvl": "over",
+    "custo": null,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 135.8607317073171,
+    "fy": 114.8982256097561,
+    "h": 66,
+    "alcanceEstatico": 155.8607317073171
+   },
+   "inicio": 2,
+   "ativos": 17,
+   "recuperacao": 0,
+   "total": 19,
+   "alcance": {
+    "min": 78,
+    "max": 193,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 4.75,
+   "acertos": 1,
+   "hitstun": 15,
+   "derruba": false,
+   "vantagemAcerto": -2,
+   "blockstun": 10,
+   "vantagemBloqueio": -7,
+   "raspao": 0.5699999999999932,
+   "bloqueioMedido": "over",
+   "filme": false,
+   "notas": [
+    "aéreo: ativos até pousar"
+   ]
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "jhp",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 4,
+    "A": 80,
+    "R": 0,
+    "dmg": 8,
+    "hs": 20,
+    "bs": 12,
+    "lvl": "over",
+    "custo": null,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 143.65376829268294,
+    "fy": 118.8982256097561,
+    "h": 74,
+    "alcanceEstatico": 163.65376829268294
+   },
+   "inicio": 4,
+   "ativos": 15,
+   "recuperacao": 0,
+   "total": 19,
+   "alcance": {
+    "min": 78,
+    "max": 201,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 7.599999999999994,
+   "acertos": 1,
+   "hitstun": 20,
+   "derruba": false,
+   "vantagemAcerto": 5,
+   "blockstun": 12,
+   "vantagemBloqueio": -3,
+   "raspao": 0.9120000000000061,
+   "bloqueioMedido": "over",
+   "filme": false,
+   "notas": [
+    "aéreo: ativos até pousar"
+   ]
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "jlk",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 3,
+    "A": 80,
+    "R": 0,
+    "dmg": 6,
+    "hs": 17,
+    "bs": 11,
+    "lvl": "over",
+    "custo": null,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 135.8607317073171,
+    "fy": 119.8982256097561,
+    "h": 76,
+    "alcanceEstatico": 155.8607317073171
+   },
+   "inicio": 3,
+   "ativos": 16,
+   "recuperacao": 0,
+   "total": 19,
+   "alcance": {
+    "min": 78,
+    "max": 193,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 5.700000000000003,
+   "acertos": 1,
+   "hitstun": 17,
+   "derruba": false,
+   "vantagemAcerto": 1,
+   "blockstun": 11,
+   "vantagemBloqueio": -5,
+   "raspao": 0.6839999999999975,
+   "bloqueioMedido": "over",
+   "filme": false,
+   "notas": [
+    "aéreo: ativos até pousar"
+   ]
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "jhk",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 5,
+    "A": 80,
+    "R": 0,
+    "dmg": 10,
+    "hs": 22,
+    "bs": 13,
+    "lvl": "over",
+    "custo": null,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 151.4468048780488,
+    "fy": 124.8982256097561,
+    "h": 86,
+    "alcanceEstatico": 171.4468048780488
+   },
+   "inicio": 5,
+   "ativos": 14,
+   "recuperacao": 0,
+   "total": 19,
+   "alcance": {
+    "min": 78,
+    "max": 209,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 9.5,
+   "acertos": 1,
+   "hitstun": 22,
+   "derruba": false,
+   "vantagemAcerto": 8,
+   "blockstun": 13,
+   "vantagemBloqueio": -1,
+   "raspao": 1.1400000000000006,
+   "bloqueioMedido": "over",
+   "filme": false,
+   "notas": [
+    "aéreo: ativos até pousar"
+   ]
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "throw",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 3,
+    "A": 3,
+    "R": 22,
+    "dmg": 12,
+    "hs": 0,
+    "bs": 0,
+    "lvl": "throw",
+    "custo": null,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 90,
+    "fy": 224.4203963414634,
+    "h": 60,
+    "alcanceEstatico": 110
+   },
+   "inicio": 3,
+   "ativos": 1,
+   "recuperacao": 24,
+   "total": 28,
+   "alcance": {
+    "min": 78,
+    "max": 107,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 11.400000000000006,
+   "acertos": 1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 52,
+   "blockstun": null,
+   "vantagemBloqueio": null,
+   "raspao": null,
+   "bloqueioMedido": "nenhum",
+   "filme": false,
+   "notas": [
+    "agarrão: ativos = janela de teste",
+    "agarrão: não bloqueável"
+   ]
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "sFire",
+   "variante": null,
+   "nome": "PLANCHA",
+   "tipo": "leap",
+   "nominal": {
+    "S": 8,
+    "A": 80,
+    "R": 0,
+    "dmg": 14,
+    "hs": 0,
+    "bs": 14,
+    "lvl": "over",
+    "custo": 25,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 6,
+    "w": 104.31205731707317,
+    "fy": 150,
+    "h": 120,
+    "alcanceEstatico": 110.31205731707317
+   },
+   "inicio": 8,
+   "ativos": 39,
+   "recuperacao": 24,
+   "total": 71,
+   "alcance": {
+    "min": 78,
+    "max": 499,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 16.501499999999993,
+   "acertos": 1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
+   "blockstun": 14,
+   "vantagemBloqueio": -49,
+   "raspao": 1.5960000000000036,
+   "bloqueioMedido": "over",
+   "filme": true,
+   "notas": [
+    "aéreo: ativos até pousar"
+   ]
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "sDown",
+   "variante": null,
+   "nome": "HURACANRANA",
+   "tipo": "rise",
+   "nominal": {
+    "S": 6,
+    "A": 18,
+    "R": 24,
+    "dmg": 18,
+    "hs": 0,
+    "bs": 0,
+    "lvl": "throw",
+    "custo": 25,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 115.13358536585366,
+    "fy": 103.41179268292683,
+    "h": 90,
+    "alcanceEstatico": 135.13358536585366
+   },
+   "inicio": 6,
+   "ativos": 18,
+   "recuperacao": 24,
+   "total": 48,
+   "alcance": {
+    "min": 78,
+    "max": 151,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 21.004500000000007,
+   "acertos": 1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 17,
+   "blockstun": null,
+   "vantagemBloqueio": null,
+   "raspao": null,
+   "bloqueioMedido": "nenhum",
+   "filme": true,
+   "notas": [
+    "agarrão: ativos = janela de teste",
+    "agarrão: não bloqueável"
+   ]
+  },
+  {
+   "lutador": "centella",
+   "ficha": null,
+   "golpe": "sFwd",
+   "variante": null,
+   "nome": "RESORTE",
+   "tipo": "rebote",
+   "nominal": {
+    "S": 8,
+    "A": 0,
+    "R": 0,
+    "dmg": 8,
+    "hs": 22,
+    "bs": 14,
+    "lvl": "mid",
+    "custo": 30,
+    "pow": 0.95
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 184.0412469512195,
+    "fy": 149.62245731707316,
+    "h": 90,
+    "alcanceEstatico": 204.0412469512195
+   },
+   "inicio": 51,
+   "ativos": 21,
+   "recuperacao": 22,
+   "total": 94,
+   "alcance": {
+    "min": 78,
+    "max": 215,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 18.496499999999997,
+   "acertos": 1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 42,
+   "blockstun": 14,
+   "vantagemBloqueio": -14,
+   "raspao": 1.766999999999996,
+   "bloqueioMedido": "mid",
+   "filme": true,
+   "notas": [
+    "RESORTE: início inclui a ida até a corda",
+    "momento no acerto 375 px"
+   ]
+  },
+  {
+   "lutador": "camille",
+   "ficha": null,
+   "golpe": "lp",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 3,
+    "A": 3,
+    "R": 7,
+    "dmg": 4,
+    "hs": 14,
+    "bs": 8,
+    "lvl": "mid",
+    "custo": null,
+    "pow": 0.94
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 117.46038959756098,
+    "fy": 255.30691097560975,
+    "h": 54,
+    "alcanceEstatico": 137.46038959756098
+   },
+   "inicio": 3,
+   "ativos": 3,
+   "recuperacao": 7,
+   "total": 13,
+   "alcance": {
+    "min": 78,
+    "max": 175,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 3.760000000000005,
+   "acertos": 1,
+   "hitstun": 14,
+   "derruba": false,
+   "vantagemAcerto": 4,
+   "blockstun": 8,
+   "vantagemBloqueio": -2,
+   "raspao": 0.45120000000000005,
+   "bloqueioMedido": "mid",
+   "filme": false,
+   "notas": [
+    "erra o boneco agachado (golpe alto)"
+   ]
+  },
+  {
+   "lutador": "camille",
+   "ficha": null,
+   "golpe": "lk",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 5,
+    "A": 4,
+    "R": 9,
+    "dmg": 5,
+    "hs": 16,
+    "bs": 9,
+    "lvl": "mid",
+    "custo": null,
+    "pow": 0.94
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 151.26045432317073,
+    "fy": 229.63005609756098,
+    "h": 70,
+    "alcanceEstatico": 171.26045432317073
+   },
+   "inicio": 5,
+   "ativos": 4,
+   "recuperacao": 9,
+   "total": 18,
+   "alcance": {
+    "min": 78,
+    "max": 209,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 4.700000000000003,
+   "acertos": 1,
+   "hitstun": 16,
+   "derruba": false,
+   "vantagemAcerto": 3,
+   "blockstun": 9,
+   "vantagemBloqueio": -4,
+   "raspao": 0.563999999999993,
+   "bloqueioMedido": "mid",
+   "filme": false,
+   "notas": [
+    "erra o boneco agachado (golpe alto)"
+   ]
+  },
+  {
+   "lutador": "camille",
+   "ficha": null,
+   "golpe": "hp",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 7,
+    "A": 4,
+    "R": 14,
+    "dmg": 9,
+    "hs": 24,
+    "bs": 12,
+    "lvl": "mid",
+    "custo": null,
+    "pow": 0.94
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 155.1463427682927,
+    "fy": 243.17700609756096,
+    "h": 64,
+    "alcanceEstatico": 175.1463427682927
+   },
+   "inicio": 7,
+   "ativos": 4,
+   "recuperacao": 14,
+   "total": 25,
+   "alcance": {
+    "min": 78,
+    "max": 227,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 8.459999999999994,
+   "acertos": 1,
+   "hitstun": 24,
+   "derruba": false,
+   "vantagemAcerto": 6,
+   "blockstun": 12,
+   "vantagemBloqueio": -6,
+   "raspao": 1.015199999999993,
+   "bloqueioMedido": "mid",
+   "filme": false,
+   "notas": [
+    "erra o boneco agachado (golpe alto)"
+   ]
+  },
+  {
+   "lutador": "camille",
+   "ficha": null,
+   "golpe": "hk",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 9,
+    "A": 5,
+    "R": 18,
+    "dmg": 13,
+    "hs": 30,
+    "bs": 14,
+    "lvl": "mid",
+    "custo": null,
+    "pow": 0.94
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 191.85668846341463,
+    "fy": 285.7648243902439,
+    "h": 84,
+    "alcanceEstatico": 211.85668846341463
+   },
+   "inicio": 9,
+   "ativos": 5,
+   "recuperacao": 18,
+   "total": 32,
+   "alcance": {
+    "min": 78,
+    "max": 267,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 12.219999999999999,
+   "acertos": 1,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 48,
+   "blockstun": 14,
+   "vantagemBloqueio": -9,
+   "raspao": 1.466399999999993,
+   "bloqueioMedido": "mid",
+   "filme": false,
+   "notas": [
+    "erra o boneco agachado (golpe alto)"
+   ]
+  },
+  {
+   "lutador": "camille",
+   "ficha": null,
+   "golpe": "clp",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 4,
+    "A": 3,
+    "R": 8,
+    "dmg": 4,
+    "hs": 15,
+    "bs": 8,
+    "lvl": "mid",
+    "custo": null,
+    "pow": 0.94
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 134.9182454878049,
+    "fy": 174.78737317073168,
+    "h": 50,
+    "alcanceEstatico": 154.9182454878049
+   },
+   "inicio": 4,
+   "ativos": 3,
+   "recuperacao": 8,
+   "total": 15,
+   "alcance": {
+    "min": 78,
+    "max": 192,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
+   "dano": 3.760000000000005,
+   "acertos": 1,
+   "hitstun": 15,
+   "derruba": false,
+   "vantagemAcerto": 4,
+   "blockstun": 8,
+   "vantagemBloqueio": -3,
+   "raspao": 0.45120000000000005,
+   "bloqueioMedido": "mid",
+   "filme": false,
+   "notas": []
+  },
+  {
+   "lutador": "camille",
+   "ficha": null,
+   "golpe": "clk",
+   "variante": null,
+   "nome": null,
+   "tipo": null,
+   "nominal": {
+    "S": 6,
+    "A": 3,
+    "R": 10,
+    "dmg": 5,
+    "hs": 15,
+    "bs": 9,
+    "lvl": "low",
+    "custo": null,
+    "pow": 0.94
+   },
+   "caixa": {
+    "fx": 20,
+    "w": 140.65639756097565,
+    "fy": 131.30083658536586,
+    "h": 44,
+    "alcanceEstatico": 160.65639756097565
+   },
+   "inicio": 6,
+   "ativos": 3,
+   "recuperacao": 10,
+   "total": 19,
+   "alcance": {
+    "min": 78,
+    "max": 198,
+    "noTeto": false,
+    "furos": 0
+   },
+   "dRef": 90,
    "dano": 4.700000000000003,
    "acertos": 1,
    "hitstun": 15,
@@ -4235,10 +5118,11 @@
    "vantagemBloqueio": -4,
    "raspao": 0.563999999999993,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
-   "lutador": "centella",
+   "lutador": "camille",
    "ficha": null,
    "golpe": "chp",
    "variante": null,
@@ -4282,10 +5166,11 @@
    "vantagemBloqueio": -9,
    "raspao": 1.1280000000000001,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
-   "lutador": "centella",
+   "lutador": "camille",
    "ficha": null,
    "golpe": "chk",
    "variante": null,
@@ -4304,10 +5189,10 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 172.15096341463413,
-    "fy": 41.81415853658536,
+    "w": 196.7883357317073,
+    "fy": 40.74172804878048,
     "h": 56,
-    "alcanceEstatico": 192.15096341463413
+    "alcanceEstatico": 216.7883357317073
    },
    "inicio": 8,
    "ativos": 6,
@@ -4315,7 +5200,7 @@
    "total": 34,
    "alcance": {
     "min": 78,
-    "max": 230,
+    "max": 254,
     "noTeto": false,
     "furos": 0
    },
@@ -4329,10 +5214,11 @@
    "vantagemBloqueio": -12,
    "raspao": 1.015199999999993,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
-   "lutador": "centella",
+   "lutador": "camille",
    "ficha": null,
    "golpe": "jlp",
    "variante": null,
@@ -4351,18 +5237,18 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 135.8607317073171,
-    "fy": 114.8982256097561,
+    "w": 152.5632006097561,
+    "fy": 71.8209512195122,
     "h": 66,
-    "alcanceEstatico": 155.8607317073171
+    "alcanceEstatico": 172.5632006097561
    },
    "inicio": 2,
-   "ativos": 17,
+   "ativos": 13,
    "recuperacao": 0,
-   "total": 19,
+   "total": 15,
    "alcance": {
     "min": 78,
-    "max": 193,
+    "max": 210,
     "noTeto": false,
     "furos": 0
    },
@@ -4371,17 +5257,18 @@
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
-   "vantagemAcerto": -2,
+   "vantagemAcerto": 2,
    "blockstun": 10,
-   "vantagemBloqueio": -7,
+   "vantagemBloqueio": -3,
    "raspao": 0.563999999999993,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
   },
   {
-   "lutador": "centella",
+   "lutador": "camille",
    "ficha": null,
    "golpe": "jhp",
    "variante": null,
@@ -4400,18 +5287,18 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 143.65376829268294,
-    "fy": 118.8982256097561,
+    "w": 161.19136064024391,
+    "fy": 75.8209512195122,
     "h": 74,
-    "alcanceEstatico": 163.65376829268294
+    "alcanceEstatico": 181.19136064024391
    },
    "inicio": 4,
-   "ativos": 15,
+   "ativos": 11,
    "recuperacao": 0,
-   "total": 19,
+   "total": 15,
    "alcance": {
     "min": 78,
-    "max": 201,
+    "max": 219,
     "noTeto": false,
     "furos": 0
    },
@@ -4420,17 +5307,18 @@
    "acertos": 1,
    "hitstun": 20,
    "derruba": false,
-   "vantagemAcerto": 5,
+   "vantagemAcerto": 9,
    "blockstun": 12,
-   "vantagemBloqueio": -3,
+   "vantagemBloqueio": 1,
    "raspao": 0.9024000000000001,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
   },
   {
-   "lutador": "centella",
+   "lutador": "camille",
    "ficha": null,
    "golpe": "jlk",
    "variante": null,
@@ -4449,18 +5337,18 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 135.8607317073171,
-    "fy": 119.8982256097561,
+    "w": 152.5632006097561,
+    "fy": 76.8209512195122,
     "h": 76,
-    "alcanceEstatico": 155.8607317073171
+    "alcanceEstatico": 172.5632006097561
    },
    "inicio": 3,
-   "ativos": 16,
+   "ativos": 12,
    "recuperacao": 0,
-   "total": 19,
+   "total": 15,
    "alcance": {
     "min": 78,
-    "max": 193,
+    "max": 210,
     "noTeto": false,
     "furos": 0
    },
@@ -4469,17 +5357,18 @@
    "acertos": 1,
    "hitstun": 17,
    "derruba": false,
-   "vantagemAcerto": 1,
+   "vantagemAcerto": 5,
    "blockstun": 11,
-   "vantagemBloqueio": -5,
+   "vantagemBloqueio": -1,
    "raspao": 0.6768000000000001,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
   },
   {
-   "lutador": "centella",
+   "lutador": "camille",
    "ficha": null,
    "golpe": "jhk",
    "variante": null,
@@ -4498,18 +5387,18 @@
    },
    "caixa": {
     "fx": 20,
-    "w": 151.4468048780488,
-    "fy": 124.8982256097561,
+    "w": 169.81952067073175,
+    "fy": 81.8209512195122,
     "h": 86,
-    "alcanceEstatico": 171.4468048780488
+    "alcanceEstatico": 189.81952067073175
    },
    "inicio": 5,
-   "ativos": 14,
+   "ativos": 10,
    "recuperacao": 0,
-   "total": 19,
+   "total": 15,
    "alcance": {
     "min": 78,
-    "max": 209,
+    "max": 227,
     "noTeto": false,
     "furos": 0
    },
@@ -4518,17 +5407,18 @@
    "acertos": 1,
    "hitstun": 22,
    "derruba": false,
-   "vantagemAcerto": 8,
+   "vantagemAcerto": 12,
    "blockstun": 13,
-   "vantagemBloqueio": -1,
+   "vantagemBloqueio": 3,
    "raspao": 1.1280000000000001,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
   },
   {
-   "lutador": "centella",
+   "lutador": "camille",
    "ficha": null,
    "golpe": "throw",
    "variante": null,
@@ -4548,7 +5438,7 @@
    "caixa": {
     "fx": 20,
     "w": 90,
-    "fy": 224.4203963414634,
+    "fy": 241.17700609756096,
     "h": 60,
     "alcanceEstatico": 110
    },
@@ -4572,785 +5462,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
-   "notas": [
-    "agarrão: ativos = janela de teste",
-    "agarrão: não bloqueável"
-   ]
-  },
-  {
-   "lutador": "centella",
-   "ficha": null,
-   "golpe": "sFire",
-   "variante": null,
-   "nome": "PLANCHA",
-   "tipo": "leap",
-   "nominal": {
-    "S": 8,
-    "A": 80,
-    "R": 0,
-    "dmg": 14,
-    "hs": 0,
-    "bs": 14,
-    "lvl": "over",
-    "custo": 25,
-    "pow": 0.94
-   },
-   "caixa": {
-    "fx": 6,
-    "w": 104.31205731707317,
-    "fy": 150,
-    "h": 120,
-    "alcanceEstatico": 110.31205731707317
-   },
-   "inicio": 8,
-   "ativos": 39,
-   "recuperacao": 24,
-   "total": 71,
-   "alcance": {
-    "min": 78,
-    "max": 499,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 13.159999999999997,
-   "acertos": 1,
-   "hitstun": null,
-   "derruba": true,
-   "vantagemAcerto": 8,
-   "blockstun": 14,
-   "vantagemBloqueio": -49,
-   "raspao": 1.5792000000000002,
-   "bloqueioMedido": "over",
-   "notas": [
-    "aéreo: ativos até pousar"
-   ]
-  },
-  {
-   "lutador": "centella",
-   "ficha": null,
-   "golpe": "sDown",
-   "variante": null,
-   "nome": "HURACANRANA",
-   "tipo": "rise",
-   "nominal": {
-    "S": 6,
-    "A": 18,
-    "R": 24,
-    "dmg": 18,
-    "hs": 0,
-    "bs": 0,
-    "lvl": "throw",
-    "custo": 25,
-    "pow": 0.94
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 115.13358536585366,
-    "fy": 103.41179268292683,
-    "h": 90,
-    "alcanceEstatico": 135.13358536585366
-   },
-   "inicio": 6,
-   "ativos": 18,
-   "recuperacao": 24,
-   "total": 48,
-   "alcance": {
-    "min": 78,
-    "max": 151,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 16.92,
-   "acertos": 1,
-   "hitstun": null,
-   "derruba": true,
-   "vantagemAcerto": 14,
-   "blockstun": null,
-   "vantagemBloqueio": null,
-   "raspao": null,
-   "bloqueioMedido": "nenhum",
-   "notas": [
-    "agarrão: ativos = janela de teste",
-    "agarrão: não bloqueável"
-   ]
-  },
-  {
-   "lutador": "centella",
-   "ficha": null,
-   "golpe": "sFwd",
-   "variante": null,
-   "nome": "RESORTE",
-   "tipo": "rebote",
-   "nominal": {
-    "S": 8,
-    "A": 0,
-    "R": 0,
-    "dmg": 8,
-    "hs": 22,
-    "bs": 14,
-    "lvl": "mid",
-    "custo": 30,
-    "pow": 0.94
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 184.0412469512195,
-    "fy": 149.62245731707316,
-    "h": 90,
-    "alcanceEstatico": 204.0412469512195
-   },
-   "inicio": 51,
-   "ativos": 21,
-   "recuperacao": 22,
-   "total": 94,
-   "alcance": {
-    "min": 78,
-    "max": 215,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 14.569999999999993,
-   "acertos": 1,
-   "hitstun": null,
-   "derruba": true,
-   "vantagemAcerto": 43,
-   "blockstun": 14,
-   "vantagemBloqueio": -14,
-   "raspao": 1.7484000000000037,
-   "bloqueioMedido": "mid",
-   "notas": [
-    "RESORTE: início inclui a ida até a corda",
-    "momento no acerto 375 px"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "lp",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 3,
-    "A": 3,
-    "R": 7,
-    "dmg": 4,
-    "hs": 14,
-    "bs": 8,
-    "lvl": "mid",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 117.46038959756098,
-    "fy": 255.30691097560975,
-    "h": 54,
-    "alcanceEstatico": 137.46038959756098
-   },
-   "inicio": 3,
-   "ativos": 3,
-   "recuperacao": 7,
-   "total": 13,
-   "alcance": {
-    "min": 78,
-    "max": 175,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 3.9200000000000017,
-   "acertos": 1,
-   "hitstun": 14,
-   "derruba": false,
-   "vantagemAcerto": 4,
-   "blockstun": 8,
-   "vantagemBloqueio": -2,
-   "raspao": 0.47039999999999793,
-   "bloqueioMedido": "mid",
-   "notas": [
-    "erra o boneco agachado (golpe alto)"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "lk",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 5,
-    "A": 4,
-    "R": 9,
-    "dmg": 5,
-    "hs": 16,
-    "bs": 9,
-    "lvl": "mid",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 151.26045432317073,
-    "fy": 229.63005609756098,
-    "h": 70,
-    "alcanceEstatico": 171.26045432317073
-   },
-   "inicio": 5,
-   "ativos": 4,
-   "recuperacao": 9,
-   "total": 18,
-   "alcance": {
-    "min": 78,
-    "max": 209,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 4.900000000000006,
-   "acertos": 1,
-   "hitstun": 16,
-   "derruba": false,
-   "vantagemAcerto": 3,
-   "blockstun": 9,
-   "vantagemBloqueio": -4,
-   "raspao": 0.5879999999999939,
-   "bloqueioMedido": "mid",
-   "notas": [
-    "erra o boneco agachado (golpe alto)"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "hp",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 7,
-    "A": 4,
-    "R": 14,
-    "dmg": 9,
-    "hs": 24,
-    "bs": 12,
-    "lvl": "mid",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 155.1463427682927,
-    "fy": 243.17700609756096,
-    "h": 64,
-    "alcanceEstatico": 175.1463427682927
-   },
-   "inicio": 7,
-   "ativos": 4,
-   "recuperacao": 14,
-   "total": 25,
-   "alcance": {
-    "min": 78,
-    "max": 227,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 8.819999999999993,
-   "acertos": 1,
-   "hitstun": 24,
-   "derruba": false,
-   "vantagemAcerto": 6,
-   "blockstun": 12,
-   "vantagemBloqueio": -6,
-   "raspao": 1.058400000000006,
-   "bloqueioMedido": "mid",
-   "notas": [
-    "erra o boneco agachado (golpe alto)"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "hk",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 9,
-    "A": 5,
-    "R": 18,
-    "dmg": 13,
-    "hs": 30,
-    "bs": 14,
-    "lvl": "mid",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 191.85668846341463,
-    "fy": 285.7648243902439,
-    "h": 84,
-    "alcanceEstatico": 211.85668846341463
-   },
-   "inicio": 9,
-   "ativos": 5,
-   "recuperacao": 18,
-   "total": 32,
-   "alcance": {
-    "min": 78,
-    "max": 267,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 12.739999999999995,
-   "acertos": 1,
-   "hitstun": null,
-   "derruba": true,
-   "vantagemAcerto": 48,
-   "blockstun": 14,
-   "vantagemBloqueio": -9,
-   "raspao": 1.528800000000004,
-   "bloqueioMedido": "mid",
-   "notas": [
-    "erra o boneco agachado (golpe alto)"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "clp",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 4,
-    "A": 3,
-    "R": 8,
-    "dmg": 4,
-    "hs": 15,
-    "bs": 8,
-    "lvl": "mid",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 134.9182454878049,
-    "fy": 174.78737317073168,
-    "h": 50,
-    "alcanceEstatico": 154.9182454878049
-   },
-   "inicio": 4,
-   "ativos": 3,
-   "recuperacao": 8,
-   "total": 15,
-   "alcance": {
-    "min": 78,
-    "max": 192,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 3.9200000000000017,
-   "acertos": 1,
-   "hitstun": 15,
-   "derruba": false,
-   "vantagemAcerto": 4,
-   "blockstun": 8,
-   "vantagemBloqueio": -3,
-   "raspao": 0.47039999999999793,
-   "bloqueioMedido": "mid",
-   "notas": []
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "clk",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 6,
-    "A": 3,
-    "R": 10,
-    "dmg": 5,
-    "hs": 15,
-    "bs": 9,
-    "lvl": "low",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 140.65639756097565,
-    "fy": 131.30083658536586,
-    "h": 44,
-    "alcanceEstatico": 160.65639756097565
-   },
-   "inicio": 6,
-   "ativos": 3,
-   "recuperacao": 10,
-   "total": 19,
-   "alcance": {
-    "min": 78,
-    "max": 198,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 4.900000000000006,
-   "acertos": 1,
-   "hitstun": 15,
-   "derruba": false,
-   "vantagemAcerto": 2,
-   "blockstun": 9,
-   "vantagemBloqueio": -4,
-   "raspao": 0.5879999999999939,
-   "bloqueioMedido": "low",
-   "notas": []
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "chp",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 6,
-    "A": 4,
-    "R": 17,
-    "dmg": 10,
-    "hs": 0,
-    "bs": 12,
-    "lvl": "mid",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 6,
-    "w": 100,
-    "fy": 155,
-    "h": 125,
-    "alcanceEstatico": 106
-   },
-   "inicio": 6,
-   "ativos": 4,
-   "recuperacao": 17,
-   "total": 27,
-   "alcance": {
-    "min": 78,
-    "max": 143,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 9.799999999999997,
-   "acertos": 1,
-   "hitstun": null,
-   "derruba": true,
-   "vantagemAcerto": 50,
-   "blockstun": 12,
-   "vantagemBloqueio": -9,
-   "raspao": 1.176000000000002,
-   "bloqueioMedido": "mid",
-   "notas": []
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "chk",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 8,
-    "A": 6,
-    "R": 20,
-    "dmg": 9,
-    "hs": 0,
-    "bs": 14,
-    "lvl": "low",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 196.7883357317073,
-    "fy": 40.74172804878048,
-    "h": 56,
-    "alcanceEstatico": 216.7883357317073
-   },
-   "inicio": 8,
-   "ativos": 6,
-   "recuperacao": 20,
-   "total": 34,
-   "alcance": {
-    "min": 78,
-    "max": 254,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 8.819999999999993,
-   "acertos": 1,
-   "hitstun": null,
-   "derruba": true,
-   "vantagemAcerto": 45,
-   "blockstun": 14,
-   "vantagemBloqueio": -12,
-   "raspao": 1.058400000000006,
-   "bloqueioMedido": "low",
-   "notas": []
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "jlp",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 2,
-    "A": 80,
-    "R": 0,
-    "dmg": 5,
-    "hs": 15,
-    "bs": 10,
-    "lvl": "over",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 152.5632006097561,
-    "fy": 71.8209512195122,
-    "h": 66,
-    "alcanceEstatico": 172.5632006097561
-   },
-   "inicio": 2,
-   "ativos": 13,
-   "recuperacao": 0,
-   "total": 15,
-   "alcance": {
-    "min": 78,
-    "max": 210,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 4.900000000000006,
-   "acertos": 1,
-   "hitstun": 15,
-   "derruba": false,
-   "vantagemAcerto": 2,
-   "blockstun": 10,
-   "vantagemBloqueio": -3,
-   "raspao": 0.5879999999999939,
-   "bloqueioMedido": "over",
-   "notas": [
-    "aéreo: ativos até pousar"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "jhp",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 4,
-    "A": 80,
-    "R": 0,
-    "dmg": 8,
-    "hs": 20,
-    "bs": 12,
-    "lvl": "over",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 161.19136064024391,
-    "fy": 75.8209512195122,
-    "h": 74,
-    "alcanceEstatico": 181.19136064024391
-   },
-   "inicio": 4,
-   "ativos": 11,
-   "recuperacao": 0,
-   "total": 15,
-   "alcance": {
-    "min": 78,
-    "max": 219,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 7.840000000000003,
-   "acertos": 1,
-   "hitstun": 20,
-   "derruba": false,
-   "vantagemAcerto": 9,
-   "blockstun": 12,
-   "vantagemBloqueio": 1,
-   "raspao": 0.9407999999999959,
-   "bloqueioMedido": "over",
-   "notas": [
-    "aéreo: ativos até pousar"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "jlk",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 3,
-    "A": 80,
-    "R": 0,
-    "dmg": 6,
-    "hs": 17,
-    "bs": 11,
-    "lvl": "over",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 152.5632006097561,
-    "fy": 76.8209512195122,
-    "h": 76,
-    "alcanceEstatico": 172.5632006097561
-   },
-   "inicio": 3,
-   "ativos": 12,
-   "recuperacao": 0,
-   "total": 15,
-   "alcance": {
-    "min": 78,
-    "max": 210,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 5.8799999999999955,
-   "acertos": 1,
-   "hitstun": 17,
-   "derruba": false,
-   "vantagemAcerto": 5,
-   "blockstun": 11,
-   "vantagemBloqueio": -1,
-   "raspao": 0.705600000000004,
-   "bloqueioMedido": "over",
-   "notas": [
-    "aéreo: ativos até pousar"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "jhk",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 5,
-    "A": 80,
-    "R": 0,
-    "dmg": 10,
-    "hs": 22,
-    "bs": 13,
-    "lvl": "over",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 169.81952067073175,
-    "fy": 81.8209512195122,
-    "h": 86,
-    "alcanceEstatico": 189.81952067073175
-   },
-   "inicio": 5,
-   "ativos": 10,
-   "recuperacao": 0,
-   "total": 15,
-   "alcance": {
-    "min": 78,
-    "max": 227,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 9.799999999999997,
-   "acertos": 1,
-   "hitstun": 22,
-   "derruba": false,
-   "vantagemAcerto": 12,
-   "blockstun": 13,
-   "vantagemBloqueio": 3,
-   "raspao": 1.176000000000002,
-   "bloqueioMedido": "over",
-   "notas": [
-    "aéreo: ativos até pousar"
-   ]
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
-   "golpe": "throw",
-   "variante": null,
-   "nome": null,
-   "tipo": null,
-   "nominal": {
-    "S": 3,
-    "A": 3,
-    "R": 22,
-    "dmg": 12,
-    "hs": 0,
-    "bs": 0,
-    "lvl": "throw",
-    "custo": null,
-    "pow": 0.98
-   },
-   "caixa": {
-    "fx": 20,
-    "w": 90,
-    "fy": 241.17700609756096,
-    "h": 60,
-    "alcanceEstatico": 110
-   },
-   "inicio": 3,
-   "ativos": 1,
-   "recuperacao": 24,
-   "total": 28,
-   "alcance": {
-    "min": 78,
-    "max": 107,
-    "noTeto": false,
-    "furos": 0
-   },
-   "dRef": 90,
-   "dano": 11.760000000000005,
-   "acertos": 1,
-   "hitstun": null,
-   "derruba": true,
-   "vantagemAcerto": 52,
-   "blockstun": null,
-   "vantagemBloqueio": null,
-   "raspao": null,
-   "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -5372,7 +5484,7 @@
     "bs": null,
     "lvl": "mid",
     "custo": 25,
-    "pow": 0.98
+    "pow": 0.94
    },
    "caixa": {
     "fx": 20,
@@ -5396,6 +5508,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": null,
+   "filme": false,
    "notas": [
     "PARADE: ativos = janela de aparar",
     "sem acerto (efeito de defesa/postura)"
@@ -5417,7 +5530,7 @@
     "bs": 12,
     "lvl": "low",
     "custo": 20,
-    "pow": 0.98
+    "pow": 0.94
    },
    "caixa": {
     "fx": 20,
@@ -5437,15 +5550,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 8.819999999999993,
+   "dano": 13.498400000000004,
    "acertos": 1,
-   "hitstun": 20,
-   "derruba": false,
-   "vantagemAcerto": 0,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 12,
    "vantagemBloqueio": -8,
-   "raspao": 1.058400000000006,
+   "raspao": 1.015199999999993,
    "bloqueioMedido": "low",
+   "filme": true,
    "notas": []
   },
   {
@@ -5464,7 +5578,7 @@
     "bs": 14,
     "lvl": "mid",
     "custo": 30,
-    "pow": 0.98
+    "pow": 0.94
    },
    "caixa": {
     "fx": 20,
@@ -5484,15 +5598,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 12.739999999999995,
+   "dano": 15.998800000000003,
    "acertos": 1,
-   "hitstun": 24,
-   "derruba": false,
-   "vantagemAcerto": -4,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 14,
    "vantagemBloqueio": -14,
-   "raspao": 1.528800000000004,
+   "raspao": 1.466399999999993,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -5513,7 +5628,7 @@
     "bs": 14,
     "lvl": "mid",
     "custo": null,
-    "pow": 0.98
+    "pow": 0.94
    },
    "caixa": {
     "fx": 6,
@@ -5533,15 +5648,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 11.760000000000005,
+   "dano": 15.002399999999994,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 50,
+   "vantagemAcerto": 42,
    "blockstun": 14,
    "vantagemBloqueio": -7,
-   "raspao": 1.4111999999999938,
+   "raspao": 1.3536000000000001,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": []
   },
   {
@@ -5560,7 +5676,7 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5580,15 +5696,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.719999999999999,
+   "dano": 4.599999999999994,
    "acertos": 1,
    "hitstun": 14,
    "derruba": false,
    "vantagemAcerto": 4,
    "blockstun": 8,
    "vantagemBloqueio": -2,
-   "raspao": 0.5664000000000016,
+   "raspao": 0.5520000000000067,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -5609,7 +5726,7 @@
     "bs": 9,
     "lvl": "mid",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5629,15 +5746,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 5.900000000000006,
+   "dano": 5.75,
    "acertos": 1,
    "hitstun": 16,
    "derruba": false,
    "vantagemAcerto": 3,
    "blockstun": 9,
    "vantagemBloqueio": -4,
-   "raspao": 0.7079999999999984,
+   "raspao": 0.6899999999999977,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -5658,7 +5776,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5678,15 +5796,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 12.980000000000004,
+   "dano": 12.650000000000006,
    "acertos": 1,
    "hitstun": 24,
    "derruba": false,
    "vantagemAcerto": 6,
    "blockstun": 12,
    "vantagemBloqueio": -6,
-   "raspao": 1.5575999999999937,
+   "raspao": 1.5180000000000007,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -5707,7 +5826,7 @@
     "bs": 14,
     "lvl": "mid",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5727,15 +5846,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 17.700000000000003,
+   "dano": 17.25,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 48,
    "blockstun": 14,
    "vantagemBloqueio": -9,
-   "raspao": 2.1239999999999952,
+   "raspao": 2.069999999999993,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -5756,7 +5876,7 @@
     "bs": 8,
     "lvl": "mid",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5776,15 +5896,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 4.719999999999999,
+   "dano": 4.599999999999994,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 4,
    "blockstun": 8,
    "vantagemBloqueio": -3,
-   "raspao": 0.5664000000000016,
+   "raspao": 0.5520000000000067,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -5803,7 +5924,7 @@
     "bs": 9,
     "lvl": "low",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5823,15 +5944,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 5.900000000000006,
+   "dano": 5.75,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 2,
    "blockstun": 9,
    "vantagemBloqueio": -4,
-   "raspao": 0.7079999999999984,
+   "raspao": 0.6899999999999977,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -5850,7 +5972,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 6,
@@ -5870,15 +5992,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 11.799999999999997,
+   "dano": 11.5,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 50,
    "blockstun": 12,
    "vantagemBloqueio": -9,
-   "raspao": 1.4159999999999968,
+   "raspao": 1.3799999999999955,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -5897,7 +6020,7 @@
     "bs": 14,
     "lvl": "low",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5917,15 +6040,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 10.620000000000005,
+   "dano": 10.349999999999994,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
    "vantagemAcerto": 45,
    "blockstun": 14,
    "vantagemBloqueio": -12,
-   "raspao": 1.2744,
+   "raspao": 1.2420000000000044,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -5944,7 +6068,7 @@
     "bs": 10,
     "lvl": "over",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -5964,15 +6088,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 5.900000000000006,
+   "dano": 5.75,
    "acertos": 1,
    "hitstun": 15,
    "derruba": false,
    "vantagemAcerto": 3,
    "blockstun": 10,
    "vantagemBloqueio": -2,
-   "raspao": 0.7079999999999984,
+   "raspao": 0.6899999999999977,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -5993,7 +6118,7 @@
     "bs": 12,
     "lvl": "over",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -6013,15 +6138,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 9.439999999999998,
+   "dano": 9.200000000000003,
    "acertos": 1,
    "hitstun": 20,
    "derruba": false,
    "vantagemAcerto": 7,
    "blockstun": 12,
    "vantagemBloqueio": -1,
-   "raspao": 1.1328000000000031,
+   "raspao": 1.1039999999999992,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -6042,7 +6168,7 @@
     "bs": 11,
     "lvl": "over",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -6062,15 +6188,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 7.079999999999998,
+   "dano": 6.900000000000006,
    "acertos": 1,
    "hitstun": 17,
    "derruba": false,
    "vantagemAcerto": 4,
    "blockstun": 11,
    "vantagemBloqueio": -2,
-   "raspao": 0.8495999999999952,
+   "raspao": 0.828000000000003,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -6091,7 +6218,7 @@
     "bs": 13,
     "lvl": "over",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -6111,15 +6238,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 11.799999999999997,
+   "dano": 11.5,
    "acertos": 1,
    "hitstun": 22,
    "derruba": false,
    "vantagemAcerto": 10,
    "blockstun": 13,
    "vantagemBloqueio": 1,
-   "raspao": 1.4159999999999968,
+   "raspao": 1.3799999999999955,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -6140,7 +6268,7 @@
     "bs": 0,
     "lvl": "throw",
     "custo": null,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -6160,7 +6288,7 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 14.159999999999997,
+   "dano": 13.799999999999997,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
@@ -6169,6 +6297,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -6190,7 +6319,7 @@
     "bs": 12,
     "lvl": "mid",
     "custo": 20,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -6210,15 +6339,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 7.079999999999998,
+   "dano": 18.99799999999999,
    "acertos": 1,
-   "hitstun": 46,
-   "derruba": false,
-   "vantagemAcerto": 22,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 12,
    "vantagemBloqueio": -12,
-   "raspao": 0.8495999999999952,
+   "raspao": 0.828000000000003,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -6239,7 +6369,7 @@
     "bs": null,
     "lvl": "mid",
     "custo": 0,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -6263,6 +6393,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": null,
+   "filme": false,
    "notas": [
     "troca de ficha em mt = S",
     "sem acerto (efeito de defesa/postura)"
@@ -6284,7 +6415,7 @@
     "bs": 14,
     "lvl": "mid",
     "custo": 25,
-    "pow": 1.18
+    "pow": 1.15
    },
    "caixa": {
     "fx": 20,
@@ -6304,15 +6435,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 14.159999999999997,
+   "dano": 18.99799999999999,
    "acertos": 1,
-   "hitstun": 22,
-   "derruba": false,
-   "vantagemAcerto": -12,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 14,
    "vantagemBloqueio": -20,
-   "raspao": 1.6992000000000047,
+   "raspao": 1.656000000000006,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -6362,6 +6494,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.43200000000000216,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -6411,6 +6544,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5400000000000063,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -6460,6 +6594,7 @@
    "vantagemBloqueio": -6,
    "raspao": 0.7560000000000002,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -6509,6 +6644,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -6558,6 +6694,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.43200000000000216,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -6605,6 +6742,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5400000000000063,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -6652,6 +6790,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -6699,6 +6838,7 @@
    "vantagemBloqueio": -12,
    "raspao": 0.9719999999999942,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -6746,6 +6886,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.5400000000000063,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -6795,6 +6936,7 @@
    "vantagemBloqueio": -1,
    "raspao": 0.8640000000000043,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -6844,6 +6986,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.6479999999999961,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -6893,6 +7036,7 @@
    "vantagemBloqueio": 1,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -6942,6 +7086,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -6983,15 +7128,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 7.200000000000003,
+   "dano": 9.998999999999995,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 39,
+   "vantagemAcerto": 41,
    "blockstun": 12,
    "vantagemBloqueio": -20,
    "raspao": 0.8640000000000043,
    "bloqueioMedido": "low",
+   "filme": true,
    "notas": []
   },
   {
@@ -7034,6 +7180,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": null,
+   "filme": false,
    "notas": [
     "troca de ficha em mt = S",
     "sem acerto (efeito de defesa/postura)"
@@ -7075,15 +7222,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 12.599999999999994,
+   "dano": 16.00200000000001,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 18,
+   "vantagemAcerto": 20,
    "blockstun": 16,
    "vantagemBloqueio": -37,
    "raspao": 1.5120000000000005,
    "bloqueioMedido": "over",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -7133,6 +7281,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.43200000000000216,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -7182,6 +7331,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5400000000000063,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -7231,6 +7381,7 @@
    "vantagemBloqueio": -6,
    "raspao": 1.1880000000000024,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -7280,6 +7431,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.6200000000000045,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -7329,6 +7481,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.43200000000000216,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -7378,6 +7531,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5400000000000063,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -7425,6 +7579,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.2960000000000065,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -7472,6 +7627,7 @@
    "vantagemBloqueio": -12,
    "raspao": 1.1880000000000024,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -7519,6 +7675,7 @@
    "vantagemBloqueio": 0,
    "raspao": 0.5400000000000063,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -7568,6 +7725,7 @@
    "vantagemBloqueio": 4,
    "raspao": 0.8640000000000043,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -7617,6 +7775,7 @@
    "vantagemBloqueio": 2,
    "raspao": 0.6479999999999961,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -7666,6 +7825,7 @@
    "vantagemBloqueio": 6,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -7715,6 +7875,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -7756,15 +7917,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 19.799999999999997,
+   "dano": 25.00200000000001,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 38,
+   "vantagemAcerto": 39,
    "blockstun": null,
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": true,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -7806,15 +7968,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 12.599999999999994,
+   "dano": 16.00200000000001,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 44,
+   "vantagemAcerto": 42,
    "blockstun": 14,
    "vantagemBloqueio": -13,
    "raspao": 1.5120000000000005,
    "bloqueioMedido": "low",
+   "filme": true,
    "notas": []
   },
   {
@@ -7853,15 +8016,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 9,
+   "dano": 15.003,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 6,
+   "vantagemAcerto": 18,
    "blockstun": 16,
    "vantagemBloqueio": -49,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "over",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar",
     "conecta até o teto da varredura (780)"
@@ -7912,6 +8076,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.480000000000004,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -7961,6 +8126,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8010,6 +8176,7 @@
    "vantagemBloqueio": -6,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8059,6 +8226,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.5600000000000023,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8108,6 +8276,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.480000000000004,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -8155,6 +8324,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -8202,6 +8372,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -8249,6 +8420,7 @@
    "vantagemBloqueio": -12,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -8296,6 +8468,7 @@
    "vantagemBloqueio": 1,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -8345,6 +8518,7 @@
    "vantagemBloqueio": 5,
    "raspao": 0.9599999999999937,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -8394,6 +8568,7 @@
    "vantagemBloqueio": 3,
    "raspao": 0.7199999999999989,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -8443,6 +8618,7 @@
    "vantagemBloqueio": 7,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -8492,6 +8668,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -8527,15 +8704,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 14,
+   "dano": 16,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 46,
+   "vantagemAcerto": 25,
    "blockstun": 17,
    "vantagemBloqueio": -8,
    "raspao": 1.6800000000000068,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "projétil: início = tick do 1º tiro",
     "conecta até o teto da varredura (780)"
@@ -8577,15 +8755,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 15,
+   "dano": 19,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 25,
+   "vantagemAcerto": 27,
    "blockstun": 14,
    "vantagemBloqueio": -32,
    "raspao": 1.7999999999999972,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -8626,15 +8805,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 10,
+   "dano": 14.5,
    "acertos": 1,
-   "hitstun": 26,
-   "derruba": false,
-   "vantagemAcerto": -8,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 12,
    "vantagemBloqueio": -22,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8684,6 +8864,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.480000000000004,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8733,6 +8914,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8782,6 +8964,7 @@
    "vantagemBloqueio": -6,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8831,6 +9014,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.5600000000000023,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -8880,6 +9064,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.480000000000004,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -8927,6 +9112,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -8974,6 +9160,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -9021,6 +9208,7 @@
    "vantagemBloqueio": -12,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -9068,6 +9256,7 @@
    "vantagemBloqueio": 1,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9117,6 +9306,7 @@
    "vantagemBloqueio": 5,
    "raspao": 0.9599999999999937,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9166,6 +9356,7 @@
    "vantagemBloqueio": 3,
    "raspao": 0.7199999999999989,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9215,6 +9406,7 @@
    "vantagemBloqueio": 7,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9264,6 +9456,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -9299,15 +9492,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 14,
+   "dano": 16,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 46,
+   "vantagemAcerto": 25,
    "blockstun": 17,
    "vantagemBloqueio": -8,
    "raspao": 1.6800000000000068,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "projétil: início = tick do 1º tiro",
     "conecta até o teto da varredura (780)"
@@ -9349,15 +9543,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 15,
+   "dano": 19,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 25,
+   "vantagemAcerto": 27,
    "blockstun": 14,
    "vantagemBloqueio": -32,
    "raspao": 1.7999999999999972,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9398,15 +9593,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 10,
+   "dano": 14.5,
    "acertos": 1,
-   "hitstun": 26,
-   "derruba": false,
-   "vantagemAcerto": -8,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 12,
    "vantagemBloqueio": -22,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -9456,6 +9652,7 @@
    "vantagemBloqueio": -2,
    "raspao": 0.480000000000004,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -9505,6 +9702,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -9554,6 +9752,7 @@
    "vantagemBloqueio": -6,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -9603,6 +9802,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.5600000000000023,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": [
     "erra o boneco agachado (golpe alto)"
    ]
@@ -9652,6 +9852,7 @@
    "vantagemBloqueio": -3,
    "raspao": 0.480000000000004,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -9699,6 +9900,7 @@
    "vantagemBloqueio": -4,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -9746,6 +9948,7 @@
    "vantagemBloqueio": -9,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "mid",
+   "filme": false,
    "notas": []
   },
   {
@@ -9793,6 +9996,7 @@
    "vantagemBloqueio": -12,
    "raspao": 1.0799999999999983,
    "bloqueioMedido": "low",
+   "filme": false,
    "notas": []
   },
   {
@@ -9840,6 +10044,7 @@
    "vantagemBloqueio": 1,
    "raspao": 0.5999999999999943,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9889,6 +10094,7 @@
    "vantagemBloqueio": 5,
    "raspao": 0.9599999999999937,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9938,6 +10144,7 @@
    "vantagemBloqueio": 3,
    "raspao": 0.7199999999999989,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -9987,6 +10194,7 @@
    "vantagemBloqueio": 7,
    "raspao": 1.2000000000000028,
    "bloqueioMedido": "over",
+   "filme": false,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -10036,6 +10244,7 @@
    "vantagemBloqueio": null,
    "raspao": null,
    "bloqueioMedido": "nenhum",
+   "filme": false,
    "notas": [
     "agarrão: ativos = janela de teste",
     "agarrão: não bloqueável"
@@ -10071,15 +10280,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 16,
+   "dano": 18.5,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 46,
+   "vantagemAcerto": 25,
    "blockstun": 17,
    "vantagemBloqueio": -8,
    "raspao": 1.9200000000000017,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "projétil: início = tick do 1º tiro",
     "conecta até o teto da varredura (780)"
@@ -10121,15 +10331,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 15,
+   "dano": 19,
    "acertos": 1,
    "hitstun": null,
    "derruba": true,
-   "vantagemAcerto": 25,
+   "vantagemAcerto": 27,
    "blockstun": 14,
    "vantagemBloqueio": -32,
    "raspao": 1.7999999999999972,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": [
     "aéreo: ativos até pousar"
    ]
@@ -10170,15 +10381,16 @@
     "furos": 0
    },
    "dRef": 90,
-   "dano": 14,
+   "dano": 17.5,
    "acertos": 1,
-   "hitstun": 24,
-   "derruba": false,
-   "vantagemAcerto": -12,
+   "hitstun": null,
+   "derruba": true,
+   "vantagemAcerto": 18,
    "blockstun": 14,
    "vantagemBloqueio": -22,
    "raspao": 1.6800000000000068,
    "bloqueioMedido": "mid",
+   "filme": true,
    "notas": []
   }
  ]

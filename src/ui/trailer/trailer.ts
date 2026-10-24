@@ -7,6 +7,10 @@ import type { IdPlano, Plano } from '../../data/trailer/tipos';
 import { aplicarCamera } from '../../render/camera';
 import { APRESENTACAO, comPose, leituraApresentada } from '../../render/apresentacao-lutadores';
 import { Cinematica } from '../../render/cinematica';
+import { alturaDoLutador, FilmeDoEspecial } from '../../render/filme';
+import { identidadeDe, somDoAcerto } from '../../render/identidade-especiais';
+import { roteiroDoFilme } from '../../data/roteiros-filme';
+import type { FilmeNoTrailer } from '../../trailer/filme';
 import { CampoDePetalas, Efeitos } from '../../render/efeitos';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro } from '../../render/entrada-chefe';
 import { desenharLutador, chDaFicha } from '../../render/lutador';
@@ -129,6 +133,11 @@ export class TrailerEmCena implements ControladorDoTrailer {
   private efeitos = new Efeitos(criarRng(ROTEIRO.sementeVisual));
   private petalas = new CampoDePetalas(criarRng(ROTEIRO.sementeVisual + 1), 'luta');
   private cine: Cinematica;
+  /** O FILME do especial (D-V6): o motor do plano fica parado pelos ticks dele (o ritmo do diretor), e a cena o toca por cima do mundo. */
+  private filme: FilmeDoEspecial;
+  /** Eventos do tick do contato que esperam o filme: o pó da queda (na batida da queda) e o resto (KO, fim de round...) para o fim. */
+  private adiadosNaQueda: EventoLuta[] = [];
+  private adiadosNoFim: EventoLuta[] = [];
   private entrada: EntradaDoChefe;
   private readonly camada = new CamadaDeContraluz();
   private readonly titulos = new CacheDeTitulos();
@@ -141,6 +150,27 @@ export class TrailerEmCena implements ControladorDoTrailer {
       aoSom: (momento, id) => {
         if (momento === 'abertura' && identidadeAtiva()) return;
         tocarReceita(sintetizador(), momento === 'abertura' ? id.abertura : id.batida);
+      },
+    });
+    this.filme = new FilmeDoEspecial({
+      rng: criarRng(ROTEIRO.sementeVisual + 3),
+      aoSom: (som, atacante, nivel) => {
+        const f = this.q?.luta?.fighters[atacante];
+        if (!f) return;
+        const base = somDoAcerto(f.id, f.ficha ?? null);
+        if (som === 'leve') tocarReceita(sintetizador(), base.slice(0, 1), { vol: 0.7 });
+        else tocarReceita(sintetizador(), base);
+        if (som === 'final' || nivel >= 3) tocarReceita(sintetizador(), [{ k: 'T', tipo: 'sine', f0: 70, t: 0.4, vol: 0.7 }]);
+      },
+      aoImpacto: ({ x, y, cor, grande, contragolpe }) => {
+        this.efeitos.faiscas(x, y, cor, grande ? 24 : 14);
+        this.efeitos.estrela(x, y, cor, grande);
+        if (contragolpe) this.efeitos.textoFlutuante(x, y - 40, 'COUNTER!', '#ff9a3a', 24);
+      },
+      aoQueda: () => {
+        const lista = this.adiadosNaQueda;
+        this.adiadosNaQueda = [];
+        this.reagirAosEventos(lista, true);
       },
     });
     this.entrada = new EntradaDoChefe({
@@ -411,30 +441,38 @@ export class TrailerEmCena implements ControladorDoTrailer {
   /** Os efeitos e sons de UM tick do trailer (todos os ticks do salto passam por aqui; só o último é desenhado). */
   private processar(q: QuadroDoTrailer, comSom: boolean): void {
     this.q = q;
-    const { audio } = this.ui.c;
     if (q.plano.id !== this.planoVisto) {
       this.planoVisto = q.plano.id;
       this.efeitos.limpar();
       this.ultimoTickDoJogo = -1;
       this.cine.zerarLuta();
       this.entrada.zerar();
+      this.filme.zerar();
+      this.adiadosNaQueda = [];
+      this.adiadosNoFim = [];
     }
     const luta = q.luta;
     if (luta && q.motorAndou) {
-      if (comSom && q.eventos.length > 0) reagirDoJogo(audio, luta, q.eventos);
-      for (const ev of q.eventos) {
-        this.efeitos.reagir(
-          ev,
-          (i) => luta.fighters[i],
-          (i) => this.corDoLutador(luta, i),
-        );
-      }
+      // Tick com FILME: o acerto que o abriu e os sons/efeitos dele são do filme (por batida); KO, fim de round e o pó da queda esperam (como na cena da luta)
+      const eventos = q.filme ? this.separarParaOFilme(q.eventos) : q.eventos;
+      this.reagirAosEventos(eventos, comSom);
       this.petalas.avancar(luta.t);
       if (luta.tick !== this.ultimoTickDoJogo) {
         this.ultimoTickDoJogo = luta.tick;
         this.efeitos.avancar();
       }
+    } else if (luta && this.filme.ativo) {
+      // o motor está parado pelo filme: os efeitos dele andam, o filme avança, e quando fecha o que esperou acontece
+      this.filme.avancar();
+      this.efeitos.avancar();
+      if (!this.filme.ativo) {
+        const lista = [...this.adiadosNaQueda, ...this.adiadosNoFim];
+        this.adiadosNaQueda = [];
+        this.adiadosNoFim = [];
+        this.reagirAosEventos(lista, comSom);
+      }
     }
+    if (q.filme && luta) this.iniciarFilme(q.filme, luta);
     // a tarja do especial (só nas batidas marcadas): começa neste tick e anda nos seguintes, em que o motor está congelado
     if (q.cine) {
       this.cine.iniciar(this.eventoDaCine(q.cine.ev, luta), q.cine.modo);
@@ -445,6 +483,51 @@ export class TrailerEmCena implements ControladorDoTrailer {
       if (arc.tickDaEntrada === 0) this.iniciarEntrada();
       else this.entrada.avancar();
     }
+  }
+
+  /** Som e efeitos de uma lista de eventos do motor. */
+  private reagirAosEventos(eventos: readonly EventoLuta[], comSom: boolean): void {
+    const luta = this.q?.luta;
+    if (!luta) return;
+    if (comSom && eventos.length > 0) reagirDoJogo(this.ui.c.audio, luta, eventos);
+    for (const ev of eventos) {
+      this.efeitos.reagir(
+        ev,
+        (i) => luta.fighters[i],
+        (i) => this.corDoLutador(luta, i),
+      );
+    }
+  }
+
+  /** Dos eventos de um tick com filme: devolve os que acontecem JÁ; o acerto do filme e o evento `filme` somem (são do filme), a queda e o fim esperam. */
+  private separarParaOFilme(eventos: readonly EventoLuta[]): EventoLuta[] {
+    const agora: EventoLuta[] = [];
+    this.adiadosNaQueda = [];
+    this.adiadosNoFim = [];
+    for (const ev of eventos) {
+      if (ev.tipo === 'filme') continue;
+      if ((ev.tipo === 'hit' || ev.tipo === 'throw') && ev.filme === true) continue;
+      if (ev.tipo === 'dust') this.adiadosNaQueda.push(ev);
+      else if (ev.tipo === 'ko' || ev.tipo === 'round' || ev.tipo === 'perfect' || ev.tipo === 'fase-chefe') this.adiadosNoFim.push(ev);
+      else agora.push(ev);
+    }
+    return agora;
+  }
+
+  /** Abre o filme de um evento `filme` do motor (D-V6). A luta já está no estado final do golpe; o motor fica parado pelos ticks do filme (ritmo do diretor). */
+  private iniciarFilme(f: FilmeNoTrailer, luta: LeituraLuta): void {
+    const ev = f.ev;
+    const fa = luta.fighters[ev.atacante];
+    const ch = chDaFicha(this.ui.m.elenco[fa.id].ch, ev.ficha);
+    this.filme.iniciar({
+      ev,
+      roteiro: roteiroDoFilme(fa.id, ev.ficha, ev.golpe, ev.projetil),
+      modo: f.modo,
+      rivalAntes: f.rivalAntes,
+      cor: identidadeDe(fa.id, ev.ficha, ev.golpe)?.paleta.brilho ?? ch.fire[0],
+      alturaDoAtacante: alturaDoLutador(ch),
+      cameraInicial: { x: luta.cam.x, z: luta.cam.z },
+    });
   }
 
   private corDoLutador(luta: LeituraLuta, i: 0 | 1): string {
@@ -599,15 +682,18 @@ export class TrailerEmCena implements ControladorDoTrailer {
     }
     // o tremor sai de uma semente por tick (constante do roteiro): o mesmo quadro em toda visita, qualquer que seja a taxa de quadros
     const rngDoTick = criarRng((ROTEIRO.sementeVisual + (q.tick + 1) * 2654435761) | 0);
-    desenharMundo(ctx, luta, m.rec, this.efeitos, this.petalas, rngDoTick, {
+    // FILME do especial: o mundo vem da leitura do roteiro (trajetória, poses e câmera do filme); o zoom de apresentação do trailer se aposenta enquanto ele toca
+    const vistaDoFilme = this.filme.ativo ? this.filme.vista(luta, m.elenco) : null;
+    desenharMundo(ctx, vistaDoFilme ?? luta, m.rec, this.efeitos, this.petalas, rngDoTick, {
       hud: false,
       overlay: false,
       tremor: bloqueado ? false : this.ui.c.persist.settings.shake,
-      zoom: q.zoom,
+      zoom: vistaDoFilme ? { fator: 1, x: LARGURA / 2 } : q.zoom,
       ...(arc ? { acesos: arc.acesos, poses } : {}),
     });
     if (bloqueado) this.desenharZenonEmContraluz(q, luta, poses[1]);
-    if (this.cine.ativa) {
+    if (vistaDoFilme) this.filme.desenhar(ctx, vistaDoFilme, m.elenco);
+    else if (this.cine.ativa) {
       // a tarja por cima do mundo; o destaque do atacante usa a câmera da luta, então entra sob o MESMO zoom de apresentação
       ctx.save();
       if (q.zoom.fator !== 1) {
@@ -739,6 +825,8 @@ export class TrailerEmCena implements ControladorDoTrailer {
       tick: this.estatico ? this.tickEstatico : (this.d?.tickAtual ?? 0),
       plano: this.q?.plano.id ?? null,
       reserva: this.q?.reserva ?? false,
+      /** O filme do especial está tocando agora (D-V6)? */
+      filmeAtivo: this.filme.ativo,
       planosEmReserva: this.d?.planosEmReserva() ?? [],
       jogosVivos: this.d?.jogosVivos ?? 0,
       residentes: naoFixos,

@@ -1,0 +1,26 @@
+{
+ "versaoDados": "0a39396db39d",
+ "geradoEm": "2026-10-24",
+ "portoes": {
+  "medidas": [
+   {
+    "nivel": 1,
+    "lutas": 9000,
+    "ticksPorRound": 2139.1878536737513,
+    "fatiaEspecial": 0.38063479937012085,
+    "paradoFracao": 0.28408604052927283,
+    "especiaisPorLuta": 31.571555555555555,
+    "filmesPorLuta": 0
+   },
+   {
+    "nivel": 2,
+    "lutas": 9000,
+    "ticksPorRound": 3032.596176078257,
+    "fatiaEspecial": 0.37792213697585997,
+    "paradoFracao": 0.2755230085769724,
+    "especiaisPorLuta": 43.49888888888889,
+    "filmesPorLuta": 0
+   }
+  ]
+ }
+}

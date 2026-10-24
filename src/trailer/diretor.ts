@@ -21,6 +21,7 @@ import {
 import type { Game } from '../fight/game';
 import { pedidosNoPlano, planoDeCarga, type PedidoDeCarga } from './carga';
 import { impressaoDoEstado } from './impressao';
+import { MODO_DO_FILME_NO_TRAILER, ticksDoFilmeNoTrailer, type FilmeNoTrailer, type RivalAntes } from './filme';
 import { criarPartida, FONTE_VAZIA } from './partida';
 import { passoDoPlano, RitmoDoPlano, type EsperadaDoRitmo } from './ritmo';
 
@@ -70,6 +71,8 @@ export interface QuadroDoTrailer {
   readonly titulos: readonly TituloVisivel[];
   /** A tarja da cinemática COMEÇA neste tick (o evento `special`). O motor fica congelado pelos ticks seguintes. */
   readonly cine: { readonly ev: EventoLuta; readonly modo: 'curta' | 'completa' } | null;
+  /** O FILME do especial COMEÇA neste tick (o update do contato; D-V6). O motor fica congelado pelos ticks do filme (`ticksDoFilmeNoTrailer`), como na tarja. */
+  readonly filme: FilmeNoTrailer | null;
   /** P9: braseiros acesos (0 a 6), poses impostas e a entrada curta do chefão (`tickDaEntrada` 0..59). */
   readonly arconte?: { readonly acesos: number; readonly poses: Readonly<Partial<Record<0 | 1, string>>>; readonly entrada: boolean; readonly tickDaEntrada: number };
   /** P0: pose do HAYATO e intensidade do raio (0..1). */
@@ -250,12 +253,14 @@ export class DiretorDoTrailer {
     const eventos: EventoLuta[] = [];
     let q = this.ultimo as QuadroDoTrailer;
     let cine: QuadroDoTrailer['cine'] = null;
+    let filme: QuadroDoTrailer['filme'] = null;
     while (this.tick <= alvo) {
       q = this.avancar();
       eventos.push(...q.eventos);
       if (q.cine) cine = q.cine;
+      if (q.filme) filme = q.filme;
     }
-    return { ...q, eventos, cine: q.cine ?? cine };
+    return { ...q, eventos, cine: q.cine ?? cine, filme: q.filme ?? filme };
   }
 
   private produzir(tick: number): QuadroDoTrailer {
@@ -276,20 +281,25 @@ export class DiretorDoTrailer {
     };
     const camera = 'camera' in plano ? cameraNoTick(plano.camera, tau) : { zoom: 1, foco: 'meio' as const };
 
-    if (!temMotor(plano)) return { ...base, ...this.quadroSemMotor(plano, tau, tick), luta: null, eventos: [], motorAndou: false, lenta: 1, zoom: { fator: camera.zoom, x: LARGURA / 2 }, cine: null, reserva: false };
+    if (!temMotor(plano)) return { ...base, ...this.quadroSemMotor(plano, tau, tick), luta: null, eventos: [], motorAndou: false, lenta: 1, zoom: { fator: camera.zoom, x: LARGURA / 2 }, cine: null, filme: null, reserva: false };
 
     // --- plano com motor ---
     if (tau === 0) this.entrarNoPlano(plano);
     const reserva = this.reservas.has(plano.id);
     const vivo = reserva ? undefined : this.vivos.get(plano.id);
     if (reserva || !vivo) {
-      return { ...base, luta: null, eventos: [], motorAndou: false, lenta: 1, zoom: { fator: camera.zoom, x: LARGURA / 2 }, cine: null, reserva: true, ...(plano.tipo === 'arconte' ? { arconte: this.arconteDe(tau) } : {}) };
+      return { ...base, luta: null, eventos: [], motorAndou: false, lenta: 1, zoom: { fator: camera.zoom, x: LARGURA / 2 }, cine: null, filme: null, reserva: true, ...(plano.tipo === 'arconte' ? { arconte: this.arconteDe(tau) } : {}) };
     }
     const ritmo = this.ritmo as RitmoDoPlano;
+    // o rival no tick ANTERIOR ao update (a barra do filme parte daqui)
+    let antes: readonly RivalAntes[] = [];
     const passo = passoDoPlano(ritmo, tau, vivo.u, () => {
+      antes = vivo.game.fighters.map((f) => ({ hp: f.hp, hpShown: f.hpShown, barras: f.barras }));
       vivo.game.update(FONTE_VAZIA);
       return vivo.game.events.slice();
     });
+    const filmeDoTick = passo.disparo.filme;
+    const filme: FilmeNoTrailer | null = filmeDoTick ? { ev: filmeDoTick, modo: MODO_DO_FILME_NO_TRAILER, rivalAntes: antes[filmeDoTick.defensor] as RivalAntes } : null;
     vivo.u = passo.u;
     const luta: LeituraLuta = vivo.game;
     const q: QuadroDoTrailer = {
@@ -300,6 +310,7 @@ export class DiretorDoTrailer {
       lenta: ritmo.fatorDaLenta,
       zoom: { fator: camera.zoom, x: this.ancoraDoZoom(luta, camera.foco) },
       cine: passo.disparo.cine,
+      filme,
       reserva: false,
       ...(plano.tipo === 'arconte' ? { arconte: this.arconteDe(tau) } : {}),
     };
@@ -324,7 +335,7 @@ export class DiretorDoTrailer {
       const pedida = plano.pede[g.pedida];
       if (pedida) esperadas.push({ pedida, gravada: g });
     }
-    this.ritmo = new RitmoDoPlano(esperadas, plano.tipo === 'arconte' ? TICK_DO_MOTOR_NO_ARCONTE : 0);
+    this.ritmo = new RitmoDoPlano(esperadas, plano.tipo === 'arconte' ? TICK_DO_MOTOR_NO_ARCONTE : 0, (ev) => ticksDoFilmeNoTrailer(ev.atacante === 0 ? plano.c1 : plano.c2, ev));
   }
 
   private quadroSemMotor(plano: Exclude<Plano, { tipo: 'luta' | 'arconte' }>, tau: number, tick: number): Pick<QuadroDoTrailer, 'frio' | 'retratos' | 'logo'> {

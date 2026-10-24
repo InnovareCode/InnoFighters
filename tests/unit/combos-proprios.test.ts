@@ -175,12 +175,12 @@ describe('o VERIFICADOR (spec §6.2): aceite da fatia', () => {
     expect(verificacoes.filter((v) => v.ok)).toHaveLength(20);
   });
 
-  it('barra o exemplo ruim da spec: hp > hk (sem queda) > GOLPE MARMA da NILA = 44,5 (48% de 92) sem o teto', () => {
+  it('barra o exemplo ruim da spec: hp > hk (sem queda) > GOLPE MARMA da NILA = 43,4 (47% de 92) sem o teto', () => {
     const ruim = combo(['hp', 'hk', 'sFire'], { id: 'nila-ruim', semQueda: [1] });
     const v = verificarCombo(comCombos('nila', [ruim]), 'nila', null, ruim);
-    expect(v.dano).toBeCloseTo(44.5, 1); // 13,0 + 17,7 x 0,9 + 19,5 x 0,8
+    expect(v.dano).toBeCloseTo(43.4, 1); // hp 12,7 + hk 17,3 x 0,9 + MARMA 19,0 x 0,8 (pow 1,15 da V2-6; era 44,5 com pow 1,18 e MARMA 19,5)
     expect(v.ok).toBe(false);
-    expect(v.falhas.join(' ')).toMatch(/dano 44\.\d passa de 36\.8/);
+    expect(v.falhas.join(' ')).toMatch(/dano 43\.\d passa de 36\.8/);
     // os golpes em si encadeiam: a falha é só o dano
     expect(v.emPe.falha).toBeNull();
     expect(v.agachado.falha).toBeNull();

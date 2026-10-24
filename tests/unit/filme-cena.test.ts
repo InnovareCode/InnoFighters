@@ -10,7 +10,7 @@ import { TICKS_DA_SAIDA_AO_PULAR, TICKS_PARA_PULAR } from '../../src/render/film
 import type { Mundo } from '../../src/ui/contexto';
 import { lerFilmeDev, type CenaFight } from '../../src/ui/cenas/fight';
 import { PROD } from './_filme';
-import { navegadorFalso } from './_ui';
+import { navegadorFalso, arteFalsa } from './_ui';
 
 /*
  * V2-3d: a CENA da luta com o filme. Enquanto ele roda a cena não chama `game.update` (como a cinemática); KO, pó da queda e troca de barra esperam o último quadro;
@@ -43,7 +43,7 @@ function montar(o: Opcoes = {}) {
   const mundo = {
     rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
     elenco,
-    arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+    arte: arteFalsa(),
     game,
     efeitos,
     petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),

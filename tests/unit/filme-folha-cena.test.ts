@@ -14,7 +14,7 @@ import type { CenaFight } from '../../src/ui/cenas/fight';
 import type { Mundo } from '../../src/ui/contexto';
 import { PROD } from './_filme';
 import { lerManifestoC1 } from './_lutadores';
-import { navegadorFalso } from './_ui';
+import { arteFalsa, navegadorFalso } from './_ui';
 
 /*
  * A folha FILME na CENA da luta: baixada DEPOIS que a luta começou (nunca na VS, nunca em pedir/prebuscar), solta ao sair; e, sem a imagem (ainda
@@ -64,10 +64,8 @@ async function montar(c: Cenario, opcoes: { carregarNaEntrada?: boolean; semFlag
   const game = new Game({ lutadores, rng: criarRng(5) });
   const chamadas: string[] = [];
   const cargas: Array<Promise<void>> = [];
-  const arte = {
+  const arte = arteFalsa({
     pedir: () => void chamadas.push('pedir'),
-    usar: () => undefined,
-    estaPronto: () => true,
     prebuscar: () => void chamadas.push('prebuscar'),
     carregarFilme: (ids: readonly string[]) => {
       chamadas.push(`carregarFilme:${ids.join(',')}`);
@@ -79,7 +77,7 @@ async function montar(c: Cenario, opcoes: { carregarNaEntrada?: boolean; semFlag
       chamadas.push('soltarFilme');
       atlas.liberarFilme();
     },
-  };
+  });
   n.ui.pronto({
     rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
     elenco,

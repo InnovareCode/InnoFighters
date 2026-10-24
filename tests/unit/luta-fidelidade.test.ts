@@ -6,6 +6,7 @@ import { Game, type DummyTreino, type FonteEntradas } from '../../src/fight/game
 import { TEM_PROTOTIPO, type Obj } from './_prototipo';
 import { criarGabarito, type Gabarito } from './_prototipo-luta';
 import { montarTodos } from './_lutadores';
+import { MOTOR_V2_DESLIGADO } from './_motor-v2';
 
 /**
  * Prova de fidelidade da LUTA (nível: executado contra o protótipo real). O gabarito é o próprio
@@ -131,7 +132,8 @@ describe.skipIf(!TEM_PROTOTIPO)('src/fight == protótipo (lock-step, tick a tick
     const fonte: FonteEntradas = { p1: () => atual.p1, p2: () => atual.p2 };
 
     const cfgProto: Obj = { mode: c.modo === 'cpucpu' ? 'cpu' : c.modo, c1: IDS_PROTO[c.c1], c2: IDS_PROTO[c.c2] };
-    const cfgMeu: Obj = { mode: c.modo === 'cpucpu' ? 'cpu' : c.modo, c1: c.c1, c2: c.c2 };
+    // o protótipo não tem motor v2: o motor de antes FIXADO (V2-6), o jogo liga o v2 por padrão
+    const cfgMeu: Obj = { mode: c.modo === 'cpucpu' ? 'cpu' : c.modo, c1: c.c1, c2: c.c2, motorV2: MOTOR_V2_DESLIGADO };
     if (c.modo === 'cpu') {
       cfgProto['cpu'] = cfgMeu['cpu'] = c.niveis[0];
     } else if (c.modo === 'cpucpu') {

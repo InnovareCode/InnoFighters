@@ -139,7 +139,7 @@ describe('S5 · VADIVU: troca de ficha GAJA <-> SARPA', () => {
   it('SARPA tem os golpes fortes e o pow dela (mods por ficha)', () => {
     expect(nila.moves.hp.dmg).toBe(11);
     expect(sarpa.moves.hp.dmg).toBe(7);
-    expect([nila.pow, sarpa.pow]).toEqual([1.18, 0.9]);
+    expect([nila.pow, sarpa.pow]).toEqual([1.15, 0.9]);
     expect(sarpa.id).toBe(nila.id);
   });
 });

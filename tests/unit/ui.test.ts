@@ -3,6 +3,7 @@ import { LUTADORES } from '../../src/data/lutadores';
 import { montarLutador } from '../../src/data/montar';
 import type { Poses } from '../../src/data/tipos';
 import { criarFerramentas } from '../../src/ui/ferramentas';
+import { cfgMotorV2, REGRAS_PADRAO } from '../../src/meta';
 import { MenuList, type ItemMenu } from '../../src/ui/menu-lista';
 import { linhasDeGolpes } from '../../src/ui/personagens';
 import { NAV } from '../../src/ui/tipos';
@@ -286,7 +287,7 @@ describe('seleção de lutadores (máquina de estados)', () => {
     t.s.key('z');
     t.s.key('z');
     rodar(t.s, 60);
-    expect(t.ir).toEqual(['fight {"cfg":{"mode":"training","c1":"hayato","c2":"wei-long","cpu":null,"esquiva":true}}']);
+    expect(t.ir).toEqual([`fight ${JSON.stringify({ cfg: { mode: 'training', c1: 'hayato', c2: 'wei-long', cpu: null, esquiva: true, ...cfgMotorV2(REGRAS_PADRAO) } })}`]);
   });
 
   it('VERSUS: P1 usa setas/Z e P2 usa WASD/J; só começa com os dois travados; X desfaz', () => {
@@ -303,7 +304,7 @@ describe('seleção de lutadores (máquina de estados)', () => {
     expect(ir).toEqual([]);
     s.key('x'); // P1 desfaz... mas a tela já está contando para sair (done > 0): ignorado
     rodar(s, 1);
-    expect(ir).toEqual(['vs {"cfg":{"mode":"versus","c1":"wei-long","c2":"hayato","cpu":null,"esquiva":true}}']);
+    expect(ir).toEqual([`vs ${JSON.stringify({ cfg: { mode: 'versus', c1: 'wei-long', c2: 'hayato', cpu: null, esquiva: true, ...cfgMotorV2(REGRAS_PADRAO) } })}`]);
   });
 
   it('mouse: passar por cima move o cursor; clicar confirma o quadrado', () => {
@@ -379,7 +380,7 @@ describe('CONTINUAR? (ARCADE)', () => {
     const { c, run, ir } = cont(2, 800);
     c.key('z');
     expect(run).toMatchObject({ continues: 1, cont: 1 });
-    expect(ir).toEqual([['vs', { cfg: { mode: 'arcade', c1: 'caio', c2: 'wei-long', cpu: 1, esquiva: true, keepScore: true }, run }]]);
+    expect(ir).toEqual([['vs', { cfg: { mode: 'arcade', c1: 'caio', c2: 'wei-long', cpu: 1, esquiva: true, keepScore: true, ...cfgMotorV2(REGRAS_PADRAO) }, run }]]);
   });
 
   it('sem créditos: não continua e encerra no próximo tick; ESC encerra na hora (sem recorde se for menor)', () => {

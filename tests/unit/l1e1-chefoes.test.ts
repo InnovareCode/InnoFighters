@@ -34,7 +34,7 @@ import type { CenaSelect } from '../../src/ui/cenas/select';
 import type { CenaVs } from '../../src/ui/cenas/vs';
 import type { CampanhaArcade } from '../../src/ui/tipos';
 import { montarElenco } from '../../ferramentas/balanco/elenco';
-import { gravador, navegadorFalso } from './_ui';
+import { gravador, navegadorFalso, arteFalsa } from './_ui';
 
 /*
  * L1/E1 (Lyra): os chefões progressivos na UI e as entradas por ROTEIRO dos 5 guardiões. Os 7 testes antigos que fixavam "ZENON no fim com save vazio" foram reescritos nos
@@ -582,7 +582,7 @@ describe('a CENA da luta com a entrada de cada guardião: o motor e o lock-step 
     n.ui.pronto({
       rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
       elenco,
-      arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+      arte: arteFalsa(),
       game,
       efeitos: new Efeitos(criarRng(1)),
       petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),
@@ -721,7 +721,7 @@ describe('telas: aviso, VS, seleção e desbloqueio', () => {
     ({
       rec: { elenco, cenarios: new Map(), cenarioPadrao: IMG, vinheta: IMG },
       elenco,
-      arte: { pedir: () => undefined, usar: () => undefined, estaPronto: () => true, prebuscar: () => undefined },
+      arte: arteFalsa(),
       game: new Game({ lutadores: prod, rng: criarRng(5) }),
       efeitos: new Efeitos(criarRng(1)),
       petalasLuta: new CampoDePetalas(criarRng(2), 'luta'),

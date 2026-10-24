@@ -33,7 +33,7 @@ export type InputFrame = {
 
 /**
  * Mecânicas da REVISÃO DO MOTOR DE LUTA v2 (docs/spec-revisao-motor-luta-v2.md §2), cada uma atrás da sua flag. Ausente ou `false` =
- * o motor de antes, bit a bit (é o que o oráculo, o harness de balanço, o trailer e o `?expansao=4` rodam). Quem liga é a UI, a partir de
+ * o motor de antes, bit a bit (é o que o oráculo de fidelidade ao protótipo e o CPU x CPU antigo fixam). V2-6: o jogo liga as três por padrão; quem liga é a UI, a partir de
  * `Regras.motorV2`; as flags das outras fatias (filmes, combos) entram aqui quando forem implementadas.
  */
 export type MotorV2 = {
@@ -56,6 +56,11 @@ export type MotorV2 = {
    * passa a usá-los (`AI_LEVELS[n].proprio`), o que consome o RNG da CPU. Desligada: o motor de antes, bit a bit.
    */
   combos?: boolean;
+  /**
+   * A/B do DANO do filme (D-V3; só ferramenta, nunca o jogo): `hoje` = o dano de antes do filme, `v2` = a tabela decidida (o padrão quando ausente), `forte` = o maior de
+   * `hoje x 1,4` (projétil `x 1,2`) e `1,2 x hk`. Só tem efeito com `filmes` ligada. URL `?dano-filme=` (só em desenvolvimento) e `--dano-filme` do harness.
+   */
+  danoFilme?: 'hoje' | 'v2' | 'forte';
 };
 
 /** Posição de um lutador num instante do filme (`antes` = no tick do contato, antes de o motor mexer; `depois` = estado final). */

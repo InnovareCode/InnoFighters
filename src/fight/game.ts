@@ -19,7 +19,7 @@ import type { Rng } from '../core/rng';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { PROJ_BASE } from '../data/base-moves';
 import { comboReconhecido } from '../data/combos-proprios';
-import { filmeDoGolpe, type FilmeDoGolpe } from '../data/filmes';
+import { danoBaseDaVariante, filmeDoGolpe, type FilmeDoGolpe, type VarianteDoDano } from '../data/filmes';
 import type { LutadorMontado } from '../data/montar';
 import type { ContraDef, DrenaEnergiaDef, FinalDoCombo, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, NomeGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
@@ -214,6 +214,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private guardada: [EntradaGuardada, EntradaGuardada] = [entradaGuardadaVazia(), entradaGuardadaVazia()];
   /** V2-3c (`ConfigPartida.motorV2.filmes`): o 1º contato limpo de um especial vira FILME. Desligada, nada disto roda. */
   private filmesLigados = false;
+  /** A/B do dano do filme (ferramenta); `v2` = a tabela decidida. */
+  private variantePadraoDoFilme: VarianteDoDano = 'v2';
   /** V2-4 (`ConfigPartida.motorV2.combos`): o combo próprio abre cancelamentos e manda em `semQueda`/`final`. Lida pelo `Fighter` e pela CPU. */
   combosLigados = false;
   /** V2-4: combos próprios COMPLETOS (o último golpe da sequência acertou) por lutador, na partida toda (não zera por round). O harness lê. */
@@ -283,6 +285,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.esquivaLigada = cfg.esquiva === true;
     this.entradaNoHitstop = cfg.motorV2?.entradaNoHitstop === true;
     this.filmesLigados = cfg.motorV2?.filmes === true;
+    this.variantePadraoDoFilme = cfg.motorV2?.danoFilme ?? 'v2';
     this.combosLigados = cfg.motorV2?.combos === true;
     this.combosPropriosFeitos[0] = 0;
     this.combosPropriosFeitos[1] = 0;
@@ -349,7 +352,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
    * `cfgChefe` do Fighter, não na ficha: o VADIVU da NILA troca de ficha no meio da luta e levaria o reforço junto.
    */
   private danoNoDefensor(d: Fighter, dano: number): number {
-    const fator = d.cfgChefe?.danoRecebido;
+    const fator = d.cfgChefe === null || d.cfgChefe === undefined ? undefined : d.cpu === 2 && d.cfgChefe.danoRecebidoDificil !== undefined ? d.cfgChefe.danoRecebidoDificil : d.cfgChefe.danoRecebido;
     return fator === undefined || fator === 1 ? dano : dano * fator;
   }
 
@@ -1090,7 +1093,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
    * Mesma conta e mesma ordem de `danoDoGolpe`; a MASHI usa o `danoPorNivel` do nível da carga.
    */
   private danoDoFilme(filme: FilmeDoGolpe, a: Fighter, nivelCarga: number, projetil: boolean, gotHits: number, contragolpe: boolean, multContra: number | undefined): number {
-    const base = filme.danoPorNivel && nivelCarga >= 1 ? (filme.danoPorNivel[Math.min(3, nivelCarga) - 1] as number) : filme.dano;
+    // A/B do dano (`motorV2.danoFilme`): ausente ou `v2` = a tabela decidida, igual a antes de existir a opção
+    const base = danoBaseDaVariante(filme, this.variantePadraoDoFilme, nivelCarga, projetil, a.ch.pow, a.ch.moves.hk?.dmg ?? 0);
     return Math.min(TETO_GOLPE, danoDoGolpe(base, a.ch.pow, projetil, gotHits, contragolpe, multContra));
   }
 

@@ -117,6 +117,7 @@ export function montarLutador(def: LutadorDef, pd: Poses, fichasDoLutador?: read
   if (def.chefe) {
     validarCena(`${def.id}.chefe`, def.chefe.cena);
     validarDanoRecebido(`${def.id}.chefe`, def.chefe.danoRecebido);
+    validarDanoRecebido(`${def.id}.chefe (DIFÍCIL)`, def.chefe.danoRecebidoDificil);
   }
   const idle = pd['idle0'] ?? pd['guard'];
   if (!idle) throw new Error(`${def.id}: atlas sem idle0/guard`);

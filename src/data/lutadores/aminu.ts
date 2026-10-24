@@ -18,10 +18,10 @@ export const AMINU: LutadorDef = {
   desc: 'Dambe hauçá. Quanto mais paciência, mais pesado o soco.',
   fire: ['#6f7dff', '#eef0ff', '#2b2fa6'],
   accent: '#d9822b',
-  // E6b: hp 102 -> 112 e pow 1,06 -> 1,18 (harness: 20,7% de vitória antes).
+  // E6b: hp 102 -> 112 e pow 1,06 -> 1,18 (harness: 20,7% de vitória antes). V2-6: hp 112 -> 108 (motor v2 ligado, docs/balanco-motor-v2.md).
   pow: 1.18,
   spd: 0.98,
-  hp: 112,
+  hp: 108,
   jump: 0.92,
   scale: 1.06,
   stride: 12,
@@ -70,9 +70,10 @@ export const AMINU: LutadorDef = {
   // poses que o atlas já tem: carrega o MASHI (sa1) e solta (sa3). `danoRecebido` é a alavanca de dureza, calibrada em docs/balanco.
   chefe: {
     barras: 2,
-    hpPorBarra: 56,
+    hpPorBarra: 54,
     cena: { duracao: 60, poses: ['sa1', 'sa3'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.925,
+    danoRecebido: 0.85,
+    danoRecebidoDificil: 0.92,
   },
 };

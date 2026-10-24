@@ -327,13 +327,14 @@ describe('V2-1: a flag desligada é o motor de antes', () => {
 });
 
 describe('V2-1: a flag nas Regras e na cfg da UI', () => {
-  it('desligada por padrão: REGRAS_PADRAO não carrega a flag e a cfg fica sem a chave motorV2', () => {
-    expect(REGRAS_PADRAO.motorV2).toBeUndefined();
-    expect(cfgMotorV2(REGRAS_PADRAO)).toEqual({});
+  it('ligada por padrão (V2-6): REGRAS_PADRAO carrega as flags; sem a chave (ou toda falsa) a cfg fica sem motorV2', () => {
+    expect(REGRAS_PADRAO.motorV2?.entradaNoHitstop).toBe(true);
+    expect(cfgMotorV2(REGRAS_PADRAO).motorV2?.entradaNoHitstop).toBe(true);
     expect(cfgMotorV2({ motorV2: {} })).toEqual({});
     expect(cfgMotorV2({ motorV2: { entradaNoHitstop: false } })).toEqual({});
     const run = { c1: 'hayato', diff: 1, idx: 0, etapas: [{ id: 'wei-long', chefe: false }] } as unknown as CampanhaArcade;
-    expect('motorV2' in cfgDaEtapa(run, false, REGRAS_PADRAO)).toBe(false);
+    expect(cfgDaEtapa(run, false, REGRAS_PADRAO).motorV2?.entradaNoHitstop).toBe(true);
+    expect('motorV2' in cfgDaEtapa(run, false, { ...REGRAS_PADRAO, motorV2: {} })).toBe(false);
   });
 
   it('ligada nas Regras, vai para a cfg das lutas do ARCADE', () => {

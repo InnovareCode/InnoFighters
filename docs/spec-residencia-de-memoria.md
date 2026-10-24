@@ -287,11 +287,13 @@ a base de 17,9 MiB tem 4 MiB estimados (caches de UI), não inventariados.
 
 ## 8. Decisões para o dono
 
-| # | Pergunta | Recomendação |
-|---|---|---|
-| D-R1 | O `jp` sai da luta (e volta com pré-recarga) ou fica sempre (9 pares comuns passam de 115, até 120,7)? | **Sai** |
-| D-R2 | Quanto a troca de cena pode segurar no preto esperando a arte (passado isso, entra com chegada suave)? | **0,75 s** (45 ticks) |
-| D-R3 | Meta 6c fora da luta: aceitar ~150-160 no título por ora, ou abrir uma fatia de ciclo rolante? | Aceitar e medir na T13 antes |
-| D-R4 | BAATAR x ZENON até a T10: exceção de 160? | Sim (já era a alternativa do OR-4) |
-| D-R5 | `?residencia=fixa` também em produção (A/B no iPhone e rollback)? | Sim |
-| D-R6 | L7 (`ImageBitmap`/`close`) só se a T13 mostrar memória que não volta? | Sim |
+**Todas decididas em 2026-10-23: o dono aprovou D-R1..D-R6 como a Nova recomendou.**
+
+| # | Pergunta | Recomendação | Decisão (2026-10-23) |
+|---|---|---|---|
+| D-R1 | O `jp` sai da luta (e volta com pré-recarga) ou fica sempre (9 pares comuns passam de 115, até 120,7)? | **Sai** | **DECIDIDA: sai** da luta e volta com pré-recarga no fim dela (L4) |
+| D-R2 | Quanto a troca de cena pode segurar no preto esperando a arte (passado isso, entra com chegada suave)? | **0,75 s** (45 ticks) | **DECIDIDA: 0,75 s** (`TETO_DO_PRETO` = 45 ticks) |
+| D-R3 | Meta 6c fora da luta: aceitar ~150-160 no título por ora, ou abrir uma fatia de ciclo rolante? | Aceitar e medir na T13 antes | **DECIDIDA: aceitar** ~150-160 no título por ora; medir na T13 antes de abrir fatia nova |
+| D-R4 | BAATAR x ZENON até a T10: exceção de 160? | Sim (já era a alternativa do OR-4) | **DECIDIDA: sim**, exceção de 160 MiB até a T10 (depois ≤ 150) |
+| D-R5 | `?residencia=fixa` também em produção (A/B no iPhone e rollback)? | Sim | **DECIDIDA: sim**, a alavanca vale também em produção |
+| D-R6 | L7 (`ImageBitmap`/`close`) só se a T13 mostrar memória que não volta? | Sim | **DECIDIDA: sim**, L7 só se a T13 pedir |

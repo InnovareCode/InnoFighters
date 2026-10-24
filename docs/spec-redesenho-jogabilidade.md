@@ -375,6 +375,8 @@ movimento reduzido sem faixa fica para depois (decisão do dono).
 
 ## 8. Decisões do dono
 
+**Decididas em 2026-10-24: D-R1 a D-R8 aprovadas pelo dono exatamente como recomendado na tabela abaixo.**
+
 | # | Decisão | Minha recomendação |
 |---|---|---|
 | **D-R1** | Comando do super | A: SOCO FORTE + CHUTE FORTE com a barra cheia, e um botão SUPER no toque |

@@ -136,7 +136,7 @@ describe('cache de silhuetas COMPARTILHADO entre os atlas e o gerenciador', () =
     const defs = Object.fromEntries(IDS_LUTADORES.map((id) => [id, { paginas: 1, tamanho: [64, 32] as const }]));
     const L = leitorFalso(defs);
     const { elenco, arte } = await iniciarArte({ baseUrl: '/', leitor: L.l, criarCanvas: criarCanvasFalso, precarregar: ['hayato', 'caio'] });
-    expect(arte.politica).toBe('fixa'); // o padrão de produção segue o de sempre até a L6
+    expect(arte.politica).toBe('por-peso'); // o padrão do jogo desde a L6 (`?residencia=fixa` é o rollback)
     expect(arte.memoria().silhuetas).toBe(0);
     const bytesDe = (c: CanvasImageSource | null): number => {
       const { width, height } = (c ?? { width: 0, height: 0 }) as { width: number; height: number };

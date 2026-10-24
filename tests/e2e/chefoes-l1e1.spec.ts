@@ -498,7 +498,8 @@ test.describe('a campanha pela UI com saves reais', () => {
     const novos: string[] = await hook(page, '(h) => [...h.ui.cenas.ending.novos]');
     const prog = await page.evaluate(() => JSON.parse(window.localStorage.getItem('inno-fighters-v2') as string).prog);
     await page.keyboard.press('Enter');
-    await hook(page, '(h) => h.avancar(14)'); // o fade de saída leva ~9 ticks
+    // o fade de saída leva ~9 ticks; na residência por peso a troca ainda espera (até 45 ticks) a arte do destino chegar: anda até a troca acabar, sem contar ticks
+    await page.waitForFunction(() => { const h = (window as any).__inno; h.avancar(4); return h.ui.fadeTo === null && !h.ui.esperandoArte; }, undefined, { polling: 20, timeout: 30_000 });
     const proxima = await hook(page, "(h) => ({ cena: h.ui.scene === h.ui.cenas.desbloqueio ? 'desbloqueio' : h.ui.scene === h.ui.cenas.title ? 'title' : 'outra', novos: h.ui.cenas.desbloqueio.a ? [...h.ui.cenas.desbloqueio.a.novos] : [] })");
     return { novos, prog, proxima };
   }

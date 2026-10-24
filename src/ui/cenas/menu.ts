@@ -1,6 +1,7 @@
 import { VITRINE } from '../../data/lutadores';
 import { desenharFundoMenu } from '../../render/cenario';
 import { descricaoArcade } from '../escada-texto';
+import { ChegadaDeArte } from '../chegada-de-arte';
 import { LOGO_MENU, marca } from '../logo';
 import { MenuList } from '../menu-lista';
 import type { Navegador } from '../navegador';
@@ -10,6 +11,8 @@ import type { AcaoNav, Cena, ModoMenu } from '../tipos';
 /** Menu principal. */
 export class CenaMenu implements Cena {
   private m: MenuList;
+  /** A chegada suave do lutador em destaque (a vitrine voltando em segundo plano). */
+  private readonly chegada = new ChegadaDeArte();
 
   constructor(private readonly ui: Navegador) {
     this.m = this.criarMenu();
@@ -33,6 +36,7 @@ export class CenaMenu implements Cena {
   }
 
   enter(): void {
+    this.chegada.reiniciar();
     this.m = this.criarMenu();
     this.ui.c.audio.startMusic('menu');
   }
@@ -52,7 +56,7 @@ export class CenaMenu implements Cena {
     f.spotlight(720, 380, 230, 'rgba(255,190,220,.16)');
     ctx.save();
     ctx.globalAlpha = Math.min(1, Math.min(k * 8, (1 - k) * 8));
-    mostrarLutador(f, m, id, 720, 490, 1.5, -1, t);
+    mostrarLutador(f, m, id, 720, 490, 1.5, -1, t, 'guard', this.chegada);
     ctx.restore();
     f.A(m.elenco[id].ch.name, 720, 90, 40, '#fff', '#000', 'center', 1, Math.min(1, Math.min(k * 8, (1 - k) * 8)));
     this.ui.desenharPetalas();

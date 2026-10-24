@@ -163,12 +163,20 @@ async function iniciar(): Promise<void> {
   const ui = new Navegador(contexto);
   nav = ui;
   ui.set('boot');
-  observarFoco(window, { aoPerderFoco: () => ui.blur(), aoOcultar: () => ui.blur() });
+  observarFoco(window, {
+    aoPerderFoco: () => ui.blur(),
+    // aba oculta: pausa a luta e (residência por peso) solta o que a cena não usa; ao voltar, a tabela da cena atual é reaplicada
+    aoOcultar: () => {
+      ui.blur();
+      ui.aoOcultarAba();
+    },
+    aoVoltar: () => ui.aoVoltarAba(),
+  });
 
   // ---- carregamento da arte (barra de progresso na abertura) ----
   // `?precarga=minima` (só em desenvolvimento) não carrega nenhum atlas no boot: tudo sob demanda, para testar essa via.
   const precarga = import.meta.env.DEV && new URLSearchParams(window.location.search).get('precarga') === 'minima' ? [] : undefined;
-  // `?residencia=peso` liga a residência por peso (teto em bytes, luta exclusiva); `?residencia=fixa` força a de sempre. Vale também em produção: é a alavanca de A/B no aparelho e o rollback sem deploy.
+  // A residência por peso (teto em bytes, luta exclusiva) é o padrão; `?residencia=fixa` volta à de antes. Vale também em produção: é a alavanca de A/B no aparelho e o rollback sem deploy (D-R5).
   const residencia = new URLSearchParams(window.location.search).get('residencia');
   const politica = residencia === 'peso' ? 'por-peso' : residencia === 'fixa' ? 'fixa' : undefined;
   void iniciarArte({

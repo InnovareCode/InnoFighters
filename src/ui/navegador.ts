@@ -41,6 +41,8 @@ export class Navegador {
   readonly petalas: CampoDePetalas;
   readonly cenas: Record<NomeCena, Cena>;
   private mundo: Mundo | null = null;
+  /** Os argumentos da cena atual (a tabela da residência é reaplicada com eles quando a aba volta). */
+  private argsDaCena: unknown = {};
   /** O que o destino da troca em curso precisa (só na política `'por-peso'`; null = nada a esperar). */
   private destino: ArteDaCena | null = null;
   /** Ticks que a troca em curso já ficou presa no preto esperando a arte. */
@@ -114,8 +116,35 @@ export class Navegador {
       return;
     }
     if (alvo.exclusiva) arte.entrarNaLuta(alvo.essencial);
-    else arte.usar(alvo.essencial);
+    else {
+      arte.usar(alvo.essencial);
+      // entrada direta (`set`: ganchos e testes) numa cena cuja arte ainda não está lá: pede já (pelo `go` o pedido saiu durante o fade e este não custa nada)
+      if (!arte.estaPronto(alvo.essencial)) arte.garantir(alvo.essencial).catch((e: unknown) => console.error(e));
+    }
     arte.preferir(alvo.desejavel ?? {});
+  }
+
+  /**
+   * A aba foi para segundo plano (política `'por-peso'`): solta tudo o que a cena atual não usa e todas as silhuetas, para o sistema não matar a página por memória (o iOS
+   * faz isso). Em `'fixa'` não faz nada, como antes.
+   */
+  aoOcultarAba(): void {
+    const arte = this.mundo?.arte;
+    if (arte?.politica === 'por-peso') arte.aliviar();
+  }
+
+  /**
+   * A aba voltou: reaplica a tabela da cena atual (marca o essencial em uso, traz de volta o que faltar e refaz a fila de fundo). A luta (exclusiva) não precisa: o que ela
+   * usa nunca saiu.
+   */
+  aoVoltarAba(): void {
+    const mundo = this.mundo;
+    if (!mundo || mundo.arte.politica !== 'por-peso' || this.name === '') return;
+    const alvo = arteDaCena(this.name, this.argsDaCena, mundo);
+    if (alvo.exclusiva) return;
+    mundo.arte.usar(alvo.essencial);
+    mundo.arte.garantir(alvo.essencial).catch((e: unknown) => console.error(e));
+    mundo.arte.preferir(alvo.desejavel ?? {});
   }
 
   /** Segura a troca no preto (a cena velha congela) até o essencial do destino chegar, no máximo `TETO_DO_PRETO` ticks. Com a arte pronta segura ZERO ticks. */
@@ -131,7 +160,8 @@ export class Navegador {
   /** Troca imediata. */
   set(name: NomeCena, args?: unknown): void {
     if (this.scene && this.name !== name) this.scene.exit?.();
-    this.aplicarArte(name, args ?? {});
+    this.argsDaCena = args ?? {};
+    this.aplicarArte(name, this.argsDaCena);
     this.name = name;
     this.scene = this.cenas[name];
     if (CENAS_COM_MUSICA_DE_MENU.includes(name) && this.c.audio.ctx) this.c.audio.startMusic('menu');

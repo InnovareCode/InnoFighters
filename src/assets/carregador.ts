@@ -28,6 +28,8 @@ export const leitorDeRede: LeitorDeRecursos = {
   imagem(url) {
     return new Promise((resolve, reject) => {
       const im = new Image();
+      // SEM `decode()` de propósito (a L5 da residência o previa, §3.5): medido no navegador, decodificar de antemão muda o pixel (1 px de diferença, até 9 níveis, em 4 cenas do
+      // fidelidade-prototipo, que o gate da spec proíbe). A decodificação continua no 1º desenho, como sempre.
       im.onload = () => resolve(im);
       im.onerror = () => reject(new ErroDeAsset(`Falha ao carregar ${url}`, url));
       im.src = url;

@@ -3,6 +3,7 @@ import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
 import { desenharPose } from '../render/pose';
 import { FB } from '../render/texto';
+import type { ChegadaDeArte } from './chegada-de-arte';
 import type { Ferramentas } from './ferramentas';
 import type { Mundo } from './contexto';
 
@@ -71,12 +72,17 @@ export function mostrarLutador(
   facing: number,
   t: number,
   pose = 'guard',
+  chegada?: ChegadaDeArte,
 ): void {
   const { ctx } = f;
   const r = m.elenco[id];
   m.arte.pedir(id); // carga sob demanda: se o atlas não está na memória, pede (o lutador aparece quando chegar)
-  f.floorShadow(x, y, 70 * scale);
+  // chegada suave: a arte que chega com a cena aberta sobe de 0 a 1 em 12 ticks; com a arte pronta desde o início `alfa` é 1 e nada muda no desenho
+  const alfa = chegada ? chegada.alfa(id, r.arte.pronta !== false, t) : 1;
+  if (alfa <= 0) return;
   ctx.save();
+  if (alfa < 1) ctx.globalAlpha *= alfa;
+  f.floorShadow(x, y, 70 * scale);
   ctx.translate(x, y);
   ctx.scale(1, idleBob(t));
   desenharPose(ctx, r.ch, r.arte, pose, 0, 0, scale, facing);

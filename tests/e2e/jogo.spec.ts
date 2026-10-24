@@ -195,10 +195,12 @@ test.describe('jogo de ponta a ponta (semente fixa, teclado real)', () => {
       await page.waitForFunction(() => (window as any).__inno.mundo().game.phase === 'fight', undefined, { timeout: 15_000 });
       // o rival já está no chão do ringue: coloca o jogador colado e derruba com golpes reais
       await hook(page, '(h) => { const g = h.mundo().game; g.p2.hp = 3; g.p2.hpShown = 3; g.p1.x = g.p2.x - 80; }');
-      for (let i = 0; i < 80; i++) {
+      for (let i = 0; i < 120; i++) {
         const fase = await hook(page, '(h) => h.mundo().game.phase');
         if (fase !== 'fight') break;
-        await page.keyboard.press('z');
+        // o motor v2 é o padrão: o golpe que derruba abre o FILME do especial (a luta fica parada); ENTER o pula (depois do tick 10), como o jogador faria
+        if (await hook(page, '(h) => !!h.ui.scene.filme?.ativo')) await page.keyboard.press('Enter');
+        else await page.keyboard.press('z');
         await page.waitForTimeout(80);
       }
       await esperarCena(page, luta < 2 ? 'vs' : 'ending', 40_000);

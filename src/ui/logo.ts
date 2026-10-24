@@ -6,6 +6,7 @@ import { LUTADORES, VITRINE } from '../data/lutadores';
 import { desenharVinheta } from '../render/cenario';
 import { desenharPose } from '../render/pose';
 import { RS, type Ctx } from '../render/tela';
+import type { ChegadaDeArte } from './chegada-de-arte';
 import type { Ferramentas } from './ferramentas';
 import type { Mundo } from './contexto';
 
@@ -305,19 +306,23 @@ export function posicoesDaFileira(n: number): number[] {
 }
 
 /** Os lutadores da vitrine enfileirados no título; `featured` brilha. */
-export function fileiraDeHerois(f: Ferramentas, m: Mundo, t: number, featured: IdLutador, alpha = 1): void {
+export function fileiraDeHerois(f: Ferramentas, m: Mundo, t: number, featured: IdLutador, alpha = 1, chegada?: ChegadaDeArte): void {
   const { ctx } = f;
   const xs = posicoesDaFileira(VITRINE.length);
   const lado = Math.ceil(VITRINE.length / 2);
   VITRINE.forEach((id, i) => {
     const r = m.elenco[id];
+    // chegada suave: o herói cuja arte chega com o título já aberto sobe de 0 a 1 em 12 ticks (com a arte pronta desde o início, `a` = `alpha` e o desenho é o de sempre)
+    const chega = chegada ? chegada.alfa(id, r.arte.pronta !== false, t) : 1;
+    if (chega <= 0) return;
+    const a = chega < 1 ? alpha * chega : alpha;
     const on = id === featured;
     const sc = on ? 0.94 : 0.84;
     const fac = i < lado ? 1 : -1;
     const x = xs[i] ?? 0;
     const y = 528;
     ctx.save();
-    ctx.globalAlpha = alpha;
+    ctx.globalAlpha = a;
     ctx.globalCompositeOperation = 'lighter';
     const gl = ctx.createRadialGradient(x, y - 120, 10, x, y - 120, 170);
     gl.addColorStop(0, r.ch.fire[0] + (on ? '66' : '22'));

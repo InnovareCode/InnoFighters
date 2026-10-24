@@ -80,8 +80,11 @@ export interface OpcoesArteInicial {
   readonly teto?: number;
 }
 
-/** Até a fatia L6 da residência de memória o jogo roda na política de sempre; o desenho novo é `?residencia=peso`. */
-export const POLITICA_PADRAO: PoliticaDeResidencia = 'fixa';
+/**
+ * L6 da residência de memória (docs/spec-residencia-de-memoria.md): a política por peso (teto em bytes, luta exclusiva, volta ao menu sem piscar) é o padrão do jogo.
+ * `?residencia=fixa` volta ao comportamento de antes (D-R5: A/B no aparelho e rollback sem deploy, também em produção); `?residencia=peso` é o padrão dito explicitamente.
+ */
+export const POLITICA_PADRAO: PoliticaDeResidencia = 'por-peso';
 
 /**
  * Carga do boot (docs/plano-expansao.md 1.5): lê o manifesto de TODOS os lutadores (poucos KB cada) e monta os

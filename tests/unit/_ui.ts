@@ -98,6 +98,7 @@ export function arteFalsa(extra: Record<string, unknown> = {}): Record<string, u
     usar: () => undefined,
     entrarNaLuta: () => undefined,
     preferir: () => undefined,
+    aliviar: () => undefined,
     garantir: () => Promise.resolve(),
     estaPronto: () => true,
     prebuscar: () => undefined,

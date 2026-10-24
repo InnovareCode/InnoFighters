@@ -1,4 +1,5 @@
 import { ALTURA, LARGURA } from '../../core/constantes';
+import { ChegadaDeArte } from '../chegada-de-arte';
 import { Brasas, desenharCicloDeCenarios, fileiraDeHerois, gradacaoCinema, LAYOUT_DA_MARCA, LOGO_ALTURA, marca, STAGE_OF } from '../logo';
 import type { Navegador } from '../navegador';
 import type { ArgsTitle, Cena } from '../tipos';
@@ -18,7 +19,11 @@ export class CenaTitle implements Cena {
     this.brasas = new Brasas(ui.c.rngVisual);
   }
 
+  /** A chegada suave dos heróis da fileira (a vitrine voltando em segundo plano depois de uma luta). */
+  private readonly chegada = new ChegadaDeArte();
+
   enter(a: ArgsTitle): void {
+    this.chegada.reiniciar();
     this.t = a && (a.fromIntro || a.fromTrailer) ? 120 : 0;
     this.ocioso = 0;
   }
@@ -59,7 +64,7 @@ export class CenaTitle implements Cena {
       ctx.fill();
     }
     ctx.restore();
-    fileiraDeHerois(f, m, t, STAGE_OF[idx] ?? 'hayato');
+    fileiraDeHerois(f, m, t, STAGE_OF[idx] ?? 'hayato', 1, this.chegada);
     this.brasas.desenhar(ctx, t);
     if (!comTexto) return;
     // a logo oficial (a faixa do subtítulo já está na arte): altura 330, topo em y 4, flutuando 3 px

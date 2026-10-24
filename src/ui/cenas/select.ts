@@ -9,6 +9,7 @@ import { embaralhar, passoDaRolagem, rostoEmRepouso, rostosDaRolagem, sortear, T
 import { dicaArcadeSelecao } from '../escada-texto';
 import { colunasDaGrade, estadoDaCasa, moverNaGrade, ordemDaGrade, podeEscolher, proximaLiberada, retanguloDaCasa, retanguloDeToque, temCasaDeHonra, type EstadoCasa } from '../grade';
 import type { Navegador } from '../navegador';
+import { ChegadaDeArte } from '../chegada-de-arte';
 import { barrasDeStatus, escalaDeVitrine, mostrarLutador, P_COL, tamanhoDoNomeNoContexto } from '../personagens';
 import type { ArgsSelect, Cena, ModoMenu } from '../tipos';
 
@@ -48,6 +49,8 @@ export class CenaSelect implements Cena {
   cur: [number, number] = [0, 1];
   lock: [boolean, boolean] = [false, false];
   pick: [number, number] = [0, 1];
+  /** A chegada suave dos lutadores da grade (o atlas que chega com a seleção já aberta). */
+  private readonly chegada = new ChegadaDeArte();
   flash: [number, number] = [0, 0];
   done = 0;
   /** Ids na ordem das casas. */
@@ -66,6 +69,7 @@ export class CenaSelect implements Cena {
   constructor(private readonly ui: Navegador) {}
 
   enter(a: ArgsSelect): void {
+    this.chegada.reiniciar();
     const { regras, persist } = this.ui.c;
     this.mode = a.mode;
     this.versus = a.mode === 'versus';
@@ -389,7 +393,7 @@ export class CenaSelect implements Cena {
       ctx.restore();
     }
     ctx.restore();
-    mostrarLutador(f, m, ch.id, x, 362, 1.18 * escalaDeVitrine(ch), facing, t + p * 30, fl > 12 ? 'special' : 'guard');
+    mostrarLutador(f, m, ch.id, x, 362, 1.18 * escalaDeVitrine(ch), facing, t + p * 30, fl > 12 ? 'special' : 'guard', this.chegada);
     f.panel(px, 374, 284, 132, { stroke: P_COL[p] });
     f.A(ch.name, px + 14, 394, 28, '#fff', '#000', 'left');
     f.T(`${ch.title}  •  ${ch.country}`, px + 14, 418, 13, ch.accent, 'left');

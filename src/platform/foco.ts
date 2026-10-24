@@ -3,6 +3,8 @@ export interface CallbacksFoco {
   aoPerderFoco?: () => void;
   /** A aba foi para segundo plano (visibilitychange com document.hidden). */
   aoOcultar?: () => void;
+  /** A aba voltou a ficar visível (visibilitychange com `document.hidden` falso). */
+  aoVoltar?: () => void;
 }
 
 /**
@@ -13,6 +15,7 @@ export function observarFoco(alvo: Window, cb: CallbacksFoco): () => void {
   const blur = (): void => cb.aoPerderFoco?.();
   const visibilidade = (): void => {
     if (alvo.document.hidden) cb.aoOcultar?.();
+    else cb.aoVoltar?.();
   };
   alvo.addEventListener('blur', blur);
   alvo.document.addEventListener('visibilitychange', visibilidade);

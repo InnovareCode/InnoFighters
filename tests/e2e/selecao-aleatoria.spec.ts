@@ -187,17 +187,18 @@ test.describe('A etiqueta do jogador (VOCÊ, ALVO, ADVERSÁRIO, JOGADOR 1/2) nã
     test.skip(info.project.name !== 'desktop', 'medida em px lógicos');
     const erros = coletarErros(page);
     await abrirJogo(page, '&expansao=1', VIEWPORTS.desktop);
-    const casos: Array<{ modo: string; js: string; tag: string; lado: 0 | 1; id: string }> = [
-      { modo: 'versus', js: "S.cur[0] = S.grade.indexOf('zenon'); S.cur[1] = S.grade.indexOf('baatar');", tag: 'JOGADOR 1', lado: 0, id: 'zenon' },
-      { modo: 'versus', js: "S.cur[0] = S.grade.indexOf('zenon'); S.cur[1] = S.grade.indexOf('baatar');", tag: 'JOGADOR 2', lado: 1, id: 'baatar' },
-      { modo: 'versus', js: "S.cur[0] = S.grade.indexOf('baatar'); S.cur[1] = S.grade.indexOf('zenon');", tag: 'JOGADOR 2', lado: 1, id: 'zenon' },
-      { modo: 'cpu', js: "S.step = 2; S.pick[0] = 0; S.cur[1] = S.grade.indexOf('zenon');", tag: 'ADVERSÁRIO', lado: 1, id: 'zenon' },
-      { modo: 'cpu', js: "S.step = 2; S.pick[0] = 0; S.cur[1] = S.grade.indexOf('wei-long');", tag: 'ADVERSÁRIO', lado: 1, id: 'wei-long' },
-      { modo: 'training', js: "S.step = 2; S.pick[0] = 0; S.cur[1] = S.grade.indexOf('baatar');", tag: 'ALVO', lado: 1, id: 'baatar' },
+    // `ids` = os dois lutadores que a seleção desenha grandes: na residência por peso (o padrão) só cabem os dois pesados ao mesmo tempo (ZENON 60 + BAATAR 52 + jp 8 < 136 MiB), nunca os quatro
+    const casos: Array<{ modo: string; js: string; tag: string; lado: 0 | 1; id: string; ids: string[] }> = [
+      { modo: 'versus', js: "S.cur[0] = S.grade.indexOf('zenon'); S.cur[1] = S.grade.indexOf('baatar');", tag: 'JOGADOR 1', lado: 0, id: 'zenon', ids: ['zenon', 'baatar'] },
+      { modo: 'versus', js: "S.cur[0] = S.grade.indexOf('zenon'); S.cur[1] = S.grade.indexOf('baatar');", tag: 'JOGADOR 2', lado: 1, id: 'baatar', ids: ['zenon', 'baatar'] },
+      { modo: 'versus', js: "S.cur[0] = S.grade.indexOf('baatar'); S.cur[1] = S.grade.indexOf('zenon');", tag: 'JOGADOR 2', lado: 1, id: 'zenon', ids: ['baatar', 'zenon'] },
+      { modo: 'cpu', js: "S.step = 2; S.pick[0] = 0; S.cur[1] = S.grade.indexOf('zenon');", tag: 'ADVERSÁRIO', lado: 1, id: 'zenon', ids: ['hayato', 'zenon'] },
+      { modo: 'cpu', js: "S.step = 2; S.pick[0] = 0; S.cur[1] = S.grade.indexOf('wei-long');", tag: 'ADVERSÁRIO', lado: 1, id: 'wei-long', ids: ['hayato', 'wei-long'] },
+      { modo: 'training', js: "S.step = 2; S.pick[0] = 0; S.cur[1] = S.grade.indexOf('baatar');", tag: 'ALVO', lado: 1, id: 'baatar', ids: ['hayato', 'baatar'] },
     ];
     for (const c of casos) {
       await abrirSelecao(page, c.modo, c.js);
-      await aguardarArte(page, ['zenon', 'baatar', 'wei-long', 'hayato']);
+      await aguardarArte(page, c.ids);
       const r = await medirEtiqueta(page, c.tag, c.lado, c.id);
       expect(r.quadroEstavel, `${c.modo} ${c.tag}`).toBe(true);
       expect(r.caixa.x1, `${c.modo} ${c.tag}: a etiqueta apareceu?`).toBeGreaterThan(r.caixa.x0);

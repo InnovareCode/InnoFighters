@@ -27,6 +27,7 @@ function montar(politica: 'fixa' | 'por-peso') {
       return Promise.resolve();
     },
     soltarFilme: () => void log.push('soltarFilme'),
+    aliviar: () => void log.push('aliviar'),
     estaPronto: () => estado.pronto,
     prebuscar: () => undefined,
   };
@@ -264,5 +265,55 @@ describe('Navegador sem arte carregada', () => {
     const { ui } = navegadorFalso();
     expect(() => ui.set('boot')).not.toThrow();
     expect(ui.esperandoArte).toBe(false);
+  });
+});
+
+describe('aba oculta (L6): aliviar ao ocultar, reaplicar a tabela ao voltar', () => {
+  it("'por-peso': ocultar solta o que a cena não usa (aliviar); voltar reaplica o essencial e a fila de fundo da cena atual", () => {
+    const { ui, log } = montar('por-peso');
+    ui.set('menu');
+    log.length = 0;
+    ui.aoOcultarAba();
+    expect(log).toEqual(['aliviar']);
+    log.length = 0;
+    ui.aoVoltarAba();
+    expect(log).toEqual([
+      `usar ${JSON.stringify({ lutadores: ['hayato'], cenarios: ['jp'] })}`,
+      `garantir ${JSON.stringify({ lutadores: ['hayato'], cenarios: ['jp'] })}`,
+      `preferir ${JSON.stringify({ lutadores: ['wei-long', 'min-ji', 'caio'] })}`,
+    ]);
+  });
+
+  it('voltar usa os argumentos da cena atual (a seleção do modo certo, o resultado com a dupla dele)', () => {
+    const { ui, log } = montar('por-peso');
+    ui.set('result', { a: { cfg }, winner: 1, st: {} });
+    log.length = 0;
+    ui.aoVoltarAba();
+    expect(log[0]).toBe(`usar ${JSON.stringify({ lutadores: ['nila', 'aminu'], cenarios: ['jp'] })}`);
+  });
+
+  it('na luta (exclusiva) voltar não pede nada: o que ela usa nunca saiu', () => {
+    const { ui, log } = montar('por-peso');
+    ui.set('fight', { cfg });
+    log.length = 0;
+    ui.aoVoltarAba();
+    expect(log).toEqual([]);
+  });
+
+  it("'fixa': ocultar e voltar não fazem nada (o comportamento de antes)", () => {
+    const { ui, log } = montar('fixa');
+    ui.set('menu');
+    log.length = 0;
+    ui.aoOcultarAba();
+    ui.aoVoltarAba();
+    expect(log).toEqual([]);
+  });
+
+  it('antes da arte carregar (boot) ocultar e voltar não lançam', () => {
+    const { ui } = navegadorFalso();
+    expect(() => {
+      ui.aoOcultarAba();
+      ui.aoVoltarAba();
+    }).not.toThrow();
   });
 });

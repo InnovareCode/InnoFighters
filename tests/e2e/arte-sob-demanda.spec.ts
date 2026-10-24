@@ -47,7 +47,7 @@ test.describe('retratos e carga de arte', () => {
     expect(r).toEqual({ hayato: true, 'wei-long': true, 'min-ji': true, caio: true, aminu: true, centella: true, camille: true, nila: true, baatar: true, zenon: true });
   });
 
-  test('tudo sob demanda: sem atlas no boot; a seleção pede só os mostrados e o VS só a dupla da luta', async ({ page }, info) => {
+  test("tudo sob demanda (política 'fixa'): sem atlas no boot; a seleção pede só os mostrados e o VS só a dupla da luta", async ({ page }, info) => {
     test.skip(info.project.name !== 'desktop', 'só no desktop');
     const erros: string[] = [];
     page.on('pageerror', (e) => erros.push(e.message));
@@ -56,7 +56,7 @@ test.describe('retratos e carga de arte', () => {
       window.localStorage.setItem('inno-fighters-v1', JSON.stringify({ v: 1, s: { music: 0.45, sfx: 0.8, rounds: 1, time: 99, diff: 0, shake: true }, hi: 0 }));
     });
     const urls = espiarAssets(page);
-    await page.goto('/?seed=7&precarga=minima&trailer=0'); // ?trailer=0: espera boot -> intro
+    await page.goto('/?seed=7&precarga=minima&trailer=0&residencia=fixa'); // ?trailer=0: espera boot -> intro. 'fixa': na residência por peso o título e o menu já pedem a vitrine (tabela `arteDaCena`)
     await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
 
     // boot: manifestos, retratos e o cenário padrão; NENHUM atlas e nenhum outro cenário
@@ -110,6 +110,47 @@ test.describe('retratos e carga de arte', () => {
     // HAYATO e WEI LONG em v2 (2 páginas, uma vez cada); nenhum atlas v1 (atlas.webp)
     expect(paginasDe(urls, 'hayato')).toEqual(['atlas-0.webp', 'atlas-1.webp']);
     expect(paginasDe(urls, 'wei-long')).toEqual(['atlas-0.webp', 'atlas-1.webp']);
+    expect(atlasV1De(urls)).toEqual([]);
+    expect(erros).toEqual([]);
+  });
+
+  test("tudo sob demanda (política 'por-peso', o padrão): o título pede a vitrine, a seleção só os mostrados e o VS solta a vitrine e fica só com a dupla", async ({ page }, info) => {
+    test.skip(info.project.name !== 'desktop', 'só no desktop');
+    const erros: string[] = [];
+    page.on('pageerror', (e) => erros.push(e.message));
+    page.on('console', (m) => m.type() === 'error' && erros.push(m.text()));
+    await page.addInitScript(() => {
+      window.localStorage.setItem('inno-fighters-v1', JSON.stringify({ v: 1, s: { music: 0.45, sfx: 0.8, rounds: 1, time: 99, diff: 0, shake: true }, hi: 0 }));
+    });
+    const urls = espiarAssets(page);
+    await page.goto('/?seed=7&precarga=minima&trailer=0');
+    await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
+    expect(await hook(page, '(h) => h.mundo().arte.politica')).toBe('por-peso');
+    expect(atlasDe(urls)).toEqual([]);
+    expect(cenariosDe(urls)).toEqual(['cenario-jp.webp']);
+    await page.keyboard.press('Enter');
+    await esperarCena(page, 'intro');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Enter');
+    await esperarCena(page, 'title');
+    // o título pede a vitrine (essencial) e os cenários do ciclo (desejável); nenhum outro lutador
+    await expect.poll(() => atlasDe(urls), { timeout: 30_000 }).toEqual(['caio', 'hayato', 'min-ji', 'wei-long']);
+    await page.keyboard.press('Enter');
+    await esperarCena(page, 'menu');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter'); // LUTA vs CPU
+    await esperarCena(page, 'select');
+    await page.keyboard.press('Enter'); // HAYATO; o adversário sugerido (WEI LONG)
+    await page.keyboard.press('Enter');
+    await esperarCena(page, 'diff');
+    await page.keyboard.press('Enter');
+    await esperarCena(page, 'vs');
+    await page.waitForFunction(() => (window as any).__inno.ui.scene.espera.pronta === true, undefined, { timeout: 20_000 });
+    // a VS é exclusiva: só a dupla e o cenário da casa do rival; cada arquivo baixado uma vez
+    expect(await hook(page, '(h) => h.mundo().arte.lutadoresResidentes().sort()')).toEqual(['hayato', 'wei-long']);
+    expect(await hook(page, '(h) => [...h.mundo().arte.cenarios.keys()].sort()')).toEqual(['cn']);
+    expect(await hook(page, '(h) => Object.fromEntries(h.mundo().arte.cargas.lutadores)')).toEqual({ hayato: 1, 'wei-long': 1, caio: 1, 'min-ji': 1 });
     expect(atlasV1De(urls)).toEqual([]);
     expect(erros).toEqual([]);
   });

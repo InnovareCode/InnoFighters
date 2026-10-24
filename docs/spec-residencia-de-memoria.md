@@ -194,7 +194,7 @@ até a vitrine reaparecer) continua, mas **suave**:
 4. **Chegada suave**: helper `ChegadaDeArte` por cena. `alfa(id, t)` = 1 se a arte estava pronta quando a cena entrou; 0 enquanto não
    chegou; depois rampa linear de 12 ticks a partir do 1º tick em que ficou pronta. Usado em `fileiraDeHerois` (título), `mostrarLutador`
    (menu, seleção, resultado). Não usa RNG; com a arte pronta na entrada, o desenho é **idêntico** ao de hoje.
-5. `leitorDeRede.imagem` passa a `await im.decode().catch(() => {})` depois do `onload`: a decodificação sai do quadro do 1º desenho
+5. ~~`leitorDeRede.imagem` passa a `await im.decode()`~~ **NÃO FEITO (L5, 2026-10-23, medido):** a decodificação antecipada MUDA O PIXEL (1 px de diferença, até 9 níveis, em 4 cenas do `fidelidade-prototipo`: bloqueio, arremesso, nocaute, treino). R2 proíbe `-u`; o `leitorDeRede` segue resolvendo no `onload` e a decodificação fica no 1º desenho. O engasgo da chegada fica coberto pela rampa de 12 ticks (item 4) e pela fila serial.
    (sem engasgo na chegada). Nada muda no pixel.
 6. O ciclo de cenários do título já começa no `jp` e só cruza para `cn` aos 361 ticks [lido, `desenharCicloDeCenarios`, `per = 420`]: a fila
    tem 6 s para o 1º, 13 s para o 2º. O trailer só dispara com 30 s de título parado, com o ciclo já carregado.

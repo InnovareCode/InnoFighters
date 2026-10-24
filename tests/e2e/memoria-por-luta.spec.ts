@@ -33,7 +33,7 @@ interface Medida {
 
 /** Abre a luta pelo gancho (como o `memoria-filme.spec`), espera a arte, avança até `phase === 'fight'` + 60 ticks e lê `arte.memoria()`. */
 async function medir(page: Page, c1: string, c2: string, opcoes: { peso: boolean; filmes: boolean }): Promise<Medida> {
-  await page.goto(`/?seed=7&manual=1&expansao=1${opcoes.peso ? '&residencia=peso' : ''}`);
+  await page.goto(`/?seed=7&manual=1&expansao=1${opcoes.peso ? '&residencia=peso' : '&residencia=fixa'}`);
   await expect(page.locator('html')).toHaveAttribute('data-pronto', 'true', { timeout: 60_000 });
   const cfg = { mode: 'versus', c1, c2, cpu: null, esquiva: false, ...(opcoes.filmes ? { motorV2: { filmes: true } } : {}) };
   await hook(page, `(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('fight', ${JSON.stringify({ cfg })}); (${SEM_PROVOCACAO})(h); }`);

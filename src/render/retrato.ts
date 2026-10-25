@@ -1,3 +1,4 @@
+import { gradienteVertical } from './gradientes';
 import type { Ctx } from './tela';
 
 /** Região da imagem usada como rosto: [x, y, largura, altura] em px da imagem. */
@@ -20,10 +21,7 @@ export function desenharRetrato(
   ctx.beginPath();
   ctx.rect(x, y, tamanho, tamanho);
   ctx.clip();
-  const g = ctx.createLinearGradient(0, y, 0, y + tamanho);
-  g.addColorStop(0, fundo ? fundo[0] : '#2b3f8f');
-  g.addColorStop(1, fundo ? fundo[1] : '#0c1233');
-  ctx.fillStyle = g;
+  ctx.fillStyle = gradienteVertical(ctx, fundo ? fundo[0] : '#2b3f8f', fundo ? fundo[1] : '#0c1233', y, y + tamanho);
   ctx.fillRect(x, y, tamanho, tamanho);
   if (rosto) {
     const [sx, sy, sw, sh] = rosto.recorte;

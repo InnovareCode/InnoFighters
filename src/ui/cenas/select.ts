@@ -2,6 +2,7 @@ import { LARGURA } from '../../core/constantes';
 import type { IdLutador } from '../../core/contratos';
 import type { Rng } from '../../core/rng';
 import { desenharFundoMenu } from '../../render/cenario';
+import { gradienteVertical } from '../../render/gradientes';
 import { desenharRetrato } from '../../render/retrato';
 import { TEXTOS_COMUNS } from '../../render/textos-dos-chefoes';
 import { cfgMotorV2, cfgRitmo, liberados, marcarVistos, naoVistos, proximoDaFila } from '../../meta';
@@ -453,10 +454,7 @@ export class CenaSelect implements Cena {
       return;
     }
     if (est === 'chefe-oculto') {
-      const g = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
-      g.addColorStop(0, '#2a1236');
-      g.addColorStop(1, '#0a0614');
-      ctx.fillStyle = g;
+      ctx.fillStyle = gradienteVertical(ctx, '#2a1236', '#0a0614', r.y, r.y + r.h);
       ctx.fillRect(r.x, r.y, r.w, r.h);
       f.A('???', r.x + r.w / 2, r.y + r.h / 2 - 6 * esc, 30 * esc, '#6a5a8a', '#0a0a14');
     } else {
@@ -525,10 +523,7 @@ export class CenaSelect implements Cena {
     const rc = this.ui.m.elenco[this.idEm(i)];
     const ch = rc.ch;
     const aqui = ([0, 1] as const).filter((p) => (this.versus || (p === 0 ? true : this.step === 2)) && this.cur[p] === i);
-    const g = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
-    g.addColorStop(0, '#2a1236');
-    g.addColorStop(1, '#0a0614');
-    ctx.fillStyle = g;
+    ctx.fillStyle = gradienteVertical(ctx, '#2a1236', '#0a0614', r.y, r.y + r.h);
     ctx.fillRect(r.x, r.y, r.w, r.h);
     if (est === 'chefe-oculto') {
       f.A('???', r.x + r.w / 2, r.y + r.h / 2 - 2, 28, '#8a7a5a', '#0a0a14');

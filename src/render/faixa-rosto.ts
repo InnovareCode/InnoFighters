@@ -4,6 +4,7 @@ import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
 import { roteiroDoFilme } from '../data/roteiros-filme';
 import { resolverPoseDoFilme } from './filme';
+import { larguraDoTexto } from './medida';
 import type { PaletaFaixa } from './paleta-lutador';
 import type { Ctx } from './tela';
 import { FONTE_DO_ESPECIAL, textoArcade } from './texto';
@@ -180,7 +181,7 @@ export function desenharFaixaComRosto(o: OpcoesFaixaRosto): void {
 function tamanhoDoNomeNaFaixaRosto(ctx: Ctx, nome: string, livre: number, max = 34): number {
   ctx.save();
   ctx.font = FONTE_DO_ESPECIAL(max);
-  const w = ctx.measureText(nome).width;
+  const w = larguraDoTexto(ctx, nome);
   ctx.restore();
   return w > livre && livre > 0 ? Math.max(16, Math.floor((max * livre) / w)) : max;
 }

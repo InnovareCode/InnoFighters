@@ -1,4 +1,5 @@
 import { gradienteVertical } from './gradientes';
+import { larguraDoTexto } from './medida';
 import type { Ctx } from './tela';
 
 /**
@@ -115,7 +116,7 @@ export function textoQuebrado(
   let n = 0;
   for (const p of palavras) {
     const tentativa = linha ? `${linha} ${p}` : p;
-    if (ctx.measureText(tentativa).width > larguraMax && linha) {
+    if (larguraDoTexto(ctx, tentativa) > larguraMax && linha) {
       texto(ctx, linha, x, yy, tamanho, cor, alinhamento);
       linha = p;
       yy += alturaLinha;

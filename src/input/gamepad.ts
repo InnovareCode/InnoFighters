@@ -11,6 +11,8 @@ export interface PadLike {
 export type EstadoPad = Record<BotaoPad, boolean>;
 
 const ZONA_MORTA = 0.5;
+/** Sem controle nenhum conectado, a lista do navegador só é pedida a cada tantos quadros (o controle novo é visto em ~0,25 s). */
+const CONSULTA_OCIOSA = 15;
 
 /** Estado lógico de um controle (porte do `st` de pollPads): direcionais por botão ou analógico. */
 export function lerEstadoPad(pad: PadLike): EstadoPad {
@@ -58,14 +60,22 @@ export class Gamepads {
     private readonly obterPads: ObterPads = () => (typeof navigator !== 'undefined' ? navigator.getGamepads?.() : null),
   ) {}
 
+  /** Consultas seguidas sem nenhum controle conectado: sem controle, só olha a cada `CONSULTA_OCIOSA` quadros (cada `getGamepads()` aloca uma lista nova no navegador). */
+  private ociosas = 0;
+
   consultar(): void {
     if (this.quebrado) return;
+    if (this.slots.size === 0 && this.ociosas > 0 && this.ociosas % CONSULTA_OCIOSA !== 0) {
+      this.ociosas++;
+      return;
+    }
     try {
       const todos = Array.from(this.obterPads() ?? []);
       const vivos: Array<[number, PadLike]> = [];
       todos.forEach((p, idx) => {
         if (p && p.connected) vivos.push([idx, p]);
       });
+      this.ociosas = vivos.length === 0 && this.slots.size === 0 ? this.ociosas + 1 : 0;
       // controle que sumiu (desconectado, ou na lista com connected:false): solta o que ele segurava e libera o slot
       for (const [idx, slot] of [...this.slots]) {
         if (vivos.some(([i]) => i === idx)) continue;

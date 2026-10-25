@@ -1,6 +1,8 @@
 import type { IdLutador } from '../core/contratos';
 import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
+import { gradienteVertical } from '../render/gradientes';
+import { larguraDoTexto } from '../render/medida';
 import { desenharPose } from '../render/pose';
 import { FB } from '../render/texto';
 import type { ChegadaDeArte } from './chegada-de-arte';
@@ -52,7 +54,7 @@ export function tamanhoDoNomeNoContexto(ctx: { font: string; measureText(s: stri
   const antes = ctx.font;
   const t = tamanhoDoNomeDeEspecial((r, tam) => {
     ctx.font = FB(tam);
-    return ctx.measureText(r).width;
+    return larguraDoTexto(ctx, r);
   }, id, rotulo);
   ctx.font = antes;
   return t;
@@ -122,10 +124,7 @@ export function miniatura(
   ctx.beginPath();
   f.rr(x, y, w, h, 6);
   ctx.clip();
-  const g = ctx.createLinearGradient(0, y, 0, y + h);
-  g.addColorStop(0, bg ? bg[0] : '#2b3a70');
-  g.addColorStop(1, bg ? bg[1] : '#0d1233');
-  ctx.fillStyle = g;
+  ctx.fillStyle = gradienteVertical(ctx, bg ? bg[0] : '#2b3a70', bg ? bg[1] : '#0d1233', y, y + h);
   ctx.fillRect(x, y, w, h);
   const pd = getPD(r.ch, pose);
   const s = Math.min((h - 6) / pd.h, (w - 6) / pd.w) / r.ch.K;

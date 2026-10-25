@@ -39,9 +39,9 @@ export function gradienteVertical(ctx: Ctx, topo: string, base: string, y0: numb
     m = new Map();
     porContexto.set(ctx, m);
   }
-  const id = `v|${topo}|${base}|${y0}`;
+  const id = `v|${topo}|${base}|${y0}|${y1}`;
   const e = m.get(id);
-  if (e && e.y1 === y1) return e.g;
+  if (e) return e.g;
   const g = ctx.createLinearGradient(0, y0, 0, y1);
   g.addColorStop(0, topo);
   g.addColorStop(1, base);

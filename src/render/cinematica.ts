@@ -9,6 +9,7 @@ import { silhuetaTingidaDe } from './esquiva';
 import { desenharEstilo, estampaDaTarja, mistura, type EstiloId, type Paleta } from './estilos-especiais';
 import { identidadeDe, identidadePadrao, type Identidade, type Ritmo } from './identidade-especiais';
 import { chDaFicha, desenharLutador } from './lutador';
+import { larguraDoTexto } from './medida';
 import type { Ctx } from './tela';
 import { FONTE_DO_ESPECIAL, textoArcade } from './texto';
 
@@ -576,7 +577,7 @@ export class Cinematica {
   private tamanhoDoNome(ctx: Ctx, nome: string): number {
     ctx.save();
     ctx.font = FONTE_DO_ESPECIAL(48);
-    const w = ctx.measureText(nome).width;
+    const w = larguraDoTexto(ctx, nome);
     ctx.restore();
     const livre = LARGURA_DA_TARJA * 0.62;
     return w > livre ? Math.max(26, Math.floor((48 * livre) / w)) : 48;

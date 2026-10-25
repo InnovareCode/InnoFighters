@@ -90,3 +90,73 @@ Aparelho: ______ Sistema: ______ Navegador: ______ Versão do jogo (Opções): _
 Nenhum dado pessoal é necessário: se o vídeo mostrar notificações ou nome de conta, **não envie** esse trecho.
 
 > Pendência registrada pela Íris: sem vencer o ARCADE no aparelho, BAATAR e ZENON (os dois de maior memória) não ficam disponíveis para o T5. A decisão de oferecer um atalho de liberação para teste é do dono.
+
+---
+
+## Contador de FPS no aparelho (`?fps=1`)
+
+Um contador discreto para o dono ligar no Android dele e mandar números reais. Não precisa de DEV: funciona no site de produção.
+
+### Como ligar
+
+Abra o jogo com `?fps=1` no endereço, por exemplo `https://SEU-ENDERECO/?fps=1`. Sem esse parâmetro (ou com `?fps=0`) o medidor **não existe**: o código dele nem é baixado e o laço do jogo só confere um valor nulo.
+
+Combina com `?rs=1`, `?rs=1.5` ou `?rs=2` (força a resolução do canvas; sem `?rs=` o celular escolhe sozinho entre 2, 1,5 e 1).
+
+### O que aparece
+
+Uma caixinha escura, no **centro da base** da tela (entre o joystick à esquerda e os botões à direita, dentro da margem segura do aparelho), com duas linhas e um botão:
+
+```
+60 fps  p95 17.1  pior 33 ms (5s)
+RS 1.5 auto | luta | arte 78 MiB | lt 0
+[ COPIAR ]
+```
+
+| Campo | O que quer dizer |
+|---|---|
+| `60 fps` | média do último 1 s (quadros ÷ soma dos intervalos). O ideal é perto da taxa da tela (60, 90, 120). |
+| `p95` | em 95% dos quadros dos últimos 5 s o intervalo foi igual ou menor que isso (ms). 16,7 = 60 fps liso; passou de 20, o jogo falha em 1 de cada 20 quadros. |
+| `pior` | o quadro mais lento dos últimos 5 s (ms). Engasgo visível passa de uns 50 ms. |
+| `RS 1.5 auto` | resolução do canvas agora (2, 1,5 ou 1) e quem decidiu: `auto` = o governador do celular, `fixo` = desktop, `forcado` = veio de `?rs=`. Se o número desce sozinho, é o jogo se adaptando à lentidão. |
+| `luta` | cena ou fase em desenho: `boot`, `title`, `menu`, `select`, `diff`, `vs`, `luta`, `luta/provocacao`, `luta/hitstop`, `luta/filme`, `luta/tarja-super`, `luta/faixa-especial`, `luta/tarja-especial`, `luta/pausa`, `luta/ko`, `result`... |
+| `arte 78 MiB` | arte decodificada na memória agora (atlas, folhas FILME, cenários e retratos). `-` = ainda não carregou. |
+| `lt 0` | "long tasks" (trabalho de mais de 50 ms que travou a tela) nos últimos 5 s. `n/d` = o navegador não informa. Não existe contador de coletas de lixo (GC) para páginas: o navegador não expõe. |
+
+O texto muda a cada 0,5 s. Quadros com mais de 500 ms de intervalo (aba em segundo plano, tela bloqueada) não entram nas contas.
+
+### Como mandar o relatório
+
+1. Jogue uns 30 segundos nas telas que quer medir (menu, seleção, uma luta com especial e super, por exemplo).
+2. Toque em **COPIAR**. O botão vira `COPIADO` por 1,5 s. (Se o navegador negar a área de transferência, aparece uma caixa com o texto: copie dela.)
+3. Cole a mensagem inteira na conversa com a equipe.
+
+O que o relatório leva (sem dado pessoal; o `userAgent` basta):
+
+```json
+{
+  "formato": "inno-fps-1", "janelaS": 30,
+  "versao": "abc1234 · 24/10 20:00",
+  "userAgent": "...", "dpr": 2.625, "tela": "915x412", "canvas": "1440x810",
+  "hardwareConcurrency": 8, "deviceMemoryGB": 8,
+  "agora": { "cena": "luta", "rs": 1.5, "rsModo": "auto", "arteMiB": 77.7 },
+  "ultimos5s": { "quadros": 300, "fps": 60, "p95": 17.1, "pior": 33 },
+  "porCena": {
+    "menu":  { "quadros": 120, "segundos": 2, "fps": 60, "p95": 16.7, "pior": 16.8, "rsMin": 1.5, "rsMax": 1.5 },
+    "luta":  { "quadros": 900, "segundos": 15.2, "fps": 59, "p95": 18.9, "pior": 60, "rsMin": 1, "rsMax": 1.5 }
+  },
+  "longtasks": { "suportado": true, "ultimos5s": 0, "piorMs": 0, "totalDesdeLigar": 2 }
+}
+```
+
+`porCena` cobre os **últimos 30 s** (cenas que acabaram há mais tempo somem). `rsMin`/`rsMax` diferentes numa mesma cena mostram que o jogo trocou de resolução durante ela. `deviceMemoryGB` e `hardwareConcurrency` podem vir `null` no iOS.
+
+### Custo do próprio medidor
+
+Ligado: um quadro grava 4 números em vetores fixos (sem alocar); os cálculos (p95, fps) rodam a cada 0,5 s sobre no máximo 5 s de quadros; o relatório só é montado ao tocar em COPIAR. Desligado: zero.
+
+### Limites
+
+- O medidor mede o que o navegador **entrega** (intervalo entre quadros); não mede GPU nem temperatura. Com a tela travada em 60 Hz, 60 fps é o teto.
+- Ele mesmo consome um pouco de tela: não deixe ligado para jogar de verdade.
+- Código: `src/ui/medidor-agregacao.ts` (contas, testado em `tests/unit/medidor-agregacao.test.ts`), `src/ui/medidor-fps.ts` (caixinha e botão) e a ligação em `src/main.ts`. Testes de tela: `tests/e2e/medidor-fps.spec.ts`.

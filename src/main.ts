@@ -17,7 +17,7 @@ import { temToque } from './input/toque';
 import { REGRAS_PADRAO, regrasComFluidez, regrasComMotorV2, regrasComRitmo } from './meta';
 import { criarEntrada } from './input/entrada';
 import { ajustarEscala } from './platform/escala';
-import { VERSAO, verificarVersao } from './versao';
+import { rotuloDaVersao, VERSAO, verificarVersao } from './versao';
 import { iniciarSw } from './platform/sw';
 import { mostrarErrosNaTela } from './platform/erros';
 import { observarFoco } from './platform/foco';
@@ -259,7 +259,27 @@ async function iniciar(): Promise<void> {
   const governador = POLITICA_DE_RESOLUCAO.adaptativa ? new GovernadorDeResolucao(indiceDoDegrau(), POLITICA_DE_RESOLUCAO.degraus.length - 1) : null;
   let trocaPendente: Troca | null = null;
   const trocasFeitas: Array<Troca & { rs: number }> = [];
+  // `?fps=1`: contador de FPS no aparelho (docs/medicao-em-aparelho.md). Desligado, o módulo nem é baixado e o laço só testa um null.
+  let medidor: { quadro(agora: number): void } | null = null;
+  if (new URLSearchParams(window.location.search).get('fps') === '1') {
+    void import('./ui/medidor-fps').then((m) => {
+      medidor = m.criarMedidor({
+        rotulo: () => m.rotuloDaCena(ui),
+        rs: () => degrauAtual().rs,
+        rsModo: () => (new URLSearchParams(window.location.search).has('rs') ? 'forcado' : POLITICA_DE_RESOLUCAO.adaptativa ? 'auto' : 'fixo'),
+        arteMiB: () => {
+          try {
+            return ui.m ? Math.round((ui.m.arte.memoria().imagens / 1048576) * 10) / 10 : null;
+          } catch {
+            return null;
+          }
+        },
+        versao: rotuloDaVersao(VERSAO),
+      });
+    });
+  }
   const quadro = (agora: number): void => {
+    medidor?.quadro(agora);
     const intervalo = agora - ultimo;
     acc += Math.min(intervalo, 100);
     ultimo = agora;

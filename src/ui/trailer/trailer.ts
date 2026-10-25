@@ -8,6 +8,7 @@ import { aplicarCamera } from '../../render/camera';
 import { APRESENTACAO, comPose, leituraApresentada } from '../../render/apresentacao-lutadores';
 import { Cinematica } from '../../render/cinematica';
 import { HudRitmo } from '../../render/hud-ritmo';
+import { LimiteDoFlash } from '../../render/flash-limitado';
 import { TarjaDoSuper } from '../../render/tarja-super';
 import { superDoLutador } from '../../data/supers';
 import { alturaDoLutador, FilmeDoEspecial } from '../../render/filme';
@@ -145,6 +146,8 @@ export class TrailerEmCena implements ControladorDoTrailer {
   private readonly tarjaDoSuper = new TarjaDoSuper({ rng: criarRng(ROTEIRO.sementeVisual + 7) });
   /** Só o contador de acertos entra no trailer (sem DANGER nem nota: a cena é de câmera, não de placar). Anda no tick do motor, como na luta. */
   private readonly hudRitmo = new HudRitmo();
+  /** O defensor do super multi-acerto e do filme do KO perde o branco lavado do flash (máx. 0,25), como na luta. */
+  private readonly limiteDoFlash = new LimiteDoFlash();
   /** O FILME do especial (D-V6): o motor do plano fica parado pelos ticks dele (o ritmo do diretor), e a cena o toca por cima do mundo. */
   private filme: FilmeDoEspecial;
   /** Eventos do tick do contato que esperam o filme: o pó da queda (na batida da queda) e o resto (KO, fim de round...) para o fim. */
@@ -282,6 +285,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.cine.zerarLuta();
     this.tarjaDoSuper.zerarLuta();
     this.hudRitmo.zerar();
+    this.limiteDoFlash.zerar();
     this.entrada.zerar();
     document.body.classList.add('em-trailer');
     document.body.dataset['trailer'] = this.estatico ? 'estatico' : 'completo';
@@ -347,6 +351,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.cine.zerarLuta();
     this.tarjaDoSuper.zerarLuta();
     this.hudRitmo.zerar();
+    this.limiteDoFlash.zerar();
     this.entrada.zerar();
     this.efeitos.limpar();
   }
@@ -498,6 +503,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.cine.zerarLuta();
     this.tarjaDoSuper.zerarLuta();
     this.hudRitmo.zerar();
+    this.limiteDoFlash.zerar();
     this.entrada.zerar();
     this.filme.zerar();
     this.efeitos.limpar();
@@ -540,6 +546,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
       this.cine.zerarLuta();
       this.tarjaDoSuper.zerarLuta();
       this.hudRitmo.zerar();
+      this.limiteDoFlash.zerar();
       this.entrada.zerar();
       this.filme.zerar();
       this.adiadosNaQueda = [];
@@ -549,6 +556,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     if (luta && q.motorAndou) {
       // Tick com FILME: o acerto que o abriu e os sons/efeitos dele são do filme (por batida); KO, fim de round e o pó da queda esperam (como na cena da luta)
       const eventos = q.filme ? this.separarParaOFilme(q.eventos) : q.eventos;
+      this.limiteDoFlash.reagir(q.eventos);
       this.reagirAosEventos(eventos, comSom);
       this.petalas.avancar(luta.t);
       if (luta.tick !== this.ultimoTickDoJogo) {
@@ -568,6 +576,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
       }
     }
     if (q.filme && luta) this.iniciarFilme(q.filme, luta);
+    if (luta) this.limiteDoFlash.avancar(luta, this.filme.ativo);
     // a tarja do especial (só nas batidas marcadas): começa neste tick e anda nos seguintes, em que o motor está congelado
     if (q.cine) {
       this.cine.iniciar(this.eventoDaCine(q.cine.ev, luta), q.cine.modo);
@@ -796,6 +805,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
       overlay: false,
       tremor: bloqueado ? false : this.ui.c.persist.settings.shake,
       zoom: vistaDoFilme ? { fator: 1, x: LARGURA / 2 } : q.zoom,
+      flashLimitado: this.limiteDoFlash.limitado,
       ...(arc ? { acesos: arc.acesos, poses } : {}),
     });
     if (bloqueado) this.desenharZenonEmContraluz(q, luta, poses[1]);

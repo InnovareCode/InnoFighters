@@ -14,6 +14,7 @@ import { APRESENTACAO, falaDoChefe, roteiroDe } from '../../render/apresentacao-
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
 import { FaixaRitmo } from '../../render/faixa-ritmo';
 import { HudRitmo } from '../../render/hud-ritmo';
+import { LimiteDoFlash } from '../../render/flash-limitado';
 import { TarjaDoSuper } from '../../render/tarja-super';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
 import { alturaDoLutador, FilmeDoEspecial, TICKS_PARA_PULAR_RITMO, type EventoFilme, type HudDoRival, type ModoFilme } from '../../render/filme';
@@ -77,6 +78,8 @@ export class CenaFight implements Cena {
   readonly faixaRitmo = new FaixaRitmo();
   /** HUD do ritmo (`Regras.ritmo.tarja`): DANGER com a vida baixa, nota do combo e contador polido. O estado anda no tick (abaixo); o desenho é do `desenharHUD`. */
   readonly hudRitmo = new HudRitmo();
+  /** Flash de dano limitado a 0,25 no defensor do super multi-acerto e do filme do KO (flash-limitado.ts); o resto do jogo segue com os 0,5 do protótipo. */
+  readonly limiteDoFlash = new LimiteDoFlash();
   /** TARJA DO SUPER (R-9, `Regras.ritmo.super`): congela 30 ticks — usada no lugar de `cine`/`faixaRitmo` quando `ev.super === true` (§3.2/§3.4). */
   readonly tarjaDoSuper: TarjaDoSuper;
   readonly sessao: SessaoEspecial;
@@ -343,6 +346,7 @@ export class CenaFight implements Cena {
     this.cine.zerarLuta();
     this.faixaRitmo.zerarLuta();
     this.hudRitmo.zerar();
+    this.limiteDoFlash.zerar();
     this.tarjaDoSuper.zerarLuta();
     this.sessao.zerarLuta();
     if (this.ritmo) {
@@ -609,6 +613,7 @@ export class CenaFight implements Cena {
         return;
       }
     }
+    this.limiteDoFlash.avancar(this.ui.m.game, this.filme.ativo);
     // FILME do especial: o motor não anda (como a cinemática); KO, troca de barra e fim de round esperam o último quadro
     if (this.filme.ativo) {
       this.registrarRitmo('filme');
@@ -643,6 +648,7 @@ export class CenaFight implements Cena {
     this.antesDoTick = [game.fighters[0], game.fighters[1]].map((f) => ({ hp: f.hp, hpShown: f.hpShown, barras: f.barras })) as [HudDoRival, HudDoRival];
     const t0 = game.t;
     game.update(this.fonte);
+    this.limiteDoFlash.reagir(game.events);
     this.registrarRitmo(motivoDoTick({ entradaChefeAtiva: false, provocacaoBloqueando: false, filmeAtivo: false, tarjaBloqueando: false, tarjaDoSuper: false, fase: game.phase, hitstop: game.hitstop }));
     petalasLuta.avancar(t0);
     // eventos -> som e efeitos visuais; depois os efeitos andam um tick (só se a luta andou: hitstop congela).
@@ -1055,6 +1061,7 @@ export class CenaFight implements Cena {
       alvoTreino: game.dummy,
       esquiva: this.ui.c.regras.esquiva,
       ...(this.ui.c.regras.ritmo?.tarja === true ? { ritmo: this.hudRitmo } : {}),
+      flashLimitado: this.limiteDoFlash.limitado,
       ...(q ? { hud: false, acesos: q.acesos } : {}),
       ...(vistaDoFilme ? { overlay: false } : {}),
       ...(zoomDaEntrada ? { zoom: zoomDaEntrada } : {}),

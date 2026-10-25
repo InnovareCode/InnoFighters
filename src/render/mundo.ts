@@ -46,6 +46,8 @@ export interface OpcoesMundo extends OpcoesHud {
    * testa o acerto). Ausente = nada (o oráculo de pixel e os testes não mudam).
    */
   readonly caixas?: LeituraLuta;
+  /** Por lutador: o flash de dano dele está limitado a 0,25 (defensor de um super multi-acerto ou do filme do KO; `LimiteDoFlash`). Ausente = o protótipo (0,5). */
+  readonly flashLimitado?: Readonly<Partial<Record<0 | 1, boolean>>>;
 }
 
 /**
@@ -94,7 +96,7 @@ export function desenharMundo(
       ctx.save();
       ctx.translate(dx, 0);
     }
-    desenharLutador(ctx, vista, r.ch, r.arte, f === chefe ? rampa : 0);
+    desenharLutador(ctx, vista, r.ch, r.arte, f === chefe ? rampa : 0, opcoes.flashLimitado?.[f.indice] === true);
     if (dx !== 0) ctx.restore();
   }
   for (const p of luta.projectiles) {

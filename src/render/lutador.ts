@@ -5,6 +5,7 @@ import type { LutadorLeitura } from '../core/contratos';
 import type { LutadorMontado } from '../data/montar';
 import { getPD } from '../data/poses';
 import { desenharAuraChefe } from './aura-chefe';
+import { alfaDoFlash } from './flash-limitado';
 import { ALFA_FANTASMA, desenharFaixaDeEsquiva, ehPoseDeEsquiva, esquivaNaJanela, silhuetaTingidaDe } from './esquiva';
 import { desenharRastroGolpe } from './rastro-golpe';
 import { qualidadeReduzida, type Ctx } from './tela';
@@ -27,8 +28,9 @@ export function chDaFicha(ch: LutadorMontado, ficha: string | null): LutadorMont
  * Nota de fidelidade: no protótipo o piscar da invulnerabilidade (`globalAlpha = 0.6`) era
  * sobrescrito pelo `pose()` seguinte e nunca tinha efeito; portanto não é desenhado aqui.
  * `aura` (0 a 1): a rampa da fase 2 do chefe (`rampaDaFase2`); 0 = nenhuma aura (todo lutador comum e o chefe na fase 1).
+ * `flashLimitado`: o defensor de um super multi-acerto ou do filme do KO (flash-limitado.ts): o flash branco vale no máximo 0,25 em vez de 0,5. Padrão false = o protótipo, pixel a pixel.
  */
-export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMontado, arte: ArteLutador, aura = 0): void {
+export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMontado, arte: ArteLutador, aura = 0, flashLimitado = false): void {
   const ch = chDaFicha(chBase, f.ficha);
   const P = f.pose;
   const pd = getPD(ch, P.name);
@@ -118,7 +120,7 @@ export function desenharLutador(ctx: Ctx, f: LutadorLeitura, chBase: LutadorMont
   if (img) {
     quadro(img, janelaEsq ? ALFA_FANTASMA : 1);
     const silFlash = f.flash > 0 ? arte.silhuetaDe(pd) : null;
-    if (silFlash) quadro(silFlash, (f.flash / 8) * 0.5, false);
+    if (silFlash) quadro(silFlash, alfaDoFlash(f.flash, flashLimitado), false);
   }
   ctx.restore();
 

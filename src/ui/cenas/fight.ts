@@ -13,6 +13,7 @@ import { chefeDaLeitura } from '../../render/aura-chefe';
 import { APRESENTACAO, falaDoChefe, roteiroDe } from '../../render/apresentacao-lutadores';
 import { Cinematica, modoDaCinematica, type ModoCine } from '../../render/cinematica';
 import { FaixaRitmo } from '../../render/faixa-ritmo';
+import { HudRitmo } from '../../render/hud-ritmo';
 import { TarjaDoSuper } from '../../render/tarja-super';
 import { EntradaDoChefe, SOM_DAS_FAIXAS, SOM_DO_CARTAO, somDoBraseiro, type ModoEntrada } from '../../render/entrada-chefe';
 import { alturaDoLutador, FilmeDoEspecial, TICKS_PARA_PULAR_RITMO, type EventoFilme, type HudDoRival, type ModoFilme } from '../../render/filme';
@@ -74,6 +75,8 @@ export class CenaFight implements Cena {
   readonly cine: Cinematica;
   /** FAIXA DO RITMO (R-2, `Regras.ritmo.tarja`): o mesmo aviso do especial, SEM pausar a cena — usada no lugar de `cine` quando a flag está ligada (§3.2). */
   readonly faixaRitmo = new FaixaRitmo();
+  /** HUD do ritmo (`Regras.ritmo.tarja`): DANGER com a vida baixa, nota do combo e contador polido. O estado anda no tick (abaixo); o desenho é do `desenharHUD`. */
+  readonly hudRitmo = new HudRitmo();
   /** TARJA DO SUPER (R-9, `Regras.ritmo.super`): congela 30 ticks — usada no lugar de `cine`/`faixaRitmo` quando `ev.super === true` (§3.2/§3.4). */
   readonly tarjaDoSuper: TarjaDoSuper;
   readonly sessao: SessaoEspecial;
@@ -339,6 +342,7 @@ export class CenaFight implements Cena {
     this.ultimoTick = game.tick;
     this.cine.zerarLuta();
     this.faixaRitmo.zerarLuta();
+    this.hudRitmo.zerar();
     this.tarjaDoSuper.zerarLuta();
     this.sessao.zerarLuta();
     if (this.ritmo) {
@@ -661,6 +665,7 @@ export class CenaFight implements Cena {
       this.ultimoTick = game.tick;
       efeitos.avancar();
       this.sessao.avancar(game);
+      this.hudRitmo.avancar(game);
       this.moedas.avancar();
     }
     this.atualizarBotaoEsquiva();
@@ -1049,6 +1054,7 @@ export class CenaFight implements Cena {
       ...(import.meta.env.DEV && game.training && game.debug ? { caixas: game } : {}),
       alvoTreino: game.dummy,
       esquiva: this.ui.c.regras.esquiva,
+      ...(this.ui.c.regras.ritmo?.tarja === true ? { ritmo: this.hudRitmo } : {}),
       ...(q ? { hud: false, acesos: q.acesos } : {}),
       ...(vistaDoFilme ? { overlay: false } : {}),
       ...(zoomDaEntrada ? { zoom: zoomDaEntrada } : {}),

@@ -9,6 +9,7 @@ import { chDaFicha } from './lutador';
 import { ETIQUETA_POSTURA, desenharPostura, posturaDe, type Postura } from './postura';
 import { desenharRetratoMoldurado } from './retrato';
 import { gradienteLinear, type Parada } from './gradientes';
+import type { HudRitmo } from './hud-ritmo';
 import type { Ctx } from './tela';
 import { caminhoInclinado, painel, retanguloArredondado, texto, textoArcade } from './texto';
 
@@ -40,6 +41,11 @@ export interface OpcoesHud {
    * en >= custo). Padrão false: sem a mecânica (`?expansao=4`) o HUD é o do protótipo, pixel a pixel.
    */
   readonly esquiva?: boolean;
+  /**
+   * HUD do ritmo (`Regras.ritmo.tarja`): contador de combo polido, nota do combo (BOM/ÓTIMO/INCRÍVEL) e aviso DANGER. Ausente = o HUD de sempre,
+   * pixel a pixel. A instância é da cena (o estado anda no tick do motor; aqui só se desenha).
+   */
+  readonly ritmo?: HudRitmo;
 }
 
 /** Máximo de marcadores de round por lado (a UI oferece 1 a 3; o resto é defesa em profundidade). */
@@ -226,14 +232,20 @@ export function desenharHUD(ctx: Ctx, luta: LeituraLuta, elenco: Elenco, opcoes:
   textoArcade(ctx, tl, 480, 74, semLimite ? 54 : 46, urgente ? ['#ffffff', '#ff3b3b'] : ['#fff0a0', '#ff8a00'], '#3a1500');
 
   // contador de combo (o combo que ESTE lutador aplicou no rival)
-  for (const [c, lado] of [[a.combo, 1], [b.combo, 2]] as const) {
-    if (c.t <= 0) continue;
-    const alfa = Math.min(1, c.t / 20);
-    const x = lado === 1 ? 24 : LARGURA - 24;
-    const alinha = lado === 1 ? 'left' : 'right';
-    const pop = 1 + Math.max(0, c.t - 52) * 0.05;
-    textoArcade(ctx, `${c.hits} HITS`, x, 150, 46, ['#fff6b0', '#ff7a1a'], '#2a0d00', alinha, pop, alfa);
-    textoArcade(ctx, `DANO ${Math.round(c.dmg)}`, x, 188, 20, '#fff', '#000', alinha, 1, alfa);
+  if (opcoes.ritmo) {
+    // HUD do ritmo (`Regras.ritmo.tarja`): contador com tranco por acerto e cor por patamar, nota do combo e DANGER (src/render/hud-ritmo.ts)
+    opcoes.ritmo.desenharCombos(ctx, luta);
+    opcoes.ritmo.desenharPerigo(ctx);
+  } else {
+    for (const [c, lado] of [[a.combo, 1], [b.combo, 2]] as const) {
+      if (c.t <= 0) continue;
+      const alfa = Math.min(1, c.t / 20);
+      const x = lado === 1 ? 24 : LARGURA - 24;
+      const alinha = lado === 1 ? 'left' : 'right';
+      const pop = 1 + Math.max(0, c.t - 52) * 0.05;
+      textoArcade(ctx, `${c.hits} HITS`, x, 150, 46, ['#fff6b0', '#ff7a1a'], '#2a0d00', alinha, pop, alfa);
+      textoArcade(ctx, `DANO ${Math.round(c.dmg)}`, x, 188, 20, '#fff', '#000', alinha, 1, alfa);
+    }
   }
   if (luta.training) desenharHudTreino(ctx, luta, opcoes);
 }

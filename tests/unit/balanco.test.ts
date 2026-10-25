@@ -226,11 +226,11 @@ describe('"e se..." (--ajustes): ajusta em memória, não mexe nos dados do jogo
     expect(outro.baatar.chefe?.hpPorBarra).toBe(33);
     expect(outro.baatar.fichas['chefe']?.pow).toBe(0.5);
     // nada vazou para os dados estáticos nem para o elenco do outro teste
-    expect(WEI_LONG.hp).toBe(101);
+    expect(WEI_LONG.hp).toBe(108);
     expect(WEI_LONG.mods.hk?.dmg).toBe(14);
     expect((WEI_LONG.especiais.sFire.proj as { dmg: number }).dmg).toBe(20);
     expect(BAATAR_CHEFE.chefe?.hpPorBarra).toBe(40);
-    expect(elenco['wei-long'].hp).toBe(101);
+    expect(elenco['wei-long'].hp).toBe(108);
     expect(elenco['wei-long'].moves.sFire.proj?.dmg).toBe(20);
     expect(elenco.baatar.chefe?.hpPorBarra).toBe(46); // o elenco de produção: BAATAR guardião (R1), não o chefão antigo de 40
   });

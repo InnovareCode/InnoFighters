@@ -80,7 +80,7 @@ export const PARTITURA: Readonly<Partial<Record<IdPlano, PartituraDoPlano>>> = {
     p2: 'F[-28,12) D+sp@18 F[150,192)',
     energia: [30, 30],
     batidas: [[49], [94], [105]],
-    impressao: 'a3d28e69',
+    impressao: 'db8336b9',
   },
   // MIN-JI x CAIO: HANA-DUL-SET (lk, lk, hk) defendido na ginga; no corte o CAIO defende a voadora e devolve a rasteira (D+hk).
   P2: {
@@ -89,7 +89,7 @@ export const PARTITURA: Readonly<Partial<Record<IdPlano, PartituraDoPlano>>> = {
     p2: 'F[-24,0) T[0,10) F[10,20) T[20,30) F[30,40) T[40,91) T[100,108) T[108,126) F[126,130) D+lk@134 D+lk@143 D+hk@152 F[170,178) T[178,186) F[186,192)',
     energia: [40, 40],
     batidas: [[47], [65], [117], [171]],
-    impressao: 'db0364ef',
+    impressao: 'b4472e3b',
   },
   // AMINU x HAYATO: o AMINU carrega a MASHI andando; o HAYATO recua, testa o vazio, volta e defende de pé; a MASHI nível 3 quebra a guarda; o AMINU fecha com SF › CFT › PASSO DO LEÃO.
   P3: {
@@ -98,7 +98,7 @@ export const PARTITURA: Readonly<Partial<Record<IdPlano, PartituraDoPlano>>> = {
     p2: 'F[-32,0) T[0,30) lp@34 F[46,84) T[90,100) DT[172,192)',
     energia: [40, 40],
     batidas: [[92], [141]],
-    impressao: '1834c83c',
+    impressao: 'bc122743',
   },
   // CENTELLA x CAIO: a CAIO joga a ONDA VERDE, ela defende, recua até a corda e volta no RESORTE; o CAIO avança na ginga e leva a voadora.
   P4: {
@@ -116,7 +116,7 @@ export const PARTITURA: Readonly<Partial<Record<IdPlano, PartituraDoPlano>>> = {
     p2: 'F[-34,0) F[0,4) T[4,8) F[8,14) T[14,18) F[18,26) hp@34 F[122,134) lk@140 T[150,160) F[160,172) T[172,182) F[182,192)',
     energia: [40, 40],
     batidas: [[36], [66], [90]],
-    impressao: '7ec00dbd',
+    impressao: 'a1e9c1d5',
   },
   // NILA x WEI LONG: o WEI pisa (ZHEN DI), a NILA defende agachada, avança, SF › SFT › PASSO, troca de postura (VADIVU) e a SARPA fecha com o BOTE.
   P6: {
@@ -125,7 +125,7 @@ export const PARTITURA: Readonly<Partial<Record<IdPlano, PartituraDoPlano>>> = {
     p2: 'F[-37,0) D+sp@4 F[48,62) F[122,160)',
     energia: [40, 40],
     batidas: [[18], [80], [95], [153]],
-    impressao: '27b0ebf3',
+    impressao: 'fad78798',
   },
   // BAATAR x HAYATO: o soco forte com armadura atravessa o chute do HAYATO e o ARREMESSO DO AVARGA bate o HAYATO no chão; o BAATAR parte no MERGULHO DA ÁGUIA.
   P7: {
@@ -134,7 +134,7 @@ export const PARTITURA: Readonly<Partial<Record<IdPlano, PartituraDoPlano>>> = {
     p2: 'F[-23,0) T[0,6) F[8,30) lk@40 T[74,80) F[112,118) T[118,124) sp@126',
     energia: [90, 40],
     batidas: [[51], [86]],
-    impressao: '2fa1479c',
+    impressao: '4b1128c4',
   },
   // HAYATO x ZENON (o ÚNICO super do trailer): o ZENON defende o BÁSICO do HAYATO e o RAIJIN-KEN, pune o pouso e fecha na CORTESIA DA CASA (tarja de 30, 5 acertos presos, o último mata, filme CURTO).
   P9: {

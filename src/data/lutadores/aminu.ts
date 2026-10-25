@@ -21,7 +21,7 @@ export const AMINU: LutadorDef = {
   // E6b: hp 102 -> 112 e pow 1,06 -> 1,18 (harness: 20,7% de vitória antes). V2-6: hp 112 -> 108 (motor v2 ligado, docs/balanco-motor-v2.md).
   pow: 1.18,
   spd: 0.98,
-  hp: 108,
+  hp: 103, // R-12b: 108 -> 103 (58% com o teto de supers); a vida do chefão não acompanha (54)
   jump: 0.92,
   scale: 1.06,
   stride: 12,
@@ -73,7 +73,7 @@ export const AMINU: LutadorDef = {
     hpPorBarra: 54,
     cena: { duracao: 60, poses: ['sa1', 'sa3'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.83, // R-12: era 0.85 (ritmo completo + cadeia por força)
-    danoRecebidoDificil: 0.91, // era 0.92
+    danoRecebido: 0.82, // R-12: era 0.85 (ritmo completo + cadeia por força)
+    danoRecebidoDificil: 0.9, // era 0.92
   },
 };

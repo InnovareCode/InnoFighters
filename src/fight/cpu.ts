@@ -90,7 +90,9 @@ export const CPU_SUPER = [
   { reserva: 1, confirma: 0.95 },
 ] as const;
 /** Barra cheia há tanto tempo (ticks) sem janela de confirmação: o super sai assim que o rival estiver ao alcance (evita barra cheia parada). */
-const ESPERA_MAXIMA_DO_SUPER = 600;
+const ESPERA_MAXIMA_DO_SUPER = 1500;
+/** R-12: quem ainda não usou NENHUM super espera menos pela janela (a luta não pode passar sem super); depois do primeiro, espera `ESPERA_MAXIMA_DO_SUPER`. */
+const ESPERA_DO_PRIMEIRO_SUPER = 360;
 /** Barra a partir da qual a CPU decide (um sorteio por ciclo) juntar o resto para o super; abaixo de `SAIDA_DA_RESERVA` o ciclo recomeça. */
 const ENTRADA_NA_RESERVA = 60;
 const SAIDA_DA_RESERVA = 35;
@@ -112,6 +114,16 @@ const HISTERESE_ANDAR = 16;
 /** CPU-6: cada repetição de um especial nos últimos 3 divide a chance dele por 2 (`variedade` 0,5). */
 const VARIEDADE = 0.5;
 
+/**
+ * R-12 (G10, reprovação da Íris): a CPU do ritmo (fora do chefão) tem TETO de supers: no máximo `SUPER_TETO_LUTA` na luta, `SUPER_TETO_ROUND` por round
+ * e `SUPER_ESPERA` ticks entre dois. Dois lados dão no máximo 2 x teto = 6 (o limite do G10 é 6). Quem chegou a `SUPER_REFORCO_APOS` ticks de luta sem
+ * nenhum super ganha `SUPER_REFORCO` de regen por tick (a CPU DIFÍCIL reserva a barra e podia passar a luta toda sem enchê-la).
+ */
+export const SUPER_TETO_LUTA = 2;
+export const SUPER_TETO_ROUND = 1;
+export const SUPER_ESPERA = 1800;
+export const SUPER_REFORCO_APOS = 900;
+export const SUPER_REFORCO = 0.08;
 export const NO_INPUT = (): InputFrame => ({ left: false, right: false, up: false, down: false, lp: false, lk: false, hp: false, hk: false, sp: false });
 
 /** O que a CPU precisa enxergar da partida. */
@@ -127,6 +139,13 @@ export interface VistaParaCpu {
   readonly ritmoSuperLigado?: boolean;
   /** R-10 (`ritmo.cpu`): a CPU reserva a barra para o super e o confirma. Só vale com `ritmoSuperLigado`. Sorteia só com a flag ligada. */
   readonly ritmoCpuLigado?: boolean;
+  /** R-12: supers já usados por lado (luta e round) e o `tickDaLuta` do último. Ausente = nenhum (dublê de teste). */
+  readonly supersNaLuta?: readonly [number, number];
+  readonly supersNoRound?: readonly [number, number];
+  readonly ultimoSuperEm?: readonly [number, number];
+  readonly tickDaLuta?: number;
+  /** R-12: o teto de supers da CPU (luta, round, espera) já foi alcançado? Ausente = não. */
+  superBloqueadoPara?(f: Fighter): boolean;
 }
 
 type TeclaIa = 'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp';
@@ -261,7 +280,9 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   // `perfilIa` só existe no chefe (Game.setup); qualquer outro lutador usa a tabela de sempre, sem nenhuma conta nova.
   const L: PerfilCpu = me.perfilIa ?? AI_LEVELS[nivel] ?? AI_LEVELS[0];
   // R-7: upgrade mecânico do botão único para hp+hk (ver `botoesDoSuper`); não sorteia nada, não muda QUANDO a CPU ataca.
-  const superLigado = game.ritmoSuperLigado === true;
+  // R-12 (Íris, G10): a CPU do ritmo tem TETO de supers (luta, round) e ESPERA entre dois. Sem permissão, `superLigado` cai a false: nada de reserva da barra,
+  // finalizador nem upgrade do especial para hp+hk (um especial com a barra cheia sai como especial comum).
+  const superLigado = game.ritmoSuperLigado === true && game.superBloqueadoPara?.(me) !== true;
   const ai = me.ai;
   const inp = NO_INPUT();
   const M = me.ch.moves;
@@ -280,6 +301,8 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   if (me.state !== 'idle' && me.state !== 'walk' && me.state !== 'crouch' && me.state !== 'jump' && me.state !== 'move' && me.state !== 'block' && me.state !== 'hit') return inp;
   // R-10 (`ritmo.cpu`): reserva da barra para o super. Sem a flag (ou sem super para este lutador/ficha) nada abaixo roda: nenhum rnd, nenhum filtro.
   const sup = game.ritmoCpuLigado === true && superLigado && me.perfilIa === null && opp.perfilIa === null ? superDoLutador(me.ch.id, me.ficha) : undefined;
+  // R-12: fora do finalizador e da janela, o especial que COINCIDE com o golpe do super NÃO vira super (era o "super no neutro" que errava 55% das vezes).
+  const superNeutro = sup !== undefined ? false : superLigado;
   // R-8/R-10 resto: a CPU do ritmo (sem chefão) confirma o acerto, segue o plano, pune o erro, varia o especial e não treme no andar. Sem a flag nada abaixo roda.
   const ritmoCpu = game.ritmoCpuLigado === true && me.perfilIa === null && opp.perfilIa === null;
   const cfgR = CPU_RITMO[Math.min(nivel, CPU_RITMO.length - 1)] ?? CPU_RITMO[0];
@@ -328,16 +351,16 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     // rival punível: em hit stun ou na recuperação de um golpe dele (o super vai conectar)
     const oppMvAgora = opp.state === 'move' ? opp.golpeAtual() : null;
     const recuperando = oppMvAgora !== null && opp.mt >= oppMvAgora.S + oppMvAgora.A;
-    const ate = ticksAteOContatoDoSuper() + 1;
+    const ate = ticksAteOContatoDoSuper() + 6;
     const presoAteOContato = opp.state === 'hit' ? opp.stun >= ate : recuperando && oppMvAgora !== null && oppMvAgora.S + oppMvAgora.A + oppMvAgora.R - opp.mt >= ate;
-    janelaSuper = alcanceDoSuper() && (presoAteOContato || ai.superCheio > ESPERA_MAXIMA_DO_SUPER);
+    janelaSuper = alcanceDoSuper() && (presoAteOContato || ai.superCheio > ((game.supersNaLuta?.[me.indice] ?? 0) === 0 ? ESPERA_DO_PRIMEIRO_SUPER : ESPERA_MAXIMA_DO_SUPER));
   }
   // Especial comum que a CPU guarda para não gastar a barra do super: com a barra incompleta, TODO especial; com ela cheia, todo especial menos o super
   // (e o super só nas janelas de confirmação). Só quem sorteou "reserva" no round.
   const bloqueia = (n: NomeGolpe): boolean => {
     if (!sup || ai.reservaSuper !== true || n[0] !== 's') return false;
     if (me.en < MAX_EN) return true;
-    return n !== sup.golpe;
+    return true; // barra cheia e reservada: só as chamadas explícitas do super (finalizador, janela) gastam
   };
   // 1) reação a ataques do oponente (uma decisão por golpe)
   const oppMv = opp.state === 'move' ? opp.golpeAtual() : null;
@@ -424,7 +447,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
         else inp.left = true;
       } else if (dir > 0) inp.left = true;
       else inp.right = true;
-    } else Object.assign(inp, moveInput(ai.reacao.golpe, dir, me, superLigado));
+    } else Object.assign(inp, moveInput(ai.reacao.golpe, dir, me, superNeutro));
     ai.reacao = null;
     ai.plan = null;
     ai.t = 0;
@@ -533,7 +556,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     // Quem tem golpe `antiaereo` (HURACANRANA) usa o dele no lugar do ↓+ESP genérico, sorteando o mesmo `rnd() < 0.5`.
     const aereo = me.ch.dicasIa.length > 0 ? golpeComPapel(me, 'antiaereo', ad) : null;
     if (aereo !== null && rnd() < 0.5) {
-      Object.assign(inp, moveInput(aereo, dir, me, superLigado));
+      Object.assign(inp, moveInput(aereo, dir, me, superNeutro));
     } else if (aereo === null && livre('sDown') && rnd() < 0.5) {
       inp.down = true;
       inp.sp = true;
@@ -561,7 +584,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   let escolhido: NomeGolpe | null = null;
   const doMove = (n: NomeGolpe): void => {
     escolhido = n;
-    Object.assign(plan, moveInput(n, dir, me, superLigado));
+    Object.assign(plan, moveInput(n, dir, me, superNeutro));
   };
   if (!me.grounded) return inp;
   // R-10: barra cheia + rival punível ao alcance (ou espera esgotada): o super, com a chance de confirmar do nível (um sorteio por tick de decisão).
@@ -574,7 +597,7 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   // Dicas de CPU (E3): REGRA — só quem declara `ia` num golpe entra aqui; lutador sem dica não chama nada e não gasta
   // RNG. Hoje nenhum papel está implementado (entram em S1b..S5), então isto é só o ponto de plug.
   if (me.ch.dicasIa.length > 0) {
-    const porDica = planoPorDica(me, ad, dir, L, rnd, superLigado, sup ? bloqueia : undefined);
+    const porDica = planoPorDica(me, ad, dir, L, rnd, superNeutro, sup ? bloqueia : undefined);
     if (porDica) {
       // Um tick só: o golpe começa agora, o resto é do estado `move` (e do `segurar`); depois disso, plano novo.
       ai.plan = null;

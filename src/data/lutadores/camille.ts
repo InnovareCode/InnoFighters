@@ -22,7 +22,7 @@ export const CAMILLE: LutadorDef = {
   pow: 0.94,
   spd: 1.04,
   // R-12: hp 94 -> 106 (perdeu a FLECHA e o COUP D'ARRÊT do combo na revisão dos 17: 34% -> 49,5% com o ritmo completo).
-  hp: 106,
+  hp: 110,
   jump: 1.0,
   scale: 1.03,
   stride: 12,

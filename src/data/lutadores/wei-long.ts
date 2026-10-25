@@ -18,7 +18,7 @@ export const WEI_LONG: LutadorDef = {
   // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0.93 -> 0.95 e hp 96 -> 101.
   pow: 0.95,
   spd: 0.9,
-  hp: 101,
+  hp: 108, // R-12b: 101 -> 108 (com o teto de supers da CPU o WEI LONG caía a 44%: o super de projétil é o dele)
   jump: 0.94,
   scale: 1.04,
   stride: 15,

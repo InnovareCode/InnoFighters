@@ -91,6 +91,8 @@ export interface PartidaParaLutador {
   readonly ritmoCadeiaLigada?: boolean;
   /** R-7 (`ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Opcional: dublê de teste sem o campo = desligado. */
   readonly ritmoSuperLigado?: boolean;
+  /** R-12: a CPU do ritmo que já usou o teto de supers (luta, round, espera) NÃO recebe o super nem por acidente (hp e hk da CPU em ticks vizinhos viram o par). Ausente = nunca bloqueia. */
+  superBloqueadoPara?(f: Fighter): boolean;
   /** FLUIDEZ (M1-M6, `ConfigPartida.fluidez`). Opcional: dublê de teste sem o campo = o motor de antes, bit a bit. */
   readonly fluidez?: FluidezMotor | undefined;
   /** R-10 (D-R4): regen da barra por tick. Ausente = 0,04 de sempre (só `ritmo.super` + `ritmo.cpu` sobem, para a CPU juntar barra sem deixar de usar especiais). */
@@ -503,7 +505,7 @@ export class Fighter {
    */
   private aguardandoParDoSuper(jogo: PartidaParaLutador): boolean {
     if (jogo.fluidez?.parSuper === true) return false; // M1: sem espera — o forte sai na hora e é PROMOVIDO a super se o par fechar (`promoverPar`)
-    if (jogo.ritmoSuperLigado !== true || !this.buf || (this.buf.k !== 'hp' && this.buf.k !== 'hk')) return false;
+    if (jogo.ritmoSuperLigado !== true || jogo.superBloqueadoPara?.(this) === true || !this.buf || (this.buf.k !== 'hp' && this.buf.k !== 'hk')) return false;
     if (this.en < MAX_EN || !superDoLutador(this.ch.id, this.ficha)) return false;
     const apertadoEm = this.buf.k === 'hp' ? this.hpApertadoEm : this.hkApertadoEm;
     return this.age - apertadoEm <= 2;
@@ -730,7 +732,7 @@ export class Fighter {
     }
     // R-7: UMA chamada por tick, ANTES de qualquer estado (como o `buf` acima). Com a flag desligada, nada roda: nenhuma
     // borda é guardada e nenhum estado novo aparece (igual ao motor de antes, bit a bit).
-    this.golpeSuperNoTick = jogo.ritmoSuperLigado === true ? this.superNaBorda(inp) : null;
+    this.golpeSuperNoTick = jogo.ritmoSuperLigado === true && jogo.superBloqueadoPara?.(this) !== true ? this.superNaBorda(inp) : null;
     this.agarrarNoTick = flu?.agarraoPar === true ? this.agarrarNaBorda(inp) : false;
     if (this.armor > 0) this.armor--;
     // ESQUIVA: o botão fica guardado `buffer` ticks. Com a flag desligada nada disto roda (ignorado antes de qualquer conta).

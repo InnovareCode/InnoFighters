@@ -14,8 +14,8 @@ const ORIGINAIS = ['hayato', 'wei-long', 'min-ji', 'caio'] as const;
 /** Números de produção da E6b, recalibrados na V2-6 com o motor v2 ligado (docs/balanco-motor-v2.md). Quem reverter um deles sem querer cai aqui. */
 const BALANCEADO = {
   hayato: { hp: 109, pow: 1.07 },
-  'wei-long': { hp: 101, pow: 0.95 },
-  'min-ji': { hp: 111, pow: 0.92 }, // R-12: 97 -> 111 com o ritmo completo (cadeia por força + CPU nova)
+  'wei-long': { hp: 108, pow: 0.95 }, // R-12b: 101 -> 108
+  'min-ji': { hp: 115, pow: 0.92 }, // R-12: 97 -> 115 com o ritmo completo (cadeia por força + CPU nova + teto de supers)
   caio: { hp: 98, pow: 0.97 },
 } as const;
 
@@ -38,7 +38,7 @@ describe('E6b: oráculo (protótipo) x produção (balanceada)', () => {
       expect(LUTADORES[id].pow, id).toBe(BALANCEADO[id].pow);
       expect(jogo[id].hp, id).toBe(BALANCEADO[id].hp);
     }
-    expect(montarTodos({ dadosDeProducao: true })['wei-long'].hp).toBe(101);
+    expect(montarTodos({ dadosDeProducao: true })['wei-long'].hp).toBe(108);
     expect(montarTodos({ dadosDeProducao: true })['wei-long'].moves.hk.dmg).toBe(14);
   });
 

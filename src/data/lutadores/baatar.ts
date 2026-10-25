@@ -73,11 +73,12 @@ export const BAATAR: LutadorDef = {
     // T10 do orçamento (atlas a 0,9 da escala): a ponta do `lp1` caiu 3,8 px na medição (a mão em y 44,1 -> 40,3) e o fundo da caixa
     // passou do topo da cabeça do rival (252,2 -> 256,4 contra ~254): o soco leve deixou de conectar em qualquer distância. `bh` 62
     // devolve o fundo a 252,4, a geometria de antes (frame data medida, docs/balanco/frame-data.md).
-    lp: { bh: 62 },
-    hp: { S: 9, dmg: 11, armor: 1 },
+    lp: { bh: 62, dmg: 4.8 }, // R-12b: dmg 4 -> 4,8 (e lk 5 -> 5,8): o BAATAR caía a 42-44% com o teto de supers da CPU
+    lk: { dmg: 5.8 },
+    hp: { S: 9, dmg: 12, armor: 1 }, // R-12b: dmg +1 em hp, chp e chk (11, 12, 11; o hk fica em 15: o filme MERGULHO exige >= 1,10 x hk): o BAATAR caía a 41% com o teto de supers da CPU
     hk: { S: 12, dmg: 15, armor: 1 },
-    chp: { dmg: 12, armor: 1 },
-    chk: { S: 10, dmg: 11, armor: 1 },
+    chp: { dmg: 13, armor: 1 },
+    chk: { S: 10, dmg: 12, armor: 1 },
   },
   especiais: ESPECIAIS_BAATAR,
   // MERGULHO: o golpe usa a animação `leap` (sc0 decolagem, sc1 queda). O atlas real tem a arte própria (`dive0` agachado/impulso,
@@ -90,7 +91,7 @@ export const BAATAR: LutadorDef = {
     hpPorBarra: 46,
     cena: { duracao: 60, poses: ['devekh2', 'win'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.87, // R-12: era 0.82 (ritmo completo + cadeia por força)
+    danoRecebido: 0.88, // R-12: era 0.82 (ritmo completo + cadeia por força)
     danoRecebidoDificil: 0.7, // era 0.75
   },
 };

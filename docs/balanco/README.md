@@ -1,6 +1,6 @@
 # Balanço: qual rodada é qual
 
-> **R-12 (25/10/2026):** a rodada de produção em `docs/balanco/` agora é com o RITMO COMPLETO (intervalos, filmeRestrito, super, cadeia, cpu, como `RITMO_PADRAO`), esquiva e motor v2. Hashes atuais: total `ba5a6ed485dd566a`, regulares `45e8054f7c5431c6`, chefes `8545d5cae5fdb7ac` (os hashes de parágrafos abaixo são históricos). `--sem-ritmo` desliga o ritmo e `--ritmo a,b` liga só essas (A/B, sai em `relatorios/`). Resumo em [`../balanco-motor-v2.md`](../balanco-motor-v2.md) §7. `sem-motor-v2/` e `sem-esquiva/` são rodadas antigas e NÃO foram regravadas.
+> **R-12 (25/10/2026):** a rodada de produção em `docs/balanco/` agora é com o RITMO COMPLETO (intervalos, filmeRestrito, super, cadeia, cpu, como `RITMO_PADRAO`), esquiva e motor v2. Hashes atuais (após a correção do teto de supers, R-12b): total `a115e01939248c55`, regulares `995c01a8db8ac7db`, chefes `9c5110a3630b6ae5` (os hashes de parágrafos abaixo são históricos). `--sem-ritmo` desliga o ritmo e `--ritmo a,b` liga só essas (A/B, sai em `relatorios/`). Resumo em [`../balanco-motor-v2.md`](../balanco-motor-v2.md) §7. `sem-motor-v2/` e `sem-esquiva/` são rodadas antigas e NÃO foram regravadas.
 
 Os arquivos são GERADOS por `npm run balanco` (não edite à mão). Duas rodadas `--completo` (100 sementes, NORMAL e DIFÍCIL, 19 800 lutas) estão versionadas:
 

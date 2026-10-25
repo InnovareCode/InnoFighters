@@ -27,7 +27,7 @@ import type { LutadorMontado } from '../data/montar';
 import { superDoLutador, type SuperDoGolpe } from '../data/supers';
 import type { ContraDef, DrenaEnergiaDef, FinalDoCombo, GolpeMontado, IdCenario, KindGolpe, NivelGolpe, NomeGolpe, SomGolpe } from '../data/tipos';
 import { danoDeArmadura, danoDoGolpe } from './colisao';
-import { NO_INPUT, cpuInput, perfilChefe } from './cpu';
+import { NO_INPUT, SUPER_ESPERA, SUPER_REFORCO, SUPER_REFORCO_APOS, SUPER_TETO_LUTA, SUPER_TETO_ROUND, cpuInput, perfilChefe } from './cpu';
 import { dirNum } from './comandos';
 import { ATK_KEYS, Fighter, type ChaveAtaque, type PartidaParaLutador } from './fighter';
 import type { ProjetilLuta } from './projetil';
@@ -274,6 +274,12 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private variantePadraoDoFilme: VarianteDoDano = 'v2';
   /** V2-4 (`ConfigPartida.motorV2.combos`): o combo próprio abre cancelamentos e manda em `semQueda`/`final`. Lida pelo `Fighter` e pela CPU. */
   combosLigados = false;
+  /** R-12: supers usados por lado na luta e no round, e o `tickDaLuta` do último (a CPU respeita tetos e espera entre dois). Contam o evento `special.super`. */
+  readonly supersNaLuta: [number, number] = [0, 0];
+  readonly supersNoRound: [number, number] = [0, 0];
+  readonly ultimoSuperEm: [number, number] = [-1e9, -1e9];
+  /** R-12: updates de luta (fase `fight`, sem hitstop) desde o `setup`. */
+  tickDaLuta = 0;
   /** R-8 (`ConfigPartida.ritmo.cadeia`): cadeia por força, até 4 golpes, só em acerto confirmado. Público: `Fighter` e `cpuInput` leem. Liga também o registro dos combos próprios (as assinaturas). */
   ritmoCadeiaLigada = false;
   /** V2-4: combos próprios COMPLETOS (o último golpe da sequência acertou) por lutador, na partida toda (não zera por round). O harness lê. */
@@ -330,6 +336,11 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   }
 
   emitir(ev: EventoLuta): void {
+    if (ev.tipo === 'special' && ev.super === true) {
+      this.supersNaLuta[ev.lutador]++;
+      this.supersNoRound[ev.lutador]++;
+      this.ultimoSuperEm[ev.lutador] = this.tickDaLuta;
+    }
     (this.dentroDoUpdate ? this.events : this.pendentes).push(ev);
   }
 
@@ -375,6 +386,9 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.timeMax = this.training ? 0 : ajustes.time;
     this.dummy = 'stand';
     this.round = 1;
+    this.supersNaLuta[0] = this.supersNaLuta[1] = 0;
+    this.ultimoSuperEm[0] = this.ultimoSuperEm[1] = -1e9;
+    this.tickDaLuta = 0;
     this.matchWinner = null;
     this.matchDone = false;
     this.winner = null;
@@ -392,6 +406,7 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   }
 
   private startRound(first: boolean): void {
+    this.supersNoRound[0] = this.supersNoRound[1] = 0;
     const completo = first || this.round === 1;
     this.p1.reset(completo);
     this.p2.reset(completo);
@@ -739,6 +754,20 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.p2.atualizarPose();
   }
 
+  /** R-12: a CPU do ritmo (fora do chefão) já usou o teto de supers (luta, round) ou ainda está na espera entre dois? Humano e chefão nunca são bloqueados. */
+  superBloqueadoPara(f: Fighter): boolean {
+    if (!this.ritmoCpuLigado || f.cpu === null || f.perfilIa !== null || this.p1.perfilIa !== null || this.p2.perfilIa !== null) return false;
+    return this.supersNaLuta[f.indice] >= SUPER_TETO_LUTA || this.supersNoRound[f.indice] >= SUPER_TETO_ROUND || this.tickDaLuta - this.ultimoSuperEm[f.indice] < SUPER_ESPERA;
+  }
+
+  /** R-12: a CPU do ritmo (fora do chefão) que chegou à metade da luta sem nenhum super recebe regen extra, para a barra não ficar vazia a luta inteira. */
+  private reforcarBarraDaCpu(): void {
+    if (!(this.ritmoSuperLigado && this.ritmoCpuLigado) || this.tickDaLuta < SUPER_REFORCO_APOS || this.p1.perfilIa !== null || this.p2.perfilIa !== null) return;
+    for (const f of [this.p1, this.p2]) {
+      if (f.cpu !== null && f.perfilIa === null && this.supersNaLuta[f.indice] === 0) f.regen(SUPER_REFORCO);
+    }
+  }
+
   private passo(fonte: FonteEntradas): void {
     this.t++;
     if (this.hitstop > 0) {
@@ -763,6 +792,10 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     }
     this.p1.update(i1, this.p2, this);
     this.p2.update(i2, this.p1, this);
+    if (fighting) {
+      this.tickDaLuta++;
+      this.reforcarBarraDaCpu();
+    }
     this.separate();
     for (const pr of this.projectiles) {
       if (pr.acc) {

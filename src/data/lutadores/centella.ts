@@ -69,7 +69,7 @@ export const CENTELLA: LutadorDef = {
     hpPorBarra: 50,
     cena: { duracao: 60, poses: ['win'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.93, // R-12: era 0.86 (ritmo completo + cadeia por força)
+    danoRecebido: 0.92, // R-12: era 0.86 (ritmo completo + cadeia por força)
     danoRecebidoDificil: 0.82, // era 0.74
   },
 };

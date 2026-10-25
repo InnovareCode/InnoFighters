@@ -17,7 +17,7 @@ export const MIN_JI: LutadorDef = {
   pow: 0.92,
   spd: 1.17,
   // R-12 (ritmo completo: cadeia por força, CPU nova, super): hp 97 -> 111 (a taxa estava em 32-37% com tudo ligado; 48% depois). O pow fica em 0.92: a tabela do filme (filmes.ts) é calibrada com ele.
-  hp: 111,
+  hp: 115,
   jump: 1.08,
   scale: 0.97,
   stride: 12,

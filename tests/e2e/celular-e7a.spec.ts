@@ -76,7 +76,13 @@ async function tracaDoMashi(page: Page, cdp: CDPSession, entrada: Entrada, segur
   const apertar = async (): Promise<void> => {
     if (entrada === 'teclado') await page.keyboard.down('b');
     else if (entrada === 'toque') await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: r1.x, y: r1.y, id: 1 }] });
-    else await page.evaluate(() => Object.assign((window as any).__pad, { ligado: true, botoes: [5] }));
+    else {
+      // d3ba964 (CONSULTA_OCIOSA): sem nenhum controle conectado a lista do navegador só é pedida a cada 15 quadros. O controle é CONECTADO e visto ANTES do aperto (como um controle já em uso);
+      // a latência da 1ª detecção tem o teste próprio logo abaixo. A comparação tick a tick do MASHI continua exata.
+      await page.evaluate(() => Object.assign((window as any).__pad, { ligado: true, botoes: [] }));
+      await hook(page, '(h) => { for (let i = 0; i < 16; i++) h.entrada.consultarGamepads(); }');
+      await page.evaluate(() => Object.assign((window as any).__pad, { botoes: [5] }));
+    }
   };
   const soltar = async (): Promise<void> => {
     if (entrada === 'teclado') await page.keyboard.up('b');
@@ -120,6 +126,19 @@ test.describe('especial segurado (spSeg) fora do teclado: o MASHI do AMINU carre
       expect(erros).toEqual([]);
     });
   }
+
+  test('um controle recém-conectado é visto em até 15 consultas (CONSULTA_OCIOSA) e, visto, vale no mesmo tick', async ({ page }) => {
+    await instalarControle(page);
+    await abrir(page, { width: 915, height: 412 });
+    await abrirLuta(page, { mode: 'training', c1: 'aminu', c2: 'hayato', cpu: null });
+    await page.evaluate(() => Object.assign((window as any).__pad, { ligado: true, botoes: [5] }));
+    let consultas = 0;
+    for (; consultas < 40; consultas++) {
+      const sp = await hook(page, '(h) => { h.entrada.consultarGamepads(); return h.entrada.lerP1().spSeg === true; }');
+      if (sp) break;
+    }
+    expect(consultas).toBeLessThanOrEqual(15);
+  });
 
   test('controle negativo: um toque curto no ESP não carrega (a carga é do segurar, não de apertar)', async ({ page }) => {
     await abrir(page, { width: 915, height: 412 });

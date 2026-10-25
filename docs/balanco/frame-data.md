@@ -2,7 +2,7 @@
 
 > Arquivo GERADO por `npm run balanco`. Não edite à mão: rode o comando de novo.
 
-Gerado em 2026-10-25 · versão dos dados/motor `5ddb74decbdb` · arte de PRODUÇÃO (`public/assets/lutadores`).
+Gerado em 2026-10-25 · versão dos dados/motor `061ae4485912` · arte de PRODUÇÃO (`public/assets/lutadores`).
 
 Como ler (todos os tempos em ticks de jogo, 60 por segundo; cada número foi medido numa `Game` em modo treino, não lido da tabela):
 
@@ -227,14 +227,14 @@ _pow 0.9_
 
 | Golpe | Nome | Nível | S/A/R nominal | Início/Ativ./Recup. | Dano | Filme | Hitstun | Vant. acerto | Blockstun | Vant. bloq. | Caixa | Alcance medido | Notas |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 3.6 | – | 14 | +4 | 8 | -2 | 179 | 78–216 |  |
-| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 4.5 | – | 16 | +3 | 9 | -4 | 174 | 78–211 |  |
-| hp |  | mid (alto) | 9/4/14 | 9/4/14 | 9.9 | – | 24 | +6 | 12 | -6 | 192 | 78–244 |  |
+| lp |  | mid (alto) | 3/3/7 | 3/3/7 | 4.3 | – | 14 | +4 | 8 | -2 | 179 | 78–216 |  |
+| lk |  | mid (alto) | 5/4/9 | 5/4/9 | 5.2 | – | 16 | +3 | 9 | -4 | 174 | 78–211 |  |
+| hp |  | mid (alto) | 9/4/14 | 9/4/14 | 10.8 | – | 24 | +6 | 12 | -6 | 192 | 78–244 |  |
 | hk |  | mid (alto) | 12/5/18 | 12/5/18 | 13.5 | – | – | KD +48 | 14 | -9 | 229 | 78–285 |  |
 | clp |  | mid (alto) | 4/3/8 | 4/3/8 | 3.6 | – | 15 | +4 | 8 | -3 | 164 | 78–201 |  |
 | clk |  | low | 6/3/10 | 6/3/10 | 4.5 | – | 15 | +2 | 9 | -4 | 167 | 78–204 |  |
-| chp |  | mid | 6/4/17 | 6/4/17 | 10.8 | – | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
-| chk |  | low | 10/6/20 | 10/6/20 | 9.9 | – | – | KD +45 | 14 | -12 | 214 | 78–252 |  |
+| chp |  | mid | 6/4/17 | 6/4/17 | 11.7 | – | – | KD +50 | 12 | -9 | 106 | 78–143 |  |
+| chk |  | low | 10/6/20 | 10/6/20 | 10.8 | – | – | KD +45 | 14 | -12 | 214 | 78–252 |  |
 | jlp |  | over | 2/80/0 | 2/10/0 | 4.5 | – | 15 | +5 | 10 | 0 | 151 | 78–188 | aéreo: ativos até pousar |
 | jhp |  | over | 4/80/0 | 4/8/0 | 7.2 | – | 20 | +12 | 12 | +4 | 158 | 78–196 | aéreo: ativos até pousar |
 | jlk |  | over | 3/80/0 | 3/9/0 | 5.4 | – | 17 | +8 | 11 | +2 | 144 | 78–182 | aéreo: ativos até pousar |

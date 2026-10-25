@@ -306,6 +306,13 @@ for (const [nome, vp] of [['844x390', { width: 844, height: 390 }], ['915x412', 
     const a = await alvo();
     expect(await page.evaluate(() => document.getElementById('sup')!.classList.contains('sem'))).toBe(true);
     expect(a.w, 'alvo de toque >= 44 px CSS').toBeGreaterThanOrEqual(44);
+    // o SUPER não pode ficar perto da PAUSA (pausar sem querer no meio da luta): vão entre as bordas >= 1 botão inteiro (layout: toque-super-layout.spec.ts)
+    const vao = await page.evaluate(() => {
+      const s = document.getElementById('sup')!.getBoundingClientRect();
+      const b = document.getElementById('bp')!.getBoundingClientRect();
+      return { vao: Math.max(0, b.y - s.bottom, s.y - b.bottom, b.x - s.right, s.x - b.right), lado: s.width };
+    });
+    expect(vao.vao, 'vão SUPER<->PAUSA >= 1 botão').toBeGreaterThanOrEqual(vao.lado);
     await tocar();
     await hook(page, '(h) => h.avancar(60)');
     expect((await eventos(page, 'hit')).filter((e) => e.super), 'barra < 100: o toque não dá super').toEqual([]);

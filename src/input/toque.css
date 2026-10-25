@@ -11,7 +11,7 @@
  * Esquerda: joystick analógico (base fixa; a zona morta é 25%/35%/30% do raio, em toque.ts), base 2,1 D.
  * Direita: aglomerado ancorado no canto seguro inferior direito; cada botão se posiciona pelo próprio CENTRO (--x/--y, em unidades de D). Soco à esquerda,
  * chute à direita, leve embaixo, forte no meio, ESQUIVA e ESPECIAL em cima; a coluna do chute fica 0,28 D mais alta (o arco do polegar). O SUPER (R-9,
- * `Regras.ritmo.super`) fica no topo do aglomerado, centrado entre as duas colunas (sem SVG próprio ainda: é um anel em CSS, sem arte do Apolo).
+ * `Regras.ritmo.super`) fica numa terceira coluna, à esquerda do ESQUIVA (bloco dele abaixo), com SVG próprio (super*.svg) na mesma anatomia dos outros.
  * Estados: .on (apertado), .sem (sem barra: #esq, #r1 e #sup; apaga), .acendeu (o ESPECIAL acabou de ficar pronto), #joy.ativo (o polegar está nele).
  * A casa da ESQUIVA (#esq): some, sem soltar a casa, quando as regras não têm a mecânica (?expansao=4). A do SUPER (#sup): idem, sem `ritmo.super`
  * (body.sem-super, fight.ts decide com a MESMA flag que liga a tarja/o botão).
@@ -105,23 +105,20 @@ body.sem-esquiva #touch #esq { visibility: hidden; pointer-events: none; }
   #touch #r1:not(.sem)::before, #touch #r1.acendeu::before { animation: none; filter: drop-shadow(0 0 4px var(--brilho-especial)); }
 }
 
-/* SUPER (R-9, `Regras.ritmo.super`): topo do aglomerado, centrado entre as colunas de soco (1,78) e chute (,62) — (1,78+,62)/2 = 1,2.
-   Sem SVG do Apolo ainda: um anel em CSS (magenta/rosa, para não se confundir com o ouro do ESPECIAL), que pulsa quando a barra está cheia
-   (a mesma respiração do ESPECIAL, §97, mas na cor do super). `.sem` (barra < 100) apaga para cinza, como os outros. */
-#touch #sup { --x: 1.2; --y: 5.15; --tam: calc(var(--D) * 1.2); --rotulo-cor: #ffd9f0; --rotulo-borda: #ff3fa0; }
-#touch #sup::before {
-  content: ""; position: absolute; inset: 6%; border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff0ff 0%, #ff6ad5 35%, #a30e6e 78%, #4a0632 100%);
-  border: 2px solid #fff0ff; box-shadow: 0 0 0 2px rgba(0, 0, 0, .5), 0 0 10px rgba(255, 106, 213, .6);
-  opacity: var(--toque-opacidade); transition: transform .06s ease-out, opacity .06s, background .06s, box-shadow .06s;
+/* SUPER (R-9, `Regras.ritmo.super`): o MESMO botão dos outros (SVG `super*.svg` gerado por gerar-toque.mjs, mesma anatomia e tamanho do ESPECIAL), em magenta só no
+   acento (bisel, rótulo e brilho). Fica na zona do polegar, na MESMA fileira de cima do ESQUIVA e do ESPECIAL, uma casa à esquerda e um degrau abaixo
+   (uma escadinha que desce para a esquerda: ESPECIAL 3,88 > ESQUIVA 3,5 > SUPER 2,85, a ~4,1 D do canto de apoio do polegar, como os outros), longe da PAUSA (canto superior direito) e sem mexer em nenhum botão
+   que já existia. Pronto (barra cheia) respira como o ESPECIAL, mas em magenta; `.acendeu` e `.sem` são os mesmos estados. */
+#touch #sup {
+  --x: 2.92; --y: 2.85; --tam: calc(var(--D) * 1.12);
+  --img: url(/assets/ui/toque/super.svg); --img-on: url(/assets/ui/toque/super-pressionado.svg); --img-off: url(/assets/ui/toque/super-desabilitado.svg);
+  --rotulo-cor: #ffd9f0; --rotulo-borda: #ff3fa0; --brilho-especial: rgba(255, 63, 160, .9);
 }
-#touch #sup.on::before { transform: scale(.94); opacity: 1; }
-#touch #sup.sem::before { background: radial-gradient(circle at 35% 30%, #4a4a52 0%, #2c2c33 60%, #1a1a20 100%); border-color: #5a5a66; box-shadow: none; }
-#touch #sup.sem.on::before { transform: scale(.97); }
-#touch #sup:not(.sem)::before { animation: toque-super-pronto 1s ease-in-out infinite alternate; }
-@keyframes toque-super-pronto { from { box-shadow: 0 0 0 2px rgba(0, 0, 0, .5), 0 0 8px rgba(255, 106, 213, .55); } to { box-shadow: 0 0 0 2px rgba(0, 0, 0, .5), 0 0 20px rgba(255, 106, 213, .95); } }
+#touch #sup.sem::before { opacity: calc(var(--toque-opacidade) * .8); }
+#touch #sup:not(.sem)::before { animation: toque-pronto 1.2s ease-in-out infinite alternate; }
+#touch #sup.acendeu::before { animation: toque-acendeu .22s ease-out 1, toque-pronto 1.2s ease-in-out .22s infinite alternate; }
 @media (prefers-reduced-motion: reduce) {
-  #touch #sup:not(.sem)::before { animation: none; box-shadow: 0 0 0 2px rgba(0, 0, 0, .5), 0 0 12px rgba(255, 106, 213, .8); }
+  #touch #sup:not(.sem)::before, #touch #sup.acendeu::before { animation: none; filter: drop-shadow(0 0 4px var(--brilho-especial)); }
 }
 /* sem `Regras.ritmo.super` (padrão): some, como a ESQUIVA sem a mecânica dela. fight.ts põe/tira a classe no <body>. */
 body.sem-super #touch #sup { visibility: hidden; pointer-events: none; }

@@ -103,8 +103,13 @@ export function validarRoteiro(r: RoteiroDoTrailer, tomadas: TomadasDoTrailer, o
       const t = tomadas[p.id];
       if (!t) e(`${p.id}: sem tomada (rode \`npm run trailer:escalar -- --plano ${p.id}\`)`);
       else {
-        if (!Number.isInteger(t.semente) || t.semente < 0) e(`${p.id}: semente da tomada precisa ser um inteiro >= 0`);
-        if (!Number.isInteger(t.inicio) || t.inicio < 0 || t.inicio > INICIO_MAXIMO) e(`${p.id}: inicio ${t.inicio} fora de 0..${INICIO_MAXIMO}`);
+        if (t.inputs.p1.length === 0 || t.inputs.p2.length === 0) e(`${p.id}: a partitura não tem entradas`);
+        if (t.inputs.p1.length !== t.inputs.p2.length) e(`${p.id}: as entradas dos dois lutadores têm tamanhos diferentes`);
+        for (const en of t.energia ?? []) if (!(en >= 0 && en <= 100)) e(`${p.id}: energia ${en} fora de 0..100`);
+        for (const v of t.vida ?? []) if (!(v > 0 && v <= 1)) e(`${p.id}: vida ${v} fora de (0, 1]`);
+        p.pede.forEach((b, i) => {
+          if (b.tipo === 'super' && (t.energia?.[b.lutador] ?? 0) < 100) e(`${p.id}.pede[${i}]: o super precisa da barra cheia (energia 100) no 1º update`);
+        });        if (!Number.isInteger(t.inicio) || t.inicio < 0 || t.inicio > INICIO_MAXIMO) e(`${p.id}: inicio ${t.inicio} fora de 0..${INICIO_MAXIMO}`);
         if (t.batidas.length !== p.pede.length) e(`${p.id}: a tomada tem ${t.batidas.length} batidas e o roteiro pede ${p.pede.length} (reescale)`);
         t.batidas.forEach((b, i) => {
           if (b.pedida !== i) e(`${p.id}: batida ${i} da tomada aponta para o pedido ${b.pedida}`);

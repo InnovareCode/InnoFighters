@@ -1,6 +1,7 @@
 import { GROUND, JUMP_FORCE } from '../../src/core/constantes';
 import type { EstadoLutador, EventoLuta, IdLutador, InputFrame, MotorV2 } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
+import { cadeiaPermite, forcaDoRank } from '../../src/data/combos-proprios';
 import type { ComboProprio, NivelGolpe, NomeGolpe, TipoGolpe } from '../../src/data/tipos';
 import { moveInput } from '../../src/fight/cpu';
 import { Game, TETO_COMBO, type DummyTreino, type FonteEntradas } from '../../src/fight/game';
@@ -527,16 +528,26 @@ export function limiteDeDano(elenco: Elenco): number {
   return TETO_COMBO * Math.min(...Object.values(elenco).map((l) => l.hp));
 }
 
-/** O que a sequência tem que a cadeia universal por rank (rank maior que o anterior; derrubada encerra) não dá. */
+/** O que a sequência tem que a cadeia universal POR FORÇA (R-8: fraco > forte > especial, no máximo 2 fracos, forte > forte fora; derrubada encerra) não dá. */
 export function identidadeDoCombo(elenco: Elenco, id: IdLutador, ficha: string | null, combo: ComboProprio): string[] {
   const base = elenco[id];
   const ch = ficha === null ? base : (base.fichas[ficha] as typeof base);
   const saida: string[] = [];
-  for (let i = 1; i < combo.sequencia.length; i++) {
-    const antes = ch.moves[combo.sequencia[i - 1] as NomeGolpe];
+  const ranks: number[] = [];
+  for (let i = 0; i < combo.sequencia.length; i++) {
     const depois = ch.moves[combo.sequencia[i] as NomeGolpe];
-    const repete = !!antes.rep && antes.id === depois.id;
-    if (depois.rank <= antes.rank && !repete) saida.push(`${antes.id} (rank ${antes.rank}) cancela em ${depois.id} (rank ${depois.rank})`);
+    const antes = i > 0 ? ch.moves[combo.sequencia[i - 1] as NomeGolpe] : null;
+    if (antes) {
+      const repete = !!antes.rep && antes.id === depois.id;
+      if (!cadeiaPermite(ranks, depois.rank, repete)) saida.push(`${antes.id} (${forcaDoRank(antes.rank) ?? '?'}) cancela em ${depois.id} (${forcaDoRank(depois.rank) ?? '?'}) fora da cadeia por força`);
+    }
+    ranks.push(depois.rank);
+  }
+  // BÁSICO (fraco > forte > especial) cujo forte já segura em pé sem `semQueda` (o `hp` da NILA não derruba): a forma é a identidade (spec §3.5.2).
+  const forcas = ranks.map(forcaDoRank);
+  const meio = ch.moves[combo.sequencia[1] as NomeGolpe];
+  if (forcas.length === 3 && forcas[0] === 'fraco' && forcas[1] === 'forte' && forcas[2] === 'especial' && !meio.kd && (combo.semQueda?.length ?? 0) === 0) {
+    saida.push(`BÁSICO: ${meio.id} já segura em pé`);
   }
   if ((combo.semQueda?.length ?? 0) > 0) saida.push(`${combo.semQueda?.map((i) => combo.sequencia[i]).join(', ')} sem queda`);
   if (combo.final !== undefined && combo.final !== 'derruba') saida.push(`final '${combo.final}'`);
@@ -546,7 +557,8 @@ export function identidadeDoCombo(elenco: Elenco, id: IdLutador, ficha: string |
 function ensaiarCombo(elenco: Elenco, id: IdLutador, ficha: string | null, combo: ComboProprio, postura: PosturaDoCombo): EnsaioCombo {
   const sequencia = combo.sequencia;
   const g = new Game({ lutadores: elenco, rng: criarRng(1) });
-  g.setup({ mode: 'training', c1: id, c2: BONECO, motorV2: { combos: true, filmes: true } }, { rounds: 2, time: 99, shake: false });
+  // `ritmo.cadeia` (R-8) é parte do estado de destino: o cancelamento só sai em acerto confirmado e a força manda (a sequência TEM que passar por essa regra)
+  g.setup({ mode: 'training', c1: id, c2: BONECO, motorV2: { combos: true, filmes: true }, ritmo: { cadeia: true } }, { rounds: 2, time: 99, shake: false });
   g.phase = 'fight';
   g.t = 0;
   g.semTetoDeCombo = true;
@@ -624,7 +636,7 @@ export function verificarCombo(elenco: Elenco, id: IdLutador, ficha: string | nu
   if (emPe.falha) falhas.push(`em pé: ${emPe.falha}`);
   if (agachado.falha) falhas.push(`agachado: ${agachado.falha}`);
   if (dano > limite + 1e-9) falhas.push(`dano ${dano.toFixed(1)} passa de ${limite.toFixed(1)} (${Math.round(TETO_COMBO * 100)}% da menor vida do elenco) sem o teto`);
-  if (identidade.length === 0) falhas.push('sem propriedade nova: é só a cadeia universal por rank');
+  if (identidade.length === 0) falhas.push('sem propriedade nova: é só a cadeia universal por força');
   return { lutador: id, ficha, id: combo.id, nome: combo.nome, sequencia: combo.sequencia, emPe, agachado, dano, limite, identidade, falhas, ok: falhas.length === 0 };
 }
 

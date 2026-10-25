@@ -165,7 +165,7 @@ export class HudRitmo {
   }
 
   /** Contador de acertos (o combo que cada lutador aplicou no rival) + nota. Substitui o laço do contador de `desenharHUD`. */
-  desenharCombos(ctx: Ctx, luta: LeituraLuta): void {
+  desenharCombos(ctx: Ctx, luta: LeituraLuta, comNota = true): void {
     for (let i = 0; i < 2; i++) {
       const s = this.lados[i as 0 | 1];
       const c = luta.fighters[i as 0 | 1].combo;
@@ -181,7 +181,7 @@ export class HudRitmo {
         textoArcade(ctx, `${c.hits} HITS`, x, Y_CONTADOR, FONTE_CONTADOR, COR_PATAMAR[cor]!, CONTORNO_PATAMAR[cor]!, alinha, escala, alfa);
         textoArcade(ctx, `DANO ${Math.round(c.dmg)}`, x, 188, 20, '#fff', '#000', alinha, 1, alfa);
       }
-      if (s.notaTicks > 0) this.desenharNota(ctx, s, lado, x, alinha);
+      if (comNota && s.notaTicks > 0) this.desenharNota(ctx, s, lado, x, alinha);
     }
   }
 

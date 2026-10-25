@@ -15,7 +15,7 @@ const ORIGINAIS = ['hayato', 'wei-long', 'min-ji', 'caio'] as const;
 const BALANCEADO = {
   hayato: { hp: 109, pow: 1.07 },
   'wei-long': { hp: 101, pow: 0.95 },
-  'min-ji': { hp: 97, pow: 0.92 },
+  'min-ji': { hp: 111, pow: 0.92 }, // R-12: 97 -> 111 com o ritmo completo (cadeia por força + CPU nova)
   caio: { hp: 98, pow: 0.97 },
 } as const;
 

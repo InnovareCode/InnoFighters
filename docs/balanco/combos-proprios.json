@@ -1,5 +1,5 @@
 {
- "versaoDados": "75764f4439da",
+ "versaoDados": "5ddb74decbdb",
  "combos": [
   {
    "lutador": "hayato",
@@ -84,7 +84,7 @@
    "dano": 16.906000000000006,
    "limite": 36.800000000000004,
    "identidade": [
-    "lk (rank 2) cancela em clp (rank 1)",
+    "lk (fraco) cancela em clp (fraco) fora da cadeia por força",
     "final 'lanca'"
    ],
    "falhas": [],
@@ -140,15 +140,15 @@
    "id": "wei-long-palma-da-montanha",
    "nome": "GRANDE MURALHA",
    "sequencia": [
+    "lp",
     "hp",
-    "lk",
     "hp"
    ],
    "emPe": {
     "postura": "em pé",
     "acertos": 3,
     "falha": null,
-    "dano": 22.22999999999999,
+    "dano": 20.424999999999997,
     "fim": {
      "caiu": true,
      "distancia": 466.1885589403812,
@@ -161,7 +161,7 @@
     "postura": "agachado",
     "acertos": 3,
     "falha": null,
-    "dano": 22.22999999999999,
+    "dano": 20.424999999999997,
     "fim": {
      "caiu": true,
      "distancia": 466.1885589403812,
@@ -170,10 +170,10 @@
      "x": 926.9028446546668
     }
    },
-   "dano": 22.22999999999999,
+   "dano": 20.424999999999997,
    "limite": 36.800000000000004,
    "identidade": [
-    "hp (rank 3) cancela em lk (rank 2)",
+    "hp (forte) cancela em hp (forte) fora da cadeia por força",
     "final 'parede'"
    ],
    "falhas": [],
@@ -182,46 +182,43 @@
   {
    "lutador": "min-ji",
    "ficha": null,
-   "id": "min-ji-rajada-de-seul",
-   "nome": "HANA-DUL-SET-NET",
+   "id": "min-ji-hana-dul-set",
+   "nome": "HANA-DUL-SET",
    "sequencia": [
     "lk",
     "lk",
-    "lk",
-    "lk"
+    "hk"
    ],
    "emPe": {
     "postura": "em pé",
-    "acertos": 4,
+    "acertos": 3,
     "falha": null,
-    "dano": 14.075999999999993,
+    "dano": 15.593999999999994,
     "fim": {
      "caiu": true,
-     "distancia": 420.3207903223447,
+     "distancia": 418.0398059408393,
      "trocouDeLado": false,
      "pico": 125.94999999999999,
-     "x": 855.3207903223447
+     "x": 881.0398059408393
     }
    },
    "agachado": {
     "postura": "agachado",
-    "acertos": 4,
+    "acertos": 3,
     "falha": null,
-    "dano": 14.075999999999993,
+    "dano": 15.593999999999994,
     "fim": {
      "caiu": true,
-     "distancia": 420.3207903223447,
+     "distancia": 418.0398059408393,
      "trocouDeLado": false,
      "pico": 125.94999999999999,
-     "x": 855.3207903223447
+     "x": 881.0398059408393
     }
    },
-   "dano": 14.075999999999993,
+   "dano": 15.593999999999994,
    "limite": 36.800000000000004,
    "identidade": [
-    "lk (rank 2) cancela em lk (rank 2)",
-    "lk (rank 2) cancela em lk (rank 2)",
-    "lk (rank 2) cancela em lk (rank 2)",
+    "lk (fraco) cancela em lk (fraco) fora da cadeia por força",
     "final 'lanca'"
    ],
    "falhas": [],
@@ -310,7 +307,7 @@
    "dano": 16.198999999999984,
    "limite": 36.800000000000004,
    "identidade": [
-    "clk (rank 2) cancela em clk (rank 2)",
+    "clk (fraco) cancela em clk (fraco) fora da cadeia por força",
     "final 'cruza'"
    ],
    "falhas": [],
@@ -399,7 +396,7 @@
    "dano": 23.953999999999994,
    "limite": 36.800000000000004,
    "identidade": [
-    "hp (rank 3) cancela em hp (rank 3)",
+    "hp (forte) cancela em hp (forte) fora da cadeia por força",
     "final 'parede'"
    ],
    "falhas": [],
@@ -540,84 +537,40 @@
   {
    "lutador": "camille",
    "ficha": null,
-   "id": "camille-estocada-cruzada",
-   "nome": "FLECHA DE MARSELHA",
-   "sequencia": [
-    "lp",
-    "lk",
-    "hp"
-   ],
-   "emPe": {
-    "postura": "em pé",
-    "acertos": 3,
-    "falha": null,
-    "dano": 14.75800000000001,
-    "fim": {
-     "caiu": true,
-     "distancia": 235.07896500018745,
-     "trocouDeLado": true,
-     "pico": 44.25,
-     "x": 213.92103499981243
-    }
-   },
-   "agachado": {
-    "postura": "agachado",
-    "acertos": 3,
-    "falha": null,
-    "dano": 14.75800000000001,
-    "fim": {
-     "caiu": true,
-     "distancia": 235.07896500018745,
-     "trocouDeLado": true,
-     "pico": 44.25,
-     "x": 213.92103499981243
-    }
-   },
-   "dano": 14.75800000000001,
-   "limite": 36.800000000000004,
-   "identidade": [
-    "final 'cruza'"
-   ],
-   "falhas": [],
-   "ok": true
-  },
-  {
-   "lutador": "camille",
-   "ficha": null,
    "id": "camille-riposte",
    "nome": "TOUCHÉ",
    "sequencia": [
     "clk",
     "hk",
-    "sDown"
+    "sFwd"
    ],
    "emPe": {
     "postura": "em pé",
     "acertos": 3,
     "falha": null,
-    "dano": 26.49672000000001,
+    "dano": 28.497040000000013,
     "fim": {
      "caiu": false,
-     "distancia": 196.07999999999993,
-     "trocouDeLado": false,
+     "distancia": 190.31999999999994,
+     "trocouDeLado": true,
      "pico": 0,
-     "x": 638.7942857142856
+     "x": 420.39428571428573
     }
    },
    "agachado": {
     "postura": "agachado",
     "acertos": 3,
     "falha": null,
-    "dano": 26.49672000000001,
+    "dano": 28.497040000000013,
     "fim": {
      "caiu": false,
      "distancia": 150,
-     "trocouDeLado": false,
+     "trocouDeLado": true,
      "pico": 0,
-     "x": 592.7142857142857
+     "x": 460.71428571428567
     }
    },
-   "dano": 26.49672000000001,
+   "dano": 28.497040000000013,
    "limite": 36.800000000000004,
    "identidade": [
     "hk sem queda"
@@ -631,15 +584,15 @@
    "id": "nila-gaja-elefante-pesado",
    "nome": "SEM ANESTESIA",
    "sequencia": [
-    "hp",
     "clp",
+    "hp",
     "sFwd"
    ],
    "emPe": {
     "postura": "em pé",
     "acertos": 3,
     "falha": null,
-    "dano": 31.988400000000013,
+    "dano": 31.183400000000006,
     "fim": {
      "caiu": false,
      "distancia": 190.32,
@@ -652,7 +605,7 @@
     "postura": "agachado",
     "acertos": 3,
     "falha": null,
-    "dano": 31.988400000000013,
+    "dano": 31.183400000000006,
     "fim": {
      "caiu": false,
      "distancia": 150.00000000000006,
@@ -661,10 +614,10 @@
      "x": 598
     }
    },
-   "dano": 31.988400000000013,
+   "dano": 31.183400000000006,
    "limite": 36.800000000000004,
    "identidade": [
-    "hp (rank 3) cancela em clp (rank 1)"
+    "BÁSICO: hp já segura em pé"
    ],
    "falhas": [],
    "ok": true
@@ -709,7 +662,8 @@
    "dano": 18.339299999999994,
    "limite": 36.800000000000004,
    "identidade": [
-    "lk (rank 2) cancela em clp (rank 1)"
+    "lk (fraco) cancela em clp (fraco) fora da cadeia por força",
+    "clp (fraco) cancela em clk (fraco) fora da cadeia por força"
    ],
    "falhas": [],
    "ok": true
@@ -759,51 +713,6 @@
    "ok": true
   },
   {
-   "lutador": "baatar",
-   "ficha": null,
-   "id": "baatar-esmagamento",
-   "nome": "CAVALGADA",
-   "sequencia": [
-    "lk",
-    "hp",
-    "hp"
-   ],
-   "emPe": {
-    "postura": "em pé",
-    "acertos": 3,
-    "falha": null,
-    "dano": 21.33,
-    "fim": {
-     "caiu": true,
-     "distancia": 470.9028446546669,
-     "trocouDeLado": false,
-     "pico": 44.25,
-     "x": 926.9028446546668
-    }
-   },
-   "agachado": {
-    "postura": "agachado",
-    "acertos": 3,
-    "falha": null,
-    "dano": 21.33,
-    "fim": {
-     "caiu": true,
-     "distancia": 470.9028446546669,
-     "trocouDeLado": false,
-     "pico": 44.25,
-     "x": 926.9028446546668
-    }
-   },
-   "dano": 21.33,
-   "limite": 36.800000000000004,
-   "identidade": [
-    "hp (rank 3) cancela em hp (rank 3)",
-    "final 'parede'"
-   ],
-   "falhas": [],
-   "ok": true
-  },
-  {
    "lutador": "zenon",
    "ficha": null,
    "id": "zenon-tributo-do-arconte",
@@ -843,51 +752,6 @@
    "limite": 36.800000000000004,
    "identidade": [
     "hk sem queda"
-   ],
-   "falhas": [],
-   "ok": true
-  },
-  {
-   "lutador": "zenon",
-   "ficha": null,
-   "id": "zenon-decreto-cruzado",
-   "nome": "SEU LUGAR À MESA",
-   "sequencia": [
-    "lk",
-    "lp",
-    "hp"
-   ],
-   "emPe": {
-    "postura": "em pé",
-    "acertos": 3,
-    "falha": null,
-    "dano": 15.799999999999997,
-    "fim": {
-     "caiu": true,
-     "distancia": 238.69997113391702,
-     "trocouDeLado": true,
-     "pico": 44.25,
-     "x": 210.30002886608287
-    }
-   },
-   "agachado": {
-    "postura": "agachado",
-    "acertos": 3,
-    "falha": null,
-    "dano": 15.799999999999997,
-    "fim": {
-     "caiu": true,
-     "distancia": 238.69997113391702,
-     "trocouDeLado": true,
-     "pico": 44.25,
-     "x": 210.30002886608287
-    }
-   },
-   "dano": 15.799999999999997,
-   "limite": 36.800000000000004,
-   "identidade": [
-    "lk (rank 2) cancela em lp (rank 1)",
-    "final 'cruza'"
    ],
    "falhas": [],
    "ok": true

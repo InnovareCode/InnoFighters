@@ -47,6 +47,7 @@ export function impressaoDoQuadro(q: QuadroDoTrailer): string {
     q.flash.toFixed(4),
     q.titulos.map((t) => `${t.estilo}:${t.texto}:${t.alfa.toFixed(3)}`).join(','),
     q.cine ? `${q.cine.modo}:${q.cine.ev.tipo}` : '-',
+    q.tarjaSuper ? 'S' : '-',
     q.arconte ? `${q.arconte.acesos}:${q.arconte.entrada ? 1 : 0}:${q.arconte.tickDaEntrada}:${JSON.stringify(q.arconte.poses)}` : '-',
     q.frio ? `${q.frio.pose}:${q.frio.raio.toFixed(3)}` : '-',
     q.retratos ? `${q.retratos.entraram}:${q.retratos.risco.toFixed(3)}` : '-',

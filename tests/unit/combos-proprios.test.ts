@@ -118,17 +118,17 @@ describe('validação no boot (falha alto)', () => {
   });
 });
 
-describe('os 20 combos da 1ª leva (spec §6.1/§9): o dado', () => {
+describe('os 17 combos (docs/supers-e-combos-v2.md §4): o dado', () => {
   const todos = ROSTER.flatMap((id) => [
     ...(elenco[id].combosProprios ?? []).map((c) => ({ id, ficha: null as string | null, c })),
     ...Object.entries(elenco[id].fichas).flatMap(([ficha, ch]) => (ch.combosProprios && ch.combosProprios !== elenco[id].combosProprios ? ch.combosProprios.map((c) => ({ id, ficha: ficha as string | null, c })) : [])),
   ]);
 
-  it('são 20: 2 por lutador, e a NILA tem 1 por postura (GAJA na base, SARPA na ficha)', () => {
-    expect(todos).toHaveLength(20);
+  it('são 17: CAMILLE, BAATAR e ZENON ficam com 1 (o BÁSICO), os outros 7 com 2, e a NILA tem 1 por postura (GAJA na base, SARPA na ficha)', () => {
+    expect(todos).toHaveLength(17);
     for (const id of ROSTER) {
       const deles = todos.filter((t) => t.id === id);
-      expect(deles, id).toHaveLength(2);
+      expect(deles, id).toHaveLength(['camille', 'baatar', 'zenon'].includes(id) ? 1 : 2);
     }
     const nila = todos.filter((t) => t.id === 'nila');
     expect(nila.map((t) => t.ficha).sort()).toEqual([null, 'sarpa']);
@@ -136,7 +136,10 @@ describe('os 20 combos da 1ª leva (spec §6.1/§9): o dado', () => {
 
   it('ids únicos no jogo todo, começando pelo id do lutador; nomes preenchidos; sequências de 2 a 4 golpes', () => {
     const ids = todos.map((t) => t.c.id);
-    expect(new Set(ids).size).toBe(20);
+    expect(new Set(ids).size).toBe(17);
+    expect(ids).toContain('min-ji-hana-dul-set'); // o reescrito com nome novo ganhou id novo
+    expect(ids).not.toContain('min-ji-rajada-de-seul');
+    for (const morto of ['camille-estocada-cruzada', 'zenon-decreto-cruzado', 'baatar-esmagamento']) expect(ids).not.toContain(morto);
     for (const { id, c } of todos) {
       expect(c.id.startsWith(`${id}-`), c.id).toBe(true);
       expect(c.nome.trim().length, c.id).toBeGreaterThan(0);
@@ -145,7 +148,7 @@ describe('os 20 combos da 1ª leva (spec §6.1/§9): o dado', () => {
     }
   });
 
-  it('as fichas do ZENON (chefe e chefe2) herdam os 2 combos da base', () => {
+  it('as fichas do ZENON (chefe e chefe2) herdam o combo da base', () => {
     expect(elenco.zenon.fichas['chefe']?.combosProprios).toBe(elenco.zenon.combosProprios);
     expect(elenco.zenon.fichas['chefe2']?.combosProprios).toBe(elenco.zenon.combosProprios);
   });
@@ -154,8 +157,8 @@ describe('os 20 combos da 1ª leva (spec §6.1/§9): o dado', () => {
 describe('o VERIFICADOR (spec §6.2): aceite da fatia', () => {
   const verificacoes = verificarCombos(elenco, ROSTER);
 
-  it('20 de 20 combos combinam em pé e agachado (nenhum golpe bloqueado, errado ou sem encadear; o boneco nunca livre entre eles)', () => {
-    expect(verificacoes).toHaveLength(20);
+  it('17 de 17 combos combinam em pé e agachado (nenhum golpe bloqueado, errado ou sem encadear; o boneco nunca livre entre eles)', () => {
+    expect(verificacoes).toHaveLength(17);
     for (const v of verificacoes) {
       expect(v.emPe.falha, `${v.id} em pé`).toBeNull();
       expect(v.agachado.falha, `${v.id} agachado`).toBeNull();
@@ -164,7 +167,7 @@ describe('o VERIFICADOR (spec §6.2): aceite da fatia', () => {
     }
   });
 
-  it('20 de 20 com dano <= 36,8 (40% de 92) SEM o teto de combo, e cada um tem uma propriedade que a cadeia universal não dá', () => {
+  it('17 de 17 com dano <= 36,8 (40% de 92) SEM o teto de combo, e cada um tem uma propriedade que a cadeia universal não dá', () => {
     expect(limiteDeDano(elenco)).toBeCloseTo(36.8, 9);
     for (const v of verificacoes) {
       expect(v.dano, `${v.id}: ${v.dano.toFixed(2)}`).toBeLessThanOrEqual(36.8 + 1e-9);
@@ -172,7 +175,7 @@ describe('o VERIFICADOR (spec §6.2): aceite da fatia', () => {
       expect(v.identidade.length, `${v.id} sem identidade`).toBeGreaterThan(0);
       expect(v.ok, `${v.id}: ${v.falhas.join(' | ')}`).toBe(true);
     }
-    expect(verificacoes.filter((v) => v.ok)).toHaveLength(20);
+    expect(verificacoes.filter((v) => v.ok)).toHaveLength(17);
   });
 
   it('barra o exemplo ruim da spec: hp > hk (sem queda) > GOLPE MARMA da NILA = 43,4 (47% de 92) sem o teto', () => {
@@ -197,7 +200,7 @@ describe('o VERIFICADOR (spec §6.2): aceite da fatia', () => {
   });
 
   it('barra a queda no meio (golpe que derruba sem `semQueda`) e a sequência que é só a cadeia universal', () => {
-    const cai = combo(['lp', 'hk', 'lp'], { id: 'hayato-cai' });
+    const cai = combo(['lp', 'hk', 'hk'], { id: 'hayato-cai' });
     const v = verificarCombo(comCombos('hayato', [cai]), 'hayato', null, cai);
     expect(v.emPe.falha).toMatch(/o boneco caiu no passo 2 \(hk\)/);
     const universal = combo(['lp', 'lk', 'hp'], { id: 'hayato-universal' });
@@ -209,7 +212,7 @@ describe('o VERIFICADOR (spec §6.2): aceite da fatia', () => {
   });
 
   it('o cancelamento só sai porque o combo está REGISTRADO: sem ele (lista vazia) hp > lk não encadeia', () => {
-    const c = combo(['hp', 'lk', 'hp'], { id: 'wei-sem-registro', final: 'parede' });
+    const c = combo(['lp', 'hp', 'hp'], { id: 'wei-sem-registro', final: 'parede' }); // o 2º hp só sai pela lista
     const v = verificarCombo(comCombos('wei-long', []), 'wei-long', null, c);
     expect(v.emPe.falha).toMatch(/não encadeou/);
     expect(verificarCombo(comCombos('wei-long', [c]), 'wei-long', null, c).emPe.falha).toBeNull();
@@ -292,40 +295,40 @@ function treino(c1: (typeof ROSTER)[number], flag: boolean) {
 }
 
 describe('o motor: o combo abre o cancelamento que a cadeia por rank proíbe', () => {
-  it('flag LIGADA: WEI LONG faz hp > lk > hp (rank 3 > 2 > 3); DESLIGADA, o lk depois do hp não sai', () => {
+  it('flag LIGADA: WEI LONG faz lp > hp > hp (a GRANDE MURALHA: o 2º hp só sai pelo combo); DESLIGADA, o hp depois do hp não sai', () => {
     const ligado = treino('wei-long', true);
-    expect(encadear(ligado, ['hp', 'lk', 'hp'])).toEqual({ acertos: 3, cancelados: 2 });
+    expect(encadear(ligado, ['lp', 'hp', 'hp'])).toEqual({ acertos: 3, cancelados: 2 });
     const desligado = treino('wei-long', false);
-    // sem a flag o lk depois do hp só começa quando o hp ACABA (ainda dentro do atordoamento do rival, então acerta, mas não é cancelamento);
-    // o único cancelamento é o lk > hp, que é a cadeia universal (rank 2 > 3)
-    expect(encadear(desligado, ['hp', 'lk', 'hp'], 200).cancelados).toBe(1);
+    // sem a flag o 2º hp só começa quando o 1º ACABA (ainda dentro do atordoamento do rival, então acerta, mas não é cancelamento);
+    // o único cancelamento é o lp > hp, que é a cadeia universal (rank 1 > 3)
+    expect(encadear(desligado, ['lp', 'hp', 'hp'], 200).cancelados).toBe(1);
     expect(desligado.g.p1.historicoCombo).toEqual([]); // com a flag desligada o histórico nem é escrito
     expect(desligado.g.combosPropriosFeitos).toEqual([0, 0]);
   });
 
   it('o histórico recomeça quando o rival fica livre e o combo só vale a partir do 1º acerto (âncora)', () => {
     const c = treino('wei-long', true);
-    expect(encadear(c, ['lk', 'hp'])).toEqual({ acertos: 2, cancelados: 1 }); // lk > hp é a cadeia universal; o histórico [lk, hp] NÃO é prefixo de hp > lk > hp
+    expect(encadear(c, ['lk', 'hp'])).toEqual({ acertos: 2, cancelados: 1 }); // lk > hp é a cadeia universal; o histórico [lk, hp] NÃO é prefixo de lp > hp > hp
     c.tick(120); // o rival se recompõe
     expect(c.g.p2.gotHits).toBe(0);
     c.g.p1.x = 435;
     c.g.p2.x = 525;
-    expect(encadear(c, ['hp', 'lk', 'hp'])).toEqual({ acertos: 3, cancelados: 2 }); // e um combo novo funciona depois
+    expect(encadear(c, ['lp', 'hp', 'hp'])).toEqual({ acertos: 3, cancelados: 2 }); // e um combo novo funciona depois
     expect(c.g.combosPropriosFeitos[0]).toBe(1);
   });
 
-  it('um golpe BLOQUEADO não abre combo: sem acerto no histórico o hp > lk não sai', () => {
-    const c = treino('wei-long', true);
+  it('um golpe BLOQUEADO não abre combo: sem acerto no histórico o lk > clp (só o combo ESTRONDO do HAYATO deixa) não sai', () => {
+    const c = treino('hayato', true);
     c.g.trocarAlvoDoTreino('block');
     c.tick(2);
     c.g.p2.x = 525;
-    c.g.p1.startMove('hp', c.g);
+    c.g.p1.startMove('lk', c.g);
     let cancelou = false;
     for (let i = 0; i < 40; i++) {
-      c.mao.p1 = i > 8 ? teclas('lk') : {};
-      const eraHp = c.g.p1.state === 'move' && c.g.p1.move === 'hp';
+      c.mao.p1 = i > 8 ? teclas('clp') : {};
+      const eraLk = c.g.p1.state === 'move' && c.g.p1.move === 'lk';
       c.tick();
-      if (eraHp && c.g.p1.move === 'lk') cancelou = true;
+      if (eraLk && c.g.p1.move === 'clp') cancelou = true;
     }
     expect(c.eventos.some((e) => e.tipo === 'block')).toBe(true);
     expect(c.eventos.some((e) => e.tipo === 'hit')).toBe(false);

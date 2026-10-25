@@ -14,7 +14,7 @@ import { INPUT_VAZIO } from '../core/contratos';
 import { clamp, lerp } from '../core/math';
 import { apresentacaoDoEspecial } from '../data/apresentacao-especiais';
 import { poseDaCena } from '../data/cena';
-import { comboAbreCancelamento, golpesQueContinuam } from '../data/combos-proprios';
+import { cadeiaCabeMais, cadeiaPermite, comboAbreCancelamento, golpesQueContinuam } from '../data/combos-proprios';
 import { ESQUIVA_PADRAO, type TrechoEsquiva } from '../data/esquiva';
 import { hasPose } from '../data/poses';
 import type { LutadorMontado } from '../data/montar';
@@ -56,6 +56,18 @@ export type EstadoIa = {
   superCheio: number;
   /** R-10: `atkId` do golpe cujo acerto a CPU já considerou fechar com o super (um sorteio por golpe). */
   superAtk: number;
+  /** R-10 resto (`ritmo.cpu`): `atkId` do golpe cujo acerto a CPU já está esperando confirmar, e o `mt` em que viu o acerto (a reação de `CPU_RITMO.confirma`). */
+  confirmaAtk: number;
+  confirmaMt: number;
+  /** R-10 resto: `atkId` do golpe do rival que a CPU já considerou punir (um sorteio por golpe). */
+  punirAtk: number;
+  /** R-10 resto: os últimos 3 especiais comuns que a CPU soltou (o repetido perde chance) e o `atkId` do último golpe contado. */
+  ultimosEspeciais: NomeGolpe[];
+  atkContado: number;
+  /** R-10 resto: histerese do andar: ticks de CPU rodados, sentido (-1/0/1) do último plano de andar e quando ele começou. */
+  idade: number;
+  walkSentido: -1 | 0 | 1;
+  walkDesde: number;
 };
 export type PlanoIa = Partial<Record<'left' | 'right' | 'up' | 'down' | 'lp' | 'lk' | 'hp' | 'hk' | 'sp', boolean>> & { dur?: number };
 
@@ -75,6 +87,8 @@ export interface PartidaParaLutador {
   readonly esquivaLigada?: boolean;
   /** V2-4 (`motorV2.combos`): o combo próprio abre cancelamentos. Opcional: dublê de teste sem o campo = desligado (nenhuma conta nova). */
   readonly combosLigados?: boolean;
+  /** R-8 (`ritmo.cadeia`): cadeia por força (fraco > forte > especial > super, até 4 golpes), só em acerto confirmado. Opcional: dublê de teste sem o campo = a cadeia por rank de sempre. */
+  readonly ritmoCadeiaLigada?: boolean;
   /** R-7 (`ritmo.super`): SOCO FORTE + CHUTE FORTE com a barra cheia vira o super. Opcional: dublê de teste sem o campo = desligado. */
   readonly ritmoSuperLigado?: boolean;
   /** FLUIDEZ (M1-M6, `ConfigPartida.fluidez`). Opcional: dublê de teste sem o campo = o motor de antes, bit a bit. */
@@ -83,7 +97,7 @@ export interface PartidaParaLutador {
   readonly regenDeBarra?: number;
 }
 
-const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0, proprioAtk: -1, reservaSuper: null, superCheio: 0, superAtk: -1 });
+const novoIa = (): EstadoIa => ({ plan: null, t: 0, hold: 0, holdInp: null, seen: -1, chain: 0, segurar: 0, reacao: null, puniuEsquiva: 0, proprioAtk: -1, reservaSuper: null, superCheio: 0, superAtk: -1, confirmaAtk: -1, confirmaMt: 0, punirAtk: -1, ultimosEspeciais: [], atkContado: -1, idade: 0, walkSentido: 0, walkDesde: 0 });
 
 /** Nível (1..3) de uma carga com `carga` ticks segurados: o maior i+1 tal que carga >= niveis[i]. */
 function nivelDaCarga(def: CargaDef, carga: number): 1 | 2 | 3 {
@@ -217,6 +231,11 @@ export class Fighter {
    * saber que o último acerto é do golpe em curso (e não de um acerto velho, com o golpe atual só bloqueado).
    */
   historicoCombo: { golpe: NomeGolpe; atk: number }[] = [];
+  /**
+   * R-8: os golpes ENCADEADOS por cancelamento até agora (o último é o golpe em curso). Um golpe que começa do zero recomeça a lista; só os
+   * cancelamentos de `updateMove` a estendem. É o que `ritmo.cadeia` mede para o teto de 4 golpes e para os fracos seguidos.
+   */
+  cadeiaGolpes: NomeGolpe[] = [];
   lastDmg = 0;
   dmgTaken = 0;
   maxCombo = 0;
@@ -397,6 +416,7 @@ export class Fighter {
     this.phase = 'air';
     this.gotHits = 0;
     this.historicoCombo = [];
+    this.cadeiaGolpes = [];
     this.lastDmg = 0;
     this.dmgTaken = 0;
     this.maxCombo = 0;
@@ -592,6 +612,7 @@ export class Fighter {
     this.shots = 0;
     this.atkId++;
     this.rep = 0;
+    this.cadeiaGolpes = [name];
     this.superAtivo = superExec;
     this.setState('move');
     if (this.grounded) this.vx = 0;
@@ -958,6 +979,9 @@ export class Fighter {
     if (mv.rebote) this.tickDoRebote(mv, jogo);
     if (mv.through) this.tickDoCruzamento(mv, opp);
     if (mv.hits && this.hitDone && this.hitCount < mv.hits && this.mt - this.lastHitMt >= (mv.every || 6)) this.hitDone = false; // golpe de vários acertos
+    // R-8 (`ritmo.cadeia`): cancelar exige ACERTO confirmado do golpe em curso (o histórico do combo), não o `connected` que o bloqueio também liga.
+    const cadeia = jogo.ritmoCadeiaLigada === true;
+    const confirmou = cadeia ? this.acertoConfirmado() : this.connected;
     if (mv.throw) {
       // Sem `agarrao.janela` o agarrão testa só em mt === S (o arremesso de sempre). Com janela (ABRAÇO), testa a cada
       // tick de [S, S + janela) até agarrar uma vez (`hitDone` marca "já agarrou"; golpe `throw` nunca usa caixa de acerto).
@@ -994,19 +1018,21 @@ export class Fighter {
       // (tempos iguais), então o golpe segue de onde estava.
       this.trocarFicha(mv.troca.ficha);
       jogo.emitir({ tipo: 'troca-ficha', lutador: this.indice, ficha: mv.troca.ficha });
-    } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.golpeSuperNoTick) {
+    } else if (!mv.air && mv.rank < 9 && confirmou && this.mt >= mv.S && this.golpeSuperNoTick && (!cadeia || cadeiaCabeMais(this.cadeiaGolpes.length))) {
       // R-7: "entra a partir de qualquer normal que conectou" (§3.4) — o mesmo cancelamento de rank maior, mas achado
       // pelo PAR hp+hk (não pelo `buf` de um botão só). golpe especial (rank 9) não cancela para o super (MVP, §3.4):
       // `mv.rank < 9` já garante isso, igual ao cancelamento comum.
       const nm = this.golpeSuperNoTick;
+      const encadeados = [...this.cadeiaGolpes, nm];
       this.buf = null;
       this.startMove(nm, jogo, true);
+      this.cadeiaGolpes = encadeados;
       this.rep = 0;
       this.physics(jogo);
       return;
-    } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.aguardandoParDoSuper(jogo)) {
+    } else if (!mv.air && mv.rank < 9 && confirmou && this.mt >= mv.S && this.aguardandoParDoSuper(jogo)) {
       // R-7: hp OU hk sozinho ainda pode virar par (até 2 ticks) — espera antes de resolver `buf` como cancelamento comum.
-    } else if (!mv.air && mv.rank < 9 && this.connected && this.mt >= mv.S && this.buf) {
+    } else if (!mv.air && mv.rank < 9 && confirmou && this.mt >= mv.S && this.buf) {
       // combo: cancela em golpe de rank maior
       const nm = this.resolveAttack(this.buf.k, inp);
       const nmv = nm ? this.ch.moves[nm] : null;
@@ -1014,11 +1040,15 @@ export class Fighter {
         nm &&
         nmv &&
         this.canAfford(nm) &&
-        (nmv.rank > mv.rank || (mv.rep && nm === this.move && this.rep < 2) || (jogo.combosLigados === true && this.comboProprioAbre(nm)))
+        (cadeia
+          ? this.cadeiaAbre(nm, nmv.rank, !!mv.rep && nm === this.move && this.rep < 2)
+          : nmv.rank > mv.rank || (mv.rep && nm === this.move && this.rep < 2) || (jogo.combosLigados === true && this.comboProprioAbre(nm)))
       ) {
         const rep = nm === this.move ? this.rep + 1 : 0;
+        const encadeados = [...this.cadeiaGolpes, nm];
         this.buf = null;
         this.startMove(nm, jogo);
+        this.cadeiaGolpes = encadeados;
         this.rep = rep;
         this.physics(jogo);
         return;
@@ -1052,6 +1082,20 @@ export class Fighter {
     const ultimo = h[h.length - 1];
     if (!ultimo || ultimo.atk !== this.atkId || ultimo.golpe !== this.move) return [];
     return h.map((x) => x.golpe);
+  }
+
+  /** R-8: o golpe em curso ACERTOU (não só foi bloqueado)? O último item do histórico é uma execução deste golpe. */
+  acertoConfirmado(): boolean {
+    const h = this.historicoCombo;
+    const ultimo = h[h.length - 1];
+    return ultimo !== undefined && ultimo.atk === this.atkId && ultimo.golpe === this.move;
+  }
+
+  /** R-8: a cadeia por força deixa cancelar do golpe em curso para `nm` (rank `rankNm`)? A assinatura (combo próprio) abre o que a força proíbe, mas o teto de 4 golpes vale sempre. */
+  private cadeiaAbre(nm: NomeGolpe, rankNm: number, repete: boolean): boolean {
+    if (!cadeiaCabeMais(this.cadeiaGolpes.length)) return false;
+    if (this.comboProprioAbre(nm)) return true;
+    return cadeiaPermite(this.cadeiaGolpes.map((g) => this.ch.moves[g].rank), rankNm, repete);
   }
 
   /** V2-4: `histórico + nm` é prefixo de um combo próprio da ficha ativa? Então o cancelamento vale mesmo fora da regra de rank. */

@@ -53,6 +53,8 @@ export type Tarefa = {
   ritmoSuper?: true;
   /** `ritmo.cpu` ligada nesta tarefa (`--ritmo cpu`, R-10): a CPU reserva a barra e confirma o super (precisa de `ritmoSuper`). */
   ritmoCpu?: true;
+  /** `ritmo.cadeia` ligada nesta tarefa (`--ritmo cadeia`, R-8): cadeia por força, até 4 golpes, só em acerto confirmado. */
+  ritmoCadeia?: true;
   /** FLUIDEZ do motor ligada nesta luta (`--fluidez`, auditoria de 24/10/2026): par do super sem espera, dash cancelável, fila, agarrão por par, dados do BAATAR. A semente não muda: referência própria (nunca em docs/balanco). */
   fluidez?: FluidezMotor;
 };
@@ -87,6 +89,8 @@ export type ParametrosSim = {
   ritmoSuper?: boolean;
   /** Liga `ritmo.cpu` (R-10) em todas as lutas. */
   ritmoCpu?: boolean;
+  /** Liga `ritmo.cadeia` (R-8) em todas as lutas. */
+  ritmoCadeia?: boolean;
   /** Liga as flags de `fluidez` indicadas em todas as lutas (`--fluidez`). Ausente = o motor de antes. */
   fluidez?: FluidezMotor;
   /** "E se...": ajustes em memória sobre o elenco (ver `aplicarAjustes`). Ausente = os dados do jogo como estão. */
@@ -140,7 +144,7 @@ export type Registro = {
    * `especiais` = golpes especiais iniciados (a tarja), `filmes` = filmes abertos, `danoEspecial` = vida tirada em ticks de acerto de especial (de cada lado),
    * `paradoTicks` = estimativa de tempo parado: especiais x 48 + soma da duração do roteiro de cada filme.
    */
-  medidas?: { especiais: [number, number]; filmes: [number, number]; danoEspecial: [number, number]; paradoTicks: number; /** R-10: supers disparados (`special.super`) por lado. */ supers?: [number, number] };
+  medidas?: { especiais: [number, number]; filmes: [number, number]; danoEspecial: [number, number]; paradoTicks: number; /** R-10: supers disparados (`special.super`) por lado. */ supers?: [number, number]; /** R-8: supers que acertaram (1 ou mais `hit`/`throw` do super), por lado. */ supersConectaram?: [number, number]; /** R-8: supers disparados cancelando um golpe que acertou (finalizador) e quantos deles conectaram, por origem: [disparados, conectaram]. `livre` = fora de cadeia (punição/janela). */ superPorOrigem?: { cancel: [number, number]; livre: [number, number] }; /** R-8: combos de 3+ golpes (golpes distintos que acertaram sem o rival sair do atordoamento), por lado. */ combos3?: [number, number]; /** R-8: o maior combo (em golpes), por lado. */ maiorCombo?: [number, number] };
 };
 
 /** Duração (ticks) da tarja completa que congela o motor em todo especial (a cinemática da esquiva/especial). */
@@ -186,6 +190,7 @@ export function montarTarefas(ids: readonly IdLutador[], chefes: IdLutador | nul
       ...(p.ritmoFilmeRestrito ? { ritmoFilmeRestrito: true as const } : {}),
       ...(p.ritmoSuper ? { ritmoSuper: true as const } : {}),
       ...(p.ritmoCpu ? { ritmoCpu: true as const } : {}),
+      ...(p.ritmoCadeia ? { ritmoCadeia: true as const } : {}),
       ...(p.fluidez ? { fluidez: p.fluidez } : {}),
     });
   };
@@ -260,14 +265,15 @@ function motorV2DaTarefa(t: Tarefa): { motorV2?: { entradaNoHitstop?: true; film
 }
 
 /** As flags de `ritmo` desta tarefa (R-6/R-7b), `{}` quando nenhuma: igual a `motorV2DaTarefa`. */
-function ritmoDaTarefa(t: Tarefa): { ritmo?: { intervalos?: true; filmeRestrito?: true; super?: true; cpu?: true } } {
-  if (!t.ritmoIntervalos && !t.ritmoFilmeRestrito && !t.ritmoSuper && !t.ritmoCpu) return {};
+function ritmoDaTarefa(t: Tarefa): { ritmo?: { intervalos?: true; filmeRestrito?: true; super?: true; cadeia?: true; cpu?: true } } {
+  if (!t.ritmoIntervalos && !t.ritmoFilmeRestrito && !t.ritmoSuper && !t.ritmoCpu && !t.ritmoCadeia) return {};
   return {
     ritmo: {
       ...(t.ritmoIntervalos ? { intervalos: true as const } : {}),
       ...(t.ritmoFilmeRestrito ? { filmeRestrito: true as const } : {}),
       ...(t.ritmoSuper ? { super: true as const } : {}),
       ...(t.ritmoCpu ? { cpu: true as const } : {}),
+      ...(t.ritmoCadeia ? { cadeia: true as const } : {}),
     },
   };
 }
@@ -316,7 +322,8 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
       [0, 0, 0, 0],
     ],
   };
-  const medidas = { especiais: [0, 0] as [number, number], filmes: [0, 0] as [number, number], danoEspecial: [0, 0] as [number, number], paradoTicks: 0, supers: [0, 0] as [number, number] };
+  const medidas = { especiais: [0, 0] as [number, number], filmes: [0, 0] as [number, number], danoEspecial: [0, 0] as [number, number], paradoTicks: 0, supers: [0, 0] as [number, number], supersConectaram: [0, 0] as [number, number], superPorOrigem: { cancel: [0, 0] as [number, number], livre: [0, 0] as [number, number] }, combos3: [0, 0] as [number, number], maiorCombo: [0, 0] as [number, number] };
+  const tamanhoAnterior: [number, number] = [0, 0];
   const ultimoAtk: [number, number] = [f0.atkId, f1.atkId];
   const vida: [number, number] = [f0.vidaTotal, f1.vidaTotal];
   let faseAnterior = g.phase;
@@ -340,6 +347,7 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
     const mortos = projAntes.length ? projAntes.filter((pr) => pr.life <= 0) : projAntes;
     for (const e of g.events as readonly EventoLuta[]) contarEvento(reg, e, lutadores, mortos);
     medirPortoes(medidas, g.events as readonly EventoLuta[], lutadores, queda);
+    medirCombos(medidas, lutadores, tamanhoAnterior);
     if (g.phase !== faseAnterior) {
       if (g.phase === 'ko') reg.fim.push('ko');
       else if (g.phase === 'timeover') reg.fim.push('tempo');
@@ -363,12 +371,35 @@ export function lutar(elenco: Elenco, t: Tarefa): Registro {
  * Portões do §4.5: conta especiais iniciados e filmes e atribui ao especial a vida que caiu no tick em que o atacante bateu com ele (filme, projétil, agarrão
  * de especial ou golpe especial no momento do acerto). Um tick com acerto comum E de especial do mesmo atacante conta inteiro como especial (raro).
  */
+const SUPER_PENDENTE = new WeakMap<object, [boolean, boolean]>();
+const SUPER_ORIGEM = new WeakMap<object, ['cancel' | 'livre', 'cancel' | 'livre']>();
+
+/** R-8: o maior combo (golpes distintos registrados no `historicoCombo`) e quantas vezes ele CHEGOU a 3 golpes (subida de 2 para 3 ou mais). */
+function medirCombos(m: NonNullable<Registro['medidas']>, f: readonly [Fighter, Fighter], anterior: [number, number]): void {
+  for (const i of [0, 1] as const) {
+    const n = (f[i] as Fighter).historicoCombo.length;
+    if (n >= 3 && anterior[i] < 3 && m.combos3) m.combos3[i]++;
+    if (m.maiorCombo && n > m.maiorCombo[i]) m.maiorCombo[i] = n;
+    anterior[i] = n;
+  }
+}
+
 function medirPortoes(m: NonNullable<Registro['medidas']>, eventos: readonly EventoLuta[], f: readonly [Fighter, Fighter], queda: readonly [number, number]): void {
   const especial: [boolean, boolean] = [false, false];
   for (const e of eventos) {
     if (e.tipo === 'special') {
       m.especiais[e.lutador]++;
-      if (e.super === true && m.supers) m.supers[e.lutador]++;
+      if (e.super === true && m.supers) {
+        m.supers[e.lutador]++;
+        const p = SUPER_PENDENTE.get(m) ?? [false, false];
+        p[e.lutador] = true;
+        SUPER_PENDENTE.set(m, p);
+        const origem = (f[e.lutador] as Fighter).cadeiaGolpes.length > 1 ? 'cancel' : 'livre';
+        const os = SUPER_ORIGEM.get(m) ?? (['livre', 'livre'] as ['cancel' | 'livre', 'cancel' | 'livre']);
+        os[e.lutador] = origem;
+        SUPER_ORIGEM.set(m, os);
+        if (m.superPorOrigem) m.superPorOrigem[origem][0]++;
+      }
       m.paradoTicks += TICKS_DA_TARJA;
     }
     else if (e.tipo === 'filme') {
@@ -376,6 +407,13 @@ function medirPortoes(m: NonNullable<Registro['medidas']>, eventos: readonly Eve
       m.paradoTicks += roteiroDoFilme((f[e.atacante] as Fighter).ch.id, e.ficha, e.golpe, e.projetil).duracao;
       especial[e.atacante] = true;
     } else if (e.tipo === 'hit' || e.tipo === 'throw' || e.tipo === 'quebra-guarda' || e.tipo === 'armor') {
+      const pendente = SUPER_PENDENTE.get(m);
+      if (pendente?.[e.atacante] && ((e.tipo === 'hit' && e.super === true) || (e.tipo === 'throw' && e.especial === true)) && m.supersConectaram) {
+        m.supersConectaram[e.atacante]++;
+        pendente[e.atacante] = false;
+        const origemAtual = SUPER_ORIGEM.get(m)?.[e.atacante] ?? 'livre';
+        if (m.superPorOrigem) m.superPorOrigem[origemAtual][1]++;
+      }
       const a = f[e.atacante];
       const projetil = e.tipo === 'hit' && e.projetil;
       if (projetil || (e.tipo === 'throw' && e.especial === true) || (a.move !== null && GOLPES_ESPECIAIS.has(a.move))) especial[e.atacante] = true;

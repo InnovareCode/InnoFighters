@@ -136,7 +136,6 @@ export const ZENON_DEF: Omit<LutadorDef, 'id'> = {
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
     { id: 'zenon-tributo-do-arconte', nome: 'A CONTA, CONVIDADO', sequencia: ['clp', 'hk', 'sFwd'], semQueda: [1], efeito: 'segura em pé e cobra o tributo' },
-    { id: 'zenon-decreto-cruzado', nome: 'SEU LUGAR À MESA', sequencia: ['lk', 'lp', 'hp'], final: 'cruza' },
   ],
   reach: 1.12,
   // Hurtbox em pe: a caixa fixa (254 px) deixava ~93 px da cabeca e dos ombros de fora (spec §9.2). 0,92 x idle0 (336,6 px logicos = 1,32 x 255) / 254,4 = 1,22 (era 1,25 a 1,36).
@@ -158,7 +157,7 @@ export const ZENON_DEF: Omit<LutadorDef, 'id'> = {
     bonusVitoria: 5000,
     trilha: 'chefe',
     // Calibrado na rampa de balanço (docs/balanco): o ZENON é o fim dela (jogador ~15-19% no NORMAL).
-    danoRecebido: 0.75,
-    danoRecebidoDificil: 0.73,
+    danoRecebido: 0.79, // R-12: era 0.75 (ritmo completo + cadeia por força)
+    danoRecebidoDificil: 0.72, // era 0.73
   },
 };

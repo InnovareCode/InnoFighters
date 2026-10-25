@@ -45,7 +45,7 @@ export const NILA: LutadorDef = {
   bars: [3, 4, 3, 3],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'nila-gaja-elefante-pesado', nome: 'SEM ANESTESIA', sequencia: ['hp', 'clp', 'sFwd'], efeito: 'do soco forte ao PASSO DO ELEFANTE' },
+    { id: 'nila-gaja-elefante-pesado', nome: 'SEM ANESTESIA', sequencia: ['clp', 'hp', 'sFwd'], efeito: 'do soco forte ao PASSO DO ELEFANTE' },
   ],
   mods: {
     hp: { S: 8, dmg: 11, kb: 9 },
@@ -132,7 +132,7 @@ export const NILA: LutadorDef = {
     hpPorBarra: 52,
     cena: { duracao: 60, poses: ['crouch'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.84,
-    danoRecebidoDificil: 0.72,
+    danoRecebido: 0.84, // R-12: mantido (a rampa continua valendo com o ritmo completo)
+    danoRecebidoDificil: 0.71, // era 0.72
   },
 };

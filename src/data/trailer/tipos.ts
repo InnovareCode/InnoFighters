@@ -35,52 +35,76 @@ export const DURACAO_DA_CINE = { curta: 20, completa: 48 } as const;
 /** Duração da entrada dramática CURTA do chefão (igual a `DURACAO_ENTRADA_CURTA` de render/entrada-chefe.ts; um teste confere). */
 export const DURACAO_DA_ENTRADA_CURTA = 60;
 
+/** Semente do RNG do `Game` do trailer: CONSTANTE e sem uso (os dois lutadores são humanos; só a CPU sorteia), mas o `Game` exige um RNG. */
+export const SEMENTE_DO_MOTOR = 0;
+
 /** Ajustes de partida do trailer: `shake: true` SEMPRE, para a impressão do motor não depender da preferência do jogador. */
 export const AJUSTES_DO_TRAILER = { rounds: 1, time: 99, shake: true } as const;
 
 export type ChaveDeTexto = 'dez-mestres' | 'dez-nacoes' | 'um-torneio' | 'cinco-guardioes' | 'quem-chega-ao-topo' | 'pressione-enter' | 'toque-para-jogar';
 
-/** Um golpe que o plano EXIGE da luta (a escalação procura uma tomada que o cumpra). */
+/** O modo do FILME no trailer: o trailer pede o modo e não segue a regra do jogo (1ª vez = COMPLETO). */
+export type ModoDoFilmeNoTrailer = 'curta' | 'completa';
+
+/** Duração da tarja do SUPER (igual a `DURACAO_TARJA_SUPER` de render/tarja-super.ts; um teste confere). Congela o motor. */
+export const DURACAO_DA_TARJA_SUPER = 30;
+
+/** Um golpe que o plano EXIGE da luta. A partitura (partitura.ts) diz em que tick do motor ele cai; o CI confere que cai ali. */
 export interface BatidaPedida {
-  /** `especial`: acerto de especial; `contra`: contragolpe especial (COUP D'ARRÊT); `carga`: acerto de golpe carregado (MASHI); `ko`: o rival cai. */
-  readonly tipo: 'especial' | 'contra' | 'carga' | 'ko';
-  /** Quem dá o golpe (0 = P1/c1, 1 = P2/c2). */
+  /**
+   * `golpe`: acerto comum (`hit` do atacante, com `golpe` se pedido); `especial`: acerto de especial; `contra`: contragolpe especial (COUP D'ARRÊT);
+   * `carga`: acerto de golpe carregado (MASHI); `block`: o golpe do `lutador` (atacante) foi DEFENDIDO (evento `block`); `super`: o SUPER do `lutador` acerta
+   * (o `hit` da sequência presa, com `super: true`); `ko`: o rival cai.
+   */
+  readonly tipo: 'golpe' | 'especial' | 'contra' | 'carga' | 'block' | 'super' | 'ko';
+  /** Quem dá o golpe (0 = P1/c1, 1 = P2/c2). Em `block`, é o ATACANTE (o defensor é o outro). */
   readonly lutador: 0 | 1;
-  /** Chave do golpe (`sFire`, `sDown`, `sFwd`), se o plano exige um específico. Ausente = qualquer. */
+  /** Chave do golpe (`sFire`, `sDown`, `sFwd`, `sResp`, `lp`, `hk`...), se o plano exige um específico. Ausente = qualquer. */
   readonly golpe?: string;
   /** Nível da carga (só em `carga`). Padrão 3. */
   readonly nivel?: 1 | 2 | 3;
-  /** Abre a tarja da cinemática do especial neste golpe (congela o motor 20 ou 48 ticks). Ausente = sem tarja. */
+  /** APOSENTADO no trailer (a tarja do especial comum saiu; só o super tem tarja, e ela é automática em `tipo: 'super'`). Fica para os testes da tarja antiga. */
   readonly cine?: 'curta' | 'completa';
   /** Câmera lenta a partir do acerto: o motor anda 1 tick a cada `fator` ticks do trailer, por `ticks` ticks do trailer (no máximo 24). */
   readonly lenta?: { readonly fator: 2 | 3 | 4; readonly ticks: number };
-  /** Tick do plano em que o acerto deve cair (a escalação procura perto dele) e a tolerância. Padrão: o meio do plano ± 60. */
+  /** Modo do FILME que esta batida abre (só no `super`/`ko`): o trailer pede, não segue a regra do jogo. Ausente = `curta`. */
+  readonly filme?: ModoDoFilmeNoTrailer;
+  /** Tick do PLANO em que o acerto deve cair (a câmera lenta e os congelamentos já na conta) e a tolerância. Padrão: o meio do plano ± 60. */
   readonly alvo?: number;
   readonly folga?: number;
 }
 
-/** Uma tomada gravada pela escalação (src/data/trailer/tomadas.ts). */
+/** Uma batida da tomada: em que update do motor ela acontece (a partitura declara; o CI confere que o motor a produz ali). */
 export interface BatidaGravada {
   /** Índice em `pede`. */
   readonly pedida: number;
   /** Chamadas a `update` quando o acerto saiu. */
   readonly tickMotor: number;
-  /** Chamadas a `update` quando o golpe COMEÇOU (evento `special`); igual a `tickMotor` nos tipos sem golpe. É onde abre a tarja. */
+  /** Chamadas a `update` quando o golpe COMEÇOU (evento `special`); igual a `tickMotor` nos tipos sem golpe. É onde abre a tarja do super. */
   readonly tickInicio: number;
 }
 
+/**
+ * As entradas dos DOIS lutadores, um número por update desde o 1º update de LUTA (`PRIMEIRO_UPDATE_DE_LUTA`): máscara de bits (`BIT`) com a direção RELATIVA ao
+ * rival (frente/trás), que o `FonteEntradas` traduz para esquerda/direita pelo `facing` do lutador naquele tick.
+ */
+export interface InputsDaTomada {
+  readonly p1: readonly number[];
+  readonly p2: readonly number[];
+}
+
 export interface Tomada {
-  /** Semente do RNG da CPU do `Game` do plano: constante, nunca derivada da sessão. */
-  readonly semente: number;
-  /** Nível da CPU do P1 e do P2 (0 FÁCIL, 1 NORMAL, 2 DIFÍCIL). */
-  readonly cpu: readonly [0 | 1 | 2, 0 | 1 | 2];
-  /** Chamadas a `update` antes do 1º quadro do plano (a pré-rolagem). */
+  /** Chamadas a `update` antes do 1º quadro do plano (a intro de 90 mais a pré-rolagem). */
   readonly inicio: number;
   readonly batidas: readonly BatidaGravada[];
   /** Hash do estado do `Game` ao fim do plano (o CI confere). */
   readonly impressao: string;
-  /** M3 (futuro): inputs gravados em RLE. A M2 não usa. */
-  readonly inputs?: string;
+  /** A partitura compilada: as entradas de P1 e P2, tick a tick. Os dois lutadores são HUMANOS (sem CPU e sem RNG). */
+  readonly inputs: InputsDaTomada;
+  /** Energia dos dois no 1º update (padrão [0, 0]). O P9 começa com [0, 100] para o ZENON ter o super. */
+  readonly energia?: readonly [number, number];
+  /** Vida dos dois, em % da barra, no 1º update (padrão cheia). Só o P9 usa: o super do ZENON precisa matar para o filme abrir (`filmeRestrito`). */
+  readonly vida?: readonly [number, number];
 }
 
 export type TomadasDoTrailer = Readonly<Partial<Record<IdPlano, Tomada>>>;

@@ -86,10 +86,15 @@ export const TICKS_POR_BRASEIRO = TICKS_POR_TEMPO / 2;
 export const BRASEIROS = 6;
 /** c22.1: 1 tempo de silêncio; depois os braseiros acendem em colcheias. A entrada curta do chefão começa no c22.2 (tick 96 do plano) e dura `DURACAO_DA_ENTRADA_CURTA`. */
 export const TICK_DA_ENTRADA = TICKS_POR_COMPASSO;
-/** O motor anda de novo quando a entrada acaba (96 + 60). */
-export const TICK_DO_MOTOR_NO_ARCONTE = TICK_DA_ENTRADA + DURACAO_DA_ENTRADA_CURTA;
+/** Fim da entrada curta do chefão (96 + 60): a Lyra (R-15) a toca como SOBREPOSIÇÃO, porque a luta já está andando. */
+export const TICK_DO_FIM_DA_ENTRADA = TICK_DA_ENTRADA + DURACAO_DA_ENTRADA_CURTA;
+/**
+ * R-14: o motor anda desde o tick 0 do plano. A partitura do P9 (docs/partitura-trailer.md) tem 192 ticks de luta (o super sai no 99); com o motor parado até o 156, como era na M2, só
+ * restariam 36. Antes era `TICK_DO_FIM_DA_ENTRADA`.
+ */
+export const TICK_DO_MOTOR_NO_ARCONTE = 0;
 export function arconteNoTick(tauNoPlano: number): { readonly acesos: number; readonly entrada: boolean; readonly tickDaEntrada: number } {
   const acesos = tauNoPlano < TICK_DO_PRIMEIRO_BRASEIRO ? 0 : Math.min(BRASEIROS, Math.floor((tauNoPlano - TICK_DO_PRIMEIRO_BRASEIRO) / TICKS_POR_BRASEIRO) + 1);
-  const entrada = tauNoPlano >= TICK_DA_ENTRADA && tauNoPlano < TICK_DO_MOTOR_NO_ARCONTE;
+  const entrada = tauNoPlano >= TICK_DA_ENTRADA && tauNoPlano < TICK_DO_FIM_DA_ENTRADA;
   return { acesos, entrada, tickDaEntrada: entrada ? tauNoPlano - TICK_DA_ENTRADA : -1 };
 }

@@ -263,7 +263,7 @@ describe('Z1 · cena { duracao, poses } do chefe', () => {
     return l;
   }
 
-  it('dados do ZENON: 2 barras de 50, cena de 90 ticks com cena0..2, trilha chefe, fichas chefe/chefe2, fator 0,75', () => {
+  it('dados do ZENON: 2 barras de 50, cena de 90 ticks com cena0..2, trilha chefe, fichas chefe/chefe2, fator 0,79', () => {
     expect(ZENON_DEF.chefe).toEqual({
       barras: 2,
       hpPorBarra: 50,
@@ -272,8 +272,8 @@ describe('Z1 · cena { duracao, poses } do chefe', () => {
       cena: { duracao: 90, poses: ['cena0', 'cena1', 'cena2'] },
       bonusVitoria: 5000,
       trilha: 'chefe',
-      danoRecebido: 0.75, // R3/V2-6: o fator da rampa de balanço (docs/balanco), recalibrado com o motor v2 ligado
-      danoRecebidoDificil: 0.73, // V2-6b: o fator só do nível DIFÍCIL
+      danoRecebido: 0.79, // R-12: o fator da rampa de balanço com o ritmo completo (era 0,75 na V2-6)
+      danoRecebidoDificil: 0.72, // R-12 (era 0,73)
     });
   });
 

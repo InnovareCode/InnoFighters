@@ -17,20 +17,20 @@ describe('ferramentas do trailer em Node puro', () => {
     expect(r.status).toBe(0);
   });
 
-  it('`npm run trailer:escalar -- --ajuda` imprime as opções e sai com 0, sem simular nenhuma luta', () => {
+  it('`npm run trailer:escalar -- --ajuda` imprime as opções e sai com 0, sem rodar nenhuma luta', () => {
     const r = node(['ferramentas/trailer/cli.mjs', '--ajuda']);
     expect(r.stderr).toBe('');
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('--plano');
-    expect(r.stdout).toContain('--sementes');
+    expect(r.stdout).toContain('--rastro');
     expect(r.stdout).toContain('--verificar');
   });
 
-  it('a escalação recusa opção desconhecida e plano sem motor com erro claro e código 1', () => {
+  it('a conferência recusa opção desconhecida e plano sem motor com erro claro e código 1', () => {
     const a = node(['ferramentas/trailer/cli.mjs', '--voar']);
     expect(a.status).toBe(1);
     expect(a.stderr).toContain('opção desconhecida');
-    const b = node(['ferramentas/trailer/cli.mjs', '--plano', 'C1', '--simular']);
+    const b = node(['ferramentas/trailer/cli.mjs', '--plano', 'C1']);
     expect(b.status).toBe(1);
     expect(b.stderr).toContain('sem motor ou inexistente');
   }, 120_000); // o segundo caso sobe o Vite (carregamento SSR) antes de recusar; 60 s estourava com a maquina ocupada (3 suites ao lado)

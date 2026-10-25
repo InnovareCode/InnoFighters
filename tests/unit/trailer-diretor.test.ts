@@ -2,18 +2,20 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { INPUT_VAZIO } from '../../src/core/contratos';
 import { criarRng } from '../../src/core/rng';
 import { Game } from '../../src/fight/game';
-import { DURACAO_CURTA, DURACAO_COMPLETA } from '../../src/render/cinematica';
+import { DURACAO_COMPLETA, DURACAO_CURTA } from '../../src/render/cinematica';
+import { DURACAO_TARJA_SUPER } from '../../src/render/tarja-super';
 import { DURACAO_ENTRADA_CURTA } from '../../src/render/entrada-chefe';
 import { cortesDeFoco, maiorFlashEm60, validarRoteiro } from '../../src/data/trailer/validar';
 import { flashNoTick } from '../../src/data/trailer/curvas';
-import { DURACAO_DA_CINE, DURACAO_DA_ENTRADA_CURTA, DURACAO_TOTAL, temMotor, TICKS_POR_TEMPO, type IdPlano, type RoteiroDoTrailer, type TomadasDoTrailer } from '../../src/data/trailer/tipos';
+import { DURACAO_DA_CINE, DURACAO_DA_ENTRADA_CURTA, DURACAO_DA_TARJA_SUPER, DURACAO_TOTAL, SEMENTE_DO_MOTOR, temMotor, TICKS_POR_TEMPO, type IdPlano, type RoteiroDoTrailer, type TomadasDoTrailer } from '../../src/data/trailer/tipos';
 import { LUTADORES } from '../../src/data/lutadores';
 import { TEXTOS } from '../../src/data/trailer/textos';
 import { DiretorDoTrailer, type QuadroDoTrailer } from '../../src/trailer/diretor';
 import { impressaoDoEstado } from '../../src/trailer/impressao';
-import { criarPartida, FONTE_VAZIA } from '../../src/trailer/partida';
+import { criarPartida } from '../../src/trailer/partida';
 import { ticksDoFilmeNoTrailer } from '../../src/trailer/filme';
 import { casaBatida } from '../../src/trailer/ritmo';
 import { planoDeCarga, residentesNoPlano, PESADOS } from '../../src/trailer/carga';
@@ -22,13 +24,16 @@ import { entradaDaMusica, MAX_TICKS_POR_CHAMADA, tickAlvoDoAudio, ticksAAvancar 
 import { correr, DESTAQUE, ELENCO, ROTEIRO, TOMADAS } from './_trailer';
 
 /*
- * Trailer de abertura, T1/T2 (docs/spec-trailer-abertura.md §8, testes 1 a 9): determinismo, batidas, invariância à fatia, sem sorteio fora da semente, ISOLAMENTO da
- * sessão, duração e cortes, fotossensibilidade, carga e reserva, validação do roteiro. A tomada que falha diz qual plano reescalar.
+ * Trailer de abertura, T1/T2 (docs/spec-trailer-abertura.md §8, testes 1 a 9): determinismo, batidas, invariância à fatia, sem sorteio, ISOLAMENTO da sessão, duração e
+ * cortes, fotossensibilidade, carga e reserva, validação do roteiro. R-14: os dois lutadores são HUMANOS e a luta é a PARTITURA (src/data/trailer/partitura.ts): a tomada
+ * que falha diz qual plano reafinar (`npm run trailer:escalar -- --plano Px --rastro`).
  */
 
 const RAIZ = fileURLToPath(new URL('../../', import.meta.url));
 const PLANOS_DE_LUTA = ROTEIRO.planos.filter(temMotor);
-const reescalar = (id: string): string => `rode \`npm run trailer:escalar -- --plano ${id}\` e reaprove a tomada na prévia`;
+/** A fonte de quem não é consultado (CPU x CPU): o `Game.update` a exige, mas nunca a chama. */
+const FONTE_VAZIA = { p1: () => INPUT_VAZIO, p2: () => INPUT_VAZIO };
+const reescalar = (id: string): string => `rode \`npm run trailer:escalar -- --plano ${id} --rastro\`, reafine a partitura (src/data/trailer/partitura.ts) e reaprove o plano na prévia`;
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -99,12 +104,12 @@ describe('2 · batidas: cada golpe pedido cai onde a tomada gravou e no tempo qu
     expect(tomada, `${id} sem tomada. ${reescalar(id)}`).toBeDefined();
     if (!tomada) return;
     // (a) a luta gravada, reconstruída do zero, tem o acerto no update gravado
-    const g = criarPartida(plano, tomada, ELENCO, criarRng);
+    const partida = criarPartida(plano, tomada, ELENCO, criarRng);
     const porUpdate: (readonly import('../../src/core/contratos').EventoLuta[])[] = [[]];
     const ate = Math.max(...tomada.batidas.map((b) => b.tickMotor));
     for (let u = 1; u <= ate; u++) {
-      g.update(FONTE_VAZIA);
-      porUpdate.push(g.events.slice());
+      partida.atualizar();
+      porUpdate.push(partida.game.events.slice());
     }
     plano.pede.forEach((pedida, i) => {
       const gravada = tomada.batidas[i];
@@ -123,26 +128,39 @@ describe('2 · batidas: cada golpe pedido cai onde a tomada gravou e no tempo qu
     });
   });
 
-  it('P1: a tarja abre uma vez (CURTA), o motor congela exatamente 20 ticks e a câmera lenta ×3 anda 6 updates em 18 ticks', () => {
+  it('P1: o RAIJIN-KEN acerta no tick pedido e a câmera lenta ×3 anda 6 updates em 18 ticks; nenhum plano tem tarja de especial comum (`cine`)', () => {
     const q1 = A.quadros.filter((q) => q.plano.id === 'P1');
-    const comTarja = q1.filter((q) => q.cine);
-    expect(comTarja).toHaveLength(1);
-    const t0 = comTarja[0]?.tickNoPlano ?? -1;
-    expect(comTarja[0]?.cine?.modo).toBe('curta');
-    expect(comTarja[0]?.cine?.ev.tipo).toBe('special');
-    expect(q1.slice(t0 + 1, t0 + 1 + DURACAO_DA_CINE.curta).every((q) => !q.motorAndou)).toBe(true);
-    expect(q1[t0 + 1 + DURACAO_DA_CINE.curta]?.motorAndou).toBe(true);
-    const acerto = quadroDaBatida('P1', TOMADAS['P1']?.batidas[0]?.tickMotor ?? 0);
+    const acerto = quadroDaBatida('P1', TOMADAS['P1']?.batidas[2]?.tickMotor ?? 0);
     expect(acerto?.eventos.some((ev) => ev.tipo === 'hit' && ev.especial === true)).toBe(true);
     const i = acerto?.tickNoPlano ?? 0;
-    // com o motor v2 ligado o acerto do especial abre o FILME (D-V6): o motor congela pelos ticks dele e a câmera lenta começa DEPOIS
-    const filmeNoAcerto = acerto?.filme ?? null;
-    const congelado = acerto && filmeNoAcerto ? ticksDoFilmeDoQuadro(acerto) : 0;
-    const lenta = q1.slice(i + 1 + congelado, i + 1 + congelado + 18);
+    // `filmeRestrito`: o especial comum não abre filme (só o super que mata), então a câmera lenta começa logo depois do acerto
+    expect(acerto?.filme ?? null).toBeNull();
+    const lenta = q1.slice(i + 1, i + 1 + 18);
     expect(lenta.length).toBe(18);
     expect(lenta.every((q) => q.lenta === 3)).toBe(true);
     expect(lenta.filter((q) => q.motorAndou)).toHaveLength(6);
-    expect(q1[i + 1 + congelado + 18]?.lenta).toBe(1);
+    expect(q1[i + 1 + 18]?.lenta).toBe(1);
+    expect(A.quadros.some((q) => q.cine)).toBe(false);
+  });
+
+  it('SUPER: exatamente 1 no trailer (o ZENON no P9), com tarja de 30 ticks que congela o motor, e a tarja da render tem a mesma duração', () => {
+    expect(DURACAO_DA_TARJA_SUPER).toBe(DURACAO_TARJA_SUPER);
+    const comTarja = A.quadros.filter((q) => q.tarjaSuper);
+    expect(comTarja).toHaveLength(1);
+    const t = comTarja[0] as QuadroDoTrailer;
+    expect(t.plano.id).toBe('P9');
+    expect(t.tarjaSuper?.tipo).toBe('special');
+    const q9 = A.quadros.filter((q) => q.plano.id === 'P9');
+    expect(q9.slice(t.tickNoPlano + 1, t.tickNoPlano + 1 + DURACAO_DA_TARJA_SUPER).every((q) => !q.motorAndou)).toBe(true);
+    expect(q9[t.tickNoPlano + 1 + DURACAO_DA_TARJA_SUPER]?.motorAndou).toBe(true);
+    // todos os acertos do super são do ZENON (lutador 1), 5 presos, e o último mata e abre o filme CURTO que toca até o último quadro do plano
+    const hitsSuper = A.quadros.flatMap((q) => q.eventos).filter((ev) => ev.tipo === 'hit' && ev.super === true);
+    expect(hitsSuper).toHaveLength(5);
+    expect(hitsSuper.every((ev) => ev.tipo === 'hit' && ev.atacante === 1)).toBe(true);
+    const filme = q9.find((q) => q.filme);
+    expect(filme?.filme?.modo).toBe('curta');
+    expect(filme?.eventos.some((ev) => ev.tipo === 'ko')).toBe(true);
+    expect((filme?.tickNoPlano ?? 0) + ticksDoFilmeDoQuadro(filme as QuadroDoTrailer)).toBeGreaterThanOrEqual(q9.length - 1);
   });
 
   it('FILME (D-V6): cada evento `filme` do motor abre o filme no tick do contato e segura o motor pelos ticks do roteiro, em todos os planos de luta', () => {
@@ -186,10 +204,10 @@ describe('2 · batidas: cada golpe pedido cai onde a tomada gravou e no tempo qu
     expect(DURACAO_DA_ENTRADA_CURTA).toBe(DURACAO_ENTRADA_CURTA);
   });
 
-  it('P9: o motor só anda depois da entrada do chefão (tick 156), os braseiros acendem em colcheias e a entrada dura 60 ticks', () => {
+  it('P9: o motor anda desde o tick 0 (a partitura tem 192 ticks de luta), os braseiros acendem em colcheias e a entrada dura 60 ticks', () => {
     const q9 = A.quadros.filter((q) => q.plano.id === 'P9');
-    expect(q9.slice(0, 156).every((q) => !q.motorAndou)).toBe(true);
-    expect(q9[156]?.motorAndou).toBe(true);
+    expect(q9[0]?.motorAndou).toBe(true);
+    expect(q9.slice(0, 20).every((q) => q.motorAndou)).toBe(true);
     expect(q9.map((q) => q.arconte?.acesos)).toEqual(q9.map((_, t) => (t < 24 ? 0 : Math.min(6, Math.floor((t - 24) / 12) + 1))));
     expect(q9.filter((q) => q.arconte?.entrada)).toHaveLength(60);
     expect(q9[96]?.arconte?.tickDaEntrada).toBe(0);
@@ -248,11 +266,17 @@ describe('5 · isolamento da sessão', () => {
     expect(sorteios(emUso)).toEqual(controle);
   });
 
-  it('o diretor só pede RNG com as sementes das tomadas (constantes do roteiro), nunca com a da sessão', () => {
-    const permitidas = new Set(Object.values(TOMADAS).map((t) => t?.semente));
+  it('o diretor só pede RNG com a semente CONSTANTE do motor (nunca a da sessão) e ninguém o consome: os dois lutadores são humanos, sem CPU', () => {
     expect(A.sementesPedidas.length).toBe(PLANOS_DE_LUTA.length);
-    for (const s of A.sementesPedidas) expect(permitidas.has(s)).toBe(true);
+    for (const s of A.sementesPedidas) expect(s).toBe(SEMENTE_DO_MOTOR);
     expect(Number.isInteger(ROTEIRO.sementeVisual)).toBe(true);
+    // um RNG que lança em qualquer sorteio: o trailer inteiro passa, então a luta não sorteia nada
+    const proibido = { proximo: () => { throw new Error('sorteio no trailer'); } } as unknown as ReturnType<typeof criarRng>;
+    expect(() => correr({ criarRng: () => new Proxy(proibido, { get: (_, k) => () => { throw new Error(`RNG.${String(k)} no trailer`); } }) })).not.toThrow();
+    for (const p of PLANOS_DE_LUTA) {
+      const g = criarPartida(p, TOMADAS[p.id] as NonNullable<(typeof TOMADAS)[typeof p.id]>, ELENCO, criarRng).game;
+      expect(g.fighters.map((f) => f.cpu)).toEqual([null, null]);
+    }
   });
 
   it('o `Game` da sessão fica intocado: mesma impressão, antes e depois, de um controle que não viu o trailer', () => {
@@ -433,7 +457,7 @@ describe('9 · validarRoteiro', () => {
     expect(ok(ROTEIRO, semP2).join('\n')).toMatch(/P2: sem tomada/);
     const p3 = TOMADAS['P3'];
     if (!p3) throw new Error('P3');
-    expect(ok(ROTEIRO, { ...TOMADAS, P3: { ...p3, batidas: [] } }).join('\n')).toMatch(/P3: a tomada tem 0 batidas e o roteiro pede 1/);
+    expect(ok(ROTEIRO, { ...TOMADAS, P3: { ...p3, batidas: [] } }).join('\n')).toMatch(/P3: a tomada tem 0 batidas e o roteiro pede 2/);
     expect(ok(ROTEIRO, { ...TOMADAS, P3: { ...p3, inicio: 2401 } }).join('\n')).toMatch(/P3: inicio 2401/);
     expect(ok(ROTEIRO, { ...TOMADAS, C1: p3 } as TomadasDoTrailer).join('\n')).toMatch(/tomada de "C1"/);
   });

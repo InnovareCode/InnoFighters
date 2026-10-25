@@ -3,6 +3,7 @@ import type { InputFrame } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import type { NomeGolpe, PapelIa } from '../data/tipos';
 import { ESQUIVA_PADRAO } from '../data/esquiva';
+import { cadeiaPermite } from '../data/combos-proprios';
 import { superDoLutador } from '../data/supers';
 import type { Fighter, PlanoIa } from './fighter';
 import type { ProjetilLuta } from './projetil';
@@ -89,10 +90,27 @@ export const CPU_SUPER = [
   { reserva: 1, confirma: 0.95 },
 ] as const;
 /** Barra cheia há tanto tempo (ticks) sem janela de confirmação: o super sai assim que o rival estiver ao alcance (evita barra cheia parada). */
-const ESPERA_MAXIMA_DO_SUPER = 300;
+const ESPERA_MAXIMA_DO_SUPER = 600;
 /** Barra a partir da qual a CPU decide (um sorteio por ciclo) juntar o resto para o super; abaixo de `SAIDA_DA_RESERVA` o ciclo recomeça. */
 const ENTRADA_NA_RESERVA = 60;
 const SAIDA_DA_RESERVA = 35;
+
+/**
+ * R-10 resto (spec §3.6, `ritmo.cpu`), indexado por `me.cpu` (0 FÁCIL, 1 NORMAL, 2 DIFÍCIL). Só em lutas comuns (o chefão fica de fora até o R-12).
+ *  - `confirma`: ticks entre ver o acerto e decidir continuar a cadeia (CPU-1). Se a janela do golpe fecha antes, o combo cai, como com gente.
+ *  - `plano`: chance de seguir o combo próprio (BÁSICO ou ASSINATURA) inteiro depois de um acerto que o continua, e de ABRIR com ele no neutro (CPU-2).
+ *    O FÁCIL só vai até o 2º golpe.
+ *  - `punirErro`: chance de punir o golpe do rival que errou ou foi bloqueado e deixou recuperação longa (CPU-5).
+ */
+export const CPU_RITMO = [
+  { confirma: 12, plano: 0.15, punirErro: 0, abre: 0.08 },
+  { confirma: 4, plano: 0.45, punirErro: 0.35, abre: 0.35 },
+  { confirma: 1, plano: 0.85, punirErro: 0.7, abre: 0.45 },
+] as const;
+/** CPU-3: o andar não troca de sentido antes de tantos ticks. */
+const HISTERESE_ANDAR = 16;
+/** CPU-6: cada repetição de um especial nos últimos 3 divide a chance dele por 2 (`variedade` 0,5). */
+const VARIEDADE = 0.5;
 
 export const NO_INPUT = (): InputFrame => ({ left: false, right: false, up: false, down: false, lp: false, lk: false, hp: false, hk: false, sp: false });
 
@@ -103,6 +121,8 @@ export interface VistaParaCpu {
   readonly esquivaLigada?: boolean;
   /** COMBOS PRÓPRIOS ligados na partida (V2-4). Desligada, a CPU não olha os combos nem sorteia nada por causa deles (o RNG fica idêntico ao de antes). */
   readonly combosLigados?: boolean;
+  /** R-8 (`ritmo.cadeia`): a cadeia do motor é por força; a CPU só escolhe encadeamentos que o motor aceita. */
+  readonly ritmoCadeiaLigada?: boolean;
   /** R-7 (`ritmo.super`): a CPU upgrada o botão único para hp+hk quando o golpe escolhido é o super dela e a barra está cheia. Sem `rnd()` novo. */
   readonly ritmoSuperLigado?: boolean;
   /** R-10 (`ritmo.cpu`): a CPU reserva a barra para o super e o confirma. Só vale com `ritmoSuperLigado`. Sorteia só com a flag ligada. */
@@ -260,11 +280,43 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   if (me.state !== 'idle' && me.state !== 'walk' && me.state !== 'crouch' && me.state !== 'jump' && me.state !== 'move' && me.state !== 'block' && me.state !== 'hit') return inp;
   // R-10 (`ritmo.cpu`): reserva da barra para o super. Sem a flag (ou sem super para este lutador/ficha) nada abaixo roda: nenhum rnd, nenhum filtro.
   const sup = game.ritmoCpuLigado === true && superLigado && me.perfilIa === null && opp.perfilIa === null ? superDoLutador(me.ch.id, me.ficha) : undefined;
+  // R-8/R-10 resto: a CPU do ritmo (sem chefão) confirma o acerto, segue o plano, pune o erro, varia o especial e não treme no andar. Sem a flag nada abaixo roda.
+  const ritmoCpu = game.ritmoCpuLigado === true && me.perfilIa === null && opp.perfilIa === null;
+  const cfgR = CPU_RITMO[Math.min(nivel, CPU_RITMO.length - 1)] ?? CPU_RITMO[0];
+  // Com a cadeia por força, "conectou" é ACERTO confirmado (o bloqueio não encadeia): a CPU lê o que o motor lê.
+  const cadeia = game.ritmoCadeiaLigada === true;
+  const confirmou = cadeia ? me.acertoConfirmado() : me.connected;
+  ai.idade++;
+  let pronto = true; // CPU-1: já passou o tempo de reação desde que viu o acerto?
+  if (ritmoCpu && confirmou && me.state === 'move') {
+    if (ai.confirmaAtk !== me.atkId) {
+      ai.confirmaAtk = me.atkId;
+      ai.confirmaMt = me.mt;
+    }
+    // NORMAL e DIFÍCIL reagem a tempo de usar a janela de um golpe curto (decidem 2 ticks antes de ela fechar): são os que têm reflexo; só o FÁCIL perde o elo por lentidão.
+    const g = me.golpeAtual();
+    const janelaAteOFim = g.S + g.A + g.R - ai.confirmaMt;
+    const espera = nivel === 0 ? cfgR.confirma : Math.min(cfgR.confirma, Math.max(0, janelaAteOFim - 2));
+    pronto = me.mt - ai.confirmaMt >= espera;
+  }
+  if (ritmoCpu && me.state === 'move' && ai.atkContado !== me.atkId) {
+    // CPU-6: memória dos últimos 3 especiais comuns (o super não conta)
+    ai.atkContado = me.atkId;
+    if (me.move !== null && me.move[0] === 's' && me.superAtivo !== true) ai.ultimosEspeciais = [...ai.ultimosEspeciais, me.move].slice(-3);
+  }
   const cfgSup = CPU_SUPER[Math.min(nivel, CPU_SUPER.length - 1)] ?? CPU_SUPER[0];
   const alcanceDoSuper = (): boolean => {
     if (!sup) return false;
     const tipo = M[sup.golpe].type;
     return tipo === 'fire' ? ad > 130 && ad <= 340 : ad <= 190;
+  };
+  // R-10 resto: o super só vale se ele CHEGA enquanto o rival ainda está preso. Ticks até o 1º contato: o startup do golpe de origem, mais a viagem do projétil/investida.
+  const ticksAteOContatoDoSuper = (): number => {
+    if (!sup) return 0;
+    const mv = M[sup.golpe];
+    if (mv.type === 'fire' && mv.proj) return mv.S + Math.max(0, ad - 60) / Math.max(1, mv.proj.sp);
+    if (mv.type === 'rush' && mv.vx) return mv.S + Math.max(0, ad - 70) / Math.max(1, Math.abs(mv.vx));
+    return mv.S;
   };
   let janelaSuper = false;
   if (sup) {
@@ -276,7 +328,9 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     // rival punível: em hit stun ou na recuperação de um golpe dele (o super vai conectar)
     const oppMvAgora = opp.state === 'move' ? opp.golpeAtual() : null;
     const recuperando = oppMvAgora !== null && opp.mt >= oppMvAgora.S + oppMvAgora.A;
-    janelaSuper = alcanceDoSuper() && (opp.state === 'hit' || recuperando || ai.superCheio > ESPERA_MAXIMA_DO_SUPER);
+    const ate = ticksAteOContatoDoSuper() + 1;
+    const presoAteOContato = opp.state === 'hit' ? opp.stun >= ate : recuperando && oppMvAgora !== null && oppMvAgora.S + oppMvAgora.A + oppMvAgora.R - opp.mt >= ate;
+    janelaSuper = alcanceDoSuper() && (presoAteOContato || ai.superCheio > ESPERA_MAXIMA_DO_SUPER);
   }
   // Especial comum que a CPU guarda para não gastar a barra do super: com a barra incompleta, TODO especial; com ela cheia, todo especial menos o super
   // (e o super só nas janelas de confirmação). Só quem sorteou "reserva" no round.
@@ -378,11 +432,15 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   }
   // 2a) COMBO PRÓPRIO (V2-4): depois de um acerto que continua uma sequência do lutador, um sorteio por golpe decide se a CPU a segue. O `rnd()`
   // só existe com a flag ligada, com `proprio` > 0 e com ao menos um golpe pagável que continue a sequência (2 ou mais: mais um para escolher qual).
-  if (game.combosLigados === true && L.proprio > 0 && me.state === 'move' && me.connected && !me.buf && ai.proprioAtk !== me.atkId) {
-    const continuam = me.continuacoesDoComboProprio().filter((n) => me.canAfford(n) && !bloqueia(n) && serveParaCombo(me, n, dir));
+  const proprio = ritmoCpu ? cfgR.plano : L.proprio;
+  // Com a cadeia por força só se continua em quem ainda está preso (um rival caído não toma o golpe), e o super do fim (barra cheia) tem que chegar a tempo.
+  const rivalPreso = !cadeia || opp.state === 'hit';
+  const superNaoCabe = (n: NomeGolpe): boolean => sup !== undefined && n === sup.golpe && me.en >= MAX_EN && opp.stun < ticksAteOContatoDoSuper() + 1;
+  if (game.combosLigados === true && proprio > 0 && me.state === 'move' && confirmou && pronto && rivalPreso && !me.buf && ai.proprioAtk !== me.atkId) {
+    const continuam = me.continuacoesDoComboProprio().filter((n) => me.canAfford(n) && !bloqueia(n) && serveParaCombo(me, n, dir) && !(ritmoCpu && nivel === 0 && me.historicoCombo.length >= 2) && !superNaoCabe(n));
     if (continuam.length > 0) {
       ai.proprioAtk = me.atkId;
-      if (rnd() < L.proprio) {
+      if (rnd() < proprio) {
         const nm = continuam.length === 1 ? continuam[0] : continuam[Math.floor(rnd() * continuam.length)];
         if (nm) {
           Object.assign(inp, moveInput(nm, dir, me, superLigado));
@@ -392,10 +450,10 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     }
   }
   // 2) encadear combos: soco fraco → chute fraco → soco forte → chute forte → especial
-  if (me.state === 'move' && me.connected && !me.buf) {
+  if (me.state === 'move' && confirmou && pronto && rivalPreso && !me.buf) {
     const cur = me.golpeAtual();
     // R-10: finalizador. Barra cheia + acerto que CONECTOU (o rival está preso): um sorteio por golpe decide fechar com o super (3º passo do combo).
-    if (sup && me.en >= MAX_EN && !cur.air && cur.rank < 9 && ai.superAtk !== me.atkId && serveParaCombo(me, sup.golpe, dir)) {
+    if (sup && me.en >= MAX_EN && !cur.air && cur.rank < 9 && ai.superAtk !== me.atkId && serveParaCombo(me, sup.golpe, dir) && opp.state === 'hit' && opp.stun >= ticksAteOContatoDoSuper() + 1) {
       ai.superAtk = me.atkId;
       if (rnd() < cfgSup.confirma) {
         Object.assign(inp, moveInput(sup.golpe, dir, me, superLigado));
@@ -404,8 +462,14 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
     }
     if (!cur.air && cur.rank < 9 && rnd() < L.combo * 0.09) {
       const candidatos: readonly NomeGolpe[] = ['lp', 'lk', 'hp', 'hk', 'chk', 'sFire', 'sFwd', 'sDown'];
+      const ranksDaCadeia = me.cadeiaGolpes.map((g) => M[g].rank);
       const pool = candidatos.filter(
-        (n) => (M[n].rank > cur.rank || (!!cur.rep && n === me.move && me.rep < 2)) && me.canAfford(n) && !bloqueia(n) && serveParaCombo(me, n, dir),
+        (n) =>
+          (cadeia ? cadeiaPermite(ranksDaCadeia, M[n].rank, !!cur.rep && n === me.move && me.rep < 2) : M[n].rank > cur.rank || (!!cur.rep && n === me.move && me.rep < 2)) &&
+          me.canAfford(n) &&
+          !bloqueia(n) &&
+          serveParaCombo(me, n, dir) &&
+          !superNaoCabe(n),
       );
       const specials = pool.filter((n) => n[0] === 's');
       const normals = pool.filter((n) => n[0] !== 's');
@@ -442,6 +506,28 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
       return inp;
     }
   }
+  // CPU-5 (R-10 resto): o golpe do rival que errou ou foi bloqueado e deixou recuperação longa é punido com o BÁSICO/ASSINATURA ou com o forte.
+  // Um sorteio por golpe dele; só com recuperação que dá para entrar (startup do golpe + 2 de folga) e ao alcance de um normal.
+  if (ritmoCpu && cfgR.punirErro > 0 && me.grounded && ad < 115 && ai.punirAtk !== opp.atkId && (me.state === 'idle' || me.state === 'walk' || me.state === 'crouch' || me.state === 'block')) {
+    const om = opp.state === 'move' ? opp.golpeAtual() : null;
+    if (om && om.type !== 'fire' && om.kind !== 'lag' && opp.mt >= om.S + om.A) {
+      const restante = om.S + om.A + om.R - opp.mt;
+      const aberturas = (me.ch.combosProprios ?? []).map((c) => c.sequencia[0] as NomeGolpe);
+      const opcoes = [...aberturas, 'hp' as const].filter((n, i, xs) => xs.indexOf(n) === i && M[n].rank < 9 && !M[n].air && me.canAfford(n) && M[n].S + 2 <= restante);
+      if (opcoes.length > 0) {
+        ai.punirAtk = opp.atkId;
+        if (rnd() < cfgR.punirErro) {
+          const nm = opcoes[Math.floor(rnd() * opcoes.length)];
+          if (nm) {
+            Object.assign(inp, moveInput(nm, dir, me, superLigado));
+            ai.plan = null;
+            ai.t = 0;
+            return inp;
+          }
+        }
+      }
+    }
+  }
   // 3) anti-aéreo
   if (opp.y < GROUND - 50 && ad < 190 && ad > 30 && me.grounded && rnd() < L.anti * 0.25) {
     // Quem tem golpe `antiaereo` (HURACANRANA) usa o dele no lugar do ↓+ESP genérico, sorteando o mesmo `rnd() < 0.5`.
@@ -472,7 +558,9 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
   let dur: number = L.think;
   const r = rnd();
   const pick = <T>(a: readonly T[]): T => a[Math.floor(rnd() * a.length)] as T;
+  let escolhido: NomeGolpe | null = null;
   const doMove = (n: NomeGolpe): void => {
+    escolhido = n;
     Object.assign(plan, moveInput(n, dir, me, superLigado));
   };
   if (!me.grounded) return inp;
@@ -537,7 +625,12 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
       dur = 10;
     }
   } else {
-    if (ad < 100 && me.canThrow() && r < 0.12 * L.aggr) {
+    // CPU-2 (R-10 resto): no neutro, ao alcance, ABRE com o 1º golpe de um combo próprio dele (um sorteio por decisão; o plano segue pelo ramo 2a).
+    const aberturasDoPlano = ritmoCpu && game.combosLigados === true && ad < 110 ? (me.ch.combosProprios ?? []).map((c) => c.sequencia[0] as NomeGolpe).filter((n) => me.canAfford(n) && serveParaCombo(me, n, dir)) : [];
+    if (aberturasDoPlano.length > 0 && rnd() < cfgR.abre) {
+      doMove(aberturasDoPlano[Math.floor(rnd() * aberturasDoPlano.length)] as NomeGolpe);
+      dur = 14;
+    } else if (ad < 100 && me.canThrow() && r < 0.12 * L.aggr) {
       doMove('throw');
       dur = 20;
     } else if (r < 0.3 * L.aggr + 0.1) {
@@ -569,6 +662,30 @@ export function cpuInput(me: Fighter, opp: Fighter, game: VistaParaCpu, rng: Rng
       dur = 10;
     }
     dur += Math.floor(rnd() * L.think * 0.5);
+  }
+  if (ritmoCpu) {
+    // CPU-6: o especial comum que repete um dos últimos 3 perde chance (metade por repetição); cai para avançar
+    const esc = escolhido as NomeGolpe | null;
+    if (esc !== null && esc[0] === 's') {
+      const repeticoes = ai.ultimosEspeciais.filter((x) => x === esc).length;
+      if (repeticoes > 0 && rnd() >= VARIEDADE ** repeticoes) {
+        for (const k of ['left', 'right', 'up', 'down', 'lp', 'lk', 'hp', 'hk', 'sp'] as const) delete plan[k];
+        toward(plan);
+        dur = 10;
+      }
+    }
+    // CPU-3: histerese do andar — não inverte o sentido antes de HISTERESE_ANDAR ticks (acaba a tremedeira)
+    const sentido = plan.left && !plan.right ? -1 : plan.right && !plan.left ? 1 : 0;
+    const soAnda = sentido !== 0 && !plan.up && !plan.down && !plan.lp && !plan.lk && !plan.hp && !plan.hk && !plan.sp;
+    if (soAnda) {
+      if (ai.walkSentido !== 0 && sentido !== ai.walkSentido && ai.idade - ai.walkDesde < HISTERESE_ANDAR) {
+        plan.left = ai.walkSentido < 0;
+        plan.right = ai.walkSentido > 0;
+      } else if (sentido !== ai.walkSentido) {
+        ai.walkSentido = sentido;
+        ai.walkDesde = ai.idade;
+      }
+    }
   }
   ai.plan = plan;
   ai.t = dur;

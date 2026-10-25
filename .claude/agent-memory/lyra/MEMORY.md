@@ -11,3 +11,4 @@
 - [R-9 super: faixa com rosto + RITMO_PADRAO](r9-super-ui-faixa-rosto.md) — faixa-rosto.ts compartilhado (FaixaRitmo/TarjaDoSuper), bug do montarElenco() sem merge do bloco filme, cfg.ritmo != regras.ritmo, h.avancar() não desenha, botão toque multi-tecla, ripple do flip de RITMO_PADRAO
 - [Desempenho Android D1-D3](desempenho-android-d1-d3.md) — bancada headless nao ve ganho de pixel (governador exige que descer adiante), prewarm FILME 500->90 ms, setTransform(numeros), celular=toque exige &rs=2, CRLF/LF e replace silencioso
 - [HUD do ritmo: DANGER, nota, contador](hud-ritmo-danger-nota-combo.md) — hud-ritmo.ts atras de ritmo.tarja; combo.t travado em 60; e2e por diff ligado/desligado; DANGER y=146 por causa do #sup
+- [Trailer encenado R-15](trailer-r15-encenado.md) — tarja do super só no P9, entrada do ZENON sobreposta (cartão na faixa de cima), HUD só contador; "quadros idênticos" não mede parado (câmera); flake do determinismo tick 300

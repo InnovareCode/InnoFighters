@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { LUTADORES, ROSTER } from '../../src/data/lutadores';
 import type { ComboProprio, Golpe } from '../../src/data/tipos';
+import { todosOsSupers } from '../../src/data/supers';
 import { teclasDoGolpe } from '../../src/ui/combos-tela';
 
 /*
@@ -39,9 +40,12 @@ const limiteDe = (c: ComboProprio): number =>
 
 const normalizar = (s: string): string => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Z0-9]/gi, '').toUpperCase();
 
+/** Teto de caracteres do nome de um SUPER (a tarja e a lista do TREINO: docs/supers-e-combos-v2.md §2). */
+const MAX_CARACTERES_SUPER = 20;
+
 describe('nomes dos combos próprios: regras de texto (sem fixar o texto)', () => {
-  it('são os 20 combos da 1ª leva', () => {
-    expect(todos).toHaveLength(20);
+  it('são os 17 combos (docs/supers-e-combos-v2.md §4: 13 mantidos, 4 reescritos, 3 descartados)', () => {
+    expect(todos).toHaveLength(17);
   });
 
   it('caixa alta, sem espaço sobrando nas pontas nem duplo', () => {
@@ -82,5 +86,39 @@ describe('nomes dos combos próprios: regras de texto (sem fixar o texto)', () =
     const sarpa = todos.find((t) => t.ficha === 'sarpa');
     expect(sarpa).toBeDefined();
     expect(limiteDe(sarpa!.c)).toBeLessThan(MAX_CARACTERES);
+  });
+});
+
+describe('nomes dos SUPERS (src/data/supers.ts): as mesmas regras de texto, sem fixar o texto', () => {
+  const supers = todosOsSupers();
+
+  it('são 12 (um por lutador, e a NILA SARPA e o ZENON fase 2 têm o seu)', () => {
+    expect(supers).toHaveLength(12);
+  });
+
+  it('caixa alta, sem espaço sobrando nas pontas nem duplo, e no máximo 20 caracteres', () => {
+    for (const { id, ficha, super: s } of supers) {
+      const onde = `${id}${ficha ? '/' + ficha : ''}`;
+      expect(s.nome, onde).toBe(s.nome.trim());
+      expect(s.nome, onde).not.toMatch(/\s{2,}/);
+      expect(s.nome, onde).toBe(s.nome.toLocaleUpperCase('pt-BR'));
+      expect(/[A-ZÀ-Ý]/.test(s.nome), `${onde}: tem ao menos uma letra`).toBe(true);
+      expect([...s.nome].length, `${onde}: "${s.nome}"`).toBeLessThanOrEqual(MAX_CARACTERES_SUPER);
+    }
+  });
+
+  it('únicos entre si E contra os nomes de combo e de especial do jogo todo (ignorando acento, pontuação e espaço)', () => {
+    const vistos = new Map<string, string>();
+    const registrar = (chave: string, dono: string): void => {
+      expect(vistos.get(chave), `${dono} repete o nome de ${vistos.get(chave) ?? ''}`).toBeUndefined();
+      vistos.set(chave, dono);
+    };
+    for (const { c } of todos) registrar(normalizar(c.nome), `combo ${c.id}`);
+    for (const id of ROSTER) {
+      const def = LUTADORES[id];
+      const golpes: Golpe[] = [def.especiais, ...Object.values(def.fichas ?? {}).map((f) => f.especiais ?? {})].flatMap((e) => Object.values(e) as Golpe[]);
+      for (const n of new Set(golpes.map((g) => g.name).filter((x): x is string => typeof x === 'string').map(normalizar))) vistos.set(n, `especial de ${id}`);
+    }
+    for (const { id, ficha, super: s } of supers) registrar(normalizar(s.nome), `super ${id}${ficha ? '/' + ficha : ''}`);
   });
 });

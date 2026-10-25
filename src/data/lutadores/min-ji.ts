@@ -16,14 +16,15 @@ export const MIN_JI: LutadorDef = {
   // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0.9 -> 0.92 e hp 94 -> 97 (original do protótipo em tests/fixtures/dados-prototipo/originais.json).
   pow: 0.92,
   spd: 1.17,
-  hp: 97,
+  // R-12 (ritmo completo: cadeia por força, CPU nova, super): hp 97 -> 111 (a taxa estava em 32-37% com tudo ligado; 48% depois). O pow fica em 0.92: a tabela do filme (filmes.ts) é calibrada com ele.
+  hp: 111,
   jump: 1.08,
   scale: 0.97,
   stride: 12,
   bars: [2, 5, 2, 4],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'min-ji-rajada-de-seul', nome: 'HANA-DUL-SET-NET', sequencia: ['lk', 'lk', 'lk', 'lk'], final: 'lanca' },
+    { id: 'min-ji-hana-dul-set', nome: 'HANA-DUL-SET', sequencia: ['lk', 'lk', 'hk'], final: 'lanca' },
     { id: 'min-ji-tornado-de-seul', nome: 'NOTA MÁXIMA', sequencia: ['lk', 'hk', 'sDown'], semQueda: [1], efeito: 'segura em pé e sobe no HOERI CHAGI' },
   ],
   mods: {

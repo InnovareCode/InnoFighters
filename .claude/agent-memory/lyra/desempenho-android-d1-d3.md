@@ -22,3 +22,13 @@ Entrega de 2026-10-24 (docs/desempenho-android-2026-10-24.md §8). Código: `src
 - Ruído da bancada é de ±20% entre rodadas: só vale mediana de 3-5 rodadas intercaladas antes/depois.
 - **Repositório mistura CRLF e LF por arquivo** (texto.ts, tela.ts, lutador.ts são CRLF). `grep -c $'\r'` no Git Bash devolve 0 mesmo assim. Edição Python com trecho de várias linhas FALHA EM SILÊNCIO se não normalizar `\r\n`; usar `assert a in s` e a ferramenta Edit.
 - O Atlas comitou no meio da tarefa e varreu um `playwright.lyra.config.ts` temporário (c4139cb): config temporária de e2e vai para o scratchpad ou para uma pasta ignorada, nunca na raiz.
+
+## Rodada 2 (GC e seleção, parcial)
+- **Lixo de JS NÃO dispara coleta maior:** 20 KB/quadro de lixo comum em página parada = 33 scavenges e 1 maior em 30 s. O perfil de alocação (HeapProfiler em amostragem, `alloc.mjs`) mostra ~20 KB/quadro na luta, mas boa parte é número fracionário embrulhado (HeapNumber) nos argumentos das chamadas de canvas: só cai com MENOS chamadas.
+- **`measureText` (TextMetrics) é objeto do navegador:** 15/quadro em página parada subiram as coletas maiores de 2 para 5 em 30 s a 4x; gradientes e `getTransform` não. Mesmo assim, cachear (`src/render/medida.ts`) NÃO mudou a contagem no jogo (menu 8 -> 8, seleção 9 -> 8): sem nenhum desenho o menu ainda tem 5 maiores/30 s (instrumentação + laço), com desenho 8; texto responde por ~2 delas. Ruído da contagem: ±2.
+- **Seleção a 4x (10,1 ms de callback):** tirar o texto = -2,9 ms, imagem = -1,6, formas = -1,7, **save/restore = -3,9** (61 pares/quadro: `texto()` 31, casa 10, retrato 9, textoArcade 8). `texto()` sem save/restore exige restaurar 5 propriedades (mais chamadas que o par): não resolve.
+- Memória decodificada: menu/seleção seguram 133 MiB (4 lutadores 100 + 4 cenários 32), luta 77,7 MiB (2 atlas 50 + 2 FILME 18,3 + cenário 7,9). A ligação "arte decodificada -> limite global do V8" NÃO foi provada (cachear/encolher não foi testado).
+
+## Medidor `?fps=1` (2026-10-24)
+- `src/ui/medidor-agregacao.ts` (puro, buffers fixos de 30 s) + `medidor-fps.ts` (DOM por CSSOM, CSP ok; `import()` dinâmico: desligado não baixa nada) + 1 bloco em `main.ts`. Doc: docs/medicao-em-aparelho.md. Overlay no centro da base, `pointer-events:none` salvo o botão, que corta pointerdown/touchstart para não virar entrada do jogo.
+- e2e: no 'celular' o `viewport` padrão é retrato; para checar a camada de toque setar 915x412. `grantPermissions(['clipboard-read','clipboard-write'])` basta para o COPIAR.

@@ -4,16 +4,16 @@ import { NOMES_RITMO, REGRAS_PADRAO, regrasComRitmo, RITMO_PADRAO, RITMO_TUDO_LI
 /*
  * R-1/R-2/R-6/R-7/R-10 (docs/spec-redesenho-jogabilidade.md §4): o dono jogou com `?ritmo=1`, aprovou, e tarja, provocação, intervalos e
  * filmeRestrito viraram PADRÃO (24/10/2026); no mesmo dia, por ordem dele, super e cpu entraram também (sob a prova final da Íris). Molde igual a
- * `Regras.motorV2` (V2-6, sempre ligado). cadeia e impacto ainda não existem no motor e seguem fora do padrão. `?ritmo=0` é o rollback TOTAL.
+ * `Regras.motorV2` (V2-6, sempre ligado). A cadeia por força (R-8) entrou no padrão com o R-12; o impacto ainda não existe no motor e segue fora. `?ritmo=0` é o rollback TOTAL.
  */
 
 const TUDO = { tarja: true, provocacao: true, intervalos: true, filmeRestrito: true, super: true, cadeia: true, cpu: true, impacto: true };
-const PADRAO = { tarja: true, provocacao: true, intervalos: true, filmeRestrito: true, super: true, cpu: true };
+const PADRAO = { tarja: true, provocacao: true, intervalos: true, filmeRestrito: true, super: true, cadeia: true, cpu: true };
 
-describe('ritmo: 6 flags ligadas por padrão (tarja, provocação, intervalos, filmeRestrito, super, cpu); cadeia/impacto ainda não existem no motor', () => {
-  it('RITMO_PADRAO tem só as 6 e está congelado (sem cadeia/impacto)', () => {
+describe('ritmo: 7 flags ligadas por padrão (tarja, provocação, intervalos, filmeRestrito, super, cadeia, cpu); o impacto ainda não existe no motor', () => {
+  it('RITMO_PADRAO tem só as 7 e está congelado (sem impacto)', () => {
     expect(RITMO_PADRAO).toEqual(PADRAO);
-    expect(RITMO_PADRAO.cadeia).toBeUndefined();
+    expect(RITMO_PADRAO.cadeia).toBe(true);
     expect(RITMO_PADRAO.impacto).toBeUndefined();
     expect(Object.isFrozen(RITMO_PADRAO)).toBe(true);
   });
@@ -35,7 +35,7 @@ describe('ritmo: 6 flags ligadas por padrão (tarja, provocação, intervalos, f
 });
 
 describe('ritmoDaUrl: o kill switch e o A/B (?ritmo=)', () => {
-  it('ausente = RITMO_PADRAO (as 6) — ao contrário de "nada ligado"', () => {
+  it('ausente = RITMO_PADRAO (as 7) — ao contrário de "nada ligado"', () => {
     for (const busca of ['', '?x=1', '?expansao=4']) expect(ritmoDaUrl(busca)).toEqual(PADRAO);
   });
 

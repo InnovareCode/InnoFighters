@@ -21,15 +21,15 @@ export const CAMILLE: LutadorDef = {
   // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0,98 -> 0,94 e hp 98 -> 94 (ela chegava a 64% de vitória com o filme e a PARADE/COUP D'ARRÊT).
   pow: 0.94,
   spd: 1.04,
-  hp: 94,
+  // R-12: hp 94 -> 106 (perdeu a FLECHA e o COUP D'ARRÊT do combo na revisão dos 17: 34% -> 49,5% com o ritmo completo).
+  hp: 106,
   jump: 1.0,
   scale: 1.03,
   stride: 12,
   bars: [3, 3, 4, 4],
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
-    { id: 'camille-estocada-cruzada', nome: 'FLECHA DE MARSELHA', sequencia: ['lp', 'lk', 'hp'], final: 'cruza' },
-    { id: 'camille-riposte', nome: 'TOUCHÉ', sequencia: ['clk', 'hk', 'sDown'], semQueda: [1], efeito: 'segura em pé e fecha no COUP D\'ARRÊT' },
+    { id: 'camille-riposte', nome: 'TOUCHÉ', sequencia: ['clk', 'hk', 'sFwd'], semQueda: [1], efeito: 'segura em pé e fecha no REVERS' },
   ],
   reach: 1.1,
   mods: {},
@@ -78,7 +78,7 @@ export const CAMILLE: LutadorDef = {
     hpPorBarra: 47,
     cena: { duracao: 60, poses: ['block'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.89,
-    danoRecebidoDificil: 0.82,
+    danoRecebido: 0.81, // R-12: era 0.89 (ritmo completo + cadeia por força)
+    danoRecebidoDificil: 0.69, // era 0.82
   },
 };

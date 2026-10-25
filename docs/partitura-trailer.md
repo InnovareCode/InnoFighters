@@ -364,3 +364,53 @@ TAEPUNG CHAGI, MEIA-LUA DE COMPASSO) ficam para os GIFs de divulgação, não pa
 2. **Filme CURTO no trailer** (recomendado; §P9). O COMPLETO seria cortado pela logo.
 3. **A tarja do especial comum desligada no trailer** (recomendado; §2). Se o dono quiser os nomes dos especiais no trailer, a
    faixa disputa espaço com as placas do P3 ao P7, e precisa de medição da Lyra.
+
+---
+
+## 8. Ticks finais (R-14, Vega, 24/10/2026)
+
+A partitura está compilada em `src/data/trailer/partitura.ts` (uma entrada por plano, com as entradas de cada lado na notação do §2; `Tomada.inputs` sai dela). Os dois lutadores são **humanos**
+(sem CPU, sem RNG, sem busca de semente). A ferramenta `npm run trailer:escalar` agora **confere** (`--rastro` imprime a luta tick a tick, que é o instrumento de afinar). O CI
+(`tests/unit/trailer-partitura.test.ts` e `trailer-diretor.test.ts`) confere cada batida no tick do motor declarado e no tick do plano (`alvo` ± 4), as regras do §1 e a impressão.
+
+**Duas escalas de tempo.** A partitura é escrita em **ticks do motor** (negativos = pré-rolagem). O `alvo` do roteiro é em **ticks do plano**, que somam o que parou o motor antes
+(câmera lenta: +`ticks`−`ticks/fator`; tarja do super: +30). Só o P3, o P5 e o P9 têm essa diferença nas batidas listadas abaixo.
+
+**O motor é o do jogo.** O trailer usa as flags que o jogador tem por padrão (motor v2, fluidez e ritmo de `REGRAS_PADRAO`): com `ritmo.super` o super existe; com `ritmo.filmeRestrito` o
+filme só abre no KO. Mudou uma flag do jogo, o teste de impressão diz qual plano reafinar.
+
+### O que mudou em relação ao §4 (a física não deixou cumprir tudo; o Apolo reaprova)
+
+| Plano | Mudança | Por quê |
+|---|---|---|
+| todos | `Tomada.energia` em quase todo plano (30 a 90), e não [0, 0] | todo especial custa 20 a 45; a barra de 0 não chega ao 1º especial. A intro e a pré-rolagem somam 0,07/tick |
+| todos | distância no tick 0 diferente da tabela (P1 207, P4 183, P5 119, P9 78; P2, P3, P6, P7 batem) | a pré-rolagem foi encurtada/alongada para os contatos caírem cedo o bastante: o rival derrubado fica ~75 ticks no chão |
+| P1 | o WEI solta a **ZHEN DI** (tremor), não a LONG ZHANG; o combo vem **depois** do chute no ar | a LONG ZHANG (sc 1,7) tem a caixa mais alta que o pico do salto (~140 px): o HAYATO levaria a bola em cima. O pouso + a distância faziam o CFT errar, então o combo parte do SF depois de andar até o rival |
+| P2 | o CAIO **defende** o HANA-DUL-SET (segurar trás), defende a voadora e devolve a rasteira | se o CFT final derrubasse, o CAIO ficaria ~90 ticks no chão e o corte do tempo 1 do compasso 2 cairia num lutador deitado |
+| P3 | a MASHI nível 3 **quebra a guarda** de pé (o HAYATO segura trás só no impacto); a carga começa **sem** direção segurada | com `F` na hora do `sp` o golpe vira o PASSO DO LEÃO. Agachado, o soco passa por cima da caixa e erra |
+| P4 | o CAIO joga a ONDA VERDE, a CENTELLA **defende e recua**; o CAIO avança na ginga e leva o RESORTE | o RESORTE só alcança ~230 px depois da corda: o CAIO precisa estar a ~330 px dela |
+| P5 | **sem PARADE/FOUETTÉ**: COUP D'ARRÊT na preparação do soco forte, SF/CF, REVERS | o FOUETTÉ derruba e manda a MIN-JI a ~300 px; ela ficaria deitada ~77 ticks e o 2º ato não caberia |
+| P6 | ordem do §4 mantida; SF › SFT › PASSO DO ELEFANTE (o `F+sp` sai como `sFire`) › VADIVU › BOTE | – |
+| P7 | o ARREMESSO DO AVARGA joga o HAYATO para longe; o MERGULHO sai depois sobre o rival caído | o HAYATO fica no chão ~45 ticks e a RAIJIN-DAN não cabe |
+| P9 | o **motor anda desde o tick 0** (antes só do 156); o HAYATO começa com 18% de vida (`Tomada.vida`); o filme é o do **KO** | o plano só tinha 36 ticks de luta depois da entrada do chefão. `filmeRestrito` só abre filme quando o acerto mata (`motivo` é sempre `ko`); o super (5 acertos presos) só mata com a vida baixa. O ZENON **não** anda no fim: no KO não há mais entrada, e o filme toca até o último quadro |
+
+### Batidas finais (motor → plano; ± 4)
+
+| Plano | PR | Batidas (tipo, motor → plano) |
+|---|---|---|
+| P1 | 34 | `golpe jhk` 49 → 49 · `golpe hk` 94 → 94 · `especial sDown` (RAIJIN-KEN, lenta ×3) 105 → 105 |
+| P2 | 30 | `block` 47 → 47 · `block` 66 → 66 · `block sFwd` 117 → 117 · `golpe hk` do CAIO (lenta ×2) 171 → 171 |
+| P3 | 35 | `carga` nível 3 (quebra a guarda, lenta ×2) 92 → 92 · `golpe hk` 141 → 147 |
+| P4 | 30 | `block sFire` (ONDA VERDE, do CAIO) 56 → 56 · `especial sFwd` (RESORTE) 121 → 121 |
+| P5 | 40 | `contra sDown` (COUP D'ARRÊT, lenta ×2) 36 → 36 · `golpe lk` 66 → 74 · `especial sFwd` (REVERS) 90 → 98 |
+| P6 | 37 | `block sDown` 18 → 18 · `golpe hp` 80 → 80 · `especial sFire` 95 → 95 · `especial sFire` (BOTE) 153 → 153 |
+| P7 | 30 | `golpe hp` (armadura) 51 → 51 · `especial sFire` (ARREMESSO) 86 → 86 |
+| P9 | 70 | `block` 9 → 9 · `block sDown` 16 → 16 · `golpe clp` 62 → 62 · `super` 91 → 121 (tarja de 30 em 75 → 105) · `ko` + filme CURTO 131 → 161 (o filme cobre os ticks 162 a 191) |
+
+Câmera: os quadros-chave de cada plano seguem estas batidas (`roteiro.ts`); o pico mora no acerto do especial.
+
+### Contrato novo (conferido pelos testes)
+
+`BatidaPedida.tipo` ganhou `golpe`, `block`, `super` (o `golpe` é um acerto comum; não estava no §5, foi preciso para o CFT/SF/chute no ar), `BatidaPedida.filme` pede o modo do filme
+do KO, `Tomada.energia`, `Tomada.vida` e `Tomada.inputs` (máscaras por update; frente/trás resolvidos pelo `facing` do tick em `FonteDaPartitura`). `QuadroDoTrailer.tarjaSuper`
+marca o tick em que a tarja do super (30 ticks, motor parado) começa; `QuadroDoTrailer.cine` não é mais produzido (nenhuma batida pede `cine`).

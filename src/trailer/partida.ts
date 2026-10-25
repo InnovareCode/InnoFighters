@@ -1,33 +1,52 @@
-import type { IdLutador, InputFrame } from '../core/contratos';
+import type { IdLutador } from '../core/contratos';
 import type { Rng } from '../core/rng';
 import type { LutadorMontado } from '../data/montar';
-import { AJUSTES_DO_TRAILER, type PlanoComMotor, type Tomada } from '../data/trailer/tipos';
-import { Game, type FonteEntradas } from '../fight/game';
-import { MOTOR_V2_PADRAO } from '../meta/regras';
+import { AJUSTES_DO_TRAILER, SEMENTE_DO_MOTOR, type PlanoComMotor, type Tomada } from '../data/trailer/tipos';
+import { Game } from '../fight/game';
+import { cfgMotorV2, cfgRitmo, REGRAS_PADRAO } from '../meta/regras';
+import { FonteDaPartitura } from './entradas';
 
 /*
- * Como o trailer monta o `Game` de um plano de luta: UM lugar só, usado pelo diretor (em jogo) e pela escalação (offline). Se os dois montassem a partida cada um
- * por si, a tomada que a ferramenta escolhe deixaria de ser a que o jogo toca. Nada aqui lê estado da sessão: a semente vem da tomada (constante).
+ * Como o trailer monta o `Game` de um plano de luta: UM lugar só, usado pelo diretor (em jogo), pela ferramenta de conferência e pelos testes. Os DOIS lutadores são HUMANOS (sem CPU, sem RNG):
+ * o que eles fazem vem da partitura (`Tomada.inputs`) pela `FonteDaPartitura`. Nada aqui lê estado da sessão.
  */
 
-const ZERO: InputFrame = Object.freeze({ left: false, right: false, up: false, down: false, lp: false, hp: false, lk: false, hk: false, sp: false });
-/** CPU x CPU: a fonte de entradas nunca é consultada (só o é para lutador sem CPU), mas o contrato do `Game.update` a exige. */
-export const FONTE_VAZIA: FonteEntradas = { p1: () => ZERO, p2: () => ZERO };
+/**
+ * A config de motor do JOGO (as mesmas flags que o jogador tem por padrão: motor v2, fluidez e ritmo, de `REGRAS_PADRAO`): o trailer mostra o jogo como ele joga, e o super (`ritmo.super`) só existe com ela.
+ * As tomadas são afinadas SOBRE esta config: mudar uma flag do jogo muda os golpes e exige reafinar a partitura (o teste de impressão diz qual plano). A chave `?motorv2=0` NÃO chega ao trailer de propósito.
+ */
+const CFG_DO_JOGO = { ...cfgMotorV2(REGRAS_PADRAO), ...cfgRitmo(REGRAS_PADRAO) };
 
-/** O `Game` do plano, já em `setup` (fase `intro`), com a semente e os níveis de CPU da tomada. */
+export interface PartidaDoTrailer {
+  readonly game: Game;
+  /** A fonte da partitura, para quem precisa saber quantos updates já andaram. */
+  readonly fonte: FonteDaPartitura;
+  /** Anda o motor UM update com as entradas da partitura. Único jeito de andar o `Game` do trailer. */
+  atualizar(): void;
+}
+
+/** O `Game` do plano, já em `setup` (fase `intro`), com a energia e a vida iniciais da tomada. */
 export function criarPartida(
   plano: PlanoComMotor,
-  tomada: Pick<Tomada, 'semente' | 'cpu'>,
+  tomada: Pick<Tomada, 'inputs' | 'energia' | 'vida'>,
   lutadores: Readonly<Record<IdLutador, LutadorMontado>>,
   criarRng: (semente: number) => Rng,
-): Game {
-  const game = new Game({ lutadores, rng: criarRng(tomada.semente) });
+): PartidaDoTrailer {
+  const game = new Game({ lutadores, rng: criarRng(SEMENTE_DO_MOTOR) });
   game.setup(
-    // ESQUIVA ligada como no jogo; o P9 é luta de chefe (round único, a ficha e a IA do ZENON como no ARCADE).
-    // `motorV2` com as MESMAS flags do jogo (V2-6, ordem do dono: sempre ligado; D-V6: o trailer mostra filme). As tomadas (semente, `tickMotor`, impressão) foram
-    // reescaladas com elas (`npm run trailer:escalar`); trocar uma flag aqui invalida todas. A chave `?motorv2=0` NÃO chega ao trailer de propósito.
-    { mode: 'cpu', c1: plano.c1, c2: plano.c2, cpu: tomada.cpu[1], p1cpu: tomada.cpu[0], stage: plano.stage, esquiva: true, motorV2: MOTOR_V2_PADRAO, ...(plano.tipo === 'arconte' ? { chefe: true } : {}) },
+    // `versus` com `cpu`/`p1cpu` ausentes: os dois são humanos e o `Game` pede as entradas à fonte. ESQUIVA ligada como no jogo; o P9 é luta de chefe (round único, a ficha do ZENON como no ARCADE).
+    { mode: 'versus', c1: plano.c1, c2: plano.c2, stage: plano.stage, esquiva: true, ...CFG_DO_JOGO, ...(plano.tipo === 'arconte' ? { chefe: true } : {}) },
     { ...AJUSTES_DO_TRAILER },
   );
-  return game;
+  game.fighters.forEach((f, i) => {
+    const en = tomada.energia?.[i];
+    if (en !== undefined) f.en = en;
+    const vida = tomada.vida?.[i];
+    if (vida !== undefined) {
+      f.hp = f.maxHp * vida;
+      f.hpShown = f.hp;
+    }
+  });
+  const fonte = new FonteDaPartitura(game, tomada.inputs);
+  return { game, fonte, atualizar: () => fonte.atualizar() };
 }

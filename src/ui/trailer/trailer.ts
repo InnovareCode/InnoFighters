@@ -7,6 +7,9 @@ import type { IdPlano, Plano } from '../../data/trailer/tipos';
 import { aplicarCamera } from '../../render/camera';
 import { APRESENTACAO, comPose, leituraApresentada } from '../../render/apresentacao-lutadores';
 import { Cinematica } from '../../render/cinematica';
+import { HudRitmo } from '../../render/hud-ritmo';
+import { TarjaDoSuper } from '../../render/tarja-super';
+import { superDoLutador } from '../../data/supers';
 import { alturaDoLutador, FilmeDoEspecial } from '../../render/filme';
 import { identidadeDe, somDoAcerto } from '../../render/identidade-especiais';
 import { roteiroDoFilme } from '../../data/roteiros-filme';
@@ -138,6 +141,10 @@ export class TrailerEmCena implements ControladorDoTrailer {
   private efeitos = new Efeitos(criarRng(ROTEIRO.sementeVisual));
   private petalas = new CampoDePetalas(criarRng(ROTEIRO.sementeVisual + 1), 'luta');
   private cine: Cinematica;
+  /** A ÚNICA tarja do trailer (R-15): a do SUPER do P9, 30 ticks com o motor parado (o diretor o segura). A do especial comum não existe aqui. */
+  private readonly tarjaDoSuper = new TarjaDoSuper({ rng: criarRng(ROTEIRO.sementeVisual + 7) });
+  /** Só o contador de acertos entra no trailer (sem DANGER nem nota: a cena é de câmera, não de placar). Anda no tick do motor, como na luta. */
+  private readonly hudRitmo = new HudRitmo();
   /** O FILME do especial (D-V6): o motor do plano fica parado pelos ticks dele (o ritmo do diretor), e a cena o toca por cima do mundo. */
   private filme: FilmeDoEspecial;
   /** Eventos do tick do contato que esperam o filme: o pó da queda (na batida da queda) e o resto (KO, fim de round...) para o fim. */
@@ -273,6 +280,8 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.efeitos = new Efeitos(criarRng(ROTEIRO.sementeVisual));
     this.petalas = new CampoDePetalas(criarRng(ROTEIRO.sementeVisual + 1), 'luta');
     this.cine.zerarLuta();
+    this.tarjaDoSuper.zerarLuta();
+    this.hudRitmo.zerar();
     this.entrada.zerar();
     document.body.classList.add('em-trailer');
     document.body.dataset['trailer'] = this.estatico ? 'estatico' : 'completo';
@@ -336,6 +345,8 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.titulos.soltar();
     this.montagem.soltar();
     this.cine.zerarLuta();
+    this.tarjaDoSuper.zerarLuta();
+    this.hudRitmo.zerar();
     this.entrada.zerar();
     this.efeitos.limpar();
   }
@@ -485,6 +496,8 @@ export class TrailerEmCena implements ControladorDoTrailer {
     this.camada.soltar();
     this.montagem.soltar();
     this.cine.zerarLuta();
+    this.tarjaDoSuper.zerarLuta();
+    this.hudRitmo.zerar();
     this.entrada.zerar();
     this.filme.zerar();
     this.efeitos.limpar();
@@ -525,6 +538,8 @@ export class TrailerEmCena implements ControladorDoTrailer {
       this.efeitos.limpar();
       this.ultimoTickDoJogo = -1;
       this.cine.zerarLuta();
+      this.tarjaDoSuper.zerarLuta();
+      this.hudRitmo.zerar();
       this.entrada.zerar();
       this.filme.zerar();
       this.adiadosNaQueda = [];
@@ -539,6 +554,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
       if (luta.tick !== this.ultimoTickDoJogo) {
         this.ultimoTickDoJogo = luta.tick;
         this.efeitos.avancar();
+        this.hudRitmo.avancar(luta);
       }
     } else if (luta && this.filme.ativo) {
       // o motor está parado pelo filme: os efeitos dele andam, o filme avança, e quando fecha o que esperou acontece
@@ -556,11 +572,17 @@ export class TrailerEmCena implements ControladorDoTrailer {
     if (q.cine) {
       this.cine.iniciar(this.eventoDaCine(q.cine.ev, luta), q.cine.modo);
     } else if (this.cine.ativa) this.cine.avancar();
+    // a tarja do SUPER (a única do trailer): o diretor para o motor por 30 ticks; ela começa no tick do `special` e anda nos seguintes
+    if (q.tarjaSuper && luta) this.iniciarTarjaDoSuper(q.tarjaSuper, luta);
+    else if (this.tarjaDoSuper.ativa) this.tarjaDoSuper.avancar();
     // a entrada curta do chefão (P9): cartão e fala
     const arc = q.arconte;
     if (arc?.entrada) {
       if (arc.tickDaEntrada === 0) this.iniciarEntrada();
       else this.entrada.avancar();
+    } else if (this.entrada.ativa) {
+      // a janela da entrada (96-155) fechou: ela já está nas últimas faixas, e o 60º `avancar` nunca viria (a luta segue, o filme entra): encerra limpa
+      this.entrada.zerar();
     }
   }
 
@@ -609,6 +631,14 @@ export class TrailerEmCena implements ControladorDoTrailer {
     });
   }
 
+  /** Abre a tarja do SUPER (o evento `special` com `super: true`): o nome é o do super (CORTESIA DA CASA), não o do especial de origem. */
+  private iniciarTarjaDoSuper(ev: EventoLuta, luta: LeituraLuta): void {
+    if (ev.tipo !== 'special' || ev.golpe === undefined) return;
+    const ficha = ev.ficha ?? luta.fighters[ev.lutador].ficha ?? null;
+    const nome = superDoLutador(luta.fighters[ev.lutador].id, ficha)?.nome ?? ev.golpe;
+    this.tarjaDoSuper.iniciar({ lutador: ev.lutador, golpe: ev.golpe, ficha, nome });
+  }
+
   private corDoLutador(luta: LeituraLuta, i: 0 | 1): string {
     const f = luta.fighters[i];
     return chDaFicha(this.ui.m.elenco[f.id].ch, f.ficha).fire[0];
@@ -627,6 +657,7 @@ export class TrailerEmCena implements ControladorDoTrailer {
     // D-T2: enquanto o ZENON não foi liberado, o nome fica oculto no cartão ("???"); o resto (título e rodapé) é o de sempre
     const cartao = this.zenonLiberado ? roteiro.cartao : { ...roteiro.cartao, nome: NOME_OCULTO };
     this.entrada.iniciar('curta', cartao, ap?.falas?.entrada ?? '', roteiro);
+    this.entrada.sobreposta = true;
   }
 
   // ------------------------------------------------------------------------------------------------------------------------------------ desenho
@@ -753,12 +784,9 @@ export class TrailerEmCena implements ControladorDoTrailer {
     const m = this.ui.m;
     const arc = q.arconte;
     const bloqueado = q.plano.tipo === 'arconte' && !this.zenonLiberado;
-    // as poses impostas do P9: a do diretor (antes da entrada) e a da própria entrada (a do chefão em cada batida)
+    // as poses impostas do P9 vêm do diretor (hoje nenhuma: o motor anda desde o tick 0). A entrada do chefão NÃO impõe pose (R-15): ela corre POR CIMA de uma luta em curso,
+    // e a pose do ZENON é a do próprio golpe/defesa dele; as faixas e o cartão dela são só sobreposição
     const poses: Partial<Record<0 | 1, string>> = { ...(arc?.poses ?? {}) };
-    if (arc && this.entrada.ativa) {
-      const pose = this.entrada.batidas[this.entrada.quadro().pose]?.pose;
-      if (pose) poses[1] = pose;
-    }
     // o tremor sai de uma semente por tick (constante do roteiro): o mesmo quadro em toda visita, qualquer que seja a taxa de quadros
     const rngDoTick = criarRng((ROTEIRO.sementeVisual + (q.tick + 1) * 2654435761) | 0);
     // FILME do especial: o mundo vem da leitura do roteiro (trajetória, poses e câmera do filme); o zoom de apresentação do trailer se aposenta enquanto ele toca
@@ -771,7 +799,10 @@ export class TrailerEmCena implements ControladorDoTrailer {
       ...(arc ? { acesos: arc.acesos, poses } : {}),
     });
     if (bloqueado) this.desenharZenonEmContraluz(q, luta, poses[1]);
+    // só o contador de acertos (sem DANGER, sem nota); fora do filme (o filme tem o próprio mundo) e abaixo da tarja do super
+    if (!vistaDoFilme) this.hudRitmo.desenharCombos(ctx, luta, false);
     if (vistaDoFilme) this.filme.desenhar(ctx, vistaDoFilme, m.elenco);
+    else if (this.tarjaDoSuper.ativa) this.tarjaDoSuper.desenhar(ctx, luta, m.elenco);
     else if (this.cine.ativa) {
       // a tarja por cima do mundo; o destaque do atacante usa a câmera da luta, então entra sob o MESMO zoom de apresentação
       ctx.save();
@@ -915,6 +946,15 @@ export class TrailerEmCena implements ControladorDoTrailer {
       reserva: this.q?.reserva ?? false,
       /** O filme do especial está tocando agora (D-V6)? */
       filmeAtivo: this.filme.ativo,
+      /** A tarja do SUPER (a única do trailer) está na tela agora (R-15)? `t` = ticks dela (0..29) ou -1. */
+      tarjaDoSuper: this.tarjaDoSuper.ativa,
+      tarjaDoSuperT: this.tarjaDoSuper.estado?.t ?? -1,
+      /** O estado do motor no quadro (tick do jogo e, por lutador, x/y/estado/golpe/tick do golpe): os testes medem "parado" com isto. Null fora dos planos com luta. */
+      luta: this.q?.luta ? { tick: this.q.luta.tick, f: this.q.luta.fighters.map((f) => [Math.round(f.x), Math.round(f.y), f.state, f.move, f.mt]) } : null,
+      /** A entrada curta do chefão (P9) está na tela por cima da luta? */
+      entradaAtiva: this.entrada.ativa,
+      /** Acertos que o contador mostra agora, por lutador (R-15: só o contador, sem DANGER/nota). */
+      acertos: this.q?.luta ? [this.q.luta.fighters[0].combo.t > 0 ? this.q.luta.fighters[0].combo.hits : 0, this.q.luta.fighters[1].combo.t > 0 ? this.q.luta.fighters[1].combo.hits : 0] : [0, 0],
       planosEmReserva: this.d?.planosEmReserva() ?? [],
       jogosVivos: this.d?.jogosVivos ?? 0,
       /** Os atlas na memória agora (o trailer não tem arte fixa: a vitrine também vai e vem por plano). */

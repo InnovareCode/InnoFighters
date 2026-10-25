@@ -57,13 +57,20 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'hayato',
       c2: 'wei-long',
       stage: 'cn',
-      pede: [batida({ tipo: 'especial', lutador: 0, cine: 'curta', lenta: { fator: 3, ticks: 18 }, alvo: 96, folga: 48 })],
-      // o pico (1,25) chega no acerto (tick 96 da tomada, depois da tarja), não 14 ticks depois
+      // PARTITURA (partitura.ts): as batidas são as medidas no motor; `alvo` é o tick do PLANO (a lenta e a tarja já na conta), `folga` pequena de propósito: um rebalanceamento que
+      // escorregue um contato apareça no CI. HAYATO pula a ZHEN DI do WEI (a LONG ZHANG é grande demais para pular: o salto passa no pico da caixa), acerta o chute no ar e fecha
+      // o BÁSICO `↓SF › CFT › ↓ESP` (RAIO ÀS AVESSAS).
+      pede: [
+        batida({ tipo: 'golpe', lutador: 0, golpe: 'jhk', alvo: 49, folga: 4 }),
+        batida({ tipo: 'golpe', lutador: 0, golpe: 'hk', alvo: 94, folga: 4 }),
+        batida({ tipo: 'especial', lutador: 0, golpe: 'sDown', lenta: { fator: 3, ticks: 18 }, alvo: 105, folga: 4 }),
+      ],
+      // o pico (1,25) chega no RAIJIN-KEN (tick 105 do plano)
       camera: [
         { t: 0, zoom: 1, foco: 'meio' },
-        { t: 56, zoom: 1, foco: 'meio', curva: 'saida' },
-        { t: 98, zoom: 1.25, foco: 'meio' },
-        { t: 140, zoom: 1.25, foco: 'meio', curva: 'saida' },
+        { t: 70, zoom: 1, foco: 'meio', curva: 'saida' },
+        { t: 105, zoom: 1.25, foco: 'meio' },
+        { t: 135, zoom: 1.25, foco: 'meio', curva: 'saida' },
         { t: 2 * C - 1, zoom: 1.04, foco: 'meio' },
       ],
     },
@@ -75,20 +82,23 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'min-ji',
       c2: 'caio',
       stage: 'br',
+      // PARTITURA: a MIN-JI conta HANA-DUL-SET (lk, lk, hk) e o CAIO DEFENDE na ginga (segurar trás); no corte do tempo 1 do compasso 2 ele responde: defende a voadora e devolve a
+      // rasteira. Um HANA-DUL-SET que derrubasse deixaria o CAIO no chão por ~90 ticks, e o corte para ele cairia num lutador deitado.
       pede: [
-        batida({ tipo: 'especial', lutador: 0, lenta: { fator: 2, ticks: 12 }, alvo: 60, folga: 36 }),
-        batida({ tipo: 'especial', lutador: 1, lenta: { fator: 2, ticks: 12 }, alvo: 140, folga: 36 }),
+        batida({ tipo: 'block', lutador: 0, alvo: 47, folga: 4 }),
+        batida({ tipo: 'block', lutador: 0, alvo: 66, folga: 4 }),
+        batida({ tipo: 'block', lutador: 0, golpe: 'sFwd', alvo: 117, folga: 4 }),
+        batida({ tipo: 'golpe', lutador: 1, golpe: 'hk', lenta: { fator: 2, ticks: 12 }, alvo: 171, folga: 4 }),
       ],
-      // corte seco no c7.1 (tick 96): fechado na MIN-JI -> aberto no CAIO. Só trocar o foco com o mesmo zoom não se vê (os dois estão perto:
-      // medido, o quadro 95 e o 96 saíam iguais); o corte precisa mudar o enquadramento (1,22 -> 1,0) para existir.
+      // corte seco no c7.1 (tick 96): fechado na MIN-JI -> aberto no CAIO (o corte precisa mudar o enquadramento: 1,22 -> 1,0)
       camera: [
         { t: 0, zoom: 1.04, foco: 'p1' },
         { t: 30, zoom: 1.04, foco: 'p1', curva: 'saida' },
-        { t: 64, zoom: 1.22, foco: 'p1' },
+        { t: 66, zoom: 1.22, foco: 'p1' },
         { t: 95, zoom: 1.22, foco: 'p1' },
         { t: 96, zoom: 1, foco: 'p2', curva: 'saida' },
-        { t: 140, zoom: 1.18, foco: 'p2' },
-        { t: 160, zoom: 1.18, foco: 'p2', curva: 'saida' },
+        { t: 171, zoom: 1.18, foco: 'p2' },
+        { t: 183, zoom: 1.18, foco: 'p2', curva: 'saida' },
         { t: 2 * C - 1, zoom: 1.02, foco: 'p2' },
       ],
     },
@@ -100,8 +110,12 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'aminu',
       c2: 'hayato',
       stage: 'ng',
-      pede: [batida({ tipo: 'carga', lutador: 0, nivel: 3, lenta: { fator: 2, ticks: 12 }, alvo: 96, folga: 60 })],
-      camera: empurrar(1.2, 50), // MASHI nível 3 acerta no tick 50 da tomada
+      // PARTITURA: o AMINU carrega a MASHI andando; o HAYATO testa o vazio, volta e se fecha; a MASHI nível 3 QUEBRA A GUARDA (alvo no tick 92 do plano)
+      pede: [
+        batida({ tipo: 'carga', lutador: 0, nivel: 3, lenta: { fator: 2, ticks: 12 }, alvo: 92, folga: 4 }),
+        batida({ tipo: 'golpe', lutador: 0, golpe: 'hk', alvo: 147, folga: 4 }),
+      ],
+      camera: empurrar(1.2, 92),
       titulos: [placa('aminu')],
     },
     {
@@ -111,13 +125,15 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'centella',
       c2: 'caio',
       stage: 'mx',
-      pede: [batida({ tipo: 'especial', lutador: 0, golpe: 'sFwd', alvo: 110, folga: 60 })],
-      // a câmera acompanha o percurso do RESORTE: o foco fica na CENTELLA desde o 1º quadro (a troca meio -> p1 no tick 72 era um corte
-      // que não se via: medido, o quadro 71 e o 72 saíam iguais)
+      // PARTITURA: o CAIO joga a ONDA VERDE e a CENTELLA defende; ela recua até a corda e volta no RESORTE
+      pede: [
+        batida({ tipo: 'block', lutador: 1, golpe: 'sFire', alvo: 56, folga: 4 }),
+        batida({ tipo: 'especial', lutador: 0, golpe: 'sFwd', alvo: 121, folga: 4 }),
+      ],
       camera: [
         { t: 0, zoom: 1, foco: 'p1', curva: 'saida' },
         { t: 72, zoom: 1.1, foco: 'p1' },
-        { t: 140, zoom: 1.2, foco: 'p1', curva: 'entrada' },
+        { t: 121, zoom: 1.2, foco: 'p1', curva: 'entrada' },
         { t: 2 * C - 1, zoom: 1.04, foco: 'p1' },
       ],
       titulos: [placa('centella')],
@@ -130,8 +146,13 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'camille',
       c2: 'min-ji',
       stage: 'fr',
-      pede: [batida({ tipo: 'contra', lutador: 0, golpe: 'sDown', lenta: { fator: 2, ticks: 16 }, alvo: 96, folga: 60 })],
-      camera: empurrar(1.2, 141), // COUP D'ARRÊT no tick 141 da tomada
+      // PARTITURA: a MIN-JI ataca com o soco forte e a CAMILLE a pega na preparação (COUP D'ARRÊT), prende o chute fraco e fecha no REVERS
+      pede: [
+        batida({ tipo: 'contra', lutador: 0, golpe: 'sDown', lenta: { fator: 2, ticks: 16 }, alvo: 36, folga: 4 }),
+        batida({ tipo: 'golpe', lutador: 0, golpe: 'lk', alvo: 74, folga: 4 }),
+        batida({ tipo: 'especial', lutador: 0, golpe: 'sFwd', alvo: 98, folga: 4 }),
+      ],
+      camera: empurrar(1.2, 36),
       titulos: [placa('camille')],
     },
     {
@@ -141,8 +162,14 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'nila',
       c2: 'wei-long',
       stage: 'in',
-      pede: [batida({ tipo: 'especial', lutador: 0, alvo: 96, folga: 60 })],
-      camera: empurrar(1.15, 91), // especial da NILA no tick 91 da tomada
+      // PARTITURA: a NILA defende o tremor agachada, passa por cima (GAJA), troca de postura (VADIVU) e fecha com o BOTE da SARPA
+      pede: [
+        batida({ tipo: 'block', lutador: 1, golpe: 'sDown', alvo: 18, folga: 4 }),
+        batida({ tipo: 'golpe', lutador: 0, golpe: 'hp', alvo: 80, folga: 4 }),
+        batida({ tipo: 'especial', lutador: 0, golpe: 'sFire', alvo: 95, folga: 4 }),
+        batida({ tipo: 'especial', lutador: 0, golpe: 'sFire', alvo: 153, folga: 4 }),
+      ],
+      camera: empurrar(1.15, 95),
       titulos: [placa('nila')],
     },
     {
@@ -152,11 +179,12 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'baatar',
       c2: 'hayato',
       stage: 'mn',
-      pede: [batida({ tipo: 'especial', lutador: 0, golpe: 'sFwd', alvo: 100, folga: 60 })],
-      // pico 1,15 (era 1,25) e solta logo: o MERGULHO acerta no tick 129 da tomada e o BAATAR salta de novo ~20 ticks depois. O ápice
-      // desse salto (tick ~152) passa sob a faixa de cima MESMO a 1,0 (medido: topo em y 38); aceito, é saída de quadro em movimento. O
-      // quadro do acerto fica inteiro na tela.
-      camera: empurrar(1.15, 129, 4, 20),
+      // PARTITURA: o soco forte do BAATAR atravessa o chute do HAYATO (armadura) e o ARREMESSO DO AVARGA bate o HAYATO no chão
+      pede: [
+        batida({ tipo: 'golpe', lutador: 0, golpe: 'hp', alvo: 51, folga: 4 }),
+        batida({ tipo: 'especial', lutador: 0, golpe: 'sFire', alvo: 86, folga: 4 }),
+      ],
+      camera: empurrar(1.15, 86, 4, 20),
       titulos: [placa('baatar')],
     },
     {
@@ -175,13 +203,21 @@ export const ROTEIRO: RoteiroDoTrailer = {
       c1: 'hayato',
       c2: 'zenon',
       stage: 'gr',
-      pede: [batida({ tipo: 'especial', lutador: 1, lenta: { fator: 3, ticks: 18 }, alvo: 172, folga: 16 })],
-      // teto 1,10 (era 1,30): o ZENON é o mais alto do elenco; acima de ~1,12 a cabeça entra na faixa de cima do letterbox (medido: topo
-      // em y 45 a 1,21, com a faixa em 69). A grandeza vem da contraluz, dos braseiros e da câmera baixa, não do zoom.
+      // PARTITURA: o HAYATO entra com o BÁSICO e o ZENON defende tudo; o HAYATO sobe no RAIJIN-KEN, o anfitrião cobra a conta e fecha no SUPER (CORTESIA DA CASA): tarja de 30,
+      // 5 acertos presos, o último mata (`filmeRestrito`: o filme só abre no KO) e o filme CURTO toca até o último quadro do plano. O HAYATO começa com a vida baixa (`vida`)
+      // para o super matar. Alvos em ticks do PLANO (a tarja de 30 já na conta).
+      pede: [
+        batida({ tipo: 'block', lutador: 0, alvo: 9, folga: 4 }),
+        batida({ tipo: 'block', lutador: 0, golpe: 'sDown', alvo: 22, folga: 4 }),
+        batida({ tipo: 'golpe', lutador: 1, golpe: 'clp', alvo: 62, folga: 4 }),
+        batida({ tipo: 'super', lutador: 1, alvo: 121, folga: 4 }),
+        batida({ tipo: 'ko', lutador: 1, filme: 'curta', alvo: 161, folga: 4 }),
+      ],
+      // teto 1,10: o ZENON é o mais alto do elenco; acima de ~1,12 a cabeça entra na faixa de cima do letterbox (medido: topo em y 45 a 1,21, com a faixa em 69)
       camera: [
         { t: 0, zoom: 1, foco: 'p2', curva: 'saida' },
-        { t: 150, zoom: 1.06, foco: 'p2' },
-        { t: 172, zoom: 1.1, foco: 'p2', curva: 'saida' },
+        { t: 90, zoom: 1.06, foco: 'p2' },
+        { t: 120, zoom: 1.1, foco: 'p2', curva: 'saida' },
         { t: 2 * C - 1, zoom: 1.1, foco: 'p2' },
       ],
     },

@@ -73,7 +73,7 @@ export const TETO_GOLPE = 26;
 /** R-7 (`ritmo.super`, spec §3.4): teto PRÓPRIO do super (substitui `TETO_GOLPE` no golpe dele, não soma). */
 export const TETO_SUPER = 32;
 /** R-10 (D-R4, liberada pelo dono para o G10): regen da barra por tick quando o super e a CPU do ritmo estão ligados (padrão do jogo: 0,04). */
-export const REGEN_DE_BARRA_RITMO = 0.07;
+export const REGEN_DE_BARRA_RITMO = 0.044;
 /** V2-3c (spec §4.1, H2): fração da vida TOTAL do defensor (todas as barras do chefão) que um combo tira, no máximo. */
 export const TETO_COMBO = 0.4;
 /** Piso do teto de combo: o teste CPU x CPU proíbe acerto de dano zero. */
@@ -274,6 +274,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
   private variantePadraoDoFilme: VarianteDoDano = 'v2';
   /** V2-4 (`ConfigPartida.motorV2.combos`): o combo próprio abre cancelamentos e manda em `semQueda`/`final`. Lida pelo `Fighter` e pela CPU. */
   combosLigados = false;
+  /** R-8 (`ConfigPartida.ritmo.cadeia`): cadeia por força, até 4 golpes, só em acerto confirmado. Público: `Fighter` e `cpuInput` leem. Liga também o registro dos combos próprios (as assinaturas). */
+  ritmoCadeiaLigada = false;
   /** V2-4: combos próprios COMPLETOS (o último golpe da sequência acertou) por lutador, na partida toda (não zera por round). O harness lê. */
   readonly combosPropriosFeitos: [number, number] = [0, 0];
   /** Ferramenta de medição (verificador de combos, spec §6.2): desliga o teto de combo para medir o dano que o desenho do combo dá SEM a rede. */
@@ -360,7 +362,8 @@ export class Game implements LeituraLuta, PartidaParaLutador {
     this.entradaNoHitstop = cfg.motorV2?.entradaNoHitstop === true;
     this.filmesLigados = cfg.motorV2?.filmes === true;
     this.variantePadraoDoFilme = cfg.motorV2?.danoFilme ?? 'v2';
-    this.combosLigados = cfg.motorV2?.combos === true;
+    this.ritmoCadeiaLigada = cfg.ritmo?.cadeia === true;
+    this.combosLigados = cfg.motorV2?.combos === true || this.ritmoCadeiaLigada;
     this.ritmoIntervalos = cfg.ritmo?.intervalos === true;
     this.ritmoFilmeRestrito = cfg.ritmo?.filmeRestrito === true;
     this.ritmoSuperLigado = cfg.ritmo?.super === true;

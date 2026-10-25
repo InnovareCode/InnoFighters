@@ -73,7 +73,7 @@ export const AMINU: LutadorDef = {
     hpPorBarra: 54,
     cena: { duracao: 60, poses: ['sa1', 'sa3'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.85,
-    danoRecebidoDificil: 0.92,
+    danoRecebido: 0.83, // R-12: era 0.85 (ritmo completo + cadeia por força)
+    danoRecebidoDificil: 0.91, // era 0.92
   },
 };

@@ -23,6 +23,7 @@
  *   --motor-v2 a,b  liga SÓ estas (A/B de uma mecânica; sai em relatorios/, nunca em docs/): entrada (V2-1), filmes (V2-3c: coluna "Filme" na frame data) e combos (V2-4: a CPU DIFÍCIL os usa e o verificador roda), ex.: --motor-v2 entrada
  *   --entrada-hitstop / --filmes  o mesmo que `--motor-v2 entrada` / `--motor-v2 filmes` (somam-se entre si); PROVA da V2-1: `--sem-motor-v2` x `--motor-v2 entrada` tem de dar o mesmo hash
  *   --ajustes <json> "e se...": ajustes em memória, ex. '{"wei-long":{"hp":100,"pow":1.08}}' (não grava dados; saída em relatorios/)
+ * RITMO (R-12): intervalos, filmeRestrito, super, cadeia e cpu estão LIGADAS por padrão (RITMO_PADRAO); a referência de produção em docs/balanco as inclui. `--sem-ritmo` as desliga; `--ritmo a,b` liga só essas (A/B, sai em relatorios/).
  *   --ritmo a,b     liga SÓ estas flags do redesenho de ritmo (R-6/R-7b, `ConfigPartida.ritmo`), nunca em docs/: intervalos, filmeRestrito, super, cpu (a CPU reserva a barra e usa o super); ex.: --ritmo super,cpu
  *   --verificar     antes de tudo, joga uma amostra duas vezes e exige resultado idêntico (determinismo)
  *
@@ -43,7 +44,7 @@ function lerArgumentos(argv, env) {
   const a = {
     modo: 'rapido', sementes: null, niveis: null, pares: env.BALANCO_PARES ?? null, base: 1, chefe: true, so: null, jobs: null, saida: null,
     verificar: false, worker: null, ajuda: false, ajustes: null, esquiva: false, entradaHitstop: true, filmes: true, combos: true, danoFilme: null, motorV2Explicito: false, chefes: null, semRegulares: false, varrerDano: null,
-    ritmoIntervalos: false, ritmoFilmeRestrito: false, ritmoSuper: false, ritmoCpu: false,
+    ritmoIntervalos: true, ritmoFilmeRestrito: true, ritmoSuper: true, ritmoCpu: true, ritmoCadeia: true, ritmoExplicito: false,
     fluidez: null,
   };
   // as flags do motor v2 nascem TODAS ligadas; a primeira opção que as escolhe (`--sem-motor-v2`, `--motor-v2`, `--filmes`, `--entrada-hitstop`) zera e liga só as pedidas
@@ -51,6 +52,13 @@ function lerArgumentos(argv, env) {
     if (a.motorV2Explicito) return;
     a.motorV2Explicito = true;
     a.entradaHitstop = a.filmes = a.combos = false;
+  };
+  // RITMO (R-12): as 5 flags de motor do redesenho (intervalos, filmeRestrito, super, cadeia, cpu) estão LIGADAS por padrão, como no jogo (`RITMO_PADRAO`);
+  // `--sem-ritmo` e `--ritmo a,b` (a primeira que aparece) zeram e ligam só as pedidas: A/B, que sai em relatorios/, nunca em docs/.
+  const escolherRitmo = () => {
+    if (a.ritmoExplicito) return;
+    a.ritmoExplicito = true;
+    a.ritmoIntervalos = a.ritmoFilmeRestrito = a.ritmoSuper = a.ritmoCpu = a.ritmoCadeia = false;
   };
   if (env.BALANCO_SEMENTES) a.sementes = Number(env.BALANCO_SEMENTES);
   if (env.BALANCO_NIVEIS) a.niveis = env.BALANCO_NIVEIS.split(',').map(Number);
@@ -103,13 +111,16 @@ function lerArgumentos(argv, env) {
         else throw new Error(`--motor-v2: flag desconhecida '${f}' (use entrada, filmes e/ou combos)`);
       }
     }
+    else if (t === '--sem-ritmo') escolherRitmo();
     else if (t === '--ritmo') {
+      escolherRitmo();
       for (const f of valor().split(',').map((x) => x.trim()).filter(Boolean)) {
         if (f === 'intervalos') a.ritmoIntervalos = true;
         else if (f === 'filmeRestrito') a.ritmoFilmeRestrito = true;
         else if (f === 'super') a.ritmoSuper = true;
         else if (f === 'cpu') a.ritmoCpu = true;
-        else throw new Error(`--ritmo: flag desconhecida '${f}' (use intervalos, filmeRestrito, super e/ou cpu)`);
+        else if (f === 'cadeia') a.ritmoCadeia = true;
+        else throw new Error(`--ritmo: flag desconhecida '${f}' (use intervalos, filmeRestrito, super, cadeia e/ou cpu)`);
       }
     }
     else if (t === '--chefes') a.chefes = valor().split(',').map((x) => x.trim()).filter(Boolean);
@@ -140,9 +151,9 @@ function lerArgumentos(argv, env) {
   const todasV2 = a.entradaHitstop && a.filmes && a.combos;
   const nenhumaV2 = !a.entradaHitstop && !a.filmes && !a.combos;
   const rotuloV2 = todasV2 ? 'v2' : nenhumaV2 ? 'sem-v2' : ['entrada', 'filmes', 'combos'].filter((_, i) => [a.entradaHitstop, a.filmes, a.combos][i]).join('-');
-  // R-6/R-7b: `--ritmo` nunca vira referência versionada (docs/balanco) — o redesenho ainda não foi aceito como o jogo de produção.
-  const temRitmo = a.ritmoIntervalos || a.ritmoFilmeRestrito || a.ritmoSuper || a.ritmoCpu;
-  const sufixoRitmo = temRitmo ? `-ritmo-${['intervalos', 'filmeRestrito', 'super', 'cpu'].filter((_, i) => [a.ritmoIntervalos, a.ritmoFilmeRestrito, a.ritmoSuper, a.ritmoCpu][i]).join('-')}` : '';
+  // R-12: o ritmo completo É a produção (docs/balanco); qualquer subconjunto (`--ritmo a,b`, `--sem-ritmo`) é A/B e sai em relatorios/.
+  const temRitmo = !(a.ritmoIntervalos && a.ritmoFilmeRestrito && a.ritmoSuper && a.ritmoCpu && a.ritmoCadeia);
+  const sufixoRitmo = temRitmo ? `-ritmo-${[a.ritmoIntervalos, a.ritmoFilmeRestrito, a.ritmoSuper, a.ritmoCadeia, a.ritmoCpu].some(Boolean) ? '' : 'nenhum-'}${['intervalos', 'filmeRestrito', 'super', 'cadeia', 'cpu'].filter((_, i) => [a.ritmoIntervalos, a.ritmoFilmeRestrito, a.ritmoSuper, a.ritmoCadeia, a.ritmoCpu][i]).join('-')}` : '';
   a.saida ??= a.ajustes ? join(RAIZ, 'relatorios', 'balanco-ajustes')
     : parcial ? join(RAIZ, 'relatorios', 'balanco-chefes')
     : a.danoFilme && a.danoFilme !== 'v2' ? join(RAIZ, 'relatorios', `balanco${a.esquiva ? '-esquiva' : ''}-dano-${a.danoFilme}`)
@@ -206,6 +217,7 @@ function paramsDe(a) {
     ...(a.ritmoFilmeRestrito ? { ritmoFilmeRestrito: true } : {}),
     ...(a.ritmoSuper ? { ritmoSuper: true } : {}),
     ...(a.ritmoCpu ? { ritmoCpu: true } : {}),
+    ...(a.ritmoCadeia ? { ritmoCadeia: true } : {}),
     ...(a.fluidez ? { fluidez: a.fluidez } : {}),
   };
 }
@@ -265,7 +277,7 @@ async function principal() {
   if (a.worker) {
     // os parâmetros chegam do processo principal, já validados (a linha de comando do worker só leva o --worker)
     const p = JSON.parse(process.env.BALANCO_PARAMS ?? '{}');
-    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, danoFilme: p.danoFilme ?? null, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true, ritmoIntervalos: p.ritmoIntervalos === true, ritmoFilmeRestrito: p.ritmoFilmeRestrito === true, ritmoSuper: p.ritmoSuper === true, ritmoCpu: p.ritmoCpu === true, fluidez: p.fluidez ?? null });
+    Object.assign(a, { sementes: p.sementes, niveis: p.niveis, base: p.base, pares: p.filtro, chefe: p.incluirChefe, ajustes: p.ajustes ?? null, esquiva: p.esquiva === true, entradaHitstop: p.entradaNoHitstop === true, filmes: p.filmes === true, combos: p.combos === true, danoFilme: p.danoFilme ?? null, chefes: p.chefes ?? null, semRegulares: p.semRegulares === true, ritmoIntervalos: p.ritmoIntervalos === true, ritmoFilmeRestrito: p.ritmoFilmeRestrito === true, ritmoSuper: p.ritmoSuper === true, ritmoCpu: p.ritmoCpu === true, ritmoCadeia: p.ritmoCadeia === true, fluidez: p.fluidez ?? null });
     return modoWorker(a);
   }
 
@@ -352,13 +364,14 @@ async function principal() {
         dif = null;
       }
     }
-    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.entradaHitstop ? " + ENTRADA NO HITSTOP (motorV2.entradaNoHitstop)" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : "") + (a.danoFilme && a.danoFilme !== 'v2' ? ` + A/B do dano do filme: ${a.danoFilme}` : "") + (!a.entradaHitstop && !a.filmes && !a.combos ? " + motor v2 DESLIGADO (o motor de antes)" : "") + (a.fluidez ? ` + FLUIDEZ: ${Object.keys(a.fluidez).join('+')}` : "") + (a.ritmoIntervalos || a.ritmoFilmeRestrito || a.ritmoSuper || a.ritmoCpu ? ` + RITMO: ${[a.ritmoIntervalos && 'intervalos', a.ritmoFilmeRestrito && 'filmeRestrito', a.ritmoSuper && 'super', a.ritmoCpu && 'cpu'].filter(Boolean).join('+')}` : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
+    const cab = { geradoEm: hoje, versaoDados, modo: a.modo + (a.ajustes ? " + ajustes (hipótese, não é o jogo)" : "") + (a.esquiva ? " + ESQUIVA ligada" : "") + (a.entradaHitstop ? " + ENTRADA NO HITSTOP (motorV2.entradaNoHitstop)" : "") + (a.filmes ? " + FILMES ligados (motorV2.filmes)" : "") + (a.combos ? " + COMBOS PRÓPRIOS ligados (motorV2.combos)" : "") + (a.danoFilme && a.danoFilme !== 'v2' ? ` + A/B do dano do filme: ${a.danoFilme}` : "") + (!a.entradaHitstop && !a.filmes && !a.combos ? " + motor v2 DESLIGADO (o motor de antes)" : "") + (a.fluidez ? ` + FLUIDEZ: ${Object.keys(a.fluidez).join('+')}` : "") + (a.ritmoIntervalos || a.ritmoFilmeRestrito || a.ritmoSuper || a.ritmoCpu || a.ritmoCadeia ? ` + RITMO: ${[a.ritmoIntervalos && 'intervalos', a.ritmoFilmeRestrito && 'filmeRestrito', a.ritmoSuper && 'super', a.ritmoCadeia && 'cadeia', a.ritmoCpu && 'cpu'].filter(Boolean).join('+')}` : ""), hashRegistros: hash, hashRegulares: a.semRegulares ? undefined : hashRegulares, hashChefes, segundos, processos: jobs, lutas: registros.length };
     writeFileSync(join(a.saida, 'resultados.md'), m.rel.resultadosMd(agr, ids, achados, dif, cab));
     writeFileSync(arqJson, JSON.stringify({ parametros: params, hashRegistros: hash, hashRegulares, hashChefes, versaoDados, geradoEm: hoje, taxas, agregado: agr, achados }, null, 1));
     resumo(agr, ids, achados, dif, hash, segundos, jobs, relDir, { hashRegulares, hashChefes, semRegulares: a.semRegulares });
     if (!a.semRegulares) gravarPortoes(a, m, registros, versaoDados, hoje, relDir);
     if (a.combos) imprimirCombosDaCpu(registros);
     if (a.ritmoSuper) imprimirSupersDaCpu(registros);
+    if (a.ritmoCadeia) imprimirCombosDaCadeia(registros);
   } finally {
     await server.close();
   }
@@ -494,6 +507,29 @@ function imprimirSupersDaCpu(registros) {
       const meio = n.filter((x) => x >= 1 && x <= 4).length;
       const muito = n.filter((x) => x > 4).length;
       console.log(`  ${tipo.padEnd(8)} ${rotulo(nivel)}                                  ${String(rs.length).padStart(5)}  ${media.toFixed(2).padStart(8)}  ${String(zero).padStart(5)}  ${String(meio).padStart(7)}  ${String(muito).padStart(6)}`);
+    }
+  }
+}
+
+/**
+ * R-8 (spec G7/G8): combos por luta. `3+` = lutas com pelo menos um combo de 3 ou mais golpes (golpes distintos que acertaram sem o rival sair do atordoamento);
+ * `maior` = o maior combo da amostra; `supers` = quantos supers conectaram do total disparado. Só com `--ritmo cadeia`.
+ */
+function imprimirCombosDaCadeia(registros) {
+  const rotulo = (n) => (n === 1 ? 'NORMAL ' : n === 2 ? 'DIFÍCIL' : `nível ${n}`);
+  console.log('\ncombos da CPU (R-8)                       lutas  com 3+   3+/luta  maior  supers conectam');
+  for (const tipo of ['regular', 'chefe']) {
+    for (const nivel of [...new Set(registros.map((r) => r.nivel))].sort()) {
+      const rs = registros.filter((r) => r.tipo === tipo && r.nivel === nivel && r.medidas);
+      if (!rs.length) continue;
+      const c3 = rs.map((r) => (r.medidas.combos3?.[0] ?? 0) + (r.medidas.combos3?.[1] ?? 0));
+      const com = c3.filter((x) => x >= 1).length;
+      const maior = Math.max(...rs.map((r) => Math.max(r.medidas.maiorCombo?.[0] ?? 0, r.medidas.maiorCombo?.[1] ?? 0)));
+      const sup = rs.reduce((s, r) => s + (r.medidas.supers?.[0] ?? 0) + (r.medidas.supers?.[1] ?? 0), 0);
+      const conn = rs.reduce((s, r) => s + (r.medidas.supersConectaram?.[0] ?? 0) + (r.medidas.supersConectaram?.[1] ?? 0), 0);
+      const soma = (o, i) => rs.reduce((s, r) => s + (r.medidas.superPorOrigem?.[o]?.[i] ?? 0), 0);
+      const pc = (a, b) => (b ? (100 * a / b).toFixed(0) + '%' : '-');
+      console.log(`  ${tipo.padEnd(8)} ${rotulo(nivel)}                            ${String(rs.length).padStart(5)}  ${(100 * com / rs.length).toFixed(1).padStart(5)}%  ${(c3.reduce((s, x) => s + x, 0) / rs.length).toFixed(2).padStart(7)}  ${String(maior).padStart(5)}  ${conn}/${sup} (${pc(conn, sup)})  [fecha cadeia ${soma('cancel', 1)}/${soma('cancel', 0)} (${pc(soma('cancel', 1), soma('cancel', 0))}); livre ${soma('livre', 1)}/${soma('livre', 0)} (${pc(soma('livre', 1), soma('livre', 0))})]`);
     }
   }
 }

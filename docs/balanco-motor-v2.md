@@ -90,3 +90,28 @@ A estimativa de tempo parado é **pessimista de propósito** (a fórmula da spec
 - P6 manteve a semente (só o início andou 15 ticks); **P9 manteve semente, CPU, início e batida** e só a impressão mudou (o chefão e o filme). Os outros 6 trocaram de luta.
 - **Todo especial dessas tomadas agora abre filme no motor** (`hit.filme`, evento `filme`). A cena do trailer (`src/ui/cenas/trailer.ts`) ainda **não toca o filme**: sem isso, o golpe aparece como um corte seco para as posições finais (D-V6 pede um filme no trailer). Isso é tarefa da Lyra (reproduzir o `RoteiroFilme` no plano P1 ou P5 e congelar o motor pela duração, como a tarja faz). Depois disso, `trailer:escalar --plano Px` ajusta a janela do ritmo.
 - `trailer:medir` (Chromium, desempenho) não rodei: fora do meu escopo (navegador).
+
+## 7. R-12 (25/10/2026): o ritmo completo vira a produção (cadeia por força + CPU nova + super)
+
+`RITMO_PADRAO` passou a ter `cadeia` (tarja, provocação, intervalos, filmeRestrito, super, **cadeia**, cpu); `?ritmo=0` segue como rollback total. O harness também liga as 5 flags de motor por padrão (`--sem-ritmo` ou `--ritmo a,b` = A/B em `relatorios/`). Rodada `--completo --esquiva` em `docs/balanco`: dados `5ddb74decbdb`, hash total `ba5a6ed485dd566a` (regulares `45e8054f7c5431c6`, chefes `8545d5cae5fdb7ac`).
+
+O que mudou nos dados (só números; os chefões não mudam de vida):
+
+| Alvo | Antes | Depois | Por quê |
+|---|---:|---:|---|
+| MIN-JI `hp` | 97 | 111 | 32-37% com o ritmo completo; o `pow` fica em 0,92 (a tabela do filme é calibrada com ele) |
+| CAMILLE `hp` | 94 | 106 | perdeu a FLECHA e o COUP D'ARRÊT na revisão dos 17 combos: 34% |
+| CENTELLA `hp` | 99 | 93 | 62% |
+| `REGEN_DE_BARRA_RITMO` | 0,07 | 0,044 | supers por luta 3,2 (22% das lutas com 5+) |
+| `danoRecebido` / `Dificil` AMINU | 0,85 / 0,92 | 0,83 / 0,91 | chefões de volta à rampa (a cadeia por força muda o dano que o chefão toma) |
+| CENTELLA | 0,86 / 0,74 | 0,93 / 0,82 | |
+| CAMILLE | 0,89 / 0,82 | 0,81 / 0,69 | |
+| NILA | 0,84 / 0,72 | 0,84 / 0,71 | |
+| BAATAR | 0,82 / 0,75 | 0,87 / 0,70 | |
+| ZENON | 0,75 / 0,73 | 0,79 / 0,72 | |
+
+CENTELLA e CAMILLE mudaram de `hp` mas a vida do chefão (`hpPorBarra` 50 e 47) ficou onde estava (`tests/unit/chefoes-r1.test.ts` guarda isso).
+
+Resultado (100 sementes, 3 600 lutas por lutador): HAYATO 53,0 · WEI LONG 51,5 · MIN-JI 47,9 · CAIO 47,5 · AMINU 56,1 · CENTELLA 48,9 · CAMILLE 51,1 · NILA 50,1 · BAATAR 46,7 · ZENON 47,3 (todos em 44-57; 3 bases de 20 sementes deram os mesmos valores com erro de ±2). Chefões na rampa nos 12 pontos (NILA DIFÍCIL segue com 89% de KO, o "critério fora" que já existia). Supers por luta: NORMAL 2,29 (9,3% das lutas com 5+, 12% com 0), DIFÍCIL 1,63 (5,7% com 5+, 28% com 0). Combos de 3+ golpes em 58% (NORMAL) e 95% (DIFÍCIL) das lutas; supers que conectam 68% / 60% (fechando cadeia 83-85%). Os portões antigos de "tempo parado" (§4.5) seguem FORA por serem anteriores à tarja do ritmo.
+
+Trailer: com a cadeia no padrão, o bloqueio não encadeia mais; a P2 (HANA-DUL-SET defendido) e a P9 (clp bloqueado e sDown) foram reescritas na partitura (o 2º golpe sai depois do 1º acabar) e o alvo da batida 2 da P9 foi de 16 para 22 (`roteiro.ts`). As 8 impressões foram regravadas.

@@ -21,7 +21,8 @@ export const CENTELLA: LutadorDef = {
   // V2-6 (motor v2 ligado, docs/balanco-motor-v2.md): pow 0,94 -> 0,95 e hp 96 -> 99.
   pow: 0.95,
   spd: 1.12,
-  hp: 99,
+  // R-12: hp 99 -> 93 (62% -> 52% com o ritmo completo). O chefão não usa este hp (a vida dele é chefe.hpPorBarra).
+  hp: 93,
   jump: 1.18,
   scale: 0.95,
   stride: 12,
@@ -68,7 +69,7 @@ export const CENTELLA: LutadorDef = {
     hpPorBarra: 50,
     cena: { duracao: 60, poses: ['win'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.86,
-    danoRecebidoDificil: 0.74,
+    danoRecebido: 0.93, // R-12: era 0.86 (ritmo completo + cadeia por força)
+    danoRecebidoDificil: 0.82, // era 0.74
   },
 };

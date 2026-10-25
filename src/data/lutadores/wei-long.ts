@@ -26,7 +26,7 @@ export const WEI_LONG: LutadorDef = {
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
     { id: 'wei-long-ombrada-de-ferro', nome: 'A MONTANHA SE MOVE', sequencia: ['clp', 'hk', 'sFwd'], semQueda: [1], efeito: 'segura em pé e fecha na TIE SHAN KAO' },
-    { id: 'wei-long-palma-da-montanha', nome: 'GRANDE MURALHA', sequencia: ['hp', 'lk', 'hp'], final: 'parede' },
+    { id: 'wei-long-palma-da-montanha', nome: 'GRANDE MURALHA', sequencia: ['lp', 'hp', 'hp'], final: 'parede' },
   ],
   // ARTE NOVA (2026-10-23): o alcance de golpe nasce da ponta (tipX/tipY) do atlas, e as poses novas chegam menos longe (hp, hk, soco aéreo,
   // ombrada) ou mais (lk). O `rm` abaixo devolve a largura da caixa ao tamanho de antes, a -2,5% (medido em

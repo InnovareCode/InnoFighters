@@ -35,3 +35,5 @@
 - [R-6 intervalos + filme restrito](project_r6_intervalos_filme_restrito.md) — RitmoMotor em core (não meta), filme pendente até saber o kill, agarrão duplicado à mão, matchend não troca de fase
 - [R-7/R-7b super](project_r7_super.md) — super reusa o NomeGolpe, superPreso agendado, filme só se matar; R-10: reserva da CPU + regen, decideALuta no evento, bug do rival state:move/move:null
 - [Auditoria do motor 24/10](project_auditoria_motor_2026_10_24.md) — delays reais: dash/par do super/MASHI/joystick; hitstop curto; hashes de hoje; ensaios
+- [Trailer partitura R-14](project_trailer_partitura_r14.md) — dois humanos, partitura.ts, tempo motor x plano, filme só no KO, energia, armadilhas de afinar
+- [R-8 cadeia por força + CPU](project_r8_cadeia.md) — ritmo.cadeia (desligada), 17 combos, CPU confirma/plano/punir, medidas e super caído

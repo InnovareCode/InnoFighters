@@ -66,7 +66,6 @@ export const BAATAR: LutadorDef = {
   // V2-4 (`motorV2.combos`): combos próprios. NOMES PROVISÓRIOS (o Apolo dá os definitivos em docs/combos-proprios.md); o `id` é estável.
   combosProprios: [
     { id: 'baatar-quebra-base-encadeado', nome: 'O CHÃO DECIDE', sequencia: ['clk', 'hk', 'sDown'], semQueda: [1], efeito: 'segura em pé e fecha no QUEBRA-BASE' },
-    { id: 'baatar-esmagamento', nome: 'CAVALGADA', sequencia: ['lk', 'hp', 'hp'], final: 'parede' },
   ],
   // PESO DA MONTANHA: armadura nos golpes fortes e nos especiais; `armadura.rankMax` limita a quem ela absorve.
   armadura: { rankMax: 2 },
@@ -91,7 +90,7 @@ export const BAATAR: LutadorDef = {
     hpPorBarra: 46,
     cena: { duracao: 60, poses: ['devekh2', 'win'] },
     bonusVitoria: 3000,
-    danoRecebido: 0.82,
-    danoRecebidoDificil: 0.75,
+    danoRecebido: 0.87, // R-12: era 0.82 (ritmo completo + cadeia por força)
+    danoRecebidoDificil: 0.7, // era 0.75
   },
 };

@@ -87,7 +87,9 @@ describe('R1 · os 5 guardiões ganham ConfigChefe em dados', () => {
     const c = def.chefe as ConfigChefe;
     expect(c).toBeDefined();
     expect(c.barras).toBe(2);
-    expect(c.hpPorBarra).toBe(Math.ceil(def.hp / 2));
+    // R-12: CENTELLA (hp 99 -> 93) e CAMILLE (94 -> 106) mudaram de hp para o balanço do roster; a vida do chefão NÃO acompanha (50 e 47 = ceil dos hp antigos)
+    const BARRA_FIXA: Partial<Record<(typeof GUARDIOES)[number], number>> = { centella: 50, camille: 47 };
+    expect(c.hpPorBarra).toBe(BARRA_FIXA[id] ?? Math.ceil(def.hp / 2));
     expect(c.cena.duracao).toBe(60);
     expect(c.bonusVitoria).toBe(3000);
     expect(c.fichaFase1).toBeUndefined();

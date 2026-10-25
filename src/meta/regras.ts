@@ -17,10 +17,11 @@ export const NOMES_MOTOR_V2: Readonly<Record<string, 'entradaNoHitstop' | 'filme
  * Redesenho de ritmo (docs/spec-redesenho-jogabilidade.md §4): o dono jogou com `?ritmo=1`, aprovou, e as 4 ondas já entregues e
  * provadas (R-1/R-2 tarja+provocação, R-6 intervalos+filmeRestrito) viram PADRÃO — molde igual a `MOTOR_V2_PADRAO` acima. Por ordem do dono
  * (24/10/2026) o super (R-7/R-7b) e a CPU do super (R-10) entram no padrão também, sob prova final da Íris (se o super reprovar, voltam
- * a sair daqui). As 2 sem implementação no motor (cadeia, impacto) continuam desligadas; só entram por `?ritmo=1` (prévia completa,
- * `RITMO_TUDO_LIGADO`) ou por nome na lista. `?ritmo=0` continua o rollback total (`ritmoDaUrl` abaixo).
+ * a sair daqui). A cadeia por força (R-8) entrou no padrão com o R-12 (25/10/2026): combos de 3+ golpes em 55% (NORMAL) e 93% (DIFÍCIL) das lutas
+ * da CPU, os 10 lutadores em 44-57% e os chefões na rampa (docs/balanco-motor-v2.md). Só `impacto` (R-17, opcional) segue desligada; entra por `?ritmo=1`
+ * (prévia completa, `RITMO_TUDO_LIGADO`) ou por nome na lista. `?ritmo=0` continua o rollback total (`ritmoDaUrl` abaixo).
  */
-export const RITMO_PADRAO: Readonly<Ritmo> = Object.freeze({ tarja: true, provocacao: true, intervalos: true, filmeRestrito: true, super: true, cpu: true });
+export const RITMO_PADRAO: Readonly<Ritmo> = Object.freeze({ tarja: true, provocacao: true, intervalos: true, filmeRestrito: true, super: true, cadeia: true, cpu: true });
 
 /** Liberados de fabrica (decisao do dono): HAYATO, WEI LONG, MIN-JI, CAIO. */
 export const INICIAIS: readonly IdLutador[] = ['hayato', 'wei-long', 'min-ji', 'caio'];
@@ -201,8 +202,8 @@ export const RITMO_TUDO_LIGADO: Readonly<Required<Ritmo>> = Object.freeze({
 /**
  * Kill switch e A/B do redesenho de ritmo pela URL (`?ritmo=`), no mesmo molde de `motorV2DaUrl` desde que o dono aprovou jogando com
  * `?ritmo=1` (24/10/2026): o PADRÃO (ausente) passou a ser `RITMO_PADRAO`, não mais `{}`.
- *  - ausente -> `{ ...RITMO_PADRAO }` (tarja, provocação, intervalos, filmeRestrito, super, cpu — o jogo aprovado);
- *  - `1`, `on`, `true` ou `sim` -> tudo ligado (`RITMO_TUDO_LIGADO`, inclusive cadeia/impacto, que o motor ainda não implementa);
+ *  - ausente -> `{ ...RITMO_PADRAO }` (tarja, provocação, intervalos, filmeRestrito, super, cadeia, cpu — o jogo aprovado);
+ *  - `1`, `on`, `true` ou `sim` -> tudo ligado (`RITMO_TUDO_LIGADO`, inclusive o impacto, que o motor ainda não implementa);
  *  - `0`, `off`, `false`, `nao` ou `não` -> `{}` (rollback total);
  *  - lista (`tarja,provocacao`, em qualquer ordem) -> só essas ligadas (A/B de uma mecânica), substituindo o padrão inteiro.
  * Valor desconhecido (`?ritmo=xyz`, nome de flag errado) cai no PADRÃO (`RITMO_PADRAO`): nunca liga o que não foi provado por

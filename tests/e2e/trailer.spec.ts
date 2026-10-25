@@ -297,7 +297,7 @@ test.describe('trailer de abertura', () => {
     expect(lento).toBeLessThanOrEqual(150);
   });
 
-  test('determinismo: o mesmo tick desenhado em duas visitas dá 0 pixel de diferença (ticks 300, 1200 e 2300)', async ({ browser }, info) => {
+  test('determinismo: o mesmo tick desenhado em duas visitas dá 0 pixel de diferença (ticks 300, 1200, 2105 (tarja do super), 2150 (entrada do chefão sobreposta) e 2300)', async ({ browser }, info) => {
     test.skip(info.project.name !== 'desktop', 'desktop');
     test.setTimeout(150_000);
     const rodar = async (): Promise<Record<number, string>> => {
@@ -308,7 +308,7 @@ test.describe('trailer de abertura', () => {
       await hook(page, "(h) => { h.ui.fade = 0; h.ui.fadeDir = 0; h.ui.set('trailer', { origem: 'atrair' }); }");
       await page.waitForFunction(() => (window as any).__inno.ui.cenas.trailer.pronta === true, undefined, { timeout: 30_000 });
       const quadros: Record<number, string> = {};
-      for (const alvo of [300, 1200, 2300]) {
+      for (const alvo of [300, 1200, 2105, 2150, 2300]) {
         const d = await irAteTick(page, alvo);
         expect(d.planosEmReserva, `reservas até o tick ${alvo}`).toEqual([]);
         // T12: o trailer não tem arte fixa. A vitrine da logo (P10) chega com o plano já na tela: o pixel só é igual entre as visitas com a arte do plano toda na memória
@@ -320,7 +320,7 @@ test.describe('trailer de abertura', () => {
     };
     const a = await rodar();
     const b = await rodar();
-    for (const t of [300, 1200, 2300]) expect(a[t] === b[t], `tick ${t}: os pixels diferem entre as visitas`).toBe(true);
+    for (const t of [300, 1200, 2105, 2150, 2300]) expect(a[t] === b[t], `tick ${t}: os pixels diferem entre as visitas`).toBe(true);
     expect(a[300]).not.toBe(a[1200]);
   });
 

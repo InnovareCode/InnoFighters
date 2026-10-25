@@ -223,6 +223,11 @@ export class EntradaDoChefe {
   /** Ticks que já andaram desde `iniciar` (0 no começo). */
   tick = 0;
   pulouEm: number | null = null;
+  /**
+   * SOBREPOSTA a uma luta em curso (o trailer, R-15): o cartão é compacto e mora na faixa preta de cima (y 0-69, a do letterbox), para não cobrir cabeça nenhuma, e some junto com
+   * as faixas. A cena que a liga o faz DEPOIS de `iniciar` (que a desliga); `zerar` também.
+   */
+  sobreposta = false;
   private cartao: CartaoDeEntrada | null = null;
   private fala = '';
   private acesosSoados = 0;
@@ -240,6 +245,7 @@ export class EntradaDoChefe {
    */
   iniciar(modo: ModoEntrada, cartao: CartaoDeEntrada, fala = '', roteiro?: Pick<RoteiroDeEntrada, 'batidas' | 'efeito' | 'som'>, cor?: string): void {
     this.ativa = true;
+    this.sobreposta = false;
     this.modo = modo;
     this.tick = 0;
     this.pulouEm = null;
@@ -267,6 +273,7 @@ export class EntradaDoChefe {
   /** Para tudo (a luta foi reiniciada ou a cena saiu). */
   zerar(): void {
     this.ativa = false;
+    this.sobreposta = false;
     this.tick = 0;
     this.pulouEm = null;
     this.cartao = null;
@@ -337,7 +344,14 @@ export class EntradaDoChefe {
     ctx.fillRect(0, 0, LARGURA, q.faixa);
     ctx.fillRect(0, ALTURA - q.faixa, LARGURA, q.faixa);
     const c = this.cartao;
-    if (c && q.cartao > 0) {
+    if (c && q.cartao > 0 && this.sobreposta) {
+      // compacto, dentro da faixa preta de cima: nome, título e rodapé empilhados em 69 px; sai com as faixas (`q.alfa`)
+      const k = easeOut(q.cartao) * q.alfa;
+      const pal = this.paleta;
+      textoArcade(ctx, c.nome, LARGURA / 2, 22, 30, pal.nome, pal.contornoDoNome, 'center', 1, k);
+      textoArcade(ctx, c.titulo, LARGURA / 2, 46, 17, pal.titulo, pal.contornoDoTitulo, 'center', 1, k);
+      texto(ctx, c.rodape.split('').join(' '), LARGURA / 2, 62, 10, pal.rodape, 'center', { alpha: k });
+    } else if (c && q.cartao > 0) {
       const k = easeOut(q.cartao);
       const x = LARGURA / 2 - (1 - k) * 70;
       ctx.globalAlpha = q.alfa;

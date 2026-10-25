@@ -2,7 +2,7 @@
 
 > Arquivo GERADO por `npm run balanco`. Não edite à mão: rode o comando de novo.
 
-Gerado em 2026-10-24 · versão dos dados/motor `75764f4439da` · arte de PRODUÇÃO (`public/assets/lutadores`).
+Gerado em 2026-10-25 · versão dos dados/motor `5ddb74decbdb` · arte de PRODUÇÃO (`public/assets/lutadores`).
 
 Como ler (todos os tempos em ticks de jogo, 60 por segundo; cada número foi medido numa `Game` em modo treino, não lido da tabela):
 
